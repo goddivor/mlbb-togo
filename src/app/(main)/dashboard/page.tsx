@@ -12,6 +12,16 @@ import { useAuthStore } from '@/store/useStore';
 import { api, avatarSrc, mlbbImg } from '@/lib/api';
 import toast from 'react-hot-toast';
 
+// Libellés des rôles MLBB (clé = valeur stockée en base héros).
+const ROLE_LABEL: Record<string, string> = {
+  tank: 'Tank',
+  fighter: 'Combattant',
+  assassin: 'Assassin',
+  mage: 'Mage',
+  marksman: 'Tireur',
+  support: 'Support',
+};
+
 export default function Dashboard() {
   const userProfile = useAuthStore((s: any) => s.userProfile);
   const setUserProfile = useAuthStore((s: any) => s.setUserProfile);
@@ -117,13 +127,16 @@ export default function Dashboard() {
               {userProfile.gameNickname || userProfile.displayName}
             </h1>
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2">
+              {userProfile.gameRank && (
+                <Badge variant="gold" size="sm">
+                  <Trophy size={12} className="mr-1" /> {userProfile.gameRank}
+                  {userProfile.gameRankLevel != null && (
+                    <span className="ml-1 opacity-70">· {userProfile.gameRankLevel}</span>
+                  )}
+                </Badge>
+              )}
               {userProfile.gameLevel != null && (
                 <Badge variant="neon" size="sm">Niveau {userProfile.gameLevel}</Badge>
-              )}
-              {userProfile.gameRankLevel != null && (
-                <Badge variant="purple" size="sm">
-                  <Trophy size={12} className="mr-1" /> {userProfile.gameRankLevel} pts
-                </Badge>
               )}
               {userProfile.gameCountry && (
                 <span className="inline-flex items-center gap-1 text-xs text-gray-400">
@@ -131,6 +144,17 @@ export default function Dashboard() {
                 </span>
               )}
             </div>
+
+            {/* Rôles principaux (déduits des héros favoris) */}
+            {userProfile.gameRoles?.length > 0 && (
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-2">
+                <span className="text-xs text-gray-500">Rôles :</span>
+                {userProfile.gameRoles.map((r: any) => (
+                  <Badge key={r.role} variant="purple" size="sm">{ROLE_LABEL[r.role] || r.role}</Badge>
+                ))}
+              </div>
+            )}
+
             <p className="text-xs text-gray-500 mt-2">
               ID de jeu : {userProfile.mlbbRoleId} · Serveur {userProfile.mlbbZoneId}
             </p>
