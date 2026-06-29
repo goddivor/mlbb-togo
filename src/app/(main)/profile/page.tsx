@@ -237,7 +237,10 @@ export default function ProfilePage() {
       {userProfile.hasGame && (
         <Card hover={false}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-white">Données de jeu</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-white">Données de jeu</h3>
+              <Badge variant="neon" size="sm">Tous modes</Badge>
+            </div>
             <Button variant="ghost" size="sm" onClick={sync} disabled={busy === 'sync'}>
               <RefreshCw size={14} className={busy === 'sync' ? 'animate-spin' : ''} />
               {busy === 'sync' ? 'Synchro…' : 'Synchroniser'}

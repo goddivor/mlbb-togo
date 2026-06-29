@@ -135,6 +135,8 @@ export const api = {
       request('/auth/profile-source', { method: 'PATCH', body: { source } }),
     // Resynchronise les données de jeu.
     syncGame: () => request('/auth/sync-game', { method: 'POST' }),
+    // Héros favoris pour une saison donnée (sélecteur de saison).
+    gameHeroes: (sid: number) => request(`/auth/game/heroes?sid=${sid}`),
   },
 
   // === Joueurs / Utilisateurs ===

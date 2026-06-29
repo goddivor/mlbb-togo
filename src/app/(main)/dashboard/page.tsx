@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -17,6 +17,16 @@ export default function Dashboard() {
   const setUserProfile = useAuthStore((s: any) => s.setUserProfile);
   const setUser = useAuthStore((s: any) => s.setUser);
   const [syncing, setSyncing] = useState(false);
+  const [season, setSeason] = useState<number | null>(null);
+  const [heroes, setHeroes] = useState<any[]>([]);
+  const [heroesLoading, setHeroesLoading] = useState(false);
+
+  // Initialise la saison et les héros favoris depuis le profil chargé.
+  useEffect(() => {
+    if (!userProfile) return;
+    setSeason(userProfile.gameSeasons?.[0] ?? null);
+    setHeroes(userProfile.gameFrequentHeroes || []);
+  }, [userProfile?.id]);
 
   if (!userProfile) {
     return (
@@ -50,7 +60,7 @@ export default function Dashboard() {
   }
 
   const stats = userProfile.gameStats || {};
-  const heroes: any[] = userProfile.gameFrequentHeroes || [];
+  const seasons: number[] = userProfile.gameSeasons || [];
   const winRate = stats.winRate ?? 0;
 
   const sync = async () => {
@@ -59,11 +69,27 @@ export default function Dashboard() {
       const updated: any = await api.auth.syncGame();
       setUser(updated);
       setUserProfile(updated);
+      setSeason(updated.gameSeasons?.[0] ?? null);
+      setHeroes(updated.gameFrequentHeroes || []);
       toast.success('Données de jeu synchronisées.');
     } catch (e: any) {
       toast.error(e?.message || 'Échec de la synchronisation.');
     } finally {
       setSyncing(false);
+    }
+  };
+
+  // Change la saison affichée pour les héros favoris (re-fetch à la demande).
+  const changeSeason = async (sid: number) => {
+    setSeason(sid);
+    setHeroesLoading(true);
+    try {
+      const list: any = await api.auth.gameHeroes(sid);
+      setHeroes(Array.isArray(list) ? list : []);
+    } catch (e: any) {
+      toast.error(e?.message || 'Échec du chargement de la saison.');
+    } finally {
+      setHeroesLoading(false);
     }
   };
 
@@ -117,7 +143,11 @@ export default function Dashboard() {
         </div>
       </Card>
 
-      {/* Statistiques principales */}
+      {/* Statistiques principales (cumul tous modes : l'API MLBB ne segmente pas par mode) */}
+      <div className="flex items-center gap-2 mb-3">
+        <h2 className="text-lg font-bold text-white">Statistiques</h2>
+        <Badge variant="neon" size="sm">Tous modes</Badge>
+      </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard label="Victoires" value={stats.wins ?? 0} icon={<TrendingUp size={16} />} />
         <StatCard label="Taux de victoire" value={`${winRate}%`} icon={<Target size={16} />} />
@@ -128,7 +158,10 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Détail des statistiques */}
         <Card>
-          <h3 className="font-bold text-white mb-4">Statistiques</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-white">Détail</h3>
+            <span className="text-xs text-gray-500">Tous modes</span>
+          </div>
           <div className="space-y-4">
             <div>
               <div className="flex justify-between text-sm mb-1">
@@ -175,14 +208,32 @@ export default function Dashboard() {
 
         {/* Héros favoris */}
         <Card className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <h3 className="font-bold text-white">Héros favoris</h3>
-            <Badge variant="neon" size="sm">{heroes.length} héros</Badge>
+            <div className="flex items-center gap-2">
+              {seasons.length > 0 && (
+                <select
+                  value={season ?? ''}
+                  onChange={(e) => changeSeason(Number(e.target.value))}
+                  disabled={heroesLoading}
+                  className="text-xs bg-gaming-surface border border-gaming-border rounded-lg px-2.5 py-1.5 text-gray-200 focus:outline-none focus:border-neon-blue disabled:opacity-60"
+                >
+                  {seasons.map((s) => (
+                    <option key={s} value={s}>Saison {s}</option>
+                  ))}
+                </select>
+              )}
+              <Badge variant="neon" size="sm">{heroes.length} héros</Badge>
+            </div>
           </div>
 
-          {heroes.length === 0 ? (
+          {heroesLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <div className="w-8 h-8 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
+            </div>
+          ) : heroes.length === 0 ? (
             <div className="text-center py-10 text-gray-500 text-sm">
-              Aucun héros fréquent trouvé. Joue quelques parties puis synchronise.
+              Aucun héros fréquent pour cette saison.
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
