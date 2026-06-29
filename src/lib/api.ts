@@ -108,6 +108,14 @@ export const api = {
     me: () => request('/auth/me'),
     changePassword: (data: { email: string; currentPassword: string; newPassword: string }) =>
       request('/auth/change-password', { method: 'POST', body: data, auth: false }),
+    // Connexion MLBB par code de vérification (envoyé dans le courrier en jeu).
+    mlbbSendVc: (data: { roleId: number; zoneId: number }) =>
+      request('/auth/mlbb/send-vc', { method: 'POST', body: data, auth: false }),
+    mlbbLogin: (data: { roleId: number; zoneId: number; vc: number }) =>
+      request('/auth/mlbb/login', { method: 'POST', body: data, auth: false }),
+    // Connexion Google (access token Google Identity Services).
+    google: (data: { accessToken: string }) =>
+      request('/auth/google', { method: 'POST', body: data, auth: false }),
   },
 
   // === Joueurs / Utilisateurs ===

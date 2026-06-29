@@ -6,9 +6,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Globe, ChevronDown, Menu, X, Home, Check,
   LayoutGrid, Trophy, Sparkles, Handshake, Mail,
+  LayoutDashboard, LogOut,
 } from 'lucide-react';
-import { useLangStore } from '@/store/useStore';
+import { useLangStore, useAuthStore } from '@/store/useStore';
 import { useT } from '@/lib/i18n';
+import { api, getToken, setToken } from '@/lib/api';
+import SignInModal from './SignInModal';
 
 const LANGS = [
   { code: 'fr', label: 'FR' },
@@ -27,8 +30,13 @@ const SECTIONS = [
 export default function LandingHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [signInOpen, setSignInOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const lang = useLangStore((s: any) => s.lang);
   const setLang = useLangStore((s: any) => s.setLang);
+  const userProfile = useAuthStore((s: any) => s.userProfile);
+  const setUser = useAuthStore((s: any) => s.setUser);
+  const setUserProfile = useAuthStore((s: any) => s.setUserProfile);
   const t = useT();
 
   // Applique la langue persistée après le montage (évite tout décalage d'hydratation).
@@ -37,6 +45,26 @@ export default function LandingHeader() {
     if (saved && saved !== lang) setLang(saved);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Si un jeton est présent, recharge le profil pour afficher l'avatar dans le header.
+  useEffect(() => {
+    if (!getToken()) return;
+    api.auth
+      .me()
+      .then((u: any) => {
+        setUser(u);
+        setUserProfile(u);
+      })
+      .catch(() => setToken(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const logout = () => {
+    setToken(null);
+    setUser(null);
+    setUserProfile(null);
+    setProfileOpen(false);
+  };
 
   // Défilement fluide vers une section de la page (ou le haut si id vide).
   const goTo = (id: string) => {
@@ -100,14 +128,70 @@ export default function LandingHeader() {
             </AnimatePresence>
           </div>
 
-          {/* Login */}
-          <Link
-            href="/login"
-            className="px-6 py-1.5 rounded-md text-white text-sm font-semibold border border-white/20 shadow-md transition-all hover:brightness-110"
-            style={{ background: 'linear-gradient(180deg, #4aa6ff 0%, #1e6fd0 100%)' }}
-          >
-            {t('header.login')}
-          </Link>
+          {/* Connecté → avatar + menu profil ; sinon → bouton Login */}
+          {userProfile ? (
+            <div className="relative">
+              <button
+                onClick={() => setProfileOpen((v) => !v)}
+                className="flex items-center gap-2 p-1 rounded-lg hover:bg-white/10 transition-colors"
+                aria-label="Profil"
+              >
+                {userProfile.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={userProfile.avatar}
+                    alt={userProfile.username || 'Profil'}
+                    referrerPolicy="no-referrer"
+                    className="w-9 h-9 rounded-lg object-cover border border-white/20"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-sm font-bold text-white">
+                    {userProfile.username?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                )}
+                <ChevronDown size={14} className="text-white/80" />
+              </button>
+
+              <AnimatePresence>
+                {profileOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                    className="absolute right-0 top-12 w-52 rounded-xl border border-gaming-border bg-gaming-card shadow-gaming overflow-hidden py-1"
+                  >
+                    <div className="px-4 py-2.5 border-b border-gaming-border">
+                      <p className="text-sm font-semibold text-white truncate">{userProfile.username || 'Joueur'}</p>
+                      {userProfile.email && (
+                        <p className="text-xs text-gray-400 truncate">{userProfile.email}</p>
+                      )}
+                    </div>
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setProfileOpen(false)}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-300 hover:bg-gaming-surface hover:text-white transition-colors"
+                    >
+                      <LayoutDashboard size={16} /> {t('header.dashboard')}
+                    </Link>
+                    <button
+                      onClick={logout}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors text-left"
+                    >
+                      <LogOut size={16} /> {t('header.logout')}
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <button
+              onClick={() => setSignInOpen(true)}
+              className="px-6 py-1.5 rounded-md text-white text-sm font-semibold border border-white/20 shadow-md transition-all hover:brightness-110"
+              style={{ background: 'linear-gradient(180deg, #4aa6ff 0%, #1e6fd0 100%)' }}
+            >
+              {t('header.login')}
+            </button>
+          )}
 
           {/* Menu */}
           <div className="relative">
@@ -146,6 +230,8 @@ export default function LandingHeader() {
           </div>
         </div>
       </div>
+
+      <SignInModal open={signInOpen} onClose={() => setSignInOpen(false)} />
     </header>
   );
 }

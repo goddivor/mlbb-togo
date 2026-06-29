@@ -168,9 +168,19 @@ export default function Navbar() {
                 theme === 'dark' ? 'hover:bg-gaming-surface' : 'hover:bg-gray-100'
               }`}
             >
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-sm font-bold text-white">
-                {userProfile?.username?.[0] || 'G'}
-              </div>
+              {userProfile?.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={userProfile.avatar}
+                  alt={userProfile.username || 'Profil'}
+                  referrerPolicy="no-referrer"
+                  className="w-8 h-8 rounded-lg object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-sm font-bold text-white">
+                  {userProfile?.username?.[0]?.toUpperCase() || 'G'}
+                </div>
+              )}
               <ChevronDown size={14} className={`hidden sm:block ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />
             </motion.button>
 
