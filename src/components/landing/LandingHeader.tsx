@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useLangStore, useAuthStore } from '@/store/useStore';
 import { useT } from '@/lib/i18n';
-import { api, getToken, setToken } from '@/lib/api';
+import { api, getToken, setToken, avatarSrc } from '@/lib/api';
 import SignInModal from './SignInModal';
 
 const LANGS = [
@@ -139,14 +139,14 @@ export default function LandingHeader() {
                 {userProfile.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={userProfile.avatar}
-                    alt={userProfile.username || 'Profil'}
+                    src={avatarSrc(userProfile.avatar)}
+                    alt={userProfile.displayName || userProfile.username || 'Profil'}
                     referrerPolicy="no-referrer"
                     className="w-9 h-9 rounded-lg object-cover border border-white/20"
                   />
                 ) : (
                   <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-sm font-bold text-white">
-                    {userProfile.username?.[0]?.toUpperCase() || 'U'}
+                    {(userProfile.displayName || userProfile.username)?.[0]?.toUpperCase() || 'U'}
                   </div>
                 )}
                 <ChevronDown size={14} className="text-white/80" />
@@ -161,7 +161,7 @@ export default function LandingHeader() {
                     className="absolute right-0 top-12 w-52 rounded-xl border border-gaming-border bg-gaming-card shadow-gaming overflow-hidden py-1"
                   >
                     <div className="px-4 py-2.5 border-b border-gaming-border">
-                      <p className="text-sm font-semibold text-white truncate">{userProfile.username || 'Joueur'}</p>
+                      <p className="text-sm font-semibold text-white truncate">{userProfile.displayName || userProfile.username || 'Joueur'}</p>
                       {userProfile.email && (
                         <p className="text-xs text-gray-400 truncate">{userProfile.email}</p>
                       )}

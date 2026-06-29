@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Layout from '@/components/layout/Layout';
+import DashboardShell from '@/components/layout/DashboardShell';
 import { api, getToken, setToken } from '@/lib/api';
 import { useAuthStore } from '@/store/useStore';
 
 /**
- * Garde d'authentification : toute l'application (avec sidebar) est réservée
- * aux utilisateurs connectés. Sans jeton valide, on redirige vers /login.
+ * Garde d'authentification du tableau de bord. Sans jeton valide, on renvoie
+ * vers la landing page (où se trouve la modal de connexion).
  */
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -19,7 +19,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     const token = getToken();
     if (!token) {
-      router.replace('/login');
+      router.replace('/');
       return;
     }
     api.auth
@@ -30,9 +30,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         setChecked(true);
       })
       .catch(() => {
-        // Jeton invalide ou expiré : on nettoie et on renvoie vers la connexion.
+        // Jeton invalide ou expiré : on nettoie et on renvoie vers l'accueil.
         setToken(null);
-        router.replace('/login');
+        router.replace('/');
       });
   }, [router, setUser, setUserProfile]);
 
@@ -44,5 +44,5 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     );
   }
 
-  return <Layout>{children}</Layout>;
+  return <DashboardShell>{children}</DashboardShell>;
 }

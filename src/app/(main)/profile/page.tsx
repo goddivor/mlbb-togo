@@ -1,285 +1,310 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
-  MapPin, Calendar, Trophy, Star, Flame, Target, Edit,
-  Shield, Swords, Crown, Award, TrendingUp,
+  Gamepad2, Check, Link2, RefreshCw, ShieldCheck, Trophy, Star, Target, Flame,
 } from 'lucide-react';
-import { Card, Badge, Avatar, Button, Tabs, StatCard, ProgressBar, LoadingSpinner } from '@/components/ui';
-import { useThemeStore, useAuthStore } from '@/store/useStore';
-import { api } from '@/lib/api';
-import { MLBB_RANKS, MLBB_ROLES, BADGES } from '@/lib/constants';
-import { calculateWinRate, getRankName, formatDate } from '@/lib/helpers';
+import { Card, Badge, Button } from '@/components/ui';
+import { useAuthStore } from '@/store/useStore';
+import { api, avatarSrc, mlbbImg } from '@/lib/api';
+import LinkGameModal from '@/components/profile/LinkGameModal';
+import toast from 'react-hot-toast';
 
-function ProfileView({ player }: { player: any }) {
-  const { theme } = useThemeStore();
-  const [activeTab, setActiveTab] = useState('stats');
-  const [isEditing, setIsEditing] = useState(false);
-  const [team, setTeam] = useState<any>(null);
-  const [matches, setMatches] = useState<any[]>([]);
+export default function ProfilePage() {
+  const userProfile = useAuthStore((s: any) => s.userProfile);
+  const setUserProfile = useAuthStore((s: any) => s.setUserProfile);
+  const setUser = useAuthStore((s: any) => s.setUser);
+  const [linkGameOpen, setLinkGameOpen] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
 
+  // Charge Google Identity Services (pour la liaison Google).
   useEffect(() => {
-    api.matches.list().then(setMatches);
-    if (player?.teamId) {
-      api.teams.list().then((teams: any[]) => {
-        setTeam(teams.find((t: any) => t.id === player.teamId) || null);
-      });
-    }
-  }, [player?.teamId]);
+    if (document.getElementById('gis-script')) return;
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.async = true;
+    s.defer = true;
+    s.id = 'gis-script';
+    document.head.appendChild(s);
+  }, []);
 
-  if (!player) {
+  if (!userProfile) {
     return (
-      <div className="p-6 max-w-5xl mx-auto">
-        <LoadingSpinner size="lg" />
+      <div className="p-6 max-w-4xl mx-auto flex items-center justify-center min-h-[50vh]">
+        <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
       </div>
     );
   }
 
-  const winRate = calculateWinRate(player.wins, player.losses);
-  const playerBadges = BADGES.filter((b) => (player.badges || []).includes(b.id));
+  const apply = (updated: any) => {
+    setUser(updated);
+    setUserProfile(updated);
+  };
+
+  const linkGoogle = () => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    const g = (window as any).google;
+    if (!clientId || !g?.accounts?.oauth2) {
+      toast.error('Google se charge, réessaie dans un instant.');
+      return;
+    }
+    const client = g.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: 'openid email profile',
+      callback: async (resp: any) => {
+        if (!resp?.access_token) {
+          toast.error('Liaison Google annulée.');
+          return;
+        }
+        setBusy('google');
+        try {
+          const updated: any = await api.auth.linkGoogle({ accessToken: resp.access_token });
+          apply(updated);
+          toast.success('Compte Google lié.');
+        } catch (e: any) {
+          toast.error(e?.message || 'Échec de la liaison Google.');
+        } finally {
+          setBusy(null);
+        }
+      },
+    });
+    client.requestAccessToken();
+  };
+
+  const chooseSource = async (source: 'google' | 'game') => {
+    if (userProfile.profileSource === source) return;
+    setBusy(`source-${source}`);
+    try {
+      const updated: any = await api.auth.setProfileSource(source);
+      apply(updated);
+      toast.success('Profil affiché mis à jour.');
+    } catch (e: any) {
+      toast.error(e?.message || 'Échec du changement de profil.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const sync = async () => {
+    setBusy('sync');
+    try {
+      const updated: any = await api.auth.syncGame();
+      apply(updated);
+      toast.success('Données de jeu synchronisées.');
+    } catch (e: any) {
+      toast.error(e?.message || 'Échec de la synchronisation.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const stats = userProfile.gameStats || {};
+  const heroes: any[] = userProfile.gameFrequentHeroes || [];
+  const name = userProfile.displayName || userProfile.username;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      {/* Profile Header */}
-      <Card className="mb-6 relative overflow-hidden" hover={false}>
-        {/* Background */}
-        <div className="absolute inset-0 h-32 bg-gradient-to-r from-neon-blue/20 to-neon-purple/20" />
-        <div className="absolute top-0 left-0 right-0 h-32 bg-grid opacity-20" />
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold text-white mb-1">Mon profil</h1>
+      <p className="text-sm text-gray-400 mb-6">
+        Gère tes comptes liés et choisis le profil affiché.
+      </p>
 
-        <div className="relative pt-16 pb-4">
-          <div className="flex flex-col md:flex-row items-start md:items-end gap-4">
-            <Avatar name={player.username} size="xl" online={player.isOnline} className="border-4 border-gaming-dark -mt-8" />
-
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                  {player.username}
-                </h1>
-                {player.isOnline && (
-                  <Badge variant="green" size="sm">🟢 En ligne</Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="neon" size="lg">
-                  <Crown size={14} className="mr-1" style={{ color: '#00d4ff' }} />
-                  {getRankName(player.rank)}
-                </Badge>
-                <Badge variant="purple" size="lg">
-                  {MLBB_ROLES.find((r) => r.id === player.role)?.icon} {player.role}
-                </Badge>
-                {team && (
-                  <Badge variant="gold" size="lg">
-                    <Shield size={14} className="mr-1" />
-                    {team.name}
-                  </Badge>
-                )}
-              </div>
+      {/* Profil affiché */}
+      <Card className="mb-6" hover={false}>
+        <div className="flex items-center gap-4">
+          {userProfile.avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={avatarSrc(userProfile.avatar, 160)}
+              alt={name}
+              referrerPolicy="no-referrer"
+              className="w-20 h-20 rounded-2xl object-cover border-2 border-neon-blue/40"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-2xl font-bold text-white">
+              {name?.[0]?.toUpperCase() || 'J'}
             </div>
-
-            <Button variant="secondary" onClick={() => setIsEditing(!isEditing)}>
-              <Edit size={16} />
-              Modifier le profil
-            </Button>
-          </div>
-
-          {/* Bio */}
-          <p className={`mt-4 text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            {player.bio}
-          </p>
-
-          {/* Meta info */}
-          <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
-            <span className="flex items-center gap-1">
-              <MapPin size={12} />
-              {player.city}, {player.country}
-            </span>
-            <span className="flex items-center gap-1">
-              <Calendar size={12} />
-              Membre depuis {formatDate(player.joinedAt)}
-            </span>
+          )}
+          <div>
+            <h2 className="text-xl font-bold text-white">{name}</h2>
+            <p className="text-sm text-gray-400">
+              Profil affiché :{' '}
+              <span className="text-neon-blue font-medium">
+                {userProfile.profileSource === 'google' ? 'Compte Google' : 'Compte de jeu'}
+              </span>
+            </p>
           </div>
         </div>
       </Card>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Victoires" value={player.wins} icon={<TrendingUp size={16} />} trend={5} />
-        <StatCard label="Win Rate" value={`${winRate}%`} icon={<Target size={16} />} />
-        <StatCard label="MVP" value={player.mvpCount} icon={<Star size={16} />} />
-        <StatCard label="Série" value={`${player.streak}🔥`} icon={<Flame size={16} />} />
-      </div>
-
-      {/* Tabs */}
-      <Tabs
-        tabs={[
-          { id: 'stats', label: 'Statistiques', icon: Target },
-          { id: 'badges', label: 'Badges', icon: Award },
-          { id: 'heroes', label: 'Héros', icon: Swords },
-          { id: 'history', label: 'Historique', icon: Trophy },
-        ]}
-        active={activeTab}
-        onChange={setActiveTab}
-        className="mb-6"
-      />
-
-      {activeTab === 'stats' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Win/Loss */}
-          <Card>
-            <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Ratio Victoires / Défaites</h3>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-green-400">Victoires</span>
-                  <span className="text-green-400 font-bold">{player.wins}</span>
-                </div>
-                <ProgressBar value={parseFloat(winRate as string)} color="green" />
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-red-400">Défaites</span>
-                  <span className="text-red-400 font-bold">{player.losses}</span>
-                </div>
-                <ProgressBar value={100 - parseFloat(winRate as string)} color="red" />
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-yellow-400">MVP Rate</span>
-                  <span className="text-yellow-400 font-bold">
-                    {((player.mvpCount / (player.wins + player.losses)) * 100).toFixed(1)}%
-                  </span>
-                </div>
-                <ProgressBar value={(player.mvpCount / (player.wins + player.losses)) * 100} color="yellow" />
-              </div>
+      {/* Choix de la source du profil */}
+      <Card className="mb-6" hover={false}>
+        <h3 className="font-bold text-white mb-1">Profil affiché</h3>
+        <p className="text-sm text-gray-400 mb-4">
+          Quelle identité utiliser pour ton avatar et ton nom ?
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Option jeu */}
+          <button
+            onClick={() => chooseSource('game')}
+            disabled={!userProfile.hasGame || busy === 'source-game'}
+            className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              userProfile.profileSource === 'game'
+                ? 'border-neon-blue bg-neon-blue/10'
+                : 'border-gaming-border hover:bg-gaming-surface'
+            }`}
+          >
+            <Gamepad2 size={20} className="text-neon-blue shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-white">Profil de jeu</p>
+              <p className="text-xs text-gray-400 truncate">
+                {userProfile.gameNickname || (userProfile.hasGame ? 'Compte de jeu' : 'Non lié')}
+              </p>
             </div>
-          </Card>
+            {userProfile.profileSource === 'game' && <Check size={16} className="text-neon-blue" />}
+          </button>
 
-          {/* Rank Progress */}
-          <Card>
-            <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Progression de Rang</h3>
-            <div className="space-y-3">
-              {MLBB_RANKS.map((rank) => (
-                <div key={rank.id} className={`flex items-center gap-3 p-2 rounded-lg ${
-                  player.rank === rank.id ? 'bg-neon-blue/10 border border-neon-blue/30' : ''
-                }`}>
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: rank.color }} />
-                  <span className={`text-sm flex-1 ${player.rank === rank.id ? 'text-neon-blue font-bold' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                    {rank.name}
-                  </span>
-                  {player.rank === rank.id && (
-                    <Badge variant="neon" size="sm">Actuel</Badge>
-                  )}
-                </div>
-              ))}
+          {/* Option Google */}
+          <button
+            onClick={() => chooseSource('google')}
+            disabled={!userProfile.hasGoogle || busy === 'source-google'}
+            className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              userProfile.profileSource === 'google'
+                ? 'border-neon-blue bg-neon-blue/10'
+                : 'border-gaming-border hover:bg-gaming-surface'
+            }`}
+          >
+            <GoogleGlyph />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-white">Profil Google</p>
+              <p className="text-xs text-gray-400 truncate">
+                {userProfile.googleName || (userProfile.hasGoogle ? 'Compte Google' : 'Non lié')}
+              </p>
             </div>
-          </Card>
-
-          {/* General Stats */}
-          <Card className="md:col-span-2">
-            <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Statistiques Générales</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: 'Total matchs', value: player.wins + player.losses },
-                { label: 'Meilleure série', value: `${player.streak}🔥` },
-                { label: 'Rôle principal', value: player.role },
-                { label: 'Pays', value: player.country },
-              ].map((stat) => (
-                <div key={stat.label} className="text-center p-3 rounded-lg bg-gaming-surface/50">
-                  <p className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{stat.value}</p>
-                  <p className="text-xs text-gray-400">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
+            {userProfile.profileSource === 'google' && <Check size={16} className="text-neon-blue" />}
+          </button>
         </div>
-      )}
+      </Card>
 
-      {activeTab === 'badges' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {playerBadges.map((badge) => (
-            <Card key={badge.id}>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 flex items-center justify-center text-2xl">
-                  {badge.icon}
-                </div>
-                <div>
-                  <h4 className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{badge.name}</h4>
-                  <p className="text-xs text-gray-400">{badge.description}</p>
-                </div>
-              </div>
-            </Card>
-          ))}
-          {playerBadges.length === 0 && (
-            <div className="col-span-full text-center py-12">
-              <Award className="w-12 h-12 mx-auto mb-3 text-gray-500" />
-              <p className="text-sm text-gray-400">Aucun badge obtenu pour le moment</p>
+      {/* Comptes liés */}
+      <Card className="mb-6" hover={false}>
+        <h3 className="font-bold text-white mb-4">Comptes liés</h3>
+        <div className="space-y-3">
+          {/* Google */}
+          <div className="flex items-center gap-3 p-3 rounded-xl border border-gaming-border">
+            <GoogleGlyph />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white">Google</p>
+              <p className="text-xs text-gray-400 truncate">
+                {userProfile.hasGoogle
+                  ? userProfile.googleEmail || userProfile.googleName || 'Lié'
+                  : 'Permet de te reconnecter en un clic.'}
+              </p>
             </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'heroes' && (
-        <Card>
-          <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Héros Favoris</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {(player.favoriteHeroes || []).map((hero: string) => (
-              <div key={hero} className="flex items-center gap-3 p-3 rounded-lg bg-gaming-surface/50">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-xs font-bold text-white">
-                  {hero[0]}
-                </div>
-                <div>
-                  <p className={`font-medium text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{hero}</p>
-                  <p className="text-xs text-gray-400">{player.role}</p>
-                </div>
-              </div>
-            ))}
+            {userProfile.hasGoogle ? (
+              <Badge variant="green" size="sm"><ShieldCheck size={12} className="mr-1" /> Lié</Badge>
+            ) : (
+              <Button variant="secondary" size="sm" onClick={linkGoogle} disabled={busy === 'google'}>
+                <Link2 size={14} /> Lier
+              </Button>
+            )}
           </div>
+
+          {/* Jeu */}
+          <div className="flex items-center gap-3 p-3 rounded-xl border border-gaming-border">
+            <Gamepad2 size={22} className="text-neon-blue shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white">Compte Mobile Legends</p>
+              <p className="text-xs text-gray-400 truncate">
+                {userProfile.hasGame
+                  ? `ID ${userProfile.mlbbRoleId} · Serveur ${userProfile.mlbbZoneId}`
+                  : 'Récupère tes vraies statistiques de jeu.'}
+              </p>
+            </div>
+            {userProfile.hasGame ? (
+              <Badge variant="green" size="sm"><ShieldCheck size={12} className="mr-1" /> Lié</Badge>
+            ) : (
+              <Button variant="secondary" size="sm" onClick={() => setLinkGameOpen(true)}>
+                <Link2 size={14} /> Lier
+              </Button>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      {/* Données de jeu */}
+      {userProfile.hasGame && (
+        <Card hover={false}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-white">Données de jeu</h3>
+            <Button variant="ghost" size="sm" onClick={sync} disabled={busy === 'sync'}>
+              <RefreshCw size={14} className={busy === 'sync' ? 'animate-spin' : ''} />
+              {busy === 'sync' ? 'Synchro…' : 'Synchroniser'}
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+            <MiniStat icon={<Trophy size={14} />} label="Victoires" value={stats.wins ?? 0} color="text-green-400" />
+            <MiniStat icon={<Target size={14} />} label="Winrate" value={`${stats.winRate ?? 0}%`} color="text-neon-blue" />
+            <MiniStat icon={<Star size={14} />} label="MVP" value={stats.mvpCount ?? 0} color="text-amber-400" />
+            <MiniStat icon={<Flame size={14} />} label="Série" value={stats.winStreak ?? 0} color="text-red-400" />
+          </div>
+
+          {heroes.length > 0 && (
+            <>
+              <p className="text-sm font-medium text-gray-300 mb-2">Héros favoris</p>
+              <div className="flex flex-wrap gap-2">
+                {heroes.slice(0, 8).map((h, i) => (
+                  <motion.div
+                    key={h.heroId ?? i}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: i * 0.03 }}
+                    className="flex items-center gap-2 rounded-lg border border-gaming-border bg-gaming-surface/30 pr-3"
+                    title={`${h.name} — ${h.winRate}% sur ${h.matches} parties`}
+                  >
+                    {h.image && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={mlbbImg(h.image, 64)}
+                        alt={h.name}
+                        referrerPolicy="no-referrer"
+                        className="w-9 h-9 rounded-l-lg object-cover bg-gaming-dark"
+                      />
+                    )}
+                    <span className="text-xs text-gray-200">{h.name}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </>
+          )}
         </Card>
       )}
 
-      {activeTab === 'history' && (
-        <div className="space-y-4">
-          {matches.filter((m: any) => m.status === 'completed').map((match: any) => (
-            <Card key={match.id}>
-              <div className="flex items-center gap-4">
-                <div className={`px-3 py-1 rounded-lg text-xs font-bold ${
-                  match.team1.score > match.team2.score ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                }`}>
-                  {match.team1.score > match.team2.score ? 'WIN' : 'LOSS'}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{match.team1.name}</span>
-                    <span className="text-gray-500">{match.team1.score} - {match.team2.score}</span>
-                    <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{match.team2.name}</span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">{match.tournament} • {formatDate(match.date)}</p>
-                </div>
-                {match.mvp === player.username && (
-                  <Badge variant="gold" size="sm">⭐ MVP</Badge>
-                )}
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
+      <LinkGameModal open={linkGameOpen} onClose={() => setLinkGameOpen(false)} />
     </div>
   );
 }
 
-export default function Profile() {
-  const { userProfile } = useAuthStore();
-  const [player, setPlayer] = useState<any>(userProfile || null);
+function MiniStat({ icon, label, value, color }: any) {
+  return (
+    <div className="rounded-lg border border-gaming-border bg-gaming-surface/30 p-3 text-center">
+      <div className={`flex items-center justify-center gap-1 ${color} mb-1`}>
+        {icon} <span className="text-lg font-bold">{value}</span>
+      </div>
+      <p className="text-xs text-gray-400">{label}</p>
+    </div>
+  );
+}
 
-  useEffect(() => {
-    if (userProfile) {
-      setPlayer(userProfile);
-      return;
-    }
-    api.users.list().then((users: any[]) => {
-      if (users && users.length) setPlayer(users[0]);
-    });
-  }, [userProfile]);
-
-  return <ProfileView player={player} />;
+function GoogleGlyph() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 48 48" className="shrink-0">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  );
 }

@@ -29,6 +29,15 @@ export const mlbbImg = (url?: string | null, width?: number): string =>
     ? `${API_URL}/mlbb/image?url=${encodeURIComponent(url)}${width ? `&w=${width}` : ''}`
     : '';
 
+/**
+ * Source d'avatar fiable : les images du CDN de jeu (youngjoygame) passent par
+ * le proxy (protection hotlink), les autres (Google...) sont chargées directement.
+ */
+export const avatarSrc = (url?: string | null, width = 96): string => {
+  if (!url) return '';
+  return url.includes('youngjoygame.com') ? mlbbImg(url, width) : url;
+};
+
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem(TOKEN_KEY);
@@ -116,6 +125,16 @@ export const api = {
     // Connexion Google (access token Google Identity Services).
     google: (data: { accessToken: string }) =>
       request('/auth/google', { method: 'POST', body: data, auth: false }),
+    // Liaison d'un second profil au compte connecté.
+    linkMlbb: (data: { roleId: number; zoneId: number; vc: number }) =>
+      request('/auth/link/mlbb', { method: 'POST', body: data }),
+    linkGoogle: (data: { accessToken: string }) =>
+      request('/auth/link/google', { method: 'POST', body: data }),
+    // Choix de la source du profil affiché (google | game).
+    setProfileSource: (source: 'google' | 'game') =>
+      request('/auth/profile-source', { method: 'PATCH', body: { source } }),
+    // Resynchronise les données de jeu.
+    syncGame: () => request('/auth/sync-game', { method: 'POST' }),
   },
 
   // === Joueurs / Utilisateurs ===
