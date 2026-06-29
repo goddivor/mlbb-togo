@@ -1,0 +1,390 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-neon-blue: #00d4ff;
+    --color-neon-purple: #a855f7;
+    --color-neon-pink: #ec4899;
+    --color-gaming-dark: #0a0a1a;
+    --color-gaming-darker: #050510;
+    --color-gaming-card: #12122a;
+    --color-gaming-border: #1e1e3f;
+    --color-gaming-surface: #1a1a3e;
+
+    /* Palette pilotée (triplets RGB) — valeurs SOMBRES par défaut. */
+    --gaming-dark: 10 10 26;
+    --gaming-darker: 5 5 16;
+    --gaming-card: 18 18 42;
+    --gaming-border: 30 30 63;
+    --gaming-surface: 26 26 62;
+    --page-bg: #0a0a1a;
+    --page-text: #e2e8f0;
+  }
+
+  /* Thème SOMBRE (classe .dark présente sur <html>). */
+  .dark {
+    --gaming-dark: 10 10 26;
+    --gaming-darker: 5 5 16;
+    --gaming-card: 18 18 42;
+    --gaming-border: 30 30 63;
+    --gaming-surface: 26 26 62;
+    --page-bg: #0a0a1a;
+    --page-text: #e2e8f0;
+  }
+
+  /* Thème CLAIR (pas de classe .dark). */
+  html:not(.dark) {
+    --gaming-dark: 243 244 248;
+    --gaming-darker: 248 250 252;
+    --gaming-card: 255 255 255;
+    --gaming-border: 226 232 240;
+    --gaming-surface: 241 245 249;
+    --page-bg: #f3f4f8;
+    --page-text: #0f172a;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-neon-blue) var(--color-gaming-dark);
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: var(--color-gaming-dark);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--color-neon-blue);
+    border-radius: 3px;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', 'Poppins', system-ui, sans-serif;
+    background-color: var(--page-bg);
+    color: var(--page-text);
+    overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  ::selection {
+    background: rgba(0, 212, 255, 0.3);
+    color: white;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply relative px-6 py-3 font-semibold text-white rounded-lg overflow-hidden transition-all duration-300;
+    background: linear-gradient(135deg, #00d4ff 0%, #a855f7 100%);
+  }
+
+  .btn-primary:hover {
+    @apply shadow-neon scale-105;
+    background: linear-gradient(135deg, #00e5ff 0%, #b975ff 100%);
+  }
+
+  .btn-primary::before {
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    content: '';
+    background: linear-gradient(135deg, #a855f7 0%, #00d4ff 100%);
+  }
+
+  .btn-primary:hover::before {
+    @apply opacity-100;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 font-semibold text-white rounded-lg border border-neon-blue/30 transition-all duration-300;
+    background: rgba(0, 212, 255, 0.1);
+  }
+
+  .btn-secondary:hover {
+    @apply border-neon-blue/60 shadow-neon;
+    background: rgba(0, 212, 255, 0.2);
+  }
+
+  .btn-ghost {
+    @apply px-4 py-2 font-medium text-gray-300 rounded-lg transition-all duration-300;
+  }
+
+  .btn-ghost:hover {
+    @apply text-white bg-white/10;
+  }
+
+  .card-gaming {
+    @apply rounded-xl border border-gaming-border p-6 transition-all duration-300;
+    background: linear-gradient(135deg, rgba(18, 18, 42, 0.8) 0%, rgba(26, 26, 62, 0.6) 100%);
+    backdrop-filter: blur(10px);
+  }
+
+  .card-gaming:hover {
+    @apply border-neon-blue/30 shadow-neon;
+    transform: translateY(-2px);
+  }
+
+  .input-gaming {
+    @apply w-full px-4 py-3 rounded-lg border border-gaming-border bg-gaming-card text-white placeholder-gray-500 transition-all duration-300 focus:outline-none focus:border-neon-blue/50 focus:shadow-neon;
+  }
+
+  .input-gaming:focus {
+    background: rgba(18, 18, 42, 0.9);
+  }
+
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .badge-gold {
+    @apply badge bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
+  }
+
+  .badge-silver {
+    @apply badge bg-gray-400/20 text-gray-300 border border-gray-400/30;
+  }
+
+  .badge-bronze {
+    @apply badge bg-orange-500/20 text-orange-400 border border-orange-500/30;
+  }
+
+  .badge-neon {
+    @apply badge bg-neon-blue/20 text-neon-blue border border-neon-blue/30;
+  }
+
+  .badge-purple {
+    @apply badge bg-neon-purple/20 text-neon-purple border border-neon-purple/30;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #00d4ff 0%, #a855f7 50%, #ec4899 100%);
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+
+  .glow-line {
+    @apply h-px;
+    background: linear-gradient(90deg, transparent 0%, var(--color-neon-blue) 50%, transparent 100%);
+  }
+
+  .stat-card {
+    @apply card-gaming flex flex-col items-center justify-center p-4 text-center;
+  }
+
+  .nav-link {
+    @apply relative px-4 py-2 text-sm font-medium text-gray-400 transition-all duration-300 rounded-lg;
+  }
+
+  .nav-link:hover,
+  .nav-link.active {
+    @apply text-neon-blue bg-neon-blue/10;
+  }
+
+  .nav-link.active::after {
+    content: '';
+    @apply absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-neon-blue;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded bg-gaming-surface;
+  }
+
+  .tooltip-gaming {
+    @apply absolute z-50 px-3 py-2 text-xs text-white bg-gaming-card border border-gaming-border rounded-lg shadow-gaming;
+  }
+}
+
+@layer utilities {
+  .text-shadow-neon {
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5), 0 0 20px rgba(0, 212, 255, 0.3);
+  }
+
+  .text-shadow-lg {
+    text-shadow: 0 0 20px rgba(0, 212, 255, 0.8), 0 0 40px rgba(0, 212, 255, 0.4);
+  }
+
+  .backdrop-gaming {
+    backdrop-filter: blur(20px) saturate(180%);
+    background: rgba(10, 10, 26, 0.8);
+  }
+}
+
+/* Particles background */
+.particles-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: rgba(0, 212, 255, 0.4);
+  border-radius: 50%;
+  animation: particleFloat linear infinite;
+}
+
+@keyframes particleFloat {
+  0% {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Glow button effect */
+.glow-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.glow-btn::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(0, 212, 255, 0.3) 60deg,
+    transparent 120deg
+  );
+  animation: rotateGlow 3s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.glow-btn:hover::after {
+  opacity: 1;
+}
+
+@keyframes rotateGlow {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Hero gradient animation */
+.hero-gradient {
+  background: linear-gradient(-45deg, #0a0a1a, #1a1a3e, #0f0f2a, #151535);
+  background-size: 400% 400%;
+  animation: heroGradient 15s ease infinite;
+}
+
+@keyframes heroGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Rank colors */
+.rank-warrior { color: #8b8b8b; }
+.rank-elite { color: #4a9eff; }
+.rank-master { color: #9b59b6; }
+.rank-grandmaster { color: #e74c3c; }
+.rank-epic { color: #c0392b; }
+.rank-legend { color: #f39c12; }
+.rank-mythic { color: #00d4ff; }
+.rank-mythical-glory { color: #ff6b35; }
+.rank-mythical-immortal { color: #ff1493; }
+
+/* Hero role colors */
+.role-tank { color: #3498db; }
+.role-fighter { color: #e74c3c; }
+.role-assassin { color: #9b59b6; }
+.role-mage { color: #e67e22; }
+.role-marksman { color: #2ecc71; }
+.role-support { color: #1abc9c; }
+
+/* ============================================================
+   THÈME CLAIR — ajustements (les fonds/bordures gaming-* basculent
+   déjà via les variables CSS ; ici on traite cartes, inputs et texte).
+   ============================================================ */
+
+/* Cartes */
+html:not(.dark) .card-gaming {
+  background: #ffffff;
+  border-color: rgb(226 232 240);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+html:not(.dark) .card-gaming:hover {
+  border-color: rgba(0, 212, 255, 0.45);
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
+}
+
+/* Champs de saisie */
+html:not(.dark) .input-gaming {
+  background: #ffffff;
+  color: #0f172a;
+}
+html:not(.dark) .input-gaming::placeholder { color: #94a3b8; }
+html:not(.dark) .input-gaming:focus { background: #ffffff; }
+
+/* Squelette de chargement */
+html:not(.dark) .skeleton { background: rgb(226 232 240); }
+
+/* Barre de défilement claire */
+html:not(.dark) *::-webkit-scrollbar-track { background: #e2e8f0; }
+html:not(.dark) *::-webkit-scrollbar-thumb { background: #94a3b8; }
+
+/* Texte : bascule des blancs/gris codés en dur */
+html:not(.dark) .text-white { color: #0f172a; }
+html:not(.dark) .text-gray-200 { color: #1e293b; }
+html:not(.dark) .text-gray-300 { color: #475569; }
+html:not(.dark) .text-gray-400 { color: #64748b; }
+html:not(.dark) .text-gray-500 { color: #64748b; }
+html:not(.dark) .text-gray-600 { color: #475569; }
+
+/* Conserver le texte BLANC sur les éléments colorés / dégradés */
+html:not(.dark) .btn-primary,
+html:not(.dark) .text-white.bg-gradient-to-br,
+html:not(.dark) .text-white.bg-gradient-to-r,
+html:not(.dark) .text-white.bg-gradient-to-l,
+html:not(.dark) .text-white.bg-gradient-to-t,
+html:not(.dark) .text-white.bg-gradient-to-b,
+html:not(.dark) .text-white[class*="bg-neon"],
+html:not(.dark) .text-white[class*="bg-red-5"],
+html:not(.dark) .text-white[class*="bg-red-6"],
+html:not(.dark) .text-white[class*="bg-green-5"],
+html:not(.dark) .text-white[class*="bg-green-6"],
+html:not(.dark) .text-white[class*="bg-blue-5"],
+html:not(.dark) .text-white[class*="bg-blue-6"],
+html:not(.dark) .text-white[class*="bg-purple-5"],
+html:not(.dark) .text-white[class*="bg-purple-6"],
+html:not(.dark) .text-white[class*="bg-pink-5"],
+html:not(.dark) .text-white[class*="bg-pink-6"],
+html:not(.dark) .text-white[class*="bg-yellow-5"],
+html:not(.dark) .text-white[class*="bg-orange-5"],
+html:not(.dark) .text-white[class*="bg-indigo-5"] {
+  color: #ffffff !important;
+}
