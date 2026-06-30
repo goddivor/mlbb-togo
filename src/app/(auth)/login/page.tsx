@@ -9,6 +9,8 @@ import { Button, Input } from '@/components/ui';
 import { useThemeStore, useAuthStore } from '@/store/useStore';
 import { api, setToken } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher';
 
 export default function Login() {
   const router = useRouter();
@@ -16,6 +18,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const t = useT();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +28,7 @@ export default function Login() {
       setToken(res.token);
       useAuthStore.getState().setUser(res.user);
       useAuthStore.getState().setUserProfile(res.user);
-      toast.success('Connexion réussie!');
+      toast.success(t('auth.login.success'));
       router.push('/dashboard');
     } catch (err: any) {
       toast.error(err?.message || 'Échec de la connexion');
@@ -36,10 +39,13 @@ export default function Login() {
 
   return (
     <div className={`min-h-screen flex items-center justify-center p-4 ${theme === 'dark' ? 'bg-gaming-darker' : 'bg-gray-50'}`}>
-      {/* Background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-neon-blue/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-neon-purple/10 rounded-full blur-3xl" />
+      </div>
+
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSwitcher />
       </div>
 
       <motion.div
@@ -48,7 +54,6 @@ export default function Login() {
         transition={{ duration: 0.5 }}
         className="relative z-10 w-full max-w-md"
       >
-        {/* Logo */}
         <div className="text-center mb-8">
           <motion.div
             initial={{ scale: 0 }}
@@ -58,13 +63,12 @@ export default function Login() {
           >
             <Swords className="w-8 h-8 text-white" />
           </motion.div>
-          <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Bon retour!</h1>
+          <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('auth.login.title')}</h1>
           <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Connectez-vous à votre compte MLBB Togo
+            {t('auth.login.subtitle')}
           </p>
         </div>
 
-        {/* Form */}
         <div className={`rounded-2xl border p-8 ${
           theme === 'dark'
             ? 'bg-gaming-card/80 border-gaming-border backdrop-blur-xl'
@@ -72,7 +76,7 @@ export default function Login() {
         }`}>
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
-              label="Email"
+              label={t('auth.login.email')}
               type="email"
               placeholder="votre@email.com"
               value={formData.email}
@@ -80,7 +84,7 @@ export default function Login() {
             />
             <div className="relative">
               <Input
-                label="Mot de passe"
+                label={t('auth.login.password')}
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={formData.password}
@@ -98,10 +102,10 @@ export default function Login() {
             <div className="flex items-center justify-between text-sm">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" className="w-4 h-4 rounded border-gaming-border bg-gaming-card accent-neon-blue" />
-                <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>Se souvenir</span>
+                <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>{t('auth.login.remember')}</span>
               </label>
               <Link href="/change-password" className="text-neon-blue hover:text-neon-blue/80 transition-colors">
-                Mot de passe oublié?
+                {t('auth.login.forgotPassword')}
               </Link>
             </div>
 
@@ -110,7 +114,7 @@ export default function Login() {
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  Se connecter
+                  {t('auth.login.submit')}
                   <ArrowRight size={16} />
                 </>
               )}
@@ -118,9 +122,9 @@ export default function Login() {
           </form>
 
           <p className={`text-center text-sm mt-6 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Pas encore de compte?{' '}
+            {t('auth.login.noAccount')}{' '}
             <Link href="/register" className="text-neon-blue font-medium hover:underline">
-              Créer un compte
+              {t('auth.login.register')}
             </Link>
           </p>
         </div>

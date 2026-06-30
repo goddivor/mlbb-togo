@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/useStore';
 import { api, avatarSrc, mlbbImg } from '@/lib/api';
 import LinkGameModal from '@/components/profile/LinkGameModal';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
 
 export default function ProfilePage() {
   const userProfile = useAuthStore((s: any) => s.userProfile);
@@ -17,8 +18,8 @@ export default function ProfilePage() {
   const setUser = useAuthStore((s: any) => s.setUser);
   const [linkGameOpen, setLinkGameOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const t = useT();
 
-  // Charge Google Identity Services (pour la liaison Google).
   useEffect(() => {
     if (document.getElementById('gis-script')) return;
     const s = document.createElement('script');
@@ -46,7 +47,7 @@ export default function ProfilePage() {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     const g = (window as any).google;
     if (!clientId || !g?.accounts?.oauth2) {
-      toast.error('Google se charge, réessaie dans un instant.');
+      toast.error(t('profile.googleLoading'));
       return;
     }
     const client = g.accounts.oauth2.initTokenClient({
@@ -54,16 +55,16 @@ export default function ProfilePage() {
       scope: 'openid email profile',
       callback: async (resp: any) => {
         if (!resp?.access_token) {
-          toast.error('Liaison Google annulée.');
+          toast.error(t('profile.googleCanceled'));
           return;
         }
         setBusy('google');
         try {
           const updated: any = await api.auth.linkGoogle({ accessToken: resp.access_token });
           apply(updated);
-          toast.success('Compte Google lié.');
+          toast.success(t('profile.googleSuccess'));
         } catch (e: any) {
-          toast.error(e?.message || 'Échec de la liaison Google.');
+          toast.error(e?.message || t('profile.googleError'));
         } finally {
           setBusy(null);
         }
@@ -78,9 +79,9 @@ export default function ProfilePage() {
     try {
       const updated: any = await api.auth.setProfileSource(source);
       apply(updated);
-      toast.success('Profil affiché mis à jour.');
+      toast.success(t('profile.sourceSuccess'));
     } catch (e: any) {
-      toast.error(e?.message || 'Échec du changement de profil.');
+      toast.error(e?.message || t('profile.sourceError'));
     } finally {
       setBusy(null);
     }
@@ -91,9 +92,9 @@ export default function ProfilePage() {
     try {
       const updated: any = await api.auth.syncGame();
       apply(updated);
-      toast.success('Données de jeu synchronisées.');
+      toast.success(t('profile.syncSuccess'));
     } catch (e: any) {
-      toast.error(e?.message || 'Échec de la synchronisation.');
+      toast.error(e?.message || t('profile.syncError'));
     } finally {
       setBusy(null);
     }
@@ -105,16 +106,14 @@ export default function ProfilePage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-white mb-1">Mon profil</h1>
+      <h1 className="text-2xl font-bold text-white mb-1">{t('profile.title')}</h1>
       <p className="text-sm text-gray-400 mb-6">
-        Gère tes comptes liés et choisis le profil affiché.
+        {t('profile.subtitle')}
       </p>
 
-      {/* Profil affiché */}
       <Card className="mb-6" hover={false}>
         <div className="flex items-center gap-4">
           {userProfile.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={avatarSrc(userProfile.avatar, 160)}
               alt={name}
@@ -129,23 +128,21 @@ export default function ProfilePage() {
           <div>
             <h2 className="text-xl font-bold text-white">{name}</h2>
             <p className="text-sm text-gray-400">
-              Profil affiché :{' '}
+              {t('profile.displayedProfile')}{' '}
               <span className="text-neon-blue font-medium">
-                {userProfile.profileSource === 'google' ? 'Compte Google' : 'Compte de jeu'}
+                {userProfile.profileSource === 'google' ? t('profile.googleProfile') : t('profile.gameProfile')}
               </span>
             </p>
           </div>
         </div>
       </Card>
 
-      {/* Choix de la source du profil */}
       <Card className="mb-6" hover={false}>
-        <h3 className="font-bold text-white mb-1">Profil affiché</h3>
+        <h3 className="font-bold text-white mb-1">{t('profile.shownProfile')}</h3>
         <p className="text-sm text-gray-400 mb-4">
-          Quelle identité utiliser pour ton avatar et ton nom ?
+          {t('profile.subtitle')}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Option jeu */}
           <button
             onClick={() => chooseSource('game')}
             disabled={!userProfile.hasGame || busy === 'source-game'}
@@ -157,15 +154,14 @@ export default function ProfilePage() {
           >
             <Gamepad2 size={20} className="text-neon-blue shrink-0" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white">Profil de jeu</p>
+              <p className="text-sm font-semibold text-white">{t('profile.gameProfile')}</p>
               <p className="text-xs text-gray-400 truncate">
-                {userProfile.gameNickname || (userProfile.hasGame ? 'Compte de jeu' : 'Non lié')}
+                {userProfile.gameNickname || (userProfile.hasGame ? `${t('dashboard.gameId')} ${userProfile.mlbbRoleId} · ${t('dashboard.gameServer')} ${userProfile.mlbbZoneId}` : t('profile.profileSource.nonLinked'))}
               </p>
             </div>
             {userProfile.profileSource === 'game' && <Check size={16} className="text-neon-blue" />}
           </button>
 
-          {/* Option Google */}
           <button
             onClick={() => chooseSource('google')}
             disabled={!userProfile.hasGoogle || busy === 'source-google'}
@@ -177,9 +173,9 @@ export default function ProfilePage() {
           >
             <GoogleGlyph />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white">Profil Google</p>
+              <p className="text-sm font-semibold text-white">{t('profile.googleProfile')}</p>
               <p className="text-xs text-gray-400 truncate">
-                {userProfile.googleName || (userProfile.hasGoogle ? 'Compte Google' : 'Non lié')}
+                {userProfile.googleName || (userProfile.hasGoogle ? userProfile.googleEmail || t('profile.googleLinked') : t('profile.googleDescUnlinked'))}
               </p>
             </div>
             {userProfile.profileSource === 'google' && <Check size={16} className="text-neon-blue" />}
@@ -187,76 +183,72 @@ export default function ProfilePage() {
         </div>
       </Card>
 
-      {/* Comptes liés */}
       <Card className="mb-6" hover={false}>
-        <h3 className="font-bold text-white mb-4">Comptes liés</h3>
+        <h3 className="font-bold text-white mb-4">{t('profile.linkedAccounts')}</h3>
         <div className="space-y-3">
-          {/* Google */}
           <div className="flex items-center gap-3 p-3 rounded-xl border border-gaming-border">
             <GoogleGlyph />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white">Google</p>
+              <p className="text-sm font-semibold text-white">{t('profile.google')}</p>
               <p className="text-xs text-gray-400 truncate">
                 {userProfile.hasGoogle
-                  ? userProfile.googleEmail || userProfile.googleName || 'Lié'
-                  : 'Permet de te reconnecter en un clic.'}
+                  ? userProfile.googleEmail || userProfile.googleName || t('profile.googleLinked')
+                  : t('profile.googleDescUnlinked')}
               </p>
             </div>
             {userProfile.hasGoogle ? (
-              <Badge variant="green" size="sm"><ShieldCheck size={12} className="mr-1" /> Lié</Badge>
+              <Badge variant="green" size="sm"><ShieldCheck size={12} className="mr-1" /> {t('profile.googleLinked')}</Badge>
             ) : (
               <Button variant="secondary" size="sm" onClick={linkGoogle} disabled={busy === 'google'}>
-                <Link2 size={14} /> Lier
+                <Link2 size={14} /> {t('profile.googleLink')}
               </Button>
             )}
           </div>
 
-          {/* Jeu */}
           <div className="flex items-center gap-3 p-3 rounded-xl border border-gaming-border">
             <Gamepad2 size={22} className="text-neon-blue shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white">Compte Mobile Legends</p>
+              <p className="text-sm font-semibold text-white">{t('profile.gameAccount')}</p>
               <p className="text-xs text-gray-400 truncate">
                 {userProfile.hasGame
                   ? `ID ${userProfile.mlbbRoleId} · Serveur ${userProfile.mlbbZoneId}`
-                  : 'Récupère tes vraies statistiques de jeu.'}
+                  : t('profile.gameDescUnlinked')}
               </p>
             </div>
             {userProfile.hasGame ? (
-              <Badge variant="green" size="sm"><ShieldCheck size={12} className="mr-1" /> Lié</Badge>
+              <Badge variant="green" size="sm"><ShieldCheck size={12} className="mr-1" /> {t('profile.gameLinked')}</Badge>
             ) : (
               <Button variant="secondary" size="sm" onClick={() => setLinkGameOpen(true)}>
-                <Link2 size={14} /> Lier
+                <Link2 size={14} /> {t('profile.gameLink')}
               </Button>
             )}
           </div>
         </div>
       </Card>
 
-      {/* Données de jeu */}
       {userProfile.hasGame && (
         <Card hover={false}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-white">Données de jeu</h3>
-              <Badge variant="neon" size="sm">Tous modes</Badge>
+              <h3 className="font-bold text-white">{t('profile.gameData')}</h3>
+              <Badge variant="neon" size="sm">{t('dashboard.stats.allModes')}</Badge>
             </div>
             <Button variant="ghost" size="sm" onClick={sync} disabled={busy === 'sync'}>
               <RefreshCw size={14} className={busy === 'sync' ? 'animate-spin' : ''} />
-              {busy === 'sync' ? 'Synchro…' : 'Synchroniser'}
+              {busy === 'sync' ? t('profile.syncing') : t('profile.sync')}
             </Button>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-            <MiniStat icon={<Trophy size={14} />} label="Victoires" value={stats.wins ?? 0} color="text-green-400" />
-            <MiniStat icon={<Target size={14} />} label="Winrate" value={`${stats.winRate ?? 0}%`} color="text-neon-blue" />
-            <MiniStat icon={<Star size={14} />} label="MVP" value={stats.mvpCount ?? 0} color="text-amber-400" />
-            <MiniStat icon={<Flame size={14} />} label="Série" value={stats.winStreak ?? 0} color="text-red-400" />
+            <MiniStat icon={<Trophy size={14} />} label={t('profile.wins')} value={stats.wins ?? 0} color="text-green-400" />
+            <MiniStat icon={<Target size={14} />} label={t('profile.winrate')} value={`${stats.winRate ?? 0}%`} color="text-neon-blue" />
+            <MiniStat icon={<Star size={14} />} label={t('profile.mvp')} value={stats.mvpCount ?? 0} color="text-amber-400" />
+            <MiniStat icon={<Flame size={14} />} label={t('profile.streak')} value={stats.winStreak ?? 0} color="text-red-400" />
           </div>
 
           {heroes.length > 0 && (
             <>
-              <p className="text-sm font-medium text-gray-300 mb-2">Héros favoris</p>
+              <p className="text-sm font-medium text-gray-300 mb-2">{t('profile.favoriteHeroes')}</p>
               <div className="flex flex-wrap gap-2">
                 {heroes.slice(0, 8).map((h, i) => (
                   <motion.div
@@ -268,7 +260,6 @@ export default function ProfilePage() {
                     title={`${h.name} — ${h.winRate}% sur ${h.matches} parties`}
                   >
                     {h.image && (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={mlbbImg(h.image, 64)}
                         alt={h.name}

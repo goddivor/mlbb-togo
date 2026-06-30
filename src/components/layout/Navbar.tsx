@@ -6,11 +6,12 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu, X, Sun, Moon, Bell, Search, User, LogOut, Settings,
-  ChevronDown, Swords, BarChart3,
+  ChevronDown, Swords, BarChart3, Globe,
 } from 'lucide-react';
 import { useAppStore, useThemeStore, useAuthStore } from '@/store/useStore';
 import { setToken } from '@/lib/api';
 import { timeAgo } from '@/lib/helpers';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher';
 
 export default function Navbar() {
   const router = useRouter();
@@ -85,6 +86,9 @@ export default function Navbar() {
 
         {/* Right */}
         <div className="flex items-center gap-2">
+          {/* Language switcher */}
+          <LanguageSwitcher />
+
           {/* Theme toggle */}
           <motion.button
             whileHover={{ scale: 1.05 }}

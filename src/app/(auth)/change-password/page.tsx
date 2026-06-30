@@ -9,6 +9,8 @@ import { Button, Input } from '@/components/ui';
 import { useThemeStore } from '@/store/useStore';
 import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher';
 
 export default function ChangePassword() {
   const router = useRouter();
@@ -21,15 +23,16 @@ export default function ChangePassword() {
     newPassword: '',
     confirmPassword: '',
   });
+  const t = useT();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.newPassword !== formData.confirmPassword) {
-      toast.error('Les nouveaux mots de passe ne correspondent pas');
+      toast.error(t('auth.changePassword.mismatch'));
       return;
     }
     if (formData.newPassword.length < 6) {
-      toast.error('Le nouveau mot de passe doit faire au moins 6 caractères');
+      toast.error(t('auth.changePassword.tooShort'));
       return;
     }
     setLoading(true);
@@ -39,7 +42,7 @@ export default function ChangePassword() {
         currentPassword: formData.currentPassword,
         newPassword: formData.newPassword,
       });
-      toast.success('Mot de passe mis à jour ! Connectez-vous.');
+      toast.success(t('auth.changePassword.success'));
       router.push('/login');
     } catch (err: any) {
       toast.error(err?.message || 'Échec du changement de mot de passe');
@@ -53,6 +56,10 @@ export default function ChangePassword() {
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-neon-blue/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-neon-purple/10 rounded-full blur-3xl" />
+      </div>
+
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSwitcher />
       </div>
 
       <motion.div
@@ -70,9 +77,9 @@ export default function ChangePassword() {
           >
             <KeyRound className="w-8 h-8 text-white" />
           </motion.div>
-          <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Changer de mot de passe</h1>
+          <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('auth.changePassword.title')}</h1>
           <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Saisissez votre mot de passe actuel et le nouveau
+            {t('auth.changePassword.subtitle')}
           </p>
         </div>
 
@@ -83,14 +90,14 @@ export default function ChangePassword() {
         }`}>
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
-              label="Email"
+              label={t('auth.changePassword.email')}
               type="email"
               placeholder="votre@email.com"
               value={formData.email}
               onChange={(e: any) => setFormData({ ...formData, email: e.target.value })}
             />
             <Input
-              label="Mot de passe actuel"
+              label={t('auth.changePassword.currentPassword')}
               type="password"
               placeholder="••••••••"
               value={formData.currentPassword}
@@ -98,7 +105,7 @@ export default function ChangePassword() {
             />
             <div className="relative">
               <Input
-                label="Nouveau mot de passe"
+                label={t('auth.changePassword.newPassword')}
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={formData.newPassword}
@@ -113,7 +120,7 @@ export default function ChangePassword() {
               </button>
             </div>
             <Input
-              label="Confirmer le nouveau mot de passe"
+              label={t('auth.changePassword.confirmPassword')}
               type="password"
               placeholder="••••••••"
               value={formData.confirmPassword}
@@ -125,7 +132,7 @@ export default function ChangePassword() {
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  Mettre à jour
+                  {t('auth.changePassword.submit')}
                   <ArrowRight size={16} />
                 </>
               )}
@@ -134,7 +141,7 @@ export default function ChangePassword() {
 
           <p className={`text-center text-sm mt-6 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
             <Link href="/login" className="text-neon-blue font-medium hover:underline">
-              Retour à la connexion
+              {t('auth.changePassword.backToLogin')}
             </Link>
           </p>
         </div>

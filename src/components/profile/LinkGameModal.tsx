@@ -6,6 +6,7 @@ import { X, ArrowRight } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/useStore';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
 
 /**
  * Modal de liaison d'un compte de jeu MLBB au compte connecté, par code de
@@ -22,6 +23,7 @@ export default function LinkGameModal({
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const t = useT();
 
   useEffect(() => {
     if (!open) {
@@ -41,16 +43,16 @@ export default function LinkGameModal({
 
   const sendCode = async () => {
     if (!form.gameId || !form.serverId) {
-      toast.error("Renseigne l'ID de jeu et le serveur.");
+      toast.error(t('linkGame.fillIds'));
       return;
     }
     setSending(true);
     try {
       await api.auth.mlbbSendVc({ roleId: Number(form.gameId), zoneId: Number(form.serverId) });
-      toast.success('Code envoyé dans ton courrier en jeu (valable 5 minutes).');
+      toast.success(t('linkGame.codeSent'));
       setCooldown(60);
     } catch (err: any) {
-      toast.error(err?.message || "Échec de l'envoi du code.");
+      toast.error(err?.message || t('linkGame.sendError'));
     } finally {
       setSending(false);
     }
@@ -59,7 +61,7 @@ export default function LinkGameModal({
   const link = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.gameId || !form.serverId || !form.code) {
-      toast.error('Remplis tous les champs.');
+      toast.error(t('linkGame.fillAll'));
       return;
     }
     setLoading(true);
@@ -71,10 +73,10 @@ export default function LinkGameModal({
       });
       useAuthStore.getState().setUser(updated);
       useAuthStore.getState().setUserProfile(updated);
-      toast.success('Compte de jeu lié.');
+      toast.success(t('linkGame.success'));
       onClose();
     } catch (err: any) {
-      toast.error(err?.message || 'Code invalide ou expiré.');
+      toast.error(err?.message || t('linkGame.invalidCode'));
     } finally {
       setLoading(false);
     }
@@ -99,30 +101,30 @@ export default function LinkGameModal({
           >
             <button
               onClick={onClose}
-              aria-label="Fermer"
+               aria-label={t('linkGame.close')}
               className="absolute top-4 right-4 text-[#6f9fd6] hover:text-white transition-colors"
             >
               <X size={22} />
             </button>
 
-            <h2 className="text-center text-xl font-bold tracking-wide text-[#7fb3ff] mb-2">
-              Lier un compte de jeu
-            </h2>
-            <p className="text-center text-xs text-[#6f9fd6] mb-6">
-              Connecte ton compte Mobile Legends pour récupérer tes vraies statistiques.
-            </p>
+              <h2 className="text-center text-xl font-bold tracking-wide text-[#7fb3ff] mb-2">
+                {t('linkGame.title')}
+              </h2>
+              <p className="text-center text-xs text-[#6f9fd6] mb-6">
+                {t('linkGame.subtitle')}
+              </p>
 
             <form onSubmit={link} className="space-y-4">
               <input
                 className="w-full px-4 py-3 rounded-lg bg-[#0a1a2e] border border-[#1e3f66] text-white placeholder-[#5a7ba6] focus:outline-none focus:border-[#3f7ad1]"
-                placeholder="ID de jeu (role_id)"
+                placeholder={t('linkGame.gameId')}
                 inputMode="numeric"
                 value={form.gameId}
                 onChange={handle('gameId')}
               />
               <input
                 className="w-full px-4 py-3 rounded-lg bg-[#0a1a2e] border border-[#1e3f66] text-white placeholder-[#5a7ba6] focus:outline-none focus:border-[#3f7ad1]"
-                placeholder="Serveur (zone_id)"
+                placeholder={t('linkGame.serverId')}
                 inputMode="numeric"
                 value={form.serverId}
                 onChange={handle('serverId')}
@@ -130,7 +132,7 @@ export default function LinkGameModal({
               <div className="flex gap-0">
                 <input
                   className="flex-1 px-4 py-3 rounded-l-lg bg-[#0a1a2e] border border-[#1e3f66] border-r-0 text-white placeholder-[#5a7ba6] focus:outline-none focus:border-[#3f7ad1]"
-                  placeholder="Code de vérification"
+                  placeholder={t('linkGame.code')}
                   inputMode="numeric"
                   value={form.code}
                   onChange={handle('code')}
@@ -142,7 +144,7 @@ export default function LinkGameModal({
                   className="px-4 rounded-r-lg text-white text-sm font-medium border border-[#1e3f66] disabled:opacity-60 transition-all"
                   style={{ background: 'linear-gradient(180deg, #2f7ad1 0%, #1f5aa8 100%)' }}
                 >
-                  {cooldown > 0 ? `${cooldown}s` : sending ? '…' : 'Recevoir'}
+                  {cooldown > 0 ? `${cooldown}s` : sending ? '…' : t('linkGame.getCode')}
                 </button>
               </div>
 
@@ -155,7 +157,7 @@ export default function LinkGameModal({
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
-                  <>Lier le compte <ArrowRight size={18} /></>
+                  <>{t('linkGame.submit')} <ArrowRight size={18} /></>
                 )}
               </button>
             </form>

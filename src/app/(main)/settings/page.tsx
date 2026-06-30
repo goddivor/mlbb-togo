@@ -10,11 +10,13 @@ import { Card, Button, Input, Badge, Tabs } from '@/components/ui';
 import { useThemeStore } from '@/store/useStore';
 import { MLBB_RANKS, MLBB_ROLES } from '@/lib/constants';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
 
 export default function Settings() {
   const { theme, toggleTheme } = useThemeStore();
   const [activeTab, setActiveTab] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
+  const t = useT();
 
   const [profile, setProfile] = useState({
     username: 'TogoKing',
@@ -42,7 +44,7 @@ export default function Settings() {
   });
 
   const handleSave = () => {
-    toast.success('Paramètres sauvegardés!');
+    toast.success(t('settings.saved'));
   };
 
   return (
@@ -51,20 +53,20 @@ export default function Settings() {
       <div className="mb-8">
         <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
           <SettingsIcon className="inline w-8 h-8 mr-2 text-gray-400" />
-          Paramètres
+          {t('settings.title')}
         </h1>
         <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-          Gérez votre compte et vos préférences
+          {t('settings.subtitle')}
         </p>
       </div>
 
       {/* Tabs */}
       <Tabs
         tabs={[
-          { id: 'profile', label: 'Profil', icon: User },
-          { id: 'notifications', label: 'Notifications', icon: Bell },
-          { id: 'privacy', label: 'Confidentialité', icon: Shield },
-          { id: 'appearance', label: 'Apparence', icon: Palette },
+          { id: 'profile', label: t('settings.tabProfile'), icon: User },
+          { id: 'notifications', label: t('settings.tabNotifications'), icon: Bell },
+          { id: 'privacy', label: t('settings.tabPrivacy'), icon: Shield },
+          { id: 'appearance', label: t('settings.tabAppearance'), icon: Palette },
         ]}
         active={activeTab}
         onChange={setActiveTab}
@@ -75,24 +77,24 @@ export default function Settings() {
         <div className="space-y-6">
           <Card>
             <h3 className={`font-bold text-lg mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              Informations du profil
+              {t('settings.profileInfo')}
             </h3>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
-                  label="Pseudo"
+                  label={t('settings.username')}
                   value={profile.username}
                   onChange={(e: any) => setProfile({ ...profile, username: e.target.value })}
                 />
                 <Input
-                  label="Email"
+                  label={t('settings.email')}
                   type="email"
                   value={profile.email}
                   onChange={(e: any) => setProfile({ ...profile, email: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Bio</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('settings.bio')}</label>
                 <textarea
                   value={profile.bio}
                   onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
@@ -104,7 +106,7 @@ export default function Settings() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">Rang MLBB</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('settings.mlbbRank')}</label>
                   <select
                     value={profile.rank}
                     onChange={(e) => setProfile({ ...profile, rank: e.target.value })}
@@ -118,7 +120,7 @@ export default function Settings() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">Rôle principal</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('settings.mainRole')}</label>
                   <select
                     value={profile.role}
                     onChange={(e) => setProfile({ ...profile, role: e.target.value })}
@@ -137,11 +139,11 @@ export default function Settings() {
 
           <Card>
             <h3 className={`font-bold text-lg mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              Changer le mot de passe
+              {t('settings.changePassword')}
             </h3>
             <div className="space-y-4">
               <div className="relative">
-                <Input label="Mot de passe actuel" type={showPassword ? 'text' : 'password'} placeholder="••••••••" />
+                <Input label={t('settings.currentPassword')} type={showPassword ? 'text' : 'password'} placeholder="••••••••" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -151,8 +153,8 @@ export default function Settings() {
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input label="Nouveau mot de passe" type="password" placeholder="••••••••" />
-                <Input label="Confirmer" type="password" placeholder="••••••••" />
+                <Input label={t('settings.newPassword')} type="password" placeholder="••••••••" />
+                <Input label={t('settings.confirmPassword')} type="password" placeholder="••••••••" />
               </div>
             </div>
           </Card>
@@ -160,7 +162,7 @@ export default function Settings() {
           <div className="flex justify-end">
             <Button onClick={handleSave}>
               <Save size={16} />
-              Sauvegarder
+              {t('settings.save')}
             </Button>
           </div>
         </div>
@@ -169,15 +171,15 @@ export default function Settings() {
       {activeTab === 'notifications' && (
         <Card>
           <h3 className={`font-bold text-lg mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            Préférences de notification
+            {t('settings.notifications.title')}
           </h3>
           <div className="space-y-4">
             {[
-              { key: 'matches', label: 'Matchs', desc: 'Notifications pour les matchs à venir' },
-              { key: 'tournaments', label: 'Tournois', desc: 'Inscriptions et résultats de tournois' },
-              { key: 'teams', label: 'Équipes', desc: "Invitations et activités d'équipe" },
-              { key: 'forum', label: 'Forum', desc: 'Réponses à vos posts et commentaires' },
-              { key: 'email', label: 'Email', desc: 'Recevoir les notifications par email' },
+              { key: 'matches', label: t('settings.notifications.matches'), desc: t('settings.notifications.matchesDesc') },
+              { key: 'tournaments', label: t('settings.notifications.tournaments'), desc: t('settings.notifications.tournamentsDesc') },
+              { key: 'teams', label: t('settings.notifications.teams'), desc: t('settings.notifications.teamsDesc') },
+              { key: 'forum', label: t('settings.notifications.forum'), desc: t('settings.notifications.forumDesc') },
+              { key: 'email', label: t('settings.notifications.email'), desc: t('settings.notifications.emailDesc') },
             ].map((item) => (
               <div key={item.key} className="flex items-center justify-between p-3 rounded-lg bg-gaming-surface/30">
                 <div>
@@ -201,7 +203,7 @@ export default function Settings() {
           <div className="flex justify-end mt-6">
             <Button onClick={handleSave}>
               <Save size={16} />
-              Sauvegarder
+              {t('settings.save')}
             </Button>
           </div>
         </Card>
@@ -210,14 +212,14 @@ export default function Settings() {
       {activeTab === 'privacy' && (
         <Card>
           <h3 className={`font-bold text-lg mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            Confidentialité
+            {t('settings.privacy.title')}
           </h3>
           <div className="space-y-4">
             {[
-              { key: 'profilePublic', label: 'Profil public', desc: 'Les autres joueurs peuvent voir votre profil' },
-              { key: 'showStats', label: 'Afficher les stats', desc: 'Vos statistiques sont visibles sur votre profil' },
-              { key: 'showOnline', label: 'Statut en ligne', desc: 'Afficher quand vous êtes connecté' },
-              { key: 'allowInvites', label: 'Autoriser les invitations', desc: 'Les autres peuvent vous inviter dans des équipes' },
+              { key: 'profilePublic', label: t('settings.privacy.publicProfile'), desc: t('settings.privacy.publicProfileDesc') },
+              { key: 'showStats', label: t('settings.privacy.showStats'), desc: t('settings.privacy.showStatsDesc') },
+              { key: 'showOnline', label: t('settings.privacy.showOnline'), desc: t('settings.privacy.showOnlineDesc') },
+              { key: 'allowInvites', label: t('settings.privacy.allowInvites'), desc: t('settings.privacy.allowInvitesDesc') },
             ].map((item) => (
               <div key={item.key} className="flex items-center justify-between p-3 rounded-lg bg-gaming-surface/30">
                 <div>
@@ -240,17 +242,17 @@ export default function Settings() {
           </div>
 
           <div className="mt-8 pt-6 border-t border-gaming-border">
-            <h4 className="text-red-400 font-bold mb-3">Zone de danger</h4>
+            <h4 className="text-red-400 font-bold mb-3">{t('settings.privacy.dangerZone')}</h4>
             <Button variant="danger">
               <Trash2 size={16} />
-              Supprimer mon compte
+              {t('settings.privacy.deleteAccount')}
             </Button>
           </div>
 
           <div className="flex justify-end mt-6">
             <Button onClick={handleSave}>
               <Save size={16} />
-              Sauvegarder
+              {t('settings.save')}
             </Button>
           </div>
         </Card>
@@ -259,20 +261,19 @@ export default function Settings() {
       {activeTab === 'appearance' && (
         <Card>
           <h3 className={`font-bold text-lg mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            Apparence
+            {t('settings.appearance.title')}
           </h3>
 
           <div className="space-y-6">
-            {/* Theme Toggle */}
             <div className="flex items-center justify-between p-4 rounded-lg bg-gaming-surface/30">
               <div className="flex items-center gap-3">
                 {theme === 'dark' ? <Moon size={20} className="text-neon-blue" /> : <Sun size={20} className="text-yellow-400" />}
                 <div>
                   <p className={`font-medium text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                    Thème {theme === 'dark' ? 'sombre' : 'clair'}
+                    {t('settings.appearance.darkTheme')}
                   </p>
                   <p className="text-xs text-gray-400">
-                    {theme === 'dark' ? 'Idéal pour les sessions de jeu nocturnes' : 'Plus lumineux pour la journée'}
+                    {theme === 'dark' ? t('settings.appearance.darkDesc') : t('settings.appearance.lightDesc')}
                   </p>
                 </div>
               </div>
@@ -291,9 +292,8 @@ export default function Settings() {
               </button>
             </div>
 
-            {/* Preview */}
             <div>
-              <p className="text-sm text-gray-400 mb-3">Aperçu</p>
+              <p className="text-sm text-gray-400 mb-3">{t('settings.appearance.preview')}</p>
               <div className="grid grid-cols-2 gap-4">
                 <div className={`p-4 rounded-xl border ${
                   theme === 'dark'
@@ -303,17 +303,16 @@ export default function Settings() {
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-blue to-neon-purple" />
                     <div>
-                      <p className={`text-sm font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Carte exemple</p>
-                      <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Style gaming</p>
+                      <p className={`text-sm font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('settings.appearance.previewCard')}</p>
+                      <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('settings.appearance.previewStyle')}</p>
                     </div>
                   </div>
                 </div>
                 <div className="p-4 rounded-xl bg-gradient-to-br from-neon-blue/20 to-neon-purple/20 border border-neon-blue/30">
                   <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="neon" size="sm">Nouveau</Badge>
+                    <Badge variant="neon" size="sm">{t('settings.appearance.previewGlow')}</Badge>
                   </div>
-                  <p className="text-sm text-white font-bold">Avec glow</p>
-                  <p className="text-xs text-gray-400">Effet néon</p>
+                  <p className="text-sm text-white font-bold">{t('settings.appearance.previewEffect')}</p>
                 </div>
               </div>
             </div>
@@ -323,3 +322,4 @@ export default function Settings() {
     </div>
   );
 }
+

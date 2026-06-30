@@ -10,6 +10,8 @@ import { useThemeStore, useAuthStore } from '@/store/useStore';
 import { MLBB_RANKS, MLBB_ROLES } from '@/lib/constants';
 import { api, setToken } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher';
 
 export default function Register() {
   const router = useRouter();
@@ -26,12 +28,13 @@ export default function Register() {
     role: '',
     mlbbId: '',
   });
+  const t = useT();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step === 1) {
       if (formData.password !== formData.confirmPassword) {
-        toast.error('Les mots de passe ne correspondent pas');
+        toast.error(t('auth.register.passwordMismatch'));
         return;
       }
       setStep(2);
@@ -50,7 +53,7 @@ export default function Register() {
       setToken(res.token);
       useAuthStore.getState().setUser(res.user);
       useAuthStore.getState().setUserProfile(res.user);
-      toast.success('Compte créé avec succès!');
+      toast.success(t('auth.register.success'));
       router.push('/dashboard');
     } catch (err: any) {
       toast.error(err?.message || 'Échec de la création du compte');
@@ -64,6 +67,10 @@ export default function Register() {
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/3 left-1/4 w-96 h-96 bg-neon-purple/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/3 right-1/4 w-96 h-96 bg-neon-blue/10 rounded-full blur-3xl" />
+      </div>
+
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSwitcher />
       </div>
 
       <motion.div
@@ -82,14 +89,13 @@ export default function Register() {
             <Swords className="w-8 h-8 text-white" />
           </motion.div>
           <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            Rejoignez la communauté
+            {t('auth.register.title')}
           </h1>
           <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Créez votre compte MLBB Togo
+            {t('auth.register.subtitle')}
           </p>
         </div>
 
-        {/* Step indicator */}
         <div className="flex items-center justify-center gap-2 mb-6">
           {[1, 2].map((s) => (
             <div key={s} className="flex items-center gap-2">
@@ -122,13 +128,13 @@ export default function Register() {
                 className="space-y-5"
               >
                 <Input
-                  label="Pseudo"
+                  label={t('auth.register.username')}
                   placeholder="Votre pseudo gaming"
                   value={formData.username}
                   onChange={(e: any) => setFormData({ ...formData, username: e.target.value })}
                 />
                 <Input
-                  label="Email"
+                  label={t('auth.register.email')}
                   type="email"
                   placeholder="votre@email.com"
                   value={formData.email}
@@ -136,7 +142,7 @@ export default function Register() {
                 />
                 <div className="relative">
                   <Input
-                    label="Mot de passe"
+                    label={t('auth.register.password')}
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={formData.password}
@@ -151,7 +157,7 @@ export default function Register() {
                   </button>
                 </div>
                 <Input
-                  label="Confirmer le mot de passe"
+                  label={t('auth.register.confirmPassword')}
                   type="password"
                   placeholder="••••••••"
                   value={formData.confirmPassword}
@@ -175,7 +181,7 @@ export default function Register() {
                 </div>
 
                 <Select
-                  label="Rang MLBB"
+                  label={t('auth.register.rank')}
                   value={formData.rank}
                   onChange={(e: any) => setFormData({ ...formData, rank: e.target.value })}
                   options={[
@@ -184,7 +190,7 @@ export default function Register() {
                   ]}
                 />
                 <Select
-                  label="Rôle principal"
+                  label={t('auth.register.role')}
                   value={formData.role}
                   onChange={(e: any) => setFormData({ ...formData, role: e.target.value })}
                   options={[
@@ -193,7 +199,7 @@ export default function Register() {
                   ]}
                 />
                 <Input
-                  label="ID MLBB (optionnel)"
+                  label={t('auth.register.mlbbId')}
                   placeholder="Ex: 123456789"
                   value={formData.mlbbId}
                   onChange={(e: any) => setFormData({ ...formData, mlbbId: e.target.value })}
@@ -204,7 +210,7 @@ export default function Register() {
             <div className="flex gap-3">
               {step === 2 && (
                 <Button variant="ghost" type="button" onClick={() => setStep(1)} className="flex-1">
-                  Retour
+                  {t('auth.register.back')}
                 </Button>
               )}
               <Button type="submit" className="flex-1" disabled={loading}>
@@ -212,20 +218,20 @@ export default function Register() {
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : step === 1 ? (
                   <>
-                    Continuer
+                    {t('auth.register.continue')}
                     <ArrowRight size={16} />
                   </>
                 ) : (
-                  'Créer mon compte'
+                  t('auth.register.submit')
                 )}
               </Button>
             </div>
           </form>
 
           <p className={`text-center text-sm mt-6 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Déjà un compte?{' '}
+            {t('auth.register.alreadyAccount')}{' '}
             <Link href="/login" className="text-neon-blue font-medium hover:underline">
-              Se connecter
+              {t('auth.register.loginLink')}
             </Link>
           </p>
         </div>

@@ -12,15 +12,15 @@ import { useAuthStore } from '@/store/useStore';
 import { api, avatarSrc, mlbbImg } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
 
-// Libellés des rôles MLBB (clé = valeur stockée en base héros).
-const ROLE_LABEL: Record<string, string> = {
-  tank: 'Tank',
-  fighter: 'Combattant',
-  assassin: 'Assassin',
-  mage: 'Mage',
-  marksman: 'Tireur',
-  support: 'Support',
+const ROLE_KEYS: Record<string, string> = {
+  tank: 'role.tank',
+  fighter: 'role.fighter',
+  assassin: 'role.assassin',
+  mage: 'role.mage',
+  marksman: 'role.marksman',
+  support: 'role.support',
 };
 
 export default function Dashboard() {
@@ -31,8 +31,8 @@ export default function Dashboard() {
   const [season, setSeason] = useState<number | null>(null);
   const [heroes, setHeroes] = useState<any[]>([]);
   const [heroesLoading, setHeroesLoading] = useState(false);
+  const t = useT();
 
-  // Initialise la saison et les héros favoris depuis le profil chargé.
   useEffect(() => {
     if (!userProfile) return;
     setSeason(userProfile.gameSeasons?.[0] ?? null);
@@ -47,7 +47,6 @@ export default function Dashboard() {
     );
   }
 
-  // Aucun compte de jeu lié : on invite à le faire depuis le profil.
   if (!userProfile.hasGame) {
     return (
       <div className="p-6 max-w-3xl mx-auto">
@@ -55,14 +54,13 @@ export default function Dashboard() {
           <div className="w-16 h-16 mx-auto rounded-2xl bg-neon-blue/10 flex items-center justify-center mb-5">
             <Gamepad2 size={30} className="text-neon-blue" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Connecte ton compte de jeu</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">{t('dashboard.noGame.title')}</h2>
           <p className="text-gray-400 max-w-md mx-auto mb-6">
-            Lie ton compte Mobile Legends pour afficher tes vraies statistiques, ton rang et
-            tes héros favoris sur ton tableau de bord.
+            {t('dashboard.noGame.desc')}
           </p>
           <Link href="/profile">
             <Button variant="primary" size="lg">
-              <Gamepad2 size={18} /> Lier mon compte de jeu
+              <Gamepad2 size={18} /> {t('dashboard.noGame.link')}
             </Button>
           </Link>
         </Card>
@@ -82,15 +80,14 @@ export default function Dashboard() {
       setUserProfile(updated);
       setSeason(updated.gameSeasons?.[0] ?? null);
       setHeroes(updated.gameFrequentHeroes || []);
-      toast.success('Données de jeu synchronisées.');
+      toast.success(t('dashboard.syncSuccess'));
     } catch (e: any) {
-      toast.error(e?.message || 'Échec de la synchronisation.');
+      toast.error(e?.message || t('dashboard.syncError'));
     } finally {
       setSyncing(false);
     }
   };
 
-  // Change la saison affichée pour les héros favoris (re-fetch à la demande).
   const changeSeason = async (sid: number) => {
     setSeason(sid);
     setHeroesLoading(true);
@@ -98,7 +95,7 @@ export default function Dashboard() {
       const list: any = await api.auth.gameHeroes(sid);
       setHeroes(Array.isArray(list) ? list : []);
     } catch (e: any) {
-      toast.error(e?.message || 'Échec du chargement de la saison.');
+      toast.error(e?.message || t('dashboard.seasonError'));
     } finally {
       setHeroesLoading(false);
     }
@@ -106,11 +103,9 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-      {/* Carte d'identité du joueur */}
       <Card className="mb-6 overflow-hidden" hover={false}>
         <div className="flex flex-col sm:flex-row items-center gap-5">
           {userProfile.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={avatarSrc(userProfile.avatar, 160)}
               alt={userProfile.displayName}
@@ -144,7 +139,7 @@ export default function Dashboard() {
                 </div>
               )}
               {userProfile.gameLevel != null && (
-                <Badge variant="neon" size="sm">Niveau {userProfile.gameLevel}</Badge>
+                <Badge variant="neon" size="sm">{t('dashboard.level')} {userProfile.gameLevel}</Badge>
               )}
               {userProfile.gameCountry && (
                 <span className="inline-flex items-center gap-1 text-xs text-gray-400">
@@ -153,58 +148,55 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Rôles principaux (déduits des héros favoris) */}
             {userProfile.gameRoles?.length > 0 && (
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-2">
-                <span className="text-xs text-gray-500">Rôles :</span>
+                <span className="text-xs text-gray-500">{t('dashboard.rolesLabel')}</span>
                 {userProfile.gameRoles.map((r: any) => (
-                  <Badge key={r.role} variant="purple" size="sm">{ROLE_LABEL[r.role] || r.role}</Badge>
+                  <Badge key={r.role} variant="purple" size="sm">{t(ROLE_KEYS[r.role] || r.role)}</Badge>
                 ))}
               </div>
             )}
 
             <p className="text-xs text-gray-500 mt-2">
-              ID de jeu : {userProfile.mlbbRoleId} · Serveur {userProfile.mlbbZoneId}
+              {t('dashboard.gameId')} {userProfile.mlbbRoleId} · {t('dashboard.gameServer')} {userProfile.mlbbZoneId}
             </p>
           </div>
 
           <Button variant="ghost" size="sm" onClick={sync} disabled={syncing}>
             <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
-            {syncing ? 'Synchro…' : 'Synchroniser'}
+            {syncing ? t('dashboard.syncing') : t('dashboard.sync')}
           </Button>
         </div>
       </Card>
 
-      {/* Statistiques principales (cumul tous modes : l'API MLBB ne segmente pas par mode) */}
       <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-lg font-bold text-white">Statistiques</h2>
-        <Badge variant="neon" size="sm">Tous modes</Badge>
+        <h2 className="text-lg font-bold text-white">{t('dashboard.stats.title')}</h2>
+        <Badge variant="neon" size="sm">{t('dashboard.stats.allModes')}</Badge>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Victoires" value={stats.wins ?? 0} icon={<TrendingUp size={16} />} />
-        <StatCard label="Taux de victoire" value={`${winRate}%`} icon={<Target size={16} />} />
-        <StatCard label="MVP" value={stats.mvpCount ?? 0} icon={<Star size={16} />} />
-        <StatCard label="Meilleure série" value={`${stats.winStreak ?? 0} 🔥`} icon={<Flame size={16} />} />
+        <StatCard label={t('dashboard.stats.wins')} value={stats.wins ?? 0} icon={<TrendingUp size={16} />} />
+        <StatCard label={t('dashboard.stats.winRate')} value={`${winRate}%`} icon={<Target size={16} />} />
+        <StatCard label={t('dashboard.stats.mvp')} value={stats.mvpCount ?? 0} icon={<Star size={16} />} />
+        <StatCard label={t('dashboard.stats.bestStreak')} value={`${stats.winStreak ?? 0} 🔥`} icon={<Flame size={16} />} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Détail des statistiques */}
         <Card>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-white">Détail</h3>
-            <span className="text-xs text-gray-500">Tous modes</span>
+            <h3 className="font-bold text-white">{t('dashboard.detail.title')}</h3>
+            <span className="text-xs text-gray-500">{t('dashboard.stats.allModes')}</span>
           </div>
           <div className="space-y-4">
             <div>
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-400">Victoires</span>
+                <span className="text-gray-400">{t('dashboard.detail.wins')}</span>
                 <span className="text-green-400 font-medium">{stats.wins ?? 0}</span>
               </div>
               <ProgressBar value={winRate} color="green" />
             </div>
             <div>
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-400">Défaites</span>
+                <span className="text-gray-400">{t('dashboard.detail.losses')}</span>
                 <span className="text-red-400 font-medium">{stats.losses ?? 0}</span>
               </div>
               <ProgressBar value={100 - winRate} color="red" />
@@ -214,34 +206,33 @@ export default function Dashboard() {
                 <div className="flex items-center justify-center gap-1 text-neon-blue mb-1">
                   <Swords size={14} /> <span className="text-lg font-bold">{stats.total ?? 0}</span>
                 </div>
-                <p className="text-xs text-gray-400">Parties jouées</p>
+                <p className="text-xs text-gray-400">{t('dashboard.detail.gamesPlayed')}</p>
               </div>
               <div className="rounded-lg border border-gaming-border bg-gaming-surface/30 p-3 text-center">
                 <div className="flex items-center justify-center gap-1 text-neon-purple mb-1">
                   <Star size={14} /> <span className="text-lg font-bold">{stats.avgScore ?? 0}</span>
                 </div>
-                <p className="text-xs text-gray-400">Score moyen</p>
+                <p className="text-xs text-gray-400">{t('dashboard.detail.avgScore')}</p>
               </div>
               <div className="rounded-lg border border-gaming-border bg-gaming-surface/30 p-3 text-center">
                 <div className="flex items-center justify-center gap-1 text-amber-400 mb-1">
                   <Clock size={14} /> <span className="text-lg font-bold">{Math.round(stats.gameTime ?? 0)}h</span>
                 </div>
-                <p className="text-xs text-gray-400">Temps de jeu</p>
+                <p className="text-xs text-gray-400">{t('dashboard.detail.gameTime')}</p>
               </div>
               <div className="rounded-lg border border-gaming-border bg-gaming-surface/30 p-3 text-center">
                 <div className="flex items-center justify-center gap-1 text-green-400 mb-1">
                   <Trophy size={14} /> <span className="text-lg font-bold">{stats.mvpCount ?? 0}</span>
                 </div>
-                <p className="text-xs text-gray-400">MVP</p>
+                <p className="text-xs text-gray-400">{t('dashboard.detail.mvp')}</p>
               </div>
             </div>
           </div>
         </Card>
 
-        {/* Héros favoris */}
         <Card className="lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h3 className="font-bold text-white">Héros favoris</h3>
+            <h3 className="font-bold text-white">{t('dashboard.favorites.title')}</h3>
             <div className="flex items-center gap-2">
               {seasons.length > 0 && (
                 <select
@@ -251,11 +242,11 @@ export default function Dashboard() {
                   className="text-xs bg-gaming-surface border border-gaming-border rounded-lg px-2.5 py-1.5 text-gray-200 focus:outline-none focus:border-neon-blue disabled:opacity-60"
                 >
                   {seasons.map((s) => (
-                    <option key={s} value={s}>Saison {s}</option>
+                    <option key={s} value={s}>{t('dashboard.favorites.seasonLabel')} {s}</option>
                   ))}
                 </select>
               )}
-              <Badge variant="neon" size="sm">{heroes.length} héros</Badge>
+              <Badge variant="neon" size="sm">{heroes.length} {t('dashboard.favorites.heroesCount')}</Badge>
             </div>
           </div>
 
@@ -265,7 +256,7 @@ export default function Dashboard() {
             </div>
           ) : heroes.length === 0 ? (
             <div className="text-center py-10 text-gray-500 text-sm">
-              Aucun héros fréquent pour cette saison.
+              {t('dashboard.favorites.none')}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -278,7 +269,6 @@ export default function Dashboard() {
                   className="flex items-center gap-3 rounded-lg border border-gaming-border bg-gaming-surface/30 p-2.5"
                 >
                   {h.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={mlbbImg(h.image, 80)}
                       alt={h.name}
@@ -290,13 +280,13 @@ export default function Dashboard() {
                   )}
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-white truncate">{h.name}</p>
-                    <p className="text-xs text-gray-400">{h.matches} parties</p>
+                    <p className="text-xs text-gray-400">{h.matches} {t('dashboard.favorites.matches')}</p>
                     <p
                       className={`text-xs font-medium ${
                         h.winRate >= 50 ? 'text-green-400' : 'text-red-400'
                       }`}
                     >
-                      {h.winRate}% victoires
+                      {h.winRate}{t('dashboard.favorites.winRate')}
                     </p>
                   </div>
                 </motion.div>
@@ -306,11 +296,10 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Lien profil */}
       <div className="mt-6 flex justify-center">
         <Link href="/profile">
           <Button variant="ghost" size="sm">
-            Gérer mon profil et mes comptes liés <ArrowUpRight size={14} />
+            {t('dashboard.manageProfile')} <ArrowUpRight size={14} />
           </Button>
         </Link>
       </div>
