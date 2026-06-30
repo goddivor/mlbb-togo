@@ -1,0 +1,17 @@
+name: PR source guard
+
+# Garantit que les pull requests vers `main` proviennent uniquement de `dev`.
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  only-dev-into-main:
+    name: only-dev-into-main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject pull requests into main that don't come from dev
+        if: github.head_ref != 'dev'
+        run: |
+          echo "::error::Pull requests into 'main' must come from the 'dev' branch (got '${{ github.head_ref }}')."
+          exit 1
