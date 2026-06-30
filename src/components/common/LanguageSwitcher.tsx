@@ -1,25 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Globe } from 'lucide-react';
+import { Check, ChevronDown, Globe } from 'lucide-react';
 import { useLangStore } from '@/store/useStore';
 import { useT } from '@/lib/i18n';
 
 export default function LanguageSwitcher() {
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   const lang = useLangStore((s: any) => s.lang);
   const setLang = useLangStore((s: any) => s.setLang);
   const t = useT();
 
+  // Ferme le menu au clic en dehors.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [open]);
+
   return (
-    <div className="relative">
+    <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1.5 text-sm font-medium px-2.5 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
       >
         <Globe size={14} />
         <span>{lang === 'fr' ? 'FR' : 'EN'}</span>
+        <ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       <AnimatePresence>
         {open && (

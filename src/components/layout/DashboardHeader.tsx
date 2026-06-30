@@ -42,7 +42,8 @@ export default function DashboardHeader() {
       <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
         {/* Logo + navigation */}
         <div className="flex items-center gap-8">
-          <Link href="/dashboard" className="flex items-center">
+          {/* Le logo ramène à la landing page. */}
+          <Link href="/" className="flex items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/mlbb-togo-logo.png" alt="MLBB Togo" className="h-9 w-auto" />
           </Link>

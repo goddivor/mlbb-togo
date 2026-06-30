@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -27,11 +27,13 @@ const SECTIONS = [
   { key: 'nav.contact', id: 'contact', icon: Mail },
 ];
 
+type OpenMenu = 'lang' | 'profile' | 'sections' | null;
+
 export default function LandingHeader() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [langOpen, setLangOpen] = useState(false);
+  // Un seul menu ouvert à la fois (exclusion mutuelle).
+  const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
   const [signInOpen, setSignInOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
+  const navRef = useRef<HTMLDivElement>(null);
   const lang = useLangStore((s: any) => s.lang);
   const setLang = useLangStore((s: any) => s.setLang);
   const userProfile = useAuthStore((s: any) => s.userProfile);
@@ -59,16 +61,30 @@ export default function LandingHeader() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Ferme tout menu ouvert quand on clique en dehors de la zone de navigation.
+  useEffect(() => {
+    if (!openMenu) return;
+    const onDown = (e: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) setOpenMenu(null);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [openMenu]);
+
+  // Ouvre un menu en fermant l'éventuel autre (bascule si déjà ouvert).
+  const toggle = (menu: Exclude<OpenMenu, null>) =>
+    setOpenMenu((cur) => (cur === menu ? null : menu));
+
   const logout = () => {
     setToken(null);
     setUser(null);
     setUserProfile(null);
-    setProfileOpen(false);
+    setOpenMenu(null);
   };
 
   // Défilement fluide vers une section de la page (ou le haut si id vide).
   const goTo = (id: string) => {
-    setMenuOpen(false);
+    setOpenMenu(null);
     if (!id) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -86,11 +102,11 @@ export default function LandingHeader() {
         </Link>
 
         {/* Droite */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div ref={navRef} className="flex items-center gap-3 sm:gap-4">
           {/* Sélecteur de langue */}
           <div className="relative">
             <button
-              onClick={() => setLangOpen((v) => !v)}
+              onClick={() => toggle('lang')}
               className="flex items-center gap-1.5 text-white/80 hover:text-white transition-colors"
               aria-label="Langue"
             >
@@ -99,7 +115,7 @@ export default function LandingHeader() {
               <ChevronDown size={14} />
             </button>
             <AnimatePresence>
-              {langOpen && (
+              {openMenu === 'lang' && (
                 <motion.div
                   initial={{ opacity: 0, y: -8, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -111,7 +127,7 @@ export default function LandingHeader() {
                       key={l.code}
                       onClick={() => {
                         setLang(l.code);
-                        setLangOpen(false);
+                        setOpenMenu(null);
                       }}
                       className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
                         lang === l.code
@@ -132,7 +148,7 @@ export default function LandingHeader() {
           {userProfile ? (
             <div className="relative">
               <button
-                onClick={() => setProfileOpen((v) => !v)}
+                onClick={() => toggle('profile')}
                 className="flex items-center gap-2 p-1 rounded-lg hover:bg-white/10 transition-colors"
                 aria-label="Profil"
               >
@@ -153,7 +169,7 @@ export default function LandingHeader() {
               </button>
 
               <AnimatePresence>
-                {profileOpen && (
+                {openMenu === 'profile' && (
                   <motion.div
                     initial={{ opacity: 0, y: -8, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -168,7 +184,7 @@ export default function LandingHeader() {
                     </div>
                     <Link
                       href="/dashboard"
-                      onClick={() => setProfileOpen(false)}
+                      onClick={() => setOpenMenu(null)}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-300 hover:bg-gaming-surface hover:text-white transition-colors"
                     >
                       <LayoutDashboard size={16} /> {t('header.dashboard')}
@@ -196,15 +212,15 @@ export default function LandingHeader() {
           {/* Menu */}
           <div className="relative">
             <button
-              onClick={() => setMenuOpen((v) => !v)}
+              onClick={() => toggle('sections')}
               aria-label="Menu"
               className="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
             >
-              {menuOpen ? <X size={22} /> : <Menu size={22} />}
+              {openMenu === 'sections' ? <X size={22} /> : <Menu size={22} />}
             </button>
 
             <AnimatePresence>
-              {menuOpen && (
+              {openMenu === 'sections' && (
                 <motion.div
                   initial={{ opacity: 0, y: -8, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
