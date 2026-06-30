@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, User, LogOut, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Swords, User, LogOut, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '@/store/useStore';
 import { setToken, avatarSrc } from '@/lib/api';
 
@@ -24,8 +24,12 @@ export default function DashboardHeader() {
     router.replace('/');
   };
 
-  const isDashboard = pathname === '/dashboard';
   const name = userProfile?.displayName || userProfile?.username || 'Joueur';
+
+  const NAV = [
+    { href: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+    { href: '/heroes', label: 'Héros', icon: Swords },
+  ];
 
   return (
     <header className="sticky top-0 z-40 h-16 bg-gaming-card/95 backdrop-blur border-b border-gaming-border">
@@ -37,16 +41,23 @@ export default function DashboardHeader() {
             <img src="/mlbb-togo-logo.png" alt="MLBB Togo" className="h-9 w-auto" />
           </Link>
           <nav className="hidden sm:flex items-center gap-1">
-            <Link
-              href="/dashboard"
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isDashboard
-                  ? 'text-neon-blue bg-neon-blue/10'
-                  : 'text-gray-300 hover:text-white hover:bg-gaming-surface'
-              }`}
-            >
-              <LayoutDashboard size={16} /> Tableau de bord
-            </Link>
+            {NAV.map((item) => {
+              const Icon = item.icon;
+              const active = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    active
+                      ? 'text-neon-blue bg-neon-blue/10'
+                      : 'text-gray-300 hover:text-white hover:bg-gaming-surface'
+                  }`}
+                >
+                  <Icon size={16} /> {item.label}
+                </Link>
+              );
+            })}
           </nav>
         </div>
 
