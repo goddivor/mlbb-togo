@@ -10,6 +10,7 @@ import {
 import { Card, Badge, StatCard, Button, ProgressBar } from '@/components/ui';
 import { useAuthStore } from '@/store/useStore';
 import { api, avatarSrc, mlbbImg } from '@/lib/api';
+import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import toast from 'react-hot-toast';
 
 // Libellés des rôles MLBB (clé = valeur stockée en base héros).
@@ -126,14 +127,21 @@ export default function Dashboard() {
             <h1 className="text-2xl md:text-3xl font-bold text-white">
               {userProfile.gameNickname || userProfile.displayName}
             </h1>
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-2">
               {userProfile.gameRank && (
-                <Badge variant="gold" size="sm">
-                  <Trophy size={12} className="mr-1" /> {userProfile.gameRank}
-                  {userProfile.gameRankLevel != null && (
-                    <span className="ml-1 opacity-70">· {userProfile.gameRankLevel}</span>
+                <div className="flex items-center gap-2">
+                  {hasRankBadge(userProfile.gameRank) ? (
+                    <RankBadge rank={userProfile.gameRank} size={40} />
+                  ) : (
+                    <Trophy size={18} className="text-yellow-400" />
                   )}
-                </Badge>
+                  <div className="leading-tight text-left">
+                    <p className="text-sm font-bold text-white">{userProfile.gameRank}</p>
+                    {userProfile.gameRankLevel != null && (
+                      <p className="text-[11px] text-gray-400">{userProfile.gameRankLevel} pts</p>
+                    )}
+                  </div>
+                </div>
               )}
               {userProfile.gameLevel != null && (
                 <Badge variant="neon" size="sm">Niveau {userProfile.gameLevel}</Badge>
