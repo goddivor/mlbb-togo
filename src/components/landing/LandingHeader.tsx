@@ -101,6 +101,19 @@ export default function LandingHeader() {
           <img src="/mlbb-togo-logo.png" alt="MLBB Togo" className="h-9 md:h-10 w-auto" />
         </Link>
 
+        {/* Navigation desktop (les sections directement dans le header ; masquée sur mobile) */}
+        <nav className="hidden md:flex items-center gap-1">
+          {SECTIONS.map((s) => (
+            <button
+              key={s.key}
+              onClick={() => goTo(s.id)}
+              className="px-3 py-2 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              {t(s.key)}
+            </button>
+          ))}
+        </nav>
+
         {/* Droite */}
         <div ref={navRef} className="flex items-center gap-3 sm:gap-4">
           {/* Sélecteur de langue */}
@@ -209,8 +222,8 @@ export default function LandingHeader() {
             </button>
           )}
 
-          {/* Menu */}
-          <div className="relative">
+          {/* Menu (sections) — mobile uniquement ; sur desktop les liens sont dans le header */}
+          <div className="relative md:hidden">
             <button
               onClick={() => toggle('sections')}
               aria-label="Menu"
