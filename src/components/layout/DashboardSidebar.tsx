@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Swords, Users } from 'lucide-react';
+import { LayoutDashboard, Swords, Users, Shield } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
 const NAV = [
   { href: '/dashboard', key: 'header.dashboard', icon: LayoutDashboard },
   { href: '/heroes', key: 'header.heroes', icon: Swords },
   { href: '/players', key: 'header.players', icon: Users },
+  { href: '/teams', key: 'header.teams', icon: Shield },
 ];
 
 export default function DashboardSidebar() {

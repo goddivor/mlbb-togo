@@ -1,275 +1,175 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Shield, Plus, Search, Crown, UserPlus } from 'lucide-react';
-import { Card, Badge, Avatar, Button, Tabs } from '@/components/ui';
-import { useThemeStore, useTeamStore } from '@/store/useStore';
+import { useEffect, useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, Shield, X } from 'lucide-react';
 import { api } from '@/lib/api';
-import { generateId } from '@/lib/helpers';
+import { useT } from '@/lib/i18n';
 
-export default function Teams() {
-  const { theme } = useThemeStore();
-  const { teams, setTeams, addTeam } = useTeamStore();
-  const [players, setPlayers] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState('all');
-  const [search, setSearch] = useState('');
-  const [showCreate, setShowCreate] = useState(false);
-  const [newTeam, setNewTeam] = useState({ name: '', tag: '', description: '' });
+interface EsportTeam {
+  id: string;
+  name: string;
+  image?: string | null;
+}
+
+interface EsportOrg {
+  name: string;
+  logo?: string | null;
+  color?: string | null;
+  description?: string | null;
+  teams?: EsportTeam[];
+}
+
+export default function TeamsPage() {
+  const t = useT();
+  const [org, setOrg] = useState<EsportOrg | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [preview, setPreview] = useState<EsportTeam | null>(null);
 
   useEffect(() => {
-    api.teams.list().then(setTeams);
-    api.users.list().then(setPlayers);
-  }, [setTeams]);
+    api.esport
+      .org()
+      .then((o: any) => setOrg(o))
+      .catch(() => setOrg(null))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const filteredTeams = teams.filter((t: any) => {
-    if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false;
-    if (activeTab === 'recruiting' && !t.isRecruiting) return false;
-    return true;
-  });
+  const teams = org?.teams ?? [];
+  const accent = org?.color || '#E9B84B';
 
-  const handleCreate = () => {
-    const team = {
-      id: generateId(),
-      name: newTeam.name || 'Nouvelle équipe',
-      tag: newTeam.tag || 'TAG',
-      description: newTeam.description,
-      captainId: null,
-      members: [],
-      maxMembers: 5,
-      wins: 0,
-      winRate: 0,
-      rank: teams.length + 1,
-      isRecruiting: true,
-      lookingFor: [],
-      achievements: [],
-    };
-
-    addTeam(team);
-
-    api.teams.create(team).catch(() => {});
-    setNewTeam({ name: '', tag: '', description: '' });
-    setShowCreate(false);
-  };
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return teams;
+    return teams.filter((tm) => (tm.name || '').toLowerCase().includes(q));
+  }, [teams, query]);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
         <div>
-          <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            <Shield className="inline w-8 h-8 mr-2 text-neon-purple" />
-            Équipes
-          </h1>
-          <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Créez ou rejoignez une équipe pour dominer les tournois
+          <h1 className="text-2xl font-bold text-white">{t('teams.title')}</h1>
+          <p className="text-sm text-gray-400">
+            {loading ? '…' : `${teams.length} ${t('teams.count')}`}
           </p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus size={16} />
-          Créer une équipe
-        </Button>
-      </div>
-
-      <Card className="mb-6" hover={false}>
-        <div className="flex flex-col md:flex-row gap-4 items-center">
-          <div className="flex-1 w-full">
-            <div className="relative">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
-              <input
-                type="text"
-                placeholder="Rechercher une équipe..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className={`w-full pl-10 pr-4 py-2.5 rounded-lg text-sm transition-all duration-300 focus:outline-none ${
-                  theme === 'dark'
-                    ? 'bg-gaming-surface border border-gaming-border text-white placeholder-gray-500 focus:border-neon-blue/50'
-                    : 'bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-primary-500'
-                }`}
-              />
-            </div>
-          </div>
-          <Tabs
-            tabs={[
-              { id: 'all', label: 'Toutes' },
-              { id: 'recruiting', label: 'Recrutent' },
-            ]}
-            active={activeTab}
-            onChange={setActiveTab}
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t('teams.search')}
+            className="pl-9 pr-3 py-2 w-full sm:w-64 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue"
           />
         </div>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredTeams.map((team: any, index: number) => {
-          const members = players.filter((p: any) => (team.members || []).includes(p.id));
-
-          return (
-            <motion.div
-              key={team.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card className="h-full">
-
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center text-xl font-black text-white shadow-neon-purple">
-                    {team.tag}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className={`text-lg font-bold truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                        {team.name}
-                      </h3>
-                      {team.rank <= 3 && (
-                        <Crown size={16} className={team.rank === 1 ? 'text-yellow-400' : team.rank === 2 ? 'text-gray-300' : 'text-orange-400'} />
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <Badge variant={team.isRecruiting ? 'green' : 'default'} size="sm">
-                        {team.isRecruiting ? '🟢 Recrute' : '🔴 Fermé'}
-                      </Badge>
-                      <Badge variant="neon" size="sm">#{team.rank}</Badge>
-                    </div>
-                  </div>
-                </div>
-
-                <p className={`text-sm mb-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {team.description}
-                </p>
-
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="text-center p-2 rounded-lg bg-gaming-surface/50">
-                    <p className={`text-lg font-bold text-green-400`}>{team.wins}</p>
-                    <p className="text-[10px] text-gray-400">Victoires</p>
-                  </div>
-                  <div className="text-center p-2 rounded-lg bg-gaming-surface/50">
-                    <p className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{team.winRate}%</p>
-                    <p className="text-[10px] text-gray-400">Win Rate</p>
-                  </div>
-                  <div className="text-center p-2 rounded-lg bg-gaming-surface/50">
-                    <p className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{(team.members || []).length}/{team.maxMembers}</p>
-                    <p className="text-[10px] text-gray-400">Membres</p>
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <p className="text-xs text-gray-400 mb-2">Membres</p>
-                  <div className="flex items-center gap-2">
-                    {members.map((member: any) => (
-                      <Avatar key={member.id} name={member.username} size="sm" online={member.isOnline} />
-                    ))}
-                    {team.isRecruiting && (
-                      <div className="w-8 h-8 rounded-lg border-2 border-dashed border-gaming-border flex items-center justify-center">
-                        <UserPlus size={14} className="text-gray-500" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {team.isRecruiting && (team.lookingFor || []).length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-xs text-gray-400 mb-2">Recherche</p>
-                    <div className="flex gap-1.5">
-                      {team.lookingFor.map((role: string) => (
-                        <Badge key={role} variant="purple" size="sm">{role}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {(team.achievements || []).length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-xs text-gray-400 mb-2">🏆 Achievements</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {team.achievements.map((ach: string) => (
-                        <Badge key={ach} variant="gold" size="sm">{ach}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <Button variant="secondary" size="sm" className="flex-1">
-                    Voir le profil
-                  </Button>
-                  {team.isRecruiting && (
-                    <Button size="sm" className="flex-1">
-                      <UserPlus size={14} />
-                      Rejoindre
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            </motion.div>
-          );
-        })}
       </div>
 
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className={`w-full max-w-lg rounded-2xl border p-6 ${
-              theme === 'dark' ? 'bg-gaming-card border-gaming-border' : 'bg-white border-gray-200'
-            }`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              Créer une équipe
+      {org && (
+        <div className="flex items-center gap-4 rounded-xl border border-gaming-border bg-gaming-surface/40 p-4 mb-6">
+          {org.logo && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={org.logo}
+              alt={org.name}
+              referrerPolicy="no-referrer"
+              className="w-16 h-16 rounded-xl object-contain bg-gaming-dark p-1"
+            />
+          )}
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold" style={{ color: accent }}>
+              {org.name}
             </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Nom de l&apos;équipe</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Thunder Titans"
-                  value={newTeam.name}
-                  onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
-                  className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 ${
-                    theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                  }`}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Tag (3-4 caractères)</label>
-                <input
-                  type="text"
-                  placeholder="Ex: TTT"
-                  maxLength={4}
-                  value={newTeam.tag}
-                  onChange={(e) => setNewTeam({ ...newTeam, tag: e.target.value })}
-                  className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 ${
-                    theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                  }`}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Description</label>
-                <textarea
-                  placeholder="Décrivez votre équipe..."
-                  rows={3}
-                  value={newTeam.description}
-                  onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
-                  className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 resize-none ${
-                    theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                  }`}
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button variant="ghost" onClick={() => setShowCreate(false)} className="flex-1">
-                  Annuler
-                </Button>
-                <Button onClick={handleCreate} className="flex-1">
-                  Créer l&apos;équipe
-                </Button>
-              </div>
-            </div>
-          </motion.div>
+            {org.description && (
+              <p className="text-sm text-gray-400 mt-0.5">{org.description}</p>
+            )}
+          </div>
         </div>
       )}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-24">
+          <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
+        </div>
+      ) : teams.length === 0 ? (
+        <div className="text-center py-20 text-gray-500">{t('teams.empty')}</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-20 text-gray-500">{t('teams.none')}</div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((tm, i) => (
+            <motion.button
+              key={tm.id}
+              type="button"
+              onClick={() => tm.image && setPreview(tm)}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(i * 0.03, 0.4) }}
+              className="group text-left rounded-xl border border-gaming-border bg-gaming-surface/40 overflow-hidden hover:border-neon-blue transition-colors"
+            >
+              <div className="relative aspect-video w-full bg-gaming-dark overflow-hidden">
+                {tm.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={tm.image}
+                    alt={tm.name}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Shield size={40} className="text-gray-600" />
+                  </div>
+                )}
+                <div className="absolute inset-x-0 bottom-0 h-1" style={{ backgroundColor: accent }} />
+              </div>
+              <div className="flex items-center gap-2 p-3">
+                <Shield size={16} style={{ color: accent }} className="shrink-0" />
+                <p className="text-sm font-semibold text-white truncate">{tm.name}</p>
+              </div>
+            </motion.button>
+          ))}
+        </div>
+      )}
+
+      <AnimatePresence>
+        {preview && preview.image && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPreview(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative max-w-3xl w-full rounded-2xl overflow-hidden border border-gaming-border bg-gaming-darker"
+            >
+              <button
+                type="button"
+                onClick={() => setPreview(null)}
+                aria-label="Fermer"
+                className="absolute top-3 right-3 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-black/60 text-white/80 hover:text-white hover:bg-black/80 transition-colors"
+              >
+                <X size={20} />
+              </button>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={preview.image}
+                alt={preview.name}
+                referrerPolicy="no-referrer"
+                className="w-full max-h-[75vh] object-contain bg-black"
+              />
+              <div className="flex items-center gap-2 p-4">
+                <Shield size={18} style={{ color: accent }} />
+                <p className="font-bold text-white">{preview.name}</p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
