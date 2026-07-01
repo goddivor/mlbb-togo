@@ -225,7 +225,7 @@ export default function ProfilePage() {
               <p className="text-sm font-semibold text-white">{t('profile.gameAccount')}</p>
               <p className="text-xs text-gray-400 truncate">
                 {userProfile.hasGame
-                  ? `ID ${userProfile.mlbbRoleId} · Serveur ${userProfile.mlbbZoneId}`
+                  ? `${t('dashboard.gameId')} ${userProfile.mlbbRoleId} · ${t('dashboard.gameServer')} ${userProfile.mlbbZoneId}`
                   : t('profile.gameDescUnlinked')}
               </p>
             </div>

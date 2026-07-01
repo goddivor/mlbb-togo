@@ -150,7 +150,7 @@ export default function TeamsPage() {
               <button
                 type="button"
                 onClick={() => setPreview(null)}
-                aria-label="Fermer"
+                aria-label={t('common.close')}
                 className="absolute top-3 right-3 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-black/60 text-white/80 hover:text-white hover:bg-black/80 transition-colors"
               >
                 <X size={20} />
