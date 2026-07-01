@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Gamepad2, Check, Link2, RefreshCw, ShieldCheck, Trophy, Star, Target, Flame,
+  Gamepad2, Check, Link2, Unlink, RefreshCw, ShieldCheck, Trophy, Star, Target, Flame,
 } from 'lucide-react';
 import { Card, Badge, Button } from '@/components/ui';
 import { useAuthStore } from '@/store/useStore';
@@ -95,6 +95,20 @@ export default function ProfilePage() {
       toast.success(t('profile.syncSuccess'));
     } catch (e: any) {
       toast.error(e?.message || t('profile.syncError'));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const unlinkGame = async () => {
+    if (!window.confirm(t('profile.gameUnlinkConfirm'))) return;
+    setBusy('unlink');
+    try {
+      const updated: any = await api.auth.unlinkMlbb();
+      apply(updated);
+      toast.success(t('profile.gameUnlinkSuccess'));
+    } catch (e: any) {
+      toast.error(e?.message || t('profile.gameUnlinkError'));
     } finally {
       setBusy(null);
     }
@@ -216,7 +230,18 @@ export default function ProfilePage() {
               </p>
             </div>
             {userProfile.hasGame ? (
-              <Badge variant="green" size="sm"><ShieldCheck size={12} className="mr-1" /> {t('profile.gameLinked')}</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="green" size="sm"><ShieldCheck size={12} className="mr-1" /> {t('profile.gameLinked')}</Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={unlinkGame}
+                  disabled={busy === 'unlink' || !userProfile.hasGoogle}
+                  title={!userProfile.hasGoogle ? t('profile.gameUnlinkNeedsGoogle') : undefined}
+                >
+                  <Unlink size={14} /> {t('profile.gameUnlink')}
+                </Button>
+              </div>
             ) : (
               <Button variant="secondary" size="sm" onClick={() => setLinkGameOpen(true)}>
                 <Link2 size={14} /> {t('profile.gameLink')}

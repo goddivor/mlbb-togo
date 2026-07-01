@@ -129,6 +129,8 @@ export const api = {
       request('/auth/profile-source', { method: 'PATCH', body: { source } }),
     // Resynchronise les données de jeu.
     syncGame: () => request('/auth/sync-game', { method: 'POST' }),
+    // Dissocie le compte de jeu du compte connecté.
+    unlinkMlbb: () => request('/auth/unlink/mlbb', { method: 'POST' }),
     // Héros favoris pour une saison donnée (sélecteur de saison).
     gameHeroes: (sid: number) => request(`/auth/game/heroes?sid=${sid}`),
   },
