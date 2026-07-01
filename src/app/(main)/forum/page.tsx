@@ -10,8 +10,10 @@ import { Card, Badge, Avatar, Button } from '@/components/ui';
 import { useThemeStore, useForumStore, useAuthStore } from '@/store/useStore';
 import { api } from '@/lib/api';
 import { timeAgo, getRankName } from '@/lib/helpers';
+import { useT } from '@/lib/i18n';
 
 export default function Forum() {
+  const t = useT();
   const { theme } = useThemeStore();
   const { posts, categories, setPosts, addPost, likePost } = useForumStore();
   const { userProfile } = useAuthStore();
@@ -55,7 +57,7 @@ export default function Forum() {
       title: newTitle,
       content: newContent,
       authorId: userProfile?.id || 'me',
-      authorName: userProfile?.username || 'Vous',
+      authorName: userProfile?.username || t('forum.you'),
       authorRank: userProfile?.rank || 'warrior',
       likes: 0,
       views: 0,
@@ -77,15 +79,15 @@ export default function Forum() {
         <div>
           <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
             <MessageSquare className="inline w-8 h-8 mr-2 text-neon-pink" />
-            Forum
+            {t('forum.title')}
           </h1>
           <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Discutez, partagez et apprenez avec la communauté
+            {t('forum.subtitle')}
           </p>
         </div>
         <Button onClick={() => setShowCreate(true)}>
           <Plus size={16} />
-          Nouveau post
+          {t('forum.newPost')}
         </Button>
       </div>
 
@@ -93,7 +95,7 @@ export default function Forum() {
 
         <div className="lg:w-64 flex-shrink-0">
           <Card hover={false}>
-            <h3 className={`font-bold text-sm mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Catégories</h3>
+            <h3 className={`font-bold text-sm mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('forum.categories')}</h3>
             <div className="space-y-1">
               <button
                 onClick={() => setActiveCategory('all')}
@@ -103,7 +105,7 @@ export default function Forum() {
                     : theme === 'dark' ? 'text-gray-400 hover:bg-gaming-surface' : 'text-gray-500 hover:bg-gray-50'
                 }`}
               >
-                📋 Toutes les catégories
+                📋 {t('forum.allCategories')}
               </button>
               {categories.map((cat: any) => (
                 <button
@@ -129,7 +131,7 @@ export default function Forum() {
               <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
               <input
                 type="text"
-                placeholder="Rechercher dans le forum..."
+                placeholder={t('forum.searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className={`w-full pl-10 pr-4 py-2.5 rounded-lg text-sm transition-all focus:outline-none ${
@@ -141,9 +143,9 @@ export default function Forum() {
             </div>
             <div className="flex gap-2">
               {[
-                { id: 'recent', label: 'Récents', icon: Clock },
-                { id: 'popular', label: 'Populaires', icon: TrendingUp },
-                { id: 'comments', label: 'Discutés', icon: MessageCircle },
+                { id: 'recent', label: t('forum.sortRecent'), icon: Clock },
+                { id: 'popular', label: t('forum.sortPopular'), icon: TrendingUp },
+                { id: 'comments', label: t('forum.sortDiscussed'), icon: MessageCircle },
               ].map((sort) => (
                 <button
                   key={sort.id}
@@ -223,7 +225,7 @@ export default function Forum() {
                             animate={{ opacity: 1, height: 'auto' }}
                             className={`mt-4 pt-4 border-t ${theme === 'dark' ? 'border-gaming-border' : 'border-gray-100'}`}
                           >
-                            <p className="text-xs text-gray-400 mb-3">Commentaires ({post.comments.length})</p>
+                            <p className="text-xs text-gray-400 mb-3">{t('forum.comments')} ({post.comments.length})</p>
                             {post.comments.map((comment: any) => (
                               <div key={comment.id} className="flex gap-3 mb-3">
                                 <Avatar name={comment.authorName} size="sm" />
@@ -243,7 +245,7 @@ export default function Forum() {
                             <div className="flex gap-2 mt-3">
                               <input
                                 type="text"
-                                placeholder="Ajouter un commentaire..."
+                                placeholder={t('forum.addComment')}
                                 onClick={(e) => e.stopPropagation()}
                                 className={`flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none ${
                                   theme === 'dark'
@@ -251,7 +253,7 @@ export default function Forum() {
                                     : 'bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-primary-500'
                                 }`}
                               />
-                              <Button size="sm">Envoyer</Button>
+                              <Button size="sm">{t('forum.send')}</Button>
                             </div>
                           </motion.div>
                         )}
@@ -267,10 +269,10 @@ export default function Forum() {
             <div className="text-center py-16">
               <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-500" />
               <h3 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                Aucun post trouvé
+                {t('forum.noPostsFound')}
               </h3>
               <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                Soyez le premier à poster dans cette catégorie!
+                {t('forum.beFirstToPost')}
               </p>
             </div>
           )}
@@ -288,11 +290,11 @@ export default function Forum() {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              Nouveau post
+              {t('forum.newPost')}
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Catégorie</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('forum.category')}</label>
                 <select
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
@@ -306,23 +308,23 @@ export default function Forum() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Titre</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('forum.postTitle')}</label>
                 <input
                   type="text"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="Titre de votre post"
+                  placeholder={t('forum.postTitlePlaceholder')}
                   className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 ${
                     theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
                   }`}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Contenu</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('forum.content')}</label>
                 <textarea
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
-                  placeholder="Écrivez votre post..."
+                  placeholder={t('forum.contentPlaceholder')}
                   rows={5}
                   className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 resize-none ${
                     theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
@@ -330,8 +332,8 @@ export default function Forum() {
                 />
               </div>
               <div className="flex gap-3 pt-2">
-                <Button variant="ghost" onClick={() => setShowCreate(false)} className="flex-1">Annuler</Button>
-                <Button onClick={handleCreate} className="flex-1">Publier</Button>
+                <Button variant="ghost" onClick={() => setShowCreate(false)} className="flex-1">{t('forum.cancel')}</Button>
+                <Button onClick={handleCreate} className="flex-1">{t('forum.publish')}</Button>
               </div>
             </div>
           </motion.div>

@@ -9,9 +9,17 @@ import {
 import { Card, Badge, Button, Tabs } from '@/components/ui';
 import { useThemeStore, useEventStore } from '@/store/useStore';
 import { api } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
-const DAYS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+const DAY_KEYS = [
+  'events.day.sun', 'events.day.mon', 'events.day.tue', 'events.day.wed',
+  'events.day.thu', 'events.day.fri', 'events.day.sat',
+];
+const MONTH_KEYS = [
+  'events.month.jan', 'events.month.feb', 'events.month.mar', 'events.month.apr',
+  'events.month.may', 'events.month.jun', 'events.month.jul', 'events.month.aug',
+  'events.month.sep', 'events.month.oct', 'events.month.nov', 'events.month.dec',
+];
 
 const eventTypeColors: Record<string, any> = {
   scrim: { bg: 'bg-neon-blue/20', text: 'text-neon-blue', border: 'border-neon-blue/30' },
@@ -26,6 +34,7 @@ const eventTypeIcons: Record<string, any> = {
 };
 
 export default function Events() {
+  const t = useT();
   const { theme } = useThemeStore();
   const { events, setEvents } = useEventStore();
   const [currentDate, setCurrentDate] = useState(new Date(2024, 2, 1));
@@ -74,24 +83,24 @@ export default function Events() {
         <div>
           <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
             <CalendarIcon className="inline w-8 h-8 mr-2 text-neon-green" />
-            Événements
+            {t('events.title')}
           </h1>
           <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Calendrier des événements MLBB Togo
+            {t('events.subtitle')}
           </p>
         </div>
         <div className="flex gap-3">
           <Tabs
             tabs={[
-              { id: 'calendar', label: 'Calendrier' },
-              { id: 'list', label: 'Liste' },
+              { id: 'calendar', label: t('events.tab.calendar') },
+              { id: 'list', label: t('events.tab.list') },
             ]}
             active={viewMode}
             onChange={setViewMode}
           />
           <Button onClick={() => setShowCreate(true)}>
             <Plus size={16} />
-            Nouvel événement
+            {t('events.new')}
           </Button>
         </div>
       </div>
@@ -106,7 +115,7 @@ export default function Events() {
                 <ChevronLeft size={20} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} />
               </button>
               <h2 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                {MONTHS[month]} {year}
+                {t(MONTH_KEYS[month])} {year}
               </h2>
               <button onClick={nextMonth} className={`p-2 rounded-lg transition-colors ${theme === 'dark' ? 'hover:bg-gaming-surface' : 'hover:bg-gray-100'}`}>
                 <ChevronRight size={20} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} />
@@ -114,9 +123,9 @@ export default function Events() {
             </div>
 
             <div className="grid grid-cols-7 gap-1 mb-2">
-              {DAYS.map((day) => (
-                <div key={day} className="text-center text-xs font-medium text-gray-400 py-2">
-                  {day}
+              {DAY_KEYS.map((dayKey) => (
+                <div key={dayKey} className="text-center text-xs font-medium text-gray-400 py-2">
+                  {t(dayKey)}
                 </div>
               ))}
             </div>
@@ -179,7 +188,7 @@ export default function Events() {
         <div>
           <Card hover={false}>
             <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              {selectedDate ? `Événements du ${selectedDate} ${MONTHS[month]}` : 'Tous les événements'}
+              {selectedDate ? `${t('events.eventsOfDayPrefix')} ${selectedDate} ${t(MONTH_KEYS[month])}` : t('events.allEvents')}
             </h3>
             <div className="space-y-3">
               {selectedEvents.map((event: any) => {
@@ -222,7 +231,7 @@ export default function Events() {
               {selectedEvents.length === 0 && (
                 <div className="text-center py-8">
                   <CalendarIcon className="w-8 h-8 mx-auto mb-2 text-gray-500" />
-                  <p className="text-sm text-gray-400">Aucun événement ce jour</p>
+                  <p className="text-sm text-gray-400">{t('events.noneToday')}</p>
                 </div>
               )}
             </div>
@@ -241,48 +250,48 @@ export default function Events() {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              Nouvel événement
+              {t('events.new')}
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Type</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('events.form.type')}</label>
                 <select className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white focus:outline-none focus:border-neon-blue/50 ${
                   theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
                 }`}>
-                  <option value="scrim">⚔️ Scrim</option>
-                  <option value="tournament">🏆 Tournoi</option>
-                  <option value="coaching">📚 Coaching</option>
+                  <option value="scrim">⚔️ {t('events.form.typeScrim')}</option>
+                  <option value="tournament">🏆 {t('events.form.typeTournament')}</option>
+                  <option value="coaching">📚 {t('events.form.typeCoaching')}</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Titre</label>
-                <input type="text" placeholder="Nom de l'événement" className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 ${
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('events.form.title')}</label>
+                <input type="text" placeholder={t('events.form.namePlaceholder')} className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 ${
                   theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
                 }`} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">Date</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('events.form.date')}</label>
                   <input type="date" className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white focus:outline-none focus:border-neon-blue/50 ${
                     theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
                   }`} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">Heure</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('events.form.time')}</label>
                   <input type="time" className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white focus:outline-none focus:border-neon-blue/50 ${
                     theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
                   }`} />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Description</label>
-                <textarea rows={3} placeholder="Description..." className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 resize-none ${
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('events.form.description')}</label>
+                <textarea rows={3} placeholder={t('events.form.descriptionPlaceholder')} className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 resize-none ${
                   theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
                 }`} />
               </div>
               <div className="flex gap-3 pt-2">
-                <Button variant="ghost" onClick={() => setShowCreate(false)} className="flex-1">Annuler</Button>
-                <Button onClick={() => setShowCreate(false)} className="flex-1">Créer</Button>
+                <Button variant="ghost" onClick={() => setShowCreate(false)} className="flex-1">{t('events.cancel')}</Button>
+                <Button onClick={() => setShowCreate(false)} className="flex-1">{t('events.create')}</Button>
               </div>
             </div>
           </motion.div>

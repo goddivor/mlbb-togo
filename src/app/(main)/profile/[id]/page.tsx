@@ -11,9 +11,11 @@ import { useThemeStore } from '@/store/useStore';
 import { api } from '@/lib/api';
 import { MLBB_RANKS, MLBB_ROLES, BADGES } from '@/lib/constants';
 import { calculateWinRate, getRankName, formatDate } from '@/lib/helpers';
+import { useT } from '@/lib/i18n';
 
 function ProfileView({ player }: { player: any }) {
   const { theme } = useThemeStore();
+  const t = useT();
   const [activeTab, setActiveTab] = useState('stats');
   const [isEditing, setIsEditing] = useState(false);
   const [team, setTeam] = useState<any>(null);
@@ -57,7 +59,7 @@ function ProfileView({ player }: { player: any }) {
                   {player.username}
                 </h1>
                 {player.isOnline && (
-                  <Badge variant="green" size="sm">🟢 En ligne</Badge>
+                  <Badge variant="green" size="sm">🟢 {t('profileView.online')}</Badge>
                 )}
               </div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -79,7 +81,7 @@ function ProfileView({ player }: { player: any }) {
 
             <Button variant="secondary" onClick={() => setIsEditing(!isEditing)}>
               <Edit size={16} />
-              Modifier le profil
+              {t('profileView.editProfile')}
             </Button>
           </div>
 
@@ -94,25 +96,25 @@ function ProfileView({ player }: { player: any }) {
             </span>
             <span className="flex items-center gap-1">
               <Calendar size={12} />
-              Membre depuis {formatDate(player.joinedAt)}
+              {t('profileView.memberSince')} {formatDate(player.joinedAt)}
             </span>
           </div>
         </div>
       </Card>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Victoires" value={player.wins} icon={<TrendingUp size={16} />} trend={5} />
+        <StatCard label={t('profileView.stat.wins')} value={player.wins} icon={<TrendingUp size={16} />} trend={5} />
         <StatCard label="Win Rate" value={`${winRate}%`} icon={<Target size={16} />} />
         <StatCard label="MVP" value={player.mvpCount} icon={<Star size={16} />} />
-        <StatCard label="Série" value={`${player.streak}🔥`} icon={<Flame size={16} />} />
+        <StatCard label={t('profileView.stat.streak')} value={`${player.streak}🔥`} icon={<Flame size={16} />} />
       </div>
 
       <Tabs
         tabs={[
-          { id: 'stats', label: 'Statistiques', icon: Target },
-          { id: 'badges', label: 'Badges', icon: Award },
-          { id: 'heroes', label: 'Héros', icon: Swords },
-          { id: 'history', label: 'Historique', icon: Trophy },
+          { id: 'stats', label: t('profileView.tab.stats'), icon: Target },
+          { id: 'badges', label: t('profileView.tab.badges'), icon: Award },
+          { id: 'heroes', label: t('profileView.tab.heroes'), icon: Swords },
+          { id: 'history', label: t('profileView.tab.history'), icon: Trophy },
         ]}
         active={activeTab}
         onChange={setActiveTab}
@@ -123,18 +125,18 @@ function ProfileView({ player }: { player: any }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
           <Card>
-            <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Ratio Victoires / Défaites</h3>
+            <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('profileView.winLossRatio')}</h3>
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-green-400">Victoires</span>
+                  <span className="text-green-400">{t('profileView.wins')}</span>
                   <span className="text-green-400 font-bold">{player.wins}</span>
                 </div>
                 <ProgressBar value={parseFloat(winRate as string)} color="green" />
               </div>
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-red-400">Défaites</span>
+                  <span className="text-red-400">{t('profileView.losses')}</span>
                   <span className="text-red-400 font-bold">{player.losses}</span>
                 </div>
                 <ProgressBar value={100 - parseFloat(winRate as string)} color="red" />
@@ -152,7 +154,7 @@ function ProfileView({ player }: { player: any }) {
           </Card>
 
           <Card>
-            <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Progression de Rang</h3>
+            <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('profileView.rankProgression')}</h3>
             <div className="space-y-3">
               {MLBB_RANKS.map((rank) => (
                 <div key={rank.id} className={`flex items-center gap-3 p-2 rounded-lg ${
@@ -163,7 +165,7 @@ function ProfileView({ player }: { player: any }) {
                     {rank.name}
                   </span>
                   {player.rank === rank.id && (
-                    <Badge variant="neon" size="sm">Actuel</Badge>
+                    <Badge variant="neon" size="sm">{t('profileView.current')}</Badge>
                   )}
                 </div>
               ))}
@@ -171,13 +173,13 @@ function ProfileView({ player }: { player: any }) {
           </Card>
 
           <Card className="md:col-span-2">
-            <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Statistiques Générales</h3>
+            <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('profileView.generalStats')}</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: 'Total matchs', value: player.wins + player.losses },
-                { label: 'Meilleure série', value: `${player.streak}🔥` },
-                { label: 'Rôle principal', value: player.role },
-                { label: 'Pays', value: player.country },
+                { label: t('profileView.totalMatches'), value: player.wins + player.losses },
+                { label: t('profileView.bestStreak'), value: `${player.streak}🔥` },
+                { label: t('profileView.mainRole'), value: player.role },
+                { label: t('profileView.country'), value: player.country },
               ].map((stat) => (
                 <div key={stat.label} className="text-center p-3 rounded-lg bg-gaming-surface/50">
                   <p className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{stat.value}</p>
@@ -207,7 +209,7 @@ function ProfileView({ player }: { player: any }) {
           {playerBadges.length === 0 && (
             <div className="col-span-full text-center py-12">
               <Award className="w-12 h-12 mx-auto mb-3 text-gray-500" />
-              <p className="text-sm text-gray-400">Aucun badge obtenu pour le moment</p>
+              <p className="text-sm text-gray-400">{t('profileView.noBadges')}</p>
             </div>
           )}
         </div>
@@ -215,7 +217,7 @@ function ProfileView({ player }: { player: any }) {
 
       {activeTab === 'heroes' && (
         <Card>
-          <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Héros Favoris</h3>
+          <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('profileView.favoriteHeroes')}</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {(player.favoriteHeroes || []).map((hero: string) => (
               <div key={hero} className="flex items-center gap-3 p-3 rounded-lg bg-gaming-surface/50">
