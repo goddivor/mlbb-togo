@@ -80,7 +80,7 @@ export default function TeamsPage() {
               {org.name}
             </h2>
             {org.description && (
-              <p className="text-sm text-gray-400 mt-0.5">{org.description}</p>
+              <p className="text-sm text-gray-400 mt-0.5">{t('teams.orgDesc')}</p>
             )}
           </div>
         </div>
