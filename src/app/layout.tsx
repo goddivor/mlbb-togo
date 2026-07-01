@@ -17,7 +17,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className="dark">
       <head>
-        {/* Évite le hotlink-protection du CDN Moonton : ne pas envoyer le Referer aux images externes. */}
+
         <meta name="referrer" content="no-referrer" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

@@ -30,10 +30,10 @@ const SECTIONS = [
 type OpenMenu = 'lang' | 'profile' | 'sections' | null;
 
 export default function LandingHeader() {
-  // Un seul menu ouvert à la fois (exclusion mutuelle).
+
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
   const [signInOpen, setSignInOpen] = useState(false);
-  // Fond solide du header dès qu'on défile (transparent tout en haut, sur le hero).
+
   const [scrolled, setScrolled] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
   const lang = useLangStore((s: any) => s.lang);
@@ -43,7 +43,6 @@ export default function LandingHeader() {
   const setUserProfile = useAuthStore((s: any) => s.setUserProfile);
   const t = useT();
 
-  // Active le fond solide du header au-delà d'un petit défilement.
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     onScroll();
@@ -51,14 +50,12 @@ export default function LandingHeader() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Applique la langue persistée après le montage (évite tout décalage d'hydratation).
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('mlbb-lang') : null;
     if (saved && saved !== lang) setLang(saved);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Si un jeton est présent, recharge le profil pour afficher l'avatar dans le header.
   useEffect(() => {
     if (!getToken()) return;
     api.auth
@@ -71,7 +68,6 @@ export default function LandingHeader() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Ferme tout menu ouvert quand on clique en dehors de la zone de navigation.
   useEffect(() => {
     if (!openMenu) return;
     const onDown = (e: MouseEvent) => {
@@ -81,7 +77,6 @@ export default function LandingHeader() {
     return () => document.removeEventListener('mousedown', onDown);
   }, [openMenu]);
 
-  // Ouvre un menu en fermant l'éventuel autre (bascule si déjà ouvert).
   const toggle = (menu: Exclude<OpenMenu, null>) =>
     setOpenMenu((cur) => (cur === menu ? null : menu));
 
@@ -92,7 +87,6 @@ export default function LandingHeader() {
     setOpenMenu(null);
   };
 
-  // Défilement fluide vers une section de la page (ou le haut si id vide).
   const goTo = (id: string) => {
     setOpenMenu(null);
     if (!id) {
@@ -111,13 +105,12 @@ export default function LandingHeader() {
       }`}
     >
       <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
-        {/* Logo */}
+
         <Link href="/" className="flex items-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/mlbb-togo-logo.png" alt="MLBB Togo" className="h-9 md:h-10 w-auto" />
         </Link>
 
-        {/* Navigation desktop (les sections directement dans le header ; masquée sur mobile) */}
         <nav className="hidden md:flex items-center gap-1">
           {SECTIONS.map((s) => (
             <button
@@ -130,9 +123,8 @@ export default function LandingHeader() {
           ))}
         </nav>
 
-        {/* Droite */}
         <div ref={navRef} className="flex items-center gap-3 sm:gap-4">
-          {/* Sélecteur de langue */}
+
           <div className="relative">
             <button
               onClick={() => toggle('lang')}
@@ -173,7 +165,6 @@ export default function LandingHeader() {
             </AnimatePresence>
           </div>
 
-          {/* Connecté → avatar + menu profil ; sinon → bouton Login */}
           {userProfile ? (
             <div className="relative">
               <button
@@ -238,7 +229,6 @@ export default function LandingHeader() {
             </button>
           )}
 
-          {/* Menu (sections) — mobile uniquement ; sur desktop les liens sont dans le header */}
           <div className="relative md:hidden">
             <button
               onClick={() => toggle('sections')}
@@ -256,7 +246,7 @@ export default function LandingHeader() {
                   exit={{ opacity: 0, y: -8, scale: 0.96 }}
                   className="absolute right-0 top-12 w-56 rounded-xl border border-gaming-border bg-gaming-card shadow-gaming overflow-hidden py-1"
                 >
-                  {/* Sections de la page */}
+
                   {SECTIONS.map((s) => {
                     const Icon = s.icon;
                     return (

@@ -66,7 +66,7 @@ export default function HeroDetailModal({
               </div>
             ) : (
               <div>
-                {/* En-tête : art + identité + stats */}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
                   <div className="relative bg-gradient-to-br from-neon-blue/15 to-neon-purple/15 min-h-[260px] flex items-end justify-center">
                     {art && (
@@ -96,7 +96,6 @@ export default function HeroDetailModal({
                       </p>
                     )}
 
-                    {/* Stats */}
                     <div className="space-y-2 mt-5">
                       {STATS.map((s) => {
                         const v = hero.abilityShow?.[s.i] ?? 0;
@@ -116,7 +115,6 @@ export default function HeroDetailModal({
                   </div>
                 </div>
 
-                {/* Compétences */}
                 {hero.skills?.length > 0 && (
                   <div className="p-6 border-t border-gaming-border">
                     <h3 className="font-bold text-white mb-4">Compétences</h3>
@@ -155,7 +153,6 @@ export default function HeroDetailModal({
                   </div>
                 )}
 
-                {/* Skins */}
                 {hero.skins?.length > 0 && (
                   <div className="p-6 border-t border-gaming-border">
                     <h3 className="font-bold text-white mb-4">Skins ({hero.skins.length})</h3>
@@ -178,7 +175,6 @@ export default function HeroDetailModal({
                   </div>
                 )}
 
-                {/* Lore */}
                 {(hero.story || hero.tale) && (
                   <div className="p-6 border-t border-gaming-border">
                     <h3 className="font-bold text-white mb-2">Histoire</h3>

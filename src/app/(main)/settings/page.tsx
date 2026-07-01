@@ -49,7 +49,7 @@ export default function Settings() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      {/* Header */}
+
       <div className="mb-8">
         <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
           <SettingsIcon className="inline w-8 h-8 mr-2 text-gray-400" />
@@ -60,7 +60,6 @@ export default function Settings() {
         </p>
       </div>
 
-      {/* Tabs */}
       <Tabs
         tabs={[
           { id: 'profile', label: t('settings.tabProfile'), icon: User },
@@ -322,4 +321,3 @@ export default function Settings() {
     </div>
   );
 }
-

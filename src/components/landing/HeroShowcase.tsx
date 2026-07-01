@@ -49,7 +49,6 @@ export default function HeroShowcase() {
     [heroes.length],
   );
 
-  // Défilement automatique.
   useEffect(() => {
     if (heroes.length < 2) return;
     const id = setInterval(() => setActive((a) => (a + 1) % heroes.length), 7000);
@@ -68,7 +67,7 @@ export default function HeroShowcase() {
 
   return (
     <div className="relative w-full rounded-2xl border border-gaming-border overflow-hidden bg-gradient-to-br from-[#0b1a3a] via-[#0a1228] to-[#0a0a1a]">
-      {/* Fond immersif : illustration floutée du héros courant */}
+
       <AnimatePresence mode="wait">
         <motion.div
           key={`bg-${hero.heroId}`}
@@ -82,9 +81,8 @@ export default function HeroShowcase() {
       </AnimatePresence>
       <div className="absolute inset-0 bg-gradient-to-t from-gaming-dark via-gaming-dark/40 to-transparent" />
 
-      {/* Contenu principal */}
       <div className="relative z-10 grid md:grid-cols-2 gap-4 px-6 pb-28 pt-6 min-h-[460px]">
-        {/* Illustration */}
+
         <div className="relative hidden md:flex items-end justify-center overflow-hidden">
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-72 h-72 border border-neon-blue/10 rotate-45 rounded-3xl" />
           <AnimatePresence mode="wait">
@@ -101,7 +99,6 @@ export default function HeroShowcase() {
           </AnimatePresence>
         </div>
 
-        {/* Infos */}
         <AnimatePresence mode="wait">
           <motion.div
             key={`info-${hero.heroId}`}
@@ -131,7 +128,6 @@ export default function HeroShowcase() {
               <p className="text-white/60 text-sm mt-1">{hero.specialities.join('   ')}</p>
             </div>
 
-            {/* Icônes de compétences */}
             <div className="flex items-center gap-3">
               {hero.skills.slice(0, 4).map((s, i) => (
                 <div
@@ -145,7 +141,6 @@ export default function HeroShowcase() {
               ))}
             </div>
 
-            {/* Stats */}
             <div className="grid grid-cols-2 gap-x-6 gap-y-3 max-w-md">
               <StatBar label="Durability" value={hero.stats.durability} />
               <StatBar label="Offense" value={hero.stats.offense} />
@@ -156,7 +151,6 @@ export default function HeroShowcase() {
         </AnimatePresence>
       </div>
 
-      {/* Flèches (SVG officiels) */}
       <button
         onClick={() => go(-1)}
         aria-label="Précédent"
@@ -174,7 +168,6 @@ export default function HeroShowcase() {
         <img src={mlbbImg(MLBB_ARROW_RIGHT)} alt="Suivant" className="w-8 h-12 object-contain" />
       </button>
 
-      {/* Bande de vignettes */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-2">
         {heroes.map((h, i) => (
           <button

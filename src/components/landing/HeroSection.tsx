@@ -47,7 +47,7 @@ export default function HeroSection() {
 
   return (
     <section className="relative w-full h-[100svh] min-h-[620px] overflow-hidden">
-      {/* Fond e-sport défilant */}
+
       {team && (
         <AnimatePresence mode="wait">
           <motion.div
@@ -62,11 +62,9 @@ export default function HeroSection() {
         </AnimatePresence>
       )}
 
-      {/* Voiles de lisibilité */}
       <div className="absolute inset-0 bg-black/55" />
       <div className="absolute inset-0 bg-gradient-to-t from-gaming-dark via-gaming-dark/30 to-black/40" />
 
-      {/* Titre central (accroche du site) */}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-4">
         <motion.h1
           initial={{ opacity: 0, y: 24 }}
@@ -87,7 +85,6 @@ export default function HeroSection() {
         </motion.p>
       </div>
 
-      {/* Branding ETERNUM (équipe affichée) */}
       {org && team && (
         <div className="absolute bottom-8 left-6 sm:left-10 z-20 flex items-end gap-3 sm:gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -112,7 +109,6 @@ export default function HeroSection() {
         </div>
       )}
 
-      {/* Flèches */}
       {teams.length > 1 && (
         <>
           <button
@@ -132,7 +128,6 @@ export default function HeroSection() {
         </>
       )}
 
-      {/* Puces */}
       <div className="absolute bottom-8 right-6 sm:right-10 z-20 flex items-center gap-2">
         {teams.map((t, i) => (
           <button

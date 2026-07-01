@@ -34,7 +34,7 @@ export default function ContactSection() {
 
   return (
     <div className="relative max-w-5xl mx-auto">
-      {/* Carte formulaire — champs à gauche, espace réservé à droite pour le personnage */}
+
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -68,7 +68,6 @@ export default function ContactSection() {
         </form>
       </motion.div>
 
-      {/* Cecilion : chevauche le bord DROIT du formulaire */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/cecilion.png"

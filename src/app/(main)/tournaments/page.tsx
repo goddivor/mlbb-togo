@@ -36,7 +36,7 @@ export default function Tournaments() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
+
       <div className="mb-8">
         <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
           <Trophy className="inline w-8 h-8 mr-2 text-yellow-400" />
@@ -47,7 +47,6 @@ export default function Tournaments() {
         </p>
       </div>
 
-      {/* Tabs */}
       <Tabs
         tabs={[
           { id: 'all', label: `Tous (${tournaments.length})` },
@@ -61,7 +60,7 @@ export default function Tournaments() {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Tournament List */}
+
         <div className="lg:col-span-2 space-y-4">
           {filtered.map((tour: any, index: number) => (
             <motion.div
@@ -111,7 +110,6 @@ export default function Tournaments() {
                   </span>
                 </div>
 
-                {/* Progress bar */}
                 <div className="mb-4">
                   <div className="h-2 rounded-full bg-gaming-surface overflow-hidden">
                     <motion.div
@@ -175,7 +173,6 @@ export default function Tournaments() {
           )}
         </div>
 
-        {/* Sidebar - Tournament Details or Quick Info */}
         <div>
           {tournament ? (
             <Card>

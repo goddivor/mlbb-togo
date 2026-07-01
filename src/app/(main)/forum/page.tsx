@@ -72,7 +72,7 @@ export default function Forum() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
+
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
@@ -90,7 +90,7 @@ export default function Forum() {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Sidebar */}
+
         <div className="lg:w-64 flex-shrink-0">
           <Card hover={false}>
             <h3 className={`font-bold text-sm mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Catégories</h3>
@@ -122,9 +122,8 @@ export default function Forum() {
           </Card>
         </div>
 
-        {/* Main Content */}
         <div className="flex-1">
-          {/* Search & Sort */}
+
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <div className="flex-1 relative">
               <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
@@ -162,7 +161,6 @@ export default function Forum() {
             </div>
           </div>
 
-          {/* Posts List */}
           <div className="space-y-4">
             {filteredPosts.map((post: any, index: number) => {
               const category = categories.find((c: any) => c.id === post.category);
@@ -219,7 +217,6 @@ export default function Forum() {
                           </div>
                         </div>
 
-                        {/* Expanded comments */}
                         {selectedPost === post.id && post.comments.length > 0 && (
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
@@ -280,7 +277,6 @@ export default function Forum() {
         </div>
       </div>
 
-      {/* Create Post Modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
           <motion.div

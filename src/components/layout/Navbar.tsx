@@ -42,7 +42,7 @@ export default function Navbar() {
       }`}
     >
       <div className="h-full px-4 flex items-center justify-between">
-        {/* Left */}
+
         <div className="flex items-center gap-4">
           <button
             onClick={toggleSidebar}
@@ -66,7 +66,6 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* Center - Search */}
         <div className="hidden md:flex flex-1 max-w-md mx-8">
           <div className="relative w-full">
             <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
@@ -84,12 +83,10 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Right */}
         <div className="flex items-center gap-2">
-          {/* Language switcher */}
+
           <LanguageSwitcher />
 
-          {/* Theme toggle */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -101,7 +98,6 @@ export default function Navbar() {
             {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
           </motion.button>
 
-          {/* Notifications */}
           <div className="relative">
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -162,7 +158,6 @@ export default function Navbar() {
             </AnimatePresence>
           </div>
 
-          {/* Profile */}
           <div className="relative">
             <motion.button
               whileHover={{ scale: 1.05 }}

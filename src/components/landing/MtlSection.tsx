@@ -45,7 +45,7 @@ export default function MtlSection() {
 
   return (
     <div>
-      {/* En-tête */}
+
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 text-neon-gold mb-3">
           <Trophy size={20} />
@@ -57,10 +57,9 @@ export default function MtlSection() {
         )}
       </div>
 
-      {/* Carrousel des visuels (ordre croissant) */}
       <div className="relative w-full rounded-2xl border border-gaming-border overflow-hidden bg-gaming-darker">
         <div className="relative aspect-video w-full">
-          {/* Visuel net — couvre tout l'espace */}
+
           <AnimatePresence mode="wait">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <motion.img
@@ -76,7 +75,6 @@ export default function MtlSection() {
           </AnimatePresence>
         </div>
 
-        {/* Flèches */}
         <button
           onClick={() => go(-1)}
           aria-label="Précédent"
@@ -92,7 +90,6 @@ export default function MtlSection() {
           <ChevronRight size={28} />
         </button>
 
-        {/* Puces */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
           {images.map((im, i) => (
             <button

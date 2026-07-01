@@ -41,9 +41,9 @@ function ProfileView({ player }: { player: any }) {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      {/* Profile Header */}
+
       <Card className="mb-6 relative overflow-hidden" hover={false}>
-        {/* Background */}
+
         <div className="absolute inset-0 h-32 bg-gradient-to-r from-neon-blue/20 to-neon-purple/20" />
         <div className="absolute top-0 left-0 right-0 h-32 bg-grid opacity-20" />
 
@@ -83,12 +83,10 @@ function ProfileView({ player }: { player: any }) {
             </Button>
           </div>
 
-          {/* Bio */}
           <p className={`mt-4 text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
             {player.bio}
           </p>
 
-          {/* Meta info */}
           <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
             <span className="flex items-center gap-1">
               <MapPin size={12} />
@@ -102,7 +100,6 @@ function ProfileView({ player }: { player: any }) {
         </div>
       </Card>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatCard label="Victoires" value={player.wins} icon={<TrendingUp size={16} />} trend={5} />
         <StatCard label="Win Rate" value={`${winRate}%`} icon={<Target size={16} />} />
@@ -110,7 +107,6 @@ function ProfileView({ player }: { player: any }) {
         <StatCard label="Série" value={`${player.streak}🔥`} icon={<Flame size={16} />} />
       </div>
 
-      {/* Tabs */}
       <Tabs
         tabs={[
           { id: 'stats', label: 'Statistiques', icon: Target },
@@ -125,7 +121,7 @@ function ProfileView({ player }: { player: any }) {
 
       {activeTab === 'stats' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Win/Loss */}
+
           <Card>
             <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Ratio Victoires / Défaites</h3>
             <div className="space-y-4">
@@ -155,7 +151,6 @@ function ProfileView({ player }: { player: any }) {
             </div>
           </Card>
 
-          {/* Rank Progress */}
           <Card>
             <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Progression de Rang</h3>
             <div className="space-y-3">
@@ -175,7 +170,6 @@ function ProfileView({ player }: { player: any }) {
             </div>
           </Card>
 
-          {/* General Stats */}
           <Card className="md:col-span-2">
             <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Statistiques Générales</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

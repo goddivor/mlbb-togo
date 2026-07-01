@@ -44,9 +44,9 @@ export default function Teams() {
       lookingFor: [],
       achievements: [],
     };
-    // Optimiste : mise à jour immédiate du store
+
     addTeam(team);
-    // Tentative d'appel API en arrière-plan (ignore l'échec si hors-ligne)
+
     api.teams.create(team).catch(() => {});
     setNewTeam({ name: '', tag: '', description: '' });
     setShowCreate(false);
@@ -54,7 +54,7 @@ export default function Teams() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
+
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
@@ -71,7 +71,6 @@ export default function Teams() {
         </Button>
       </div>
 
-      {/* Search & Tabs */}
       <Card className="mb-6" hover={false}>
         <div className="flex flex-col md:flex-row gap-4 items-center">
           <div className="flex-1 w-full">
@@ -101,7 +100,6 @@ export default function Teams() {
         </div>
       </Card>
 
-      {/* Teams Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {filteredTeams.map((team: any, index: number) => {
           const members = players.filter((p: any) => (team.members || []).includes(p.id));
@@ -114,7 +112,7 @@ export default function Teams() {
               transition={{ delay: index * 0.1 }}
             >
               <Card className="h-full">
-                {/* Team Header */}
+
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center text-xl font-black text-white shadow-neon-purple">
                     {team.tag}
@@ -141,7 +139,6 @@ export default function Teams() {
                   {team.description}
                 </p>
 
-                {/* Stats */}
                 <div className="grid grid-cols-3 gap-3 mb-4">
                   <div className="text-center p-2 rounded-lg bg-gaming-surface/50">
                     <p className={`text-lg font-bold text-green-400`}>{team.wins}</p>
@@ -157,7 +154,6 @@ export default function Teams() {
                   </div>
                 </div>
 
-                {/* Members */}
                 <div className="mb-4">
                   <p className="text-xs text-gray-400 mb-2">Membres</p>
                   <div className="flex items-center gap-2">
@@ -172,7 +168,6 @@ export default function Teams() {
                   </div>
                 </div>
 
-                {/* Looking For */}
                 {team.isRecruiting && (team.lookingFor || []).length > 0 && (
                   <div className="mb-4">
                     <p className="text-xs text-gray-400 mb-2">Recherche</p>
@@ -184,7 +179,6 @@ export default function Teams() {
                   </div>
                 )}
 
-                {/* Achievements */}
                 {(team.achievements || []).length > 0 && (
                   <div className="mb-4">
                     <p className="text-xs text-gray-400 mb-2">🏆 Achievements</p>
@@ -196,7 +190,6 @@ export default function Teams() {
                   </div>
                 )}
 
-                {/* Actions */}
                 <div className="flex gap-2">
                   <Button variant="secondary" size="sm" className="flex-1">
                     Voir le profil
@@ -214,7 +207,6 @@ export default function Teams() {
         })}
       </div>
 
-      {/* Create Team Modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
           <motion.div

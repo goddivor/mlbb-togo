@@ -41,7 +41,7 @@ export default function LandingFooter() {
     <footer className="relative z-10 border-t border-gaming-border bg-gaming-darker/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
-          {/* Marque */}
+
           <div className="col-span-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/mlbb-togo-logo.png" alt="MLBB Togo" className="h-9 w-auto mb-4" />
@@ -65,7 +65,6 @@ export default function LandingFooter() {
             </div>
           </div>
 
-          {/* Colonnes de liens */}
           {columns.map((col) => (
             <div key={col.titleKey}>
               <h3 className="text-white font-semibold mb-4">{t(col.titleKey)}</h3>
@@ -82,7 +81,6 @@ export default function LandingFooter() {
           ))}
         </div>
 
-        {/* Bas de page */}
         <div className="mt-10 pt-6 border-t border-gaming-border flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-500">
           <p>© {year} MLBB Togo — {t('footer.copyright')}</p>
           <p>{t('footer.moonton')}</p>

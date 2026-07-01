@@ -69,7 +69,7 @@ export default function Events() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
+
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
@@ -97,10 +97,10 @@ export default function Events() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Calendar */}
+
         <div className="lg:col-span-2">
           <Card hover={false}>
-            {/* Calendar Header */}
+
             <div className="flex items-center justify-between mb-6">
               <button onClick={prevMonth} className={`p-2 rounded-lg transition-colors ${theme === 'dark' ? 'hover:bg-gaming-surface' : 'hover:bg-gray-100'}`}>
                 <ChevronLeft size={20} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} />
@@ -113,7 +113,6 @@ export default function Events() {
               </button>
             </div>
 
-            {/* Days of week */}
             <div className="grid grid-cols-7 gap-1 mb-2">
               {DAYS.map((day) => (
                 <div key={day} className="text-center text-xs font-medium text-gray-400 py-2">
@@ -122,7 +121,6 @@ export default function Events() {
               ))}
             </div>
 
-            {/* Calendar grid */}
             <div className="grid grid-cols-7 gap-1">
               {calendarDays.map((day, index) => {
                 const dayEvents = getEventsForDay(day);
@@ -178,7 +176,6 @@ export default function Events() {
           </Card>
         </div>
 
-        {/* Events Sidebar */}
         <div>
           <Card hover={false}>
             <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
@@ -233,7 +230,6 @@ export default function Events() {
         </div>
       </div>
 
-      {/* Create Event Modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
           <motion.div

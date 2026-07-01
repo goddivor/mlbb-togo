@@ -1,6 +1,3 @@
-// Client API central — point de contact unique avec le backend NestJS.
-// Stratégie de résilience : si le backend est injoignable (réseau), on retombe
-// sur les données de démonstration (mockData) afin que l'UI reste utilisable.
 
 import {
   mockPlayers,
@@ -20,19 +17,11 @@ export const API_URL =
 
 const TOKEN_KEY = 'mlbb-token';
 
-/**
- * Route une image du CDN Moonton via notre proxy backend (fiabilise le chargement :
- * pas de hotlink/referer, retry et cache côté serveur).
- */
 export const mlbbImg = (url?: string | null, width?: number): string =>
   url
     ? `${API_URL}/mlbb/image?url=${encodeURIComponent(url)}${width ? `&w=${width}` : ''}`
     : '';
 
-/**
- * Source d'avatar fiable : les images du CDN de jeu (youngjoygame) passent par
- * le proxy (protection hotlink), les autres (Google...) sont chargées directement.
- */
 export const avatarSrc = (url?: string | null, width = 96): string => {
   if (!url) return '';
   return url.includes('youngjoygame.com') ? mlbbImg(url, width) : url;
@@ -52,9 +41,9 @@ export function setToken(token: string | null) {
 interface RequestOptions {
   method?: string;
   body?: any;
-  /** Valeur de repli renvoyée si l'appel réseau échoue (backend hors-ligne). */
+
   fallback?: any;
-  /** Authentification requise (ajoute le Bearer token). */
+
   auth?: boolean;
 }
 
@@ -77,15 +66,14 @@ async function request<T = any>(path: string, options: RequestOptions = {}): Pro
         const data = await res.json();
         message = data.message || message;
       } catch {
-        /* ignore */
+
       }
       throw new ApiError(message, res.status);
     }
     if (res.status === 204) return undefined as T;
     return (await res.json()) as T;
   } catch (err) {
-    // Si un repli est fourni, on l'utilise pour TOUTE erreur (réseau OU HTTP),
-    // afin que les sections en lecture seule ne cassent jamais la page.
+
     if (fallback !== undefined) {
       // eslint-disable-next-line no-console
       console.warn(`[api] échec sur ${path}, repli.`);
@@ -104,38 +92,36 @@ export class ApiError extends Error {
   }
 }
 
-// Recherche dans une liste mock par id (repli pour les routes /:id)
 const findMock = (list: any[], id: string) => list.find((x) => x.id === id);
 
 export const api = {
-  // === Authentification ===
+
   auth: {
     me: () => request('/auth/me'),
-    // Connexion MLBB par code de vérification (envoyé dans le courrier en jeu).
+
     mlbbSendVc: (data: { roleId: number; zoneId: number }) =>
       request('/auth/mlbb/send-vc', { method: 'POST', body: data, auth: false }),
     mlbbLogin: (data: { roleId: number; zoneId: number; vc: number }) =>
       request('/auth/mlbb/login', { method: 'POST', body: data, auth: false }),
-    // Connexion Google (access token Google Identity Services).
+
     google: (data: { accessToken: string }) =>
       request('/auth/google', { method: 'POST', body: data, auth: false }),
-    // Liaison d'un second profil au compte connecté.
+
     linkMlbb: (data: { roleId: number; zoneId: number; vc: number }) =>
       request('/auth/link/mlbb', { method: 'POST', body: data }),
     linkGoogle: (data: { accessToken: string }) =>
       request('/auth/link/google', { method: 'POST', body: data }),
-    // Choix de la source du profil affiché (google | game).
+
     setProfileSource: (source: 'google' | 'game') =>
       request('/auth/profile-source', { method: 'PATCH', body: { source } }),
-    // Resynchronise les données de jeu.
+
     syncGame: () => request('/auth/sync-game', { method: 'POST' }),
-    // Dissocie le compte de jeu du compte connecté.
+
     unlinkMlbb: () => request('/auth/unlink/mlbb', { method: 'POST' }),
-    // Héros favoris pour une saison donnée (sélecteur de saison).
+
     gameHeroes: (sid: number) => request(`/auth/game/heroes?sid=${sid}`),
   },
 
-  // === Joueurs / Utilisateurs ===
   users: {
     list: () => request('/users', { fallback: mockPlayers, auth: false }),
     leaderboard: () =>
@@ -152,7 +138,6 @@ export const api = {
       request(`/users/${id}/role`, { method: 'PATCH', body: { roleUser } }),
   },
 
-  // === Équipes ===
   teams: {
     list: () => request('/teams', { fallback: mockTeams, auth: false }),
     get: (id: string) => request(`/teams/${id}`, { fallback: findMock(mockTeams, id), auth: false }),
@@ -161,7 +146,6 @@ export const api = {
     remove: (id: string) => request(`/teams/${id}`, { method: 'DELETE' }),
   },
 
-  // === Forum (posts) ===
   posts: {
     list: (category?: string) =>
       request(`/posts${category ? `?category=${category}` : ''}`, {
@@ -176,7 +160,6 @@ export const api = {
       request(`/posts/${id}/comments`, { method: 'POST', body: data }),
   },
 
-  // === Tournois ===
   tournaments: {
     list: () => request('/tournaments', { fallback: mockTournaments, auth: false }),
     get: (id: string) =>
@@ -187,7 +170,6 @@ export const api = {
     remove: (id: string) => request(`/tournaments/${id}`, { method: 'DELETE' }),
   },
 
-  // === Événements ===
   events: {
     list: () => request('/events', { fallback: mockEvents, auth: false }),
     get: (id: string) => request(`/events/${id}`, { fallback: findMock(mockEvents, id), auth: false }),
@@ -195,21 +177,18 @@ export const api = {
     remove: (id: string) => request(`/events/${id}`, { method: 'DELETE' }),
   },
 
-  // === Matchs ===
   matches: {
     list: () => request('/matches', { fallback: mockMatches, auth: false }),
     get: (id: string) => request(`/matches/${id}`, { fallback: findMock(mockMatches, id), auth: false }),
     create: (data: any) => request('/matches', { method: 'POST', body: data }),
   },
 
-  // === Héros ===
   heroes: {
     list: (role?: string) =>
       request(`/heroes${role ? `?role=${role}` : ''}`, { fallback: [], auth: false }),
     get: (id: string) => request(`/heroes/${id}`, { auth: false }),
   },
 
-  // === Administration ===
   admin: {
     stats: () =>
       request('/admin/stats', {
@@ -239,21 +218,20 @@ export const api = {
     },
   },
 
-  // === Données officielles Mobile Legends (proxy Moonton GMS) ===
   mlbb: {
-    // Galerie / liste des héros officiels. limit optionnel.
+
     heroes: (limit?: number) =>
       request(`/mlbb/heroes${limit ? `?limit=${limit}` : ''}`, { fallback: { total: 0, heroes: [] }, auth: false }),
-    // Les N héros les plus récents (défaut 6, comme la page d'accueil officielle).
+
     latest: (count = 6) =>
       request(`/mlbb/heroes/latest?count=${count}`, { fallback: [], auth: false }),
-    // Vitrine riche des N derniers héros (carrousel d'accueil).
+
     showcase: (count = 6) =>
       request(`/mlbb/heroes/showcase?count=${count}`, { fallback: [], auth: false }),
-    // Détail complet d'un héros (compétences, skins, lore) par hero_id.
+
     hero: (id: number | string) =>
       request(`/mlbb/heroes/${id}`, { auth: false }),
-    // Classement méta des héros (win/pick/ban + synergies). sort: winRate|pickRate|banRate
+
     ranking: (params: { limit?: number; sort?: string; rank?: string; matchType?: number } = {}) => {
       const qs = new URLSearchParams(
         Object.entries(params).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)]),
@@ -262,7 +240,6 @@ export const api = {
     },
   },
 
-  // === E-sport (ETERNUM ESPORTS, équipes, sponsors) ===
   esport: {
     org: () => request('/esport', { fallback: null, auth: false }),
     teams: () => request('/esport/teams', { fallback: [], auth: false }),
@@ -270,13 +247,11 @@ export const api = {
     mtl: () => request('/esport/mtl', { fallback: null, auth: false }),
   },
 
-  // === Contact ===
   contact: {
     send: (data: { name: string; email: string; subject?: string; message: string }) =>
       request('/contact', { method: 'POST', body: data, auth: false }),
   },
 
-  // === Notifications ===
   notifications: {
     list: () => request('/notifications', { fallback: mockNotifications, auth: false }),
   },

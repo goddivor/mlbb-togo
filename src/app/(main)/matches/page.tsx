@@ -79,7 +79,7 @@ export default function Matches() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
+
       <div className="mb-8">
         <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
           <Swords className="inline w-8 h-8 mr-2 text-neon-blue" />
@@ -90,7 +90,6 @@ export default function Matches() {
         </p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard label="Matchs joués" value={matches.filter((m: any) => m.status === 'completed').length} icon={<Swords size={16} />} />
         <StatCard label="Victoires" value={matches.filter((m: any) => m.status === 'completed' && m.team1.score > m.team2.score).length} icon={<TrendingUp size={16} />} trend={12} />
@@ -98,7 +97,6 @@ export default function Matches() {
         <StatCard label="À venir" value={matches.filter((m: any) => m.status === 'upcoming').length} icon={<Clock size={16} />} />
       </div>
 
-      {/* Tabs */}
       <Tabs
         tabs={[
           { id: 'all', label: 'Tous' },
@@ -111,7 +109,7 @@ export default function Matches() {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Match List */}
+
         <div className="lg:col-span-2 space-y-4">
           {filtered.map((m: any, index: number) => (
             <motion.div
@@ -181,7 +179,6 @@ export default function Matches() {
           ))}
         </div>
 
-        {/* Sidebar */}
         <div>
           {match ? (
             <Card>

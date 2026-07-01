@@ -1,14 +1,5 @@
 'use client';
 
-/**
- * Affiche le logo d'un rang MLBB à partir d'une seule planche d'icônes
- * (sprite sheet `public/mlbb_rank_icons.png`) via background-position.
- * Coordonnées mesurées au pixel près sur l'image 1251×639.
- *
- * Note : la planche fournie ne contient pas le rang « Master » ; pour ce palier
- * (ou tout palier inconnu) le composant ne rend rien (repli texte côté appelant).
- */
-
 const SPRITE = { src: '/mlbb_rank_icons.png', w: 1251, h: 639 };
 
 type Box = { x: number; y: number; w: number; h: number };
@@ -35,7 +26,7 @@ export default function RankBadge({
   className,
 }: {
   rank?: string | null;
-  size?: number; // hauteur d'affichage en px ; la largeur suit le ratio du badge
+  size?: number;
   className?: string;
 }) {
   if (!rank) return null;

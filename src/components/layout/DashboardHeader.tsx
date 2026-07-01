@@ -34,18 +34,16 @@ export default function DashboardHeader() {
   return (
     <header className="sticky top-0 z-40 h-16 bg-gaming-card/95 backdrop-blur border-b border-gaming-border">
       <div className="h-full px-4 sm:px-6 flex items-center justify-between">
-        {/* Le logo ramène à la landing page. */}
+
         <Link href="/" className="flex items-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/mlbb-togo-logo.png" alt="MLBB Togo" className="h-9 w-auto" />
         </Link>
 
-        {/* Right side: Language + Profile */}
         <div className="flex items-center gap-2">
-          {/* Language switcher */}
+
           <LanguageSwitcher />
 
-          {/* Menu profil */}
           <div className="relative">
             <button
               onClick={() => setOpen((v) => !v)}

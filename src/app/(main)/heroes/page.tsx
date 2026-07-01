@@ -6,7 +6,6 @@ import { Search } from 'lucide-react';
 import { api, mlbbImg } from '@/lib/api';
 import HeroDetailModal from '@/components/game/HeroDetailModal';
 
-// Rôles MLBB (valeurs telles que renvoyées par l'API officielle) + libellés FR.
 const ROLES: Array<{ key: string; label: string }> = [
   { key: 'all', label: 'Tous' },
   { key: 'Tank', label: 'Tank' },
@@ -61,7 +60,6 @@ export default function HeroesPage() {
         </div>
       </div>
 
-      {/* Onglets de rôle */}
       <div className="flex flex-wrap gap-2 mb-6">
         {ROLES.map((r) => (
           <button

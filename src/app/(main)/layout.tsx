@@ -6,10 +6,6 @@ import DashboardShell from '@/components/layout/DashboardShell';
 import { api, getToken, setToken } from '@/lib/api';
 import { useAuthStore } from '@/store/useStore';
 
-/**
- * Garde d'authentification du tableau de bord. Sans jeton valide, on renvoie
- * vers la landing page (où se trouve la modal de connexion).
- */
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [checked, setChecked] = useState(false);
@@ -30,7 +26,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         setChecked(true);
       })
       .catch(() => {
-        // Jeton invalide ou expiré : on nettoie et on renvoie vers l'accueil.
+
         setToken(null);
         router.replace('/');
       });

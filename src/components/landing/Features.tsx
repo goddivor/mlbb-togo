@@ -21,7 +21,7 @@ export default function Features() {
 
   return (
     <div>
-      {/* En-tête de section */}
+
       <div className="text-center mb-12">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-neon-blue mb-3">{t('features.eyebrow')}</p>
         <h2 className="text-3xl sm:text-5xl font-bold text-white">
@@ -30,7 +30,6 @@ export default function Features() {
         <p className="text-gray-400 mt-4 max-w-2xl mx-auto text-lg">{t('features.subtitle')}</p>
       </div>
 
-      {/* Grandes cartes */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {features.map((f, i) => {
           const Icon = f.icon;

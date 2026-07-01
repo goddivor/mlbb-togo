@@ -17,7 +17,7 @@ export default function Footer() {
     >
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand */}
+
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-2 mb-3">
               <Swords className="w-6 h-6 text-neon-blue" />
@@ -32,7 +32,6 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Links */}
           <div>
             <h4 className={`font-semibold text-sm mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Navigation</h4>
             <ul className="space-y-2">

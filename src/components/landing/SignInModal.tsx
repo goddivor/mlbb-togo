@@ -18,7 +18,6 @@ export default function SignInModal({ open, onClose }: { open: boolean; onClose:
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
-  // Réinitialise à la fermeture.
   useEffect(() => {
     if (!open) {
       setMode('choice');
@@ -27,7 +26,6 @@ export default function SignInModal({ open, onClose }: { open: boolean; onClose:
     }
   }, [open]);
 
-  // Charge Google Identity Services (une seule fois).
   useEffect(() => {
     if (document.getElementById('gis-script')) return;
     const s = document.createElement('script');
@@ -38,7 +36,6 @@ export default function SignInModal({ open, onClose }: { open: boolean; onClose:
     document.head.appendChild(s);
   }, []);
 
-  // Compte à rebours du bouton « recevoir le code ».
   useEffect(() => {
     if (cooldown <= 0) return;
     const id = setTimeout(() => setCooldown((c) => c - 1), 1000);

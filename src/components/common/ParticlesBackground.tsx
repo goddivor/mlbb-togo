@@ -13,8 +13,7 @@ interface Particle {
 }
 
 export default function ParticlesBackground() {
-  // Génération côté client uniquement (après montage) pour éviter
-  // tout décalage d'hydratation lié à Math.random() côté serveur.
+
   const [particles, setParticles] = useState<Particle[]>([]);
 
   useEffect(() => {

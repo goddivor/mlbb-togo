@@ -94,7 +94,7 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile overlay */}
+
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
@@ -107,7 +107,6 @@ export default function Sidebar() {
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
       <motion.aside
         initial={false}
         animate={{
@@ -125,7 +124,6 @@ export default function Sidebar() {
           <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
             {navItems.map(renderNavItem)}
 
-            {/* Section admin : réservée aux administrateurs / modérateurs */}
             {isAdmin && (
               <>
                 <div className="pt-4 pb-2">
@@ -141,7 +139,6 @@ export default function Sidebar() {
             )}
           </nav>
 
-          {/* Bottom section */}
           <div className={`px-3 pt-4 border-t space-y-1 ${theme === 'dark' ? 'border-gaming-border' : 'border-gray-100'}`}>
             {bottomItems.map(renderNavItem)}
             <div className={`flex items-center gap-3 px-3 py-2 mt-2 rounded-lg ${

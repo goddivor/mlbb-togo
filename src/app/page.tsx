@@ -15,23 +15,20 @@ export default function Landing() {
   const t = useT();
   return (
     <div className="relative min-h-screen">
-      {/* Section hero plein écran : banner e-sport en fond + titre superposé + header transparent */}
+
       <div id="top" className="relative">
         <LandingHeader />
         <HeroSection />
       </div>
 
-      {/* Fonctionnalités */}
       <section id="features" className="relative z-10 px-4 pt-20 pb-20 max-w-7xl mx-auto scroll-mt-20">
         <Features />
       </section>
 
-      {/* MTL — Mobile Legends Togo League */}
       <section id="mtl" className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-16 scroll-mt-20">
         <MtlSection />
       </section>
 
-      {/* Vitrine des héros (dynamique, données officielles MLBB) */}
       <section id="heroes" className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-16 scroll-mt-20">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-500 mb-6 text-center">
           {t('latestHeroes')}
@@ -39,12 +36,10 @@ export default function Landing() {
         <HeroShowcase />
       </section>
 
-      {/* Sponsors */}
       <section id="partners" className="relative z-10 px-4 pb-16 max-w-5xl mx-auto scroll-mt-20">
         <Sponsors />
       </section>
 
-      {/* Contact (dernière section) */}
       <section id="contact" className="relative z-10 px-4 pb-20 pt-4 max-w-7xl mx-auto scroll-mt-20">
         <ContactSection />
       </section>

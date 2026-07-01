@@ -4,7 +4,7 @@ type Dict = Record<string, string>;
 
 export const translations: Record<string, Dict> = {
   fr: {
-    // Header
+
     'header.login': 'Connexion',
     'header.dashboard': 'Tableau de bord',
     'header.heroes': 'Héros',
@@ -12,7 +12,7 @@ export const translations: Record<string, Dict> = {
     'header.menu.login': 'Connexion',
     'header.menu.register': 'Créer un compte',
     'header.menu.profile': 'Mon profil',
-    // Connexion (modal)
+
     'signin.title': 'CONNEXION',
     'signin.withCode': 'Connexion par code de vérification',
     'signin.gameId': 'ID de jeu',
@@ -29,7 +29,7 @@ export const translations: Record<string, Dict> = {
     'signin.fillIds': "Saisissez votre ID de jeu et votre serveur d'abord.",
     'signin.fillAll': 'Renseignez tous les champs.',
     'signin.googleSoon': 'Connexion Google bientôt disponible.',
-    // Navigation par sections
+
     'nav.home': 'Accueil',
     'nav.features': 'Fonctionnalités',
     'nav.mtl': 'MTL',
@@ -37,13 +37,11 @@ export const translations: Record<string, Dict> = {
     'nav.partners': 'Partenaires',
     'nav.contact': 'Contact',
 
-    // Hero
     'hero.titlePre': 'La communauté',
     'hero.titlePost': 'du Togo',
     'hero.subtitle':
       'Classements, équipes, tournois, forum et toute la méta des héros. Rejoignez les meilleurs joueurs togolais.',
 
-    // Features
     'features.eyebrow': 'La plateforme',
     'features.titlePre': "Tout l'écosystème",
     'features.subtitle':
@@ -74,13 +72,10 @@ export const translations: Record<string, Dict> = {
     'feat.esport.desc':
       "Découvrez l'organisation ETERNUM, ses sous-équipes et la ligue MTL qui anime l'e-sport au Togo.",
 
-    // Latest heroes
     'latestHeroes': 'Derniers héros',
 
-    // Sponsors
     'sponsors.title': 'Nos partenaires',
 
-    // Contact
     'contact.eyebrow': 'Contact',
     'contact.title': 'Contactez-nous',
     'contact.subtitle':
@@ -94,7 +89,6 @@ export const translations: Record<string, Dict> = {
     'contact.sendError': "Échec de l'envoi",
     'contact.success': 'Message envoyé. Merci, nous reviendrons vers vous.',
 
-    // Footer
     'footer.desc':
       "La plateforme communautaire des joueurs Mobile Legends: Bang Bang du Togo. Classements, équipes, tournois, méta des héros et l'e-sport ETERNUM.",
     'footer.col.discover': 'Découvrir',
@@ -137,7 +131,6 @@ export const translations: Record<string, Dict> = {
     'linkGame.success': 'Compte de jeu lié.',
     'linkGame.invalidCode': 'Code invalide ou expiré.',
 
-    // Dashboard
     'dashboard.title': 'Tableau de bord',
     'dashboard.noGame.title': 'Connecte ton compte de jeu',
     'dashboard.noGame.desc': 'Lie ton compte Mobile Legends pour afficher tes vraies statistiques, ton rang et tes héros favoris.',
@@ -251,7 +244,7 @@ export const translations: Record<string, Dict> = {
   },
 
   en: {
-    // Header
+
     'header.login': 'Login',
     'header.dashboard': 'Dashboard',
     'header.heroes': 'Heroes',
@@ -259,7 +252,7 @@ export const translations: Record<string, Dict> = {
     'header.menu.login': 'Login',
     'header.menu.register': 'Sign up',
     'header.menu.profile': 'My profile',
-    // Sign-in (modal)
+
     'signin.title': 'SIGN IN',
     'signin.withCode': 'Login with verification code',
     'signin.gameId': 'Game ID',
@@ -276,7 +269,7 @@ export const translations: Record<string, Dict> = {
     'signin.fillIds': 'Enter your Game ID and Server first.',
     'signin.fillAll': 'Please fill in all fields.',
     'signin.googleSoon': 'Google sign-in coming soon.',
-    // Section navigation
+
     'nav.home': 'Home',
     'nav.features': 'Features',
     'nav.mtl': 'MTL',
@@ -284,13 +277,11 @@ export const translations: Record<string, Dict> = {
     'nav.partners': 'Partners',
     'nav.contact': 'Contact',
 
-    // Hero
     'hero.titlePre': 'The',
     'hero.titlePost': 'community of Togo',
     'hero.subtitle':
       "Rankings, teams, tournaments, forum and the full hero meta. Join Togo's best players.",
 
-    // Features
     'features.eyebrow': 'The platform',
     'features.titlePre': 'The whole',
     'features.subtitle':
@@ -321,13 +312,10 @@ export const translations: Record<string, Dict> = {
     'feat.esport.desc':
       'Discover the ETERNUM organization, its sub-teams and the MTL league driving e-sport in Togo.',
 
-    // Latest heroes
     'latestHeroes': 'Latest heroes',
 
-    // Sponsors
     'sponsors.title': 'Our partners',
 
-    // Contact
     'contact.eyebrow': 'Contact',
     'contact.title': 'Contact us',
     'contact.subtitle': 'A question, a partnership, or want to join the community? Write to us.',
@@ -340,7 +328,6 @@ export const translations: Record<string, Dict> = {
     'contact.sendError': 'Sending failed',
     'contact.success': "Message sent. Thanks, we'll get back to you.",
 
-    // Footer
     'footer.desc':
       'The community platform for Mobile Legends: Bang Bang players in Togo. Rankings, teams, tournaments, hero meta and ETERNUM e-sport.',
     'footer.col.discover': 'Discover',
@@ -383,7 +370,6 @@ export const translations: Record<string, Dict> = {
     'linkGame.success': 'Game account linked.',
     'linkGame.invalidCode': 'Invalid or expired code.',
 
-    // Dashboard
     'dashboard.title': 'Dashboard',
     'dashboard.noGame.title': 'Link your game account',
     'dashboard.noGame.desc': 'Link your Mobile Legends account to view your real stats, rank and favorite heroes.',
@@ -547,7 +533,6 @@ export const translations: Record<string, Dict> = {
   },
 };
 
-/** Hook : renvoie la fonction de traduction t(key) selon la langue courante. */
 export function useT() {
   const lang = useLangStore((s: any) => s.lang);
   return (key: string): string => translations[lang]?.[key] ?? translations.fr[key] ?? key;

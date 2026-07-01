@@ -13,7 +13,6 @@ export default function LanguageSwitcher() {
   const setLang = useLangStore((s: any) => s.setLang);
   const t = useT();
 
-  // Ferme le menu au clic en dehors.
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {

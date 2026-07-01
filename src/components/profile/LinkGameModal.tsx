@@ -8,10 +8,6 @@ import { useAuthStore } from '@/store/useStore';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
 
-/**
- * Modal de liaison d'un compte de jeu MLBB au compte connecté, par code de
- * vérification (même flux que la connexion, mais sans créer de nouveau compte).
- */
 export default function LinkGameModal({
   open,
   onClose,

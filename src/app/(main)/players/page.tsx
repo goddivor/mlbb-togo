@@ -41,7 +41,7 @@ export default function Players() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
+
       <div className="mb-8">
         <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
           <Users className="inline w-8 h-8 mr-2 text-neon-blue" />
@@ -52,7 +52,6 @@ export default function Players() {
         </p>
       </div>
 
-      {/* Filters */}
       <Card className="mb-6" hover={false}>
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1">
@@ -118,7 +117,6 @@ export default function Players() {
         </div>
       </Card>
 
-      {/* Tabs */}
       <Tabs
         tabs={[
           { id: 'all', label: `Tous (${players.length})`, icon: Users },
@@ -129,7 +127,6 @@ export default function Players() {
         className="mb-6"
       />
 
-      {/* Players Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredPlayers.map((player: any, index: number) => (
           <motion.div
@@ -189,7 +186,6 @@ export default function Players() {
                   </div>
                 </div>
 
-                {/* Favorite heroes */}
                 <div className="mt-3 flex flex-wrap gap-1">
                   {(player.favoriteHeroes || []).slice(0, 3).map((hero: string) => (
                     <span key={hero} className={`text-[10px] px-2 py-0.5 rounded-full ${

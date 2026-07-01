@@ -1,4 +1,3 @@
-// Types partagés (souples) pour les entités de la plateforme MLBB Togo.
 
 export interface Player {
   id: string;

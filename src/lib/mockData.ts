@@ -1,5 +1,3 @@
-// Données de démonstration — utilisées comme repli si l'API backend est injoignable.
-// La source de vérité reste le backend NestJS (ces données y sont seedées).
 
 export const mockPlayers = [
   {

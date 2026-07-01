@@ -10,8 +10,6 @@ export const useAuthStore = create<any>((set) => ({
   logout: () => set({ user: null, userProfile: null, loading: false }),
 }));
 
-// Langue de la page d'accueil (i18n EN/FR). Défaut 'fr' (évite tout décalage d'hydratation) ;
-// la valeur persistée est appliquée au montage via le header.
 export const useLangStore = create<any>((set) => ({
   lang: 'fr',
   setLang: (lang: string) => {
