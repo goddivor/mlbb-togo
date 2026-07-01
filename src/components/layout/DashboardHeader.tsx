@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Swords, User, LogOut, ChevronDown } from 'lucide-react';
+import { User, LogOut, ChevronDown } from 'lucide-react';
 import { useAuthStore, useLangStore } from '@/store/useStore';
 import { setToken, avatarSrc } from '@/lib/api';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
@@ -12,7 +12,6 @@ import { useT } from '@/lib/i18n';
 
 export default function DashboardHeader() {
   const router = useRouter();
-  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const userProfile = useAuthStore((s: any) => s.userProfile);
   const lang = useLangStore((s: any) => s.lang);
@@ -32,41 +31,14 @@ export default function DashboardHeader() {
 
   const name = userProfile?.displayName || userProfile?.username || 'Joueur';
 
-  const NAV = [
-    { href: '/dashboard', label: t('header.dashboard'), icon: LayoutDashboard },
-    { href: '/heroes', label: t('header.heroes'), icon: Swords },
-  ];
-
   return (
     <header className="sticky top-0 z-40 h-16 bg-gaming-card/95 backdrop-blur border-b border-gaming-border">
-      <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
-        {/* Logo + navigation */}
-        <div className="flex items-center gap-8">
-          {/* Le logo ramène à la landing page. */}
-          <Link href="/" className="flex items-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/mlbb-togo-logo.png" alt="MLBB Togo" className="h-9 w-auto" />
-          </Link>
-          <nav className="hidden sm:flex items-center gap-1">
-            {NAV.map((item) => {
-              const Icon = item.icon;
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    active
-                      ? 'text-neon-blue bg-neon-blue/10'
-                      : 'text-gray-300 hover:text-white hover:bg-gaming-surface'
-                  }`}
-                >
-                  <Icon size={16} /> {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+      <div className="h-full px-4 sm:px-6 flex items-center justify-between">
+        {/* Le logo ramène à la landing page. */}
+        <Link href="/" className="flex items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/mlbb-togo-logo.png" alt="MLBB Togo" className="h-9 w-auto" />
+        </Link>
 
         {/* Right side: Language + Profile */}
         <div className="flex items-center gap-2">
