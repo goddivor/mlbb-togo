@@ -310,28 +310,27 @@ export default function HeroDetailModal({
 
                 {tab === 'counters' && (
                   <div className="p-6 md:p-8">
-                    {!meta?.available ? (
-                      <p className="text-center text-gray-500 py-10">{t('heroes.metaUnavailable')}</p>
-                    ) : (
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div>
-                          <h4 className="text-sm font-semibold text-green-400 mb-3">{t('heroes.strongAgainst')}</h4>
-                          <HeroList heroes={meta.counters.strong} />
+                    {(() => {
+                      const sections = [
+                        { key: 'heroes.strongAgainst', color: 'text-green-400', list: meta?.counters?.strong },
+                        { key: 'heroes.weakAgainst', color: 'text-red-400', list: meta?.counters?.weak },
+                        { key: 'heroes.bestTeammates', color: 'text-neon-blue', list: meta?.synergy?.best },
+                        { key: 'heroes.worstTeammates', color: 'text-gray-300', list: meta?.synergy?.worst },
+                      ].filter((s) => s.list?.length);
+                      if (!sections.length) {
+                        return <p className="text-center text-gray-500 py-10">{t('heroes.metaUnavailable')}</p>;
+                      }
+                      return (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {sections.map((s) => (
+                            <div key={s.key}>
+                              <h4 className={`text-sm font-semibold ${s.color} mb-3`}>{t(s.key)}</h4>
+                              <HeroList heroes={s.list} />
+                            </div>
+                          ))}
                         </div>
-                        <div>
-                          <h4 className="text-sm font-semibold text-red-400 mb-3">{t('heroes.weakAgainst')}</h4>
-                          <HeroList heroes={meta.counters.weak} />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-semibold text-neon-blue mb-3">{t('heroes.bestTeammates')}</h4>
-                          <HeroList heroes={meta.synergy.best} />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-300 mb-3">{t('heroes.worstTeammates')}</h4>
-                          <HeroList heroes={meta.synergy.worst} />
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 )}
               </div>
