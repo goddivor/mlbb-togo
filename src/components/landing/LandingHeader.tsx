@@ -33,6 +33,8 @@ export default function LandingHeader() {
   // Un seul menu ouvert à la fois (exclusion mutuelle).
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
   const [signInOpen, setSignInOpen] = useState(false);
+  // Fond solide du header dès qu'on défile (transparent tout en haut, sur le hero).
+  const [scrolled, setScrolled] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
   const lang = useLangStore((s: any) => s.lang);
   const setLang = useLangStore((s: any) => s.setLang);
@@ -40,6 +42,14 @@ export default function LandingHeader() {
   const setUser = useAuthStore((s: any) => s.setUser);
   const setUserProfile = useAuthStore((s: any) => s.setUserProfile);
   const t = useT();
+
+  // Active le fond solide du header au-delà d'un petit défilement.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // Applique la langue persistée après le montage (évite tout décalage d'hydratation).
   useEffect(() => {
@@ -93,7 +103,13 @@ export default function LandingHeader() {
   };
 
   return (
-    <header className="absolute top-0 inset-x-0 z-30 h-20 bg-gradient-to-b from-black/70 via-black/30 to-transparent">
+    <header
+      className={`fixed top-0 inset-x-0 z-40 h-20 transition-colors duration-300 ${
+        scrolled
+          ? 'bg-gaming-dark/90 backdrop-blur border-b border-gaming-border'
+          : 'bg-gradient-to-b from-black/70 via-black/30 to-transparent'
+      }`}
+    >
       <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center">
