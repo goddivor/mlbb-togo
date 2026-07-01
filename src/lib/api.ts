@@ -232,6 +232,9 @@ export const api = {
     hero: (id: number | string) =>
       request(`/mlbb/heroes/${id}`, { auth: false }),
 
+    heroMeta: (id: number | string) =>
+      request(`/mlbb/heroes/${id}/meta`, { fallback: null, auth: false }),
+
     ranking: (params: { limit?: number; sort?: string; rank?: string; matchType?: number } = {}) => {
       const qs = new URLSearchParams(
         Object.entries(params).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)]),
