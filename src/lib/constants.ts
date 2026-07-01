@@ -10,13 +10,14 @@ export const MLBB_RANKS = [
   { id: 'mythical-immortal', name: 'Mythical Immortal', color: '#ff1493', minStars: 1000 },
 ];
 
-// Icônes officielles de rôle (CDN Moonton). Tank non fourni pour l'instant.
+// Official MLBB lane icons (Moonton CDN), mapped to the matching role.
 export const MLBB_ROLE_ICONS: Record<string, string> = {
-  fighter: 'https://akmweb.youngjoygame.com/web/gms/image/a3dbb075b4d8186c29f02f7d47da236a.svg',
-  assassin: 'https://akmweb.youngjoygame.com/web/gms/image/6a246099f7eb83a8856306d8b4c84fc2.svg',
-  mage: 'https://akmweb.youngjoygame.com/web/gms/image/de611167c7310681135f0b4198137bfa.svg',
-  marksman: 'https://akmweb.youngjoygame.com/web/gms/image/facab1eacb218d767b5acb80304bfafd.svg',
-  support: 'https://akmweb.youngjoygame.com/web/gms/image/91f817c656908a83c2e24eecb3b70986.svg',
+  tank: 'https://akmweb.youngjoygame.com/web/gms/image/a3dbb075b4d8186c29f02f7d47da236a.svg', // Roam
+  fighter: 'https://akmweb.youngjoygame.com/web/gms/image/6a246099f7eb83a8856306d8b4c84fc2.svg', // EXP
+  assassin: 'https://akmweb.youngjoygame.com/web/gms/image/de611167c7310681135f0b4198137bfa.svg', // Jungle
+  mage: 'https://akmweb.youngjoygame.com/web/gms/image/facab1eacb218d767b5acb80304bfafd.svg', // Mid
+  marksman: 'https://akmweb.youngjoygame.com/web/gms/image/91f817c656908a83c2e24eecb3b70986.svg', // Gold
+  support: 'https://akmweb.youngjoygame.com/web/gms/image/a3dbb075b4d8186c29f02f7d47da236a.svg', // Roam
 };
 
 // Flèches officielles du carrousel.
