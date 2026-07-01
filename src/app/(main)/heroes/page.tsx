@@ -5,18 +5,20 @@ import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
 import { api, mlbbImg } from '@/lib/api';
 import HeroDetailModal from '@/components/game/HeroDetailModal';
+import { useT } from '@/lib/i18n';
 
-const ROLES: Array<{ key: string; label: string }> = [
-  { key: 'all', label: 'Tous' },
-  { key: 'Tank', label: 'Tank' },
-  { key: 'Fighter', label: 'Combattant' },
-  { key: 'Assassin', label: 'Assassin' },
-  { key: 'Mage', label: 'Mage' },
-  { key: 'Marksman', label: 'Tireur' },
-  { key: 'Support', label: 'Support' },
+const ROLES: Array<{ key: string; labelKey: string }> = [
+  { key: 'all', labelKey: 'heroes.role.all' },
+  { key: 'Tank', labelKey: 'role.tank' },
+  { key: 'Fighter', labelKey: 'role.fighter' },
+  { key: 'Assassin', labelKey: 'role.assassin' },
+  { key: 'Mage', labelKey: 'role.mage' },
+  { key: 'Marksman', labelKey: 'role.marksman' },
+  { key: 'Support', labelKey: 'role.support' },
 ];
 
 export default function HeroesPage() {
+  const t = useT();
   const [heroes, setHeroes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState('all');
@@ -44,9 +46,9 @@ export default function HeroesPage() {
     <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-2xl font-bold text-white">Héros</h1>
+          <h1 className="text-2xl font-bold text-white">{t('heroes.title')}</h1>
           <p className="text-sm text-gray-400">
-            {loading ? 'Chargement…' : `${heroes.length} héros · données officielles Mobile Legends`}
+            {loading ? t('heroes.loading') : `${heroes.length} ${t('heroes.count')}`}
           </p>
         </div>
         <div className="relative">
@@ -54,7 +56,7 @@ export default function HeroesPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher un héros…"
+            placeholder={t('heroes.search')}
             className="pl-9 pr-3 py-2 w-full sm:w-64 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue"
           />
         </div>
@@ -71,7 +73,7 @@ export default function HeroesPage() {
                 : 'bg-gaming-surface text-gray-300 hover:text-white border border-gaming-border'
             }`}
           >
-            {r.label}
+            {t(r.labelKey)}
           </button>
         ))}
       </div>
@@ -81,7 +83,7 @@ export default function HeroesPage() {
           <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">Aucun héros trouvé.</div>
+        <div className="text-center py-20 text-gray-500">{t('heroes.none')}</div>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
           {filtered.map((h, i) => (
