@@ -123,13 +123,13 @@ export const api = {
   },
 
   users: {
-    list: () => request('/users', { fallback: mockPlayers, auth: false }),
+    list: () => request('/users', { fallback: [], auth: false }),
     leaderboard: () =>
       request('/users/leaderboard', {
         fallback: [...mockPlayers].sort((a, b) => b.winRate - a.winRate),
         auth: false,
       }),
-    get: (id: string) => request(`/users/${id}`, { fallback: findMock(mockPlayers, id), auth: false }),
+    get: (id: string) => request(`/users/${id}`, { fallback: null, auth: false }),
     update: (id: string, data: any) => request(`/users/${id}`, { method: 'PATCH', body: data }),
     remove: (id: string) => request(`/users/${id}`, { method: 'DELETE' }),
     setBan: (id: string, isBanned: boolean) =>
