@@ -1,215 +1,117 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Search, Users, Flame, Crown } from 'lucide-react';
-import { Card, Badge, Avatar, Tabs } from '@/components/ui';
-import { useThemeStore, usePlayerStore } from '@/store/useStore';
-import { api } from '@/lib/api';
-import { MLBB_RANKS, MLBB_ROLES } from '@/lib/constants';
-import { calculateWinRate, getRankName } from '@/lib/helpers';
+import { Search, MapPin } from 'lucide-react';
+import { api, avatarSrc } from '@/lib/api';
+import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
+import { useT } from '@/lib/i18n';
 
-export default function Players() {
-  const { theme } = useThemeStore();
-  const { players, setPlayers } = usePlayerStore();
-  const [search, setSearch] = useState('');
-  const [rankFilter, setRankFilter] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
-  const [sortBy, setSortBy] = useState('winRate');
-  const [activeTab, setActiveTab] = useState('all');
+export default function PlayersPage() {
+  const t = useT();
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
-    api.users.list().then(setPlayers);
-  }, [setPlayers]);
+    api.users
+      .list()
+      .then((u: any) => setUsers(Array.isArray(u) ? u : []))
+      .catch(() => setUsers([]))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const filteredPlayers = players
-    .filter((p: any) => {
-      if (search && !p.username.toLowerCase().includes(search.toLowerCase())) return false;
-      if (rankFilter && p.rank !== rankFilter) return false;
-      if (roleFilter && p.role !== roleFilter) return false;
-      if (activeTab === 'online' && !p.isOnline) return false;
-      return true;
-    })
-    .sort((a: any, b: any) => {
-      if (sortBy === 'winRate') return parseFloat(calculateWinRate(b.wins, b.losses) as string) - parseFloat(calculateWinRate(a.wins, a.losses) as string);
-      if (sortBy === 'wins') return b.wins - a.wins;
-      if (sortBy === 'mvp') return b.mvpCount - a.mvpCount;
-      if (sortBy === 'streak') return b.streak - a.streak;
-      return 0;
-    });
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter(
+      (u) =>
+        (u.displayName || '').toLowerCase().includes(q) ||
+        (u.username || '').toLowerCase().includes(q),
+    );
+  }, [users, query]);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-
-      <div className="mb-8">
-        <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-          <Users className="inline w-8 h-8 mr-2 text-neon-blue" />
-          Joueurs
-        </h1>
-        <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-          Découvrez les joueurs de la communauté MLBB Togo
-        </p>
-      </div>
-
-      <Card className="mb-6" hover={false}>
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
-              <input
-                type="text"
-                placeholder="Rechercher un joueur..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className={`w-full pl-10 pr-4 py-2.5 rounded-lg text-sm transition-all duration-300 focus:outline-none ${
-                  theme === 'dark'
-                    ? 'bg-gaming-surface border border-gaming-border text-white placeholder-gray-500 focus:border-neon-blue/50'
-                    : 'bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-primary-500'
-                }`}
-              />
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <select
-              value={rankFilter}
-              onChange={(e) => setRankFilter(e.target.value)}
-              className={`px-4 py-2.5 rounded-lg text-sm transition-all focus:outline-none ${
-                theme === 'dark'
-                  ? 'bg-gaming-surface border border-gaming-border text-white focus:border-neon-blue/50'
-                  : 'bg-gray-50 border border-gray-200 text-gray-900 focus:border-primary-500'
-              }`}
-            >
-              <option value="">Tous les rangs</option>
-              {MLBB_RANKS.map((r) => (
-                <option key={r.id} value={r.id}>{r.name}</option>
-              ))}
-            </select>
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className={`px-4 py-2.5 rounded-lg text-sm transition-all focus:outline-none ${
-                theme === 'dark'
-                  ? 'bg-gaming-surface border border-gaming-border text-white focus:border-neon-blue/50'
-                  : 'bg-gray-50 border border-gray-200 text-gray-900 focus:border-primary-500'
-              }`}
-            >
-              <option value="">Tous les rôles</option>
-              {MLBB_ROLES.map((r) => (
-                <option key={r.id} value={r.id}>{r.icon} {r.name}</option>
-              ))}
-            </select>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className={`px-4 py-2.5 rounded-lg text-sm transition-all focus:outline-none ${
-                theme === 'dark'
-                  ? 'bg-gaming-surface border border-gaming-border text-white focus:border-neon-blue/50'
-                  : 'bg-gray-50 border border-gray-200 text-gray-900 focus:border-primary-500'
-              }`}
-            >
-              <option value="winRate">Trier: Win Rate</option>
-              <option value="wins">Trier: Victoires</option>
-              <option value="mvp">Trier: MVP</option>
-              <option value="streak">Trier: Série</option>
-            </select>
-          </div>
-        </div>
-      </Card>
-
-      <Tabs
-        tabs={[
-          { id: 'all', label: `Tous (${players.length})`, icon: Users },
-          { id: 'online', label: `En ligne (${players.filter((p: any) => p.isOnline).length})`, icon: Flame },
-        ]}
-        active={activeTab}
-        onChange={setActiveTab}
-        className="mb-6"
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredPlayers.map((player: any, index: number) => (
-          <motion.div
-            key={player.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <Link href={`/profile/${player.id}`}>
-              <Card className="h-full group cursor-pointer">
-                <div className="flex items-center gap-3 mb-4">
-                  <Avatar name={player.username} size="lg" online={player.isOnline} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className={`font-bold truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                        {player.username}
-                      </h3>
-                      {index < 3 && <Crown size={14} className="text-yellow-400 flex-shrink-0" />}
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <Badge variant="neon" size="sm">{getRankName(player.rank)}</Badge>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="text-center">
-                    <p className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                      {calculateWinRate(player.wins, player.losses)}%
-                    </p>
-                    <p className="text-[10px] text-gray-400">Win Rate</p>
-                  </div>
-                  <div className="text-center">
-                    <p className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                      {player.wins}
-                    </p>
-                    <p className="text-[10px] text-gray-400">Victoires</p>
-                  </div>
-                  <div className="text-center">
-                    <p className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                      {player.mvpCount}
-                    </p>
-                    <p className="text-[10px] text-gray-400">MVP</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-gray-400">
-                      {MLBB_ROLES.find((r) => r.id === player.role)?.icon}
-                    </span>
-                    <span className="text-xs text-gray-400">{player.role}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-gray-400">
-                    <Flame size={12} className="text-orange-400" />
-                    {player.streak}
-                  </div>
-                </div>
-
-                <div className="mt-3 flex flex-wrap gap-1">
-                  {(player.favoriteHeroes || []).slice(0, 3).map((hero: string) => (
-                    <span key={hero} className={`text-[10px] px-2 py-0.5 rounded-full ${
-                      theme === 'dark' ? 'bg-gaming-surface text-gray-400' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {hero}
-                    </span>
-                  ))}
-                </div>
-              </Card>
-            </Link>
-          </motion.div>
-        ))}
-      </div>
-
-      {filteredPlayers.length === 0 && (
-        <div className="text-center py-16">
-          <Users className="w-12 h-12 mx-auto mb-4 text-gray-500" />
-          <h3 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            Aucun joueur trouvé
-          </h3>
-          <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Essayez de modifier vos filtres
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white">{t('users.title')}</h1>
+          <p className="text-sm text-gray-400">
+            {loading ? '…' : `${users.length} ${t('users.count')}`}
           </p>
+        </div>
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t('users.search')}
+            className="pl-9 pr-3 py-2 w-full sm:w-64 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue"
+          />
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-24">
+          <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-20 text-gray-500">{t('users.none')}</div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filtered.map((u, i) => (
+            <motion.div
+              key={u.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(i * 0.02, 0.4) }}
+            >
+              <Link
+                href={`/players/${u.id}`}
+                className="flex items-center gap-3 rounded-xl border border-gaming-border bg-gaming-surface/40 hover:border-neon-blue transition-colors p-3"
+              >
+                {u.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarSrc(u.avatar, 96)}
+                    alt={u.displayName}
+                    referrerPolicy="no-referrer"
+                    className="w-12 h-12 rounded-xl object-cover border border-gaming-border"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-lg font-bold text-white">
+                    {(u.displayName || u.username)?.[0]?.toUpperCase() || 'J'}
+                  </div>
+                )}
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-white truncate">{u.displayName || u.username}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {u.hasGame ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-gray-300">
+                        {hasRankBadge(u.gameRank) && <RankBadge rank={u.gameRank} size={16} />}
+                        {u.gameRank || `${t('dashboard.level')} ${u.gameLevel ?? '?'}`}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-500">{t('users.noGame')}</span>
+                    )}
+                    {u.country && (
+                      <span className="inline-flex items-center gap-0.5 text-xs text-gray-500">
+                        <MapPin size={11} /> {u.country}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {u.roleUser && u.roleUser !== 'user' && (
+                  <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-neon-purple/15 text-neon-purple border border-neon-purple/30">
+                    {u.roleUser}
+                  </span>
+                )}
+              </Link>
+            </motion.div>
+          ))}
         </div>
       )}
     </div>
