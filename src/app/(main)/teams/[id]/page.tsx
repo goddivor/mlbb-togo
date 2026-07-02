@@ -180,48 +180,54 @@ export default function TeamDetailPage() {
         <ArrowLeft size={16} /> {t('teams.back')}
       </Link>
 
-      {/* En-tête équipe */}
-      <Card className="mb-6" hover={false}>
-        {team.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={team.image}
-            alt={team.name}
-            referrerPolicy="no-referrer"
-            className="w-full aspect-video object-cover rounded-xl border border-gaming-border mb-4"
-          />
-        ) : (
-          <div className="w-full aspect-video rounded-xl border border-gaming-border bg-gaming-surface/40 flex items-center justify-center mb-4">
-            <Shield size={64} className="text-neon-blue/40" />
-          </div>
-        )}
+      {/* Hero compact : image en fond + dégradé, contenu superposé */}
+      <div className="relative rounded-2xl overflow-hidden border border-gaming-border mb-5">
+        <div className="relative h-44 sm:h-56 w-full bg-gaming-dark">
+          {team.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={team.image}
+              alt={team.name}
+              referrerPolicy="no-referrer"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gaming-surface to-gaming-dark">
+              <Shield size={72} className="text-neon-blue/25" />
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-gaming-dark via-gaming-dark/55 to-transparent" />
 
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl md:text-3xl font-bold text-white">{team.name}</h1>
-          {team.isRecruiting && (
-            <Badge variant="green" size="md">
-              {t('teams.detail.recruiting')}
+          <div className="absolute top-3 right-3 flex flex-wrap justify-end gap-2">
+            <Badge variant={team.type === 'esport' ? 'gold' : 'default'} size="sm">
+              {t('admin.esport.badge.' + (team.type || 'community'))}
             </Badge>
-          )}
-        </div>
+            {team.isRecruiting && (
+              <Badge variant="green" size="sm">
+                {t('teams.detail.recruiting')}
+              </Badge>
+            )}
+          </div>
 
-        {team.description && (
-          <p className="text-sm text-gray-400 mt-2 whitespace-pre-line">{team.description}</p>
-        )}
-
-        <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-gray-400">
-          <span className="inline-flex items-center gap-1.5">
-            <Users size={15} className="text-neon-blue" />
-            {team.memberCount ?? members.length} {t('teams.members')}
-          </span>
-          {foundedLabel && (
-            <span className="inline-flex items-center gap-1.5">
-              <Calendar size={15} className="text-neon-blue" />
-              {t('teams.detail.founded')} {foundedLabel}
-            </span>
-          )}
+          <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">{team.name}</h1>
+            <div className="flex flex-wrap items-center gap-4 mt-1.5 text-xs sm:text-sm text-gray-200">
+              <span className="inline-flex items-center gap-1.5">
+                <Users size={14} /> {team.memberCount ?? members.length} {t('teams.members')}
+              </span>
+              {foundedLabel && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Calendar size={14} /> {t('teams.detail.founded')} {foundedLabel}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
-      </Card>
+      </div>
+
+      {team.description && (
+        <p className="text-sm text-gray-400 mb-6 whitespace-pre-line">{team.description}</p>
+      )}
 
       {/* Bilan */}
       {stats.played > 0 && (

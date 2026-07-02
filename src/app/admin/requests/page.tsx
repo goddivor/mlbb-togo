@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Check, X, Eye, MessageSquare, Inbox, Plus, ExternalLink } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
@@ -23,12 +22,8 @@ const statusVariant: Record<string, string> = {
   rejected: 'red',
 };
 
-const createHref = (r: any) =>
-  `/admin/esport/new?requestId=${r.id}&name=${encodeURIComponent(r.proposedName || '')}`;
-
 export default function AdminRequestsPage() {
   const t = useT();
-  const router = useRouter();
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('');
@@ -38,6 +33,11 @@ export default function AdminRequestsPage() {
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
+
+  // Modal de création d'équipe (depuis une demande)
+  const [createReq, setCreateReq] = useState<any | null>(null);
+  const [createForm, setCreateForm] = useState({ name: '', image: '', description: '', isRecruiting: false });
+  const [creating, setCreating] = useState(false);
 
   const errMsg = (e: any) => e?.message || t('admin.esport.errorGeneric');
 
@@ -72,17 +72,46 @@ export default function AdminRequestsPage() {
     }
   };
 
-  // Accepter : on marque approuvée puis on ouvre la page de création préremplie.
+  const openCreate = (r: any) => {
+    setCreateReq(r);
+    setCreateForm({ name: r.proposedName || '', image: '', description: '', isRecruiting: false });
+  };
+
+  // Accepter : on marque approuvée puis on ouvre le modal de création prérempli.
   const approveAndCreate = async (r: any) => {
     setActing(r.id + 'approved');
     try {
       await api.teamRequests.setStatus(r.id, 'approved');
+      await load(filter);
     } catch (e: any) {
       toast.error(errMsg(e));
     } finally {
       setActing(null);
     }
-    router.push(createHref(r));
+    openCreate(r);
+  };
+
+  const submitCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createReq || !createForm.name.trim()) return;
+    setCreating(true);
+    try {
+      await api.esport.createTeam({
+        name: createForm.name.trim(),
+        image: createForm.image.trim() || undefined,
+        description: createForm.description.trim() || undefined,
+        isRecruiting: createForm.isRecruiting,
+        type: 'community',
+        requestId: createReq.id,
+      });
+      toast.success(t('admin.esport.saved'));
+      setCreateReq(null);
+      await load(filter);
+    } catch (err: any) {
+      toast.error(errMsg(err));
+    } finally {
+      setCreating(false);
+    }
   };
 
   const openContact = (r: any) => {
@@ -243,11 +272,9 @@ export default function AdminRequestsPage() {
                               </Button>
                             </Link>
                           ) : (
-                            <Link href={createHref(r)}>
-                              <Button size="sm">
-                                <Plus size={14} /> {t('requests.createTeam')}
-                              </Button>
-                            </Link>
+                            <Button size="sm" onClick={() => openCreate(r)}>
+                              <Plus size={14} /> {t('requests.createTeam')}
+                            </Button>
                           ))}
                         {requester?.id && (
                           <Button size="sm" variant="ghost" onClick={() => openContact(r)}>
@@ -296,6 +323,66 @@ export default function AdminRequestsPage() {
               <MessageSquare size={16} /> {t('messages.send')}
             </Button>
             <Button size="sm" variant="ghost" type="button" onClick={closeContact}>
+              {t('admin.esport.cancel')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={!!createReq}
+        onClose={() => setCreateReq(null)}
+        closeLabel={t('common.close')}
+        title={t('admin.teams.createTitle')}
+      >
+        {createReq?.requester && (
+          <p className="text-sm text-gray-400 mb-4">
+            {t('admin.teams.fromRequest')}{' '}
+            <span className="text-gray-200 font-medium">
+              {createReq.requester.displayName || createReq.requester.username}
+            </span>
+          </p>
+        )}
+        <form onSubmit={submitCreate} className="space-y-3">
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">{t('admin.esport.teamName')}</label>
+            <input
+              className={inputCls}
+              value={createForm.name}
+              onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">{t('admin.esport.teamImage')}</label>
+            <input
+              className={inputCls}
+              value={createForm.image}
+              onChange={(e) => setCreateForm({ ...createForm, image: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">{t('admin.esport.teamDesc')}</label>
+            <textarea
+              className={`${inputCls} min-h-[80px] resize-y`}
+              value={createForm.description}
+              onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              className="accent-neon-blue"
+              checked={createForm.isRecruiting}
+              onChange={(e) => setCreateForm({ ...createForm, isRecruiting: e.target.checked })}
+            />
+            {t('admin.esport.recruiting')}
+          </label>
+          <div className="flex gap-2 pt-2">
+            <Button size="sm" type="submit" disabled={creating || !createForm.name.trim()}>
+              <Check size={16} /> {t('admin.esport.create')}
+            </Button>
+            <Button size="sm" variant="ghost" type="button" onClick={() => setCreateReq(null)}>
               {t('admin.esport.cancel')}
             </Button>
           </div>
