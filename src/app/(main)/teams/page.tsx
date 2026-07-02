@@ -26,28 +26,80 @@ interface EsportOrg {
   teams?: EsportTeam[];
 }
 
+function TeamCard({ tm, accent, t, i }: any) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(i * 0.03, 0.4) }}
+    >
+      <Link
+        href={`/teams/${tm.id}`}
+        className="group block rounded-xl border border-gaming-border bg-gaming-surface/40 overflow-hidden hover:border-neon-blue transition-colors"
+      >
+        <div className="relative aspect-video w-full bg-gaming-dark overflow-hidden">
+          {tm.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={tm.image}
+              alt={tm.name}
+              referrerPolicy="no-referrer"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Shield size={40} className="text-gray-600" />
+            </div>
+          )}
+          <div className="absolute inset-x-0 bottom-0 h-1" style={{ backgroundColor: accent }} />
+          {tm.isRecruiting && (
+            <span className="absolute top-2 right-2 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
+              {t('teams.detail.recruiting')}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-2 p-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Shield size={16} style={{ color: accent }} className="shrink-0" />
+            <p className="text-sm font-semibold text-white truncate">{tm.name}</p>
+          </div>
+          <span className="inline-flex items-center gap-1 text-xs text-gray-400 shrink-0">
+            <Users size={13} /> {tm.memberCount ?? 0}
+          </span>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
 export default function TeamsPage() {
   const t = useT();
   const [org, setOrg] = useState<EsportOrg | null>(null);
+  const [community, setCommunity] = useState<EsportTeam[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    api.esport
-      .org()
-      .then((o: any) => setOrg(o))
-      .catch(() => setOrg(null))
+    Promise.all([api.esport.org(), api.esport.teams('community')])
+      .then(([o, c]: any) => {
+        setOrg(o);
+        setCommunity(Array.isArray(c) ? c : []);
+      })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const teams = org?.teams ?? [];
+  const esportTeams = org?.teams ?? [];
   const accent = org?.color || '#E9B84B';
+  const total = esportTeams.length + community.length;
 
-  const filtered = useMemo(() => {
+  const byQuery = (list: EsportTeam[]) => {
     const q = query.trim().toLowerCase();
-    if (!q) return teams;
-    return teams.filter((tm) => (tm.name || '').toLowerCase().includes(q));
-  }, [teams, query]);
+    if (!q) return list;
+    return list.filter((tm) => (tm.name || '').toLowerCase().includes(q));
+  };
+  const filteredEsport = useMemo(() => byQuery(esportTeams), [esportTeams, query]);
+  const filteredCommunity = useMemo(() => byQuery(community), [community, query]);
 
   const [proposeOpen, setProposeOpen] = useState(false);
   const [form, setForm] = useState({ proposedName: '', message: '' });
@@ -81,7 +133,7 @@ export default function TeamsPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">{t('teams.title')}</h1>
           <p className="text-sm text-gray-400">
-            {loading ? '…' : `${teams.length} ${t('teams.count')}`}
+            {loading ? '…' : `${total} ${t('teams.count')}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -132,56 +184,37 @@ export default function TeamsPage() {
         <div className="flex items-center justify-center py-24">
           <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
         </div>
-      ) : teams.length === 0 ? (
+      ) : total === 0 ? (
         <div className="text-center py-20 text-gray-500">{t('teams.empty')}</div>
-      ) : filtered.length === 0 ? (
+      ) : filteredEsport.length === 0 && filteredCommunity.length === 0 ? (
         <div className="text-center py-20 text-gray-500">{t('teams.none')}</div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((tm, i) => (
-            <motion.div
-              key={tm.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.03, 0.4) }}
-            >
-              <Link
-                href={`/teams/${tm.id}`}
-                className="group block rounded-xl border border-gaming-border bg-gaming-surface/40 overflow-hidden hover:border-neon-blue transition-colors"
-              >
-                <div className="relative aspect-video w-full bg-gaming-dark overflow-hidden">
-                  {tm.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={tm.image}
-                      alt={tm.name}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Shield size={40} className="text-gray-600" />
-                    </div>
-                  )}
-                  <div className="absolute inset-x-0 bottom-0 h-1" style={{ backgroundColor: accent }} />
-                  {tm.isRecruiting && (
-                    <span className="absolute top-2 right-2 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
-                      {t('teams.detail.recruiting')}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center justify-between gap-2 p-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Shield size={16} style={{ color: accent }} className="shrink-0" />
-                    <p className="text-sm font-semibold text-white truncate">{tm.name}</p>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-xs text-gray-400 shrink-0">
-                    <Users size={13} /> {tm.memberCount ?? 0}
-                  </span>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
+        <div className="space-y-8">
+          {filteredEsport.length > 0 && (
+            <section>
+              <h2 className="text-sm font-bold uppercase tracking-wide text-neon-gold mb-3">
+                {t('teams.sectionEsport')}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredEsport.map((tm, i) => (
+                  <TeamCard key={tm.id} tm={tm} accent={accent} t={t} i={i} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {filteredCommunity.length > 0 && (
+            <section>
+              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-300 mb-3">
+                {t('teams.sectionCommunity')}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredCommunity.map((tm, i) => (
+                  <TeamCard key={tm.id} tm={tm} accent="#5b6b8c" t={t} i={i} />
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       )}
 
