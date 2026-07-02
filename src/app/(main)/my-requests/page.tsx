@@ -75,7 +75,6 @@ export default function MyRequestsPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-semibold text-white truncate">{r.proposedName}</p>
-                      {r.tag && <span className="text-xs text-gray-500 uppercase">[{r.tag}]</span>}
                     </div>
                     {r.message && <p className="text-sm text-gray-400 mt-1 whitespace-pre-line">{r.message}</p>}
                     {dateLabel && <p className="text-xs text-gray-500 mt-2">{dateLabel}</p>}

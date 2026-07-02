@@ -50,7 +50,7 @@ export default function TeamsPage() {
   }, [teams, query]);
 
   const [proposeOpen, setProposeOpen] = useState(false);
-  const [form, setForm] = useState({ proposedName: '', tag: '', message: '' });
+  const [form, setForm] = useState({ proposedName: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const submitProposal = async (e: React.FormEvent) => {
@@ -60,12 +60,11 @@ export default function TeamsPage() {
     try {
       await api.teamRequests.create({
         proposedName: form.proposedName.trim(),
-        tag: form.tag.trim() || undefined,
         message: form.message.trim() || undefined,
       });
       toast.success(t('requests.sent'));
       setProposeOpen(false);
-      setForm({ proposedName: '', tag: '', message: '' });
+      setForm({ proposedName: '', message: '' });
     } catch (err: any) {
       toast.error(err?.message || t('common.error'));
     } finally {
@@ -201,14 +200,6 @@ export default function TeamsPage() {
               value={form.proposedName}
               onChange={(e) => setForm({ ...form, proposedName: e.target.value })}
               required
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('requests.form.tag')}</label>
-            <input
-              className={inputCls}
-              value={form.tag}
-              onChange={(e) => setForm({ ...form, tag: e.target.value })}
             />
           </div>
           <div>

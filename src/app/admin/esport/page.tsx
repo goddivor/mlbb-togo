@@ -12,6 +12,7 @@ import {
   X,
   Check,
   Star,
+  Rocket,
 } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
@@ -25,7 +26,6 @@ const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
 
 type TeamForm = {
   name: string;
-  tag: string;
   image: string;
   description: string;
   isRecruiting: boolean;
@@ -33,7 +33,6 @@ type TeamForm = {
 
 const emptyTeamForm: TeamForm = {
   name: '',
-  tag: '',
   image: '',
   description: '',
   isRecruiting: false,
@@ -42,19 +41,26 @@ const emptyTeamForm: TeamForm = {
 const inputCls =
   'w-full px-3 py-2 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue';
 
-type Pending = { message: string; action: () => Promise<any> } | null;
+type Pending = {
+  message: string;
+  action: () => Promise<any>;
+  confirmLabel?: string;
+  danger?: boolean;
+} | null;
 
 export default function AdminEsportPage() {
   const t = useT();
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<any[]>([]);
 
+  const [tab, setTab] = useState<'community' | 'esport'>('community');
+
   const errMsg = (e: any) => e?.message || t('admin.esport.errorGeneric');
 
   const load = async () => {
     try {
-      const data = await api.esport.org();
-      setTeams(Array.isArray(data?.teams) ? data.teams : []);
+      const data = await api.esport.teams();
+      setTeams(Array.isArray(data) ? data : []);
     } catch (e: any) {
       toast.error(errMsg(e));
     }
@@ -74,6 +80,11 @@ export default function AdminEsportPage() {
   const [membersId, setMembersId] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending>(null);
   const [confirming, setConfirming] = useState(false);
+
+  const visibleTeams = useMemo(
+    () => teams.filter((tm) => (tm.type || 'community') === tab),
+    [teams, tab],
+  );
 
   const membersTeam = useMemo(
     () => teams.find((tm) => tm.id === membersId) || null,
@@ -96,6 +107,8 @@ export default function AdminEsportPage() {
   const askDeleteTeam = (team: any) =>
     setPending({
       message: t('admin.esport.deleteTeamConfirm'),
+      confirmLabel: t('admin.esport.delete'),
+      danger: true,
       action: async () => {
         await api.esport.deleteTeam(team.id);
         toast.success(t('admin.esport.deleted'));
@@ -104,10 +117,21 @@ export default function AdminEsportPage() {
       },
     });
 
+  const askTransform = (team: any) =>
+    setPending({
+      message: t('admin.esport.transformConfirm'),
+      confirmLabel: t('admin.esport.transform'),
+      action: async () => {
+        await api.esport.transform(team.id);
+        toast.success(t('admin.esport.transformed'));
+        await load();
+      },
+    });
+
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white">{t('admin.esport.title')}</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold text-white">{t('header.teams')}</h1>
         <Button
           size="sm"
           onClick={() => {
@@ -119,15 +143,31 @@ export default function AdminEsportPage() {
         </Button>
       </div>
 
+      <div className="flex gap-2 mb-6">
+        {(['community', 'esport'] as const).map((tb) => (
+          <button
+            key={tb}
+            onClick={() => setTab(tb)}
+            className={`px-4 py-2 text-sm font-semibold rounded-lg border transition-colors ${
+              tab === tb
+                ? 'bg-neon-blue/15 border-neon-blue text-neon-blue'
+                : 'bg-gaming-surface/40 border-gaming-border text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            {t('admin.esport.type.' + tb)}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <div className="flex items-center justify-center py-24">
           <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
         </div>
-      ) : teams.length === 0 ? (
+      ) : visibleTeams.length === 0 ? (
         <div className="text-center py-16 text-gray-500">{t('admin.esport.noTeams')}</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {teams.map((team, i) => (
+          {visibleTeams.map((team, i) => (
             <motion.div
               key={team.id}
               initial={{ opacity: 0, y: 8 }}
@@ -159,30 +199,39 @@ export default function AdminEsportPage() {
               <div className="p-3 flex-1 flex flex-col">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-sm font-semibold text-white truncate">{team.name}</p>
-                  {team.tag && <span className="text-xs text-gray-500 uppercase">[{team.tag}]</span>}
+                  <Badge variant={team.type === 'esport' ? 'gold' : 'default'} size="sm">
+                    {t('admin.esport.badge.' + (team.type || 'community'))}
+                  </Badge>
                 </div>
                 <div className="flex items-center gap-1 mt-1 mb-3 text-xs text-gray-400">
                   <Users size={13} /> {team.memberCount ?? team.members?.length ?? 0} {t('teams.members')}
                 </div>
 
-                <div className="mt-auto flex items-center gap-2">
-                  <Button size="sm" variant="secondary" className="flex-1" onClick={() => setMembersId(team.id)}>
-                    <Users size={14} /> {t('admin.esport.members')}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    title={t('admin.esport.editTeam')}
-                    onClick={() => {
-                      setEditTeam(team);
-                      setFormOpen(true);
-                    }}
-                  >
-                    <Pencil size={14} />
-                  </Button>
-                  <Button size="sm" variant="danger" title={t('admin.esport.delete')} onClick={() => askDeleteTeam(team)}>
-                    <Trash2 size={14} />
-                  </Button>
+                <div className="mt-auto flex flex-col gap-2">
+                  {team.type !== 'esport' && (
+                    <Button size="sm" variant="secondary" onClick={() => askTransform(team)}>
+                      <Rocket size={14} /> {t('admin.esport.transform')}
+                    </Button>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="secondary" className="flex-1" onClick={() => setMembersId(team.id)}>
+                      <Users size={14} /> {t('admin.esport.members')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      title={t('admin.esport.editTeam')}
+                      onClick={() => {
+                        setEditTeam(team);
+                        setFormOpen(true);
+                      }}
+                    >
+                      <Pencil size={14} />
+                    </Button>
+                    <Button size="sm" variant="danger" title={t('admin.esport.delete')} onClick={() => askDeleteTeam(team)}>
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -193,6 +242,7 @@ export default function AdminEsportPage() {
       <TeamFormModal
         open={formOpen}
         team={editTeam}
+        type={tab}
         onClose={() => setFormOpen(false)}
         onSaved={load}
         t={t}
@@ -216,10 +266,10 @@ export default function AdminEsportPage() {
         onClose={() => setPending(null)}
         onConfirm={runConfirm}
         loading={confirming}
-        danger
+        danger={!!pending?.danger}
         title={t('admin.confirm.title')}
         message={pending?.message}
-        confirmLabel={t('admin.esport.delete')}
+        confirmLabel={pending?.confirmLabel || t('admin.esport.delete')}
         cancelLabel={t('admin.esport.cancel')}
         closeLabel={t('common.close')}
       />
@@ -234,6 +284,7 @@ export default function AdminEsportPage() {
 function TeamFormModal({
   open,
   team,
+  type,
   onClose,
   onSaved,
   t,
@@ -241,6 +292,7 @@ function TeamFormModal({
 }: {
   open: boolean;
   team: any;
+  type: 'community' | 'esport';
   onClose: () => void;
   onSaved: () => Promise<void>;
   t: (k: string) => string;
@@ -255,7 +307,6 @@ function TeamFormModal({
       team
         ? {
             name: team.name || '',
-            tag: team.tag || '',
             image: team.image || '',
             description: team.description || '',
             isRecruiting: !!team.isRecruiting,
@@ -269,15 +320,14 @@ function TeamFormModal({
     if (!form.name.trim()) return;
     setSaving(true);
     try {
-      const payload = {
+      const payload: any = {
         name: form.name.trim(),
-        tag: form.tag.trim() || undefined,
         image: form.image.trim() || undefined,
         description: form.description.trim() || undefined,
         isRecruiting: form.isRecruiting,
       };
       if (team) await api.esport.updateTeam(team.id, payload);
-      else await api.esport.createTeam(payload);
+      else await api.esport.createTeam({ ...payload, type });
       toast.success(t('admin.esport.saved'));
       onClose();
       await onSaved();
@@ -296,15 +346,9 @@ function TeamFormModal({
       title={team ? t('admin.esport.editTeam') : t('admin.esport.newTeam')}
     >
       <form onSubmit={submit} className="space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('admin.esport.teamName')}</label>
-            <input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('admin.esport.teamTag')}</label>
-            <input className={inputCls} value={form.tag} onChange={(e) => setForm({ ...form, tag: e.target.value })} />
-          </div>
+        <div>
+          <label className="block text-xs text-gray-400 mb-1">{t('admin.esport.teamName')}</label>
+          <input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
         </div>
         <div>
           <label className="block text-xs text-gray-400 mb-1">{t('admin.esport.teamImage')}</label>
@@ -406,6 +450,8 @@ function MembersPanel({
   const askRemove = (m: any) =>
     onAsk({
       message: t('admin.esport.removeMemberConfirm'),
+      confirmLabel: t('admin.esport.remove'),
+      danger: true,
       action: () => run(() => api.esport.removeMember(team.id, m.userId)),
     });
 

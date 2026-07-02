@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Check, X, Eye, MessageSquare, Inbox } from 'lucide-react';
+import { Check, X, Eye, MessageSquare, Inbox, Plus, ExternalLink } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { Card, Badge, Button } from '@/components/ui';
@@ -21,8 +23,12 @@ const statusVariant: Record<string, string> = {
   rejected: 'red',
 };
 
+const createHref = (r: any) =>
+  `/admin/esport/new?requestId=${r.id}&name=${encodeURIComponent(r.proposedName || '')}`;
+
 export default function AdminRequestsPage() {
   const t = useT();
+  const router = useRouter();
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('');
@@ -64,6 +70,19 @@ export default function AdminRequestsPage() {
     } finally {
       setActing(null);
     }
+  };
+
+  // Accepter : on marque approuvée puis on ouvre la page de création préremplie.
+  const approveAndCreate = async (r: any) => {
+    setActing(r.id + 'approved');
+    try {
+      await api.teamRequests.setStatus(r.id, 'approved');
+    } catch (e: any) {
+      toast.error(errMsg(e));
+    } finally {
+      setActing(null);
+    }
+    router.push(createHref(r));
   };
 
   const openContact = (r: any) => {
@@ -176,7 +195,6 @@ export default function AdminRequestsPage() {
 
                       <p className="text-base font-semibold text-white mt-0.5">
                         {r.proposedName}
-                        {r.tag ? <span className="text-neon-blue ml-1">[{r.tag}]</span> : null}
                       </p>
 
                       {r.message && (
@@ -203,7 +221,7 @@ export default function AdminRequestsPage() {
                             <Button
                               size="sm"
                               disabled={acting === r.id + 'approved'}
-                              onClick={() => changeStatus(r, 'approved')}
+                              onClick={() => approveAndCreate(r)}
                             >
                               <Check size={14} /> {t('requests.approve')}
                             </Button>
@@ -217,6 +235,20 @@ export default function AdminRequestsPage() {
                             </Button>
                           </>
                         )}
+                        {r.status === 'approved' &&
+                          (r.createdTeamId ? (
+                            <Link href={`/teams/${r.createdTeamId}`}>
+                              <Button size="sm" variant="secondary">
+                                <ExternalLink size={14} /> {t('requests.viewTeam')}
+                              </Button>
+                            </Link>
+                          ) : (
+                            <Link href={createHref(r)}>
+                              <Button size="sm">
+                                <Plus size={14} /> {t('requests.createTeam')}
+                              </Button>
+                            </Link>
+                          ))}
                         {requester?.id && (
                           <Button size="sm" variant="ghost" onClick={() => openContact(r)}>
                             <MessageSquare size={14} /> {t('requests.contact')}

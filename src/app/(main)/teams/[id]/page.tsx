@@ -198,11 +198,6 @@ export default function TeamDetailPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl md:text-3xl font-bold text-white">{team.name}</h1>
-          {team.tag && (
-            <Badge variant="neon" size="md">
-              {team.tag}
-            </Badge>
-          )}
           {team.isRecruiting && (
             <Badge variant="green" size="md">
               {t('teams.detail.recruiting')}

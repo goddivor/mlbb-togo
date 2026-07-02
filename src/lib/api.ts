@@ -247,7 +247,8 @@ export const api = {
 
   esport: {
     org: () => request('/esport', { fallback: null, auth: false }),
-    teams: () => request('/esport/teams', { fallback: [], auth: false }),
+    teams: (type?: string) =>
+      request(`/esport/teams${type ? `?type=${type}` : ''}`, { fallback: [], auth: false }),
     team: (id: string) => request(`/esport/teams/${id}`, { fallback: null, auth: false }),
     sponsors: () => request('/esport/sponsors', { fallback: [], auth: false }),
     mtl: () => request('/esport/mtl', { fallback: null, auth: false }),
@@ -260,6 +261,8 @@ export const api = {
       request(`/esport/teams/${id}`, { method: 'PATCH', body: data }),
     deleteTeam: (id: string) =>
       request(`/esport/teams/${id}`, { method: 'DELETE' }),
+    transform: (id: string) =>
+      request(`/esport/teams/${id}/transform`, { method: 'PATCH' }),
     addMember: (teamId: string, data: any) =>
       request(`/esport/teams/${teamId}/members`, { method: 'POST', body: data }),
     updateMember: (teamId: string, userId: string, data: any) =>
@@ -317,6 +320,7 @@ export const api = {
     create: (data: { proposedName: string; tag?: string; message?: string }) =>
       request('/team-requests', { method: 'POST', body: data }),
     mine: () => request('/team-requests/mine', { fallback: [] }),
+    get: (id: string) => request(`/team-requests/${id}`, { fallback: null }),
     list: (status?: string) =>
       request(`/team-requests${status ? `?status=${status}` : ''}`, { fallback: [] }),
     setStatus: (id: string, status: string) =>
