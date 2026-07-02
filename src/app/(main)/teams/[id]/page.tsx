@@ -83,7 +83,7 @@ function StatBox({ label, value, color = 'text-white' }: any) {
   );
 }
 
-function MatchRow({ m, t }: any) {
+function MatchRow({ m, t, onResult }: any) {
   const completed = m.status === 'completed';
   const aWin = m.winnerTeamId && m.winnerTeamId === m.teamA?.id;
   const bWin = m.winnerTeamId && m.winnerTeamId === m.teamB?.id;
@@ -109,6 +109,15 @@ function MatchRow({ m, t }: any) {
         <Badge variant="purple" size="sm">{t('matchType.' + m.type)}</Badge>
         <Badge variant={completed ? 'green' : 'default'} size="sm">{t('matchStatus.' + m.status)}</Badge>
         {dateLabel && <span className="text-xs text-gray-500">{dateLabel}</span>}
+        {onResult && (
+          <button
+            type="button"
+            onClick={onResult}
+            className="text-xs text-neon-blue hover:underline"
+          >
+            {t('admin.matches.setResult')}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -197,6 +206,84 @@ export default function TeamDetailPage() {
       toast.error(err?.message || t('common.error'));
     } finally {
       setActingId(null);
+    }
+  };
+
+  // --- Gestion capitaine ---
+  const [manageOpen, setManageOpen] = useState(false);
+  const [busyMember, setBusyMember] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
+  const [otherTeams, setOtherTeams] = useState<any[]>([]);
+  const [planForm, setPlanForm] = useState({ opponentId: '', type: 'friendly', scheduledAt: '' });
+  const [planning, setPlanning] = useState(false);
+  const [resultMatch, setResultMatch] = useState<any | null>(null);
+  const [resultForm, setResultForm] = useState({ scoreA: 0, scoreB: 0, winnerTeamId: '' });
+  const [savingResult, setSavingResult] = useState(false);
+
+  useEffect(() => {
+    if (!amCaptain) return;
+    api.esport
+      .teams()
+      .then((all: any) => setOtherTeams(Array.isArray(all) ? all.filter((x: any) => x.id !== id) : []))
+      .catch(() => {});
+  }, [amCaptain, id]);
+
+  const runMember = async (fn: () => Promise<any>) => {
+    setBusyMember(true);
+    try {
+      await fn();
+      await refresh();
+    } catch (err: any) {
+      toast.error(err?.message || t('common.error'));
+    } finally {
+      setBusyMember(false);
+    }
+  };
+
+  const submitPlan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!planForm.opponentId) return;
+    setPlanning(true);
+    try {
+      await api.esport.createMatch({
+        teamAId: id,
+        teamBId: planForm.opponentId,
+        type: planForm.type,
+        scheduledAt: planForm.scheduledAt || undefined,
+      });
+      toast.success(t('admin.esport.saved'));
+      setPlanOpen(false);
+      setPlanForm({ opponentId: '', type: 'friendly', scheduledAt: '' });
+      await refresh();
+    } catch (err: any) {
+      toast.error(err?.message || t('common.error'));
+    } finally {
+      setPlanning(false);
+    }
+  };
+
+  const openResult = (m: any) => {
+    setResultMatch(m);
+    setResultForm({ scoreA: m.scoreA ?? 0, scoreB: m.scoreB ?? 0, winnerTeamId: m.winnerTeamId || '' });
+  };
+
+  const submitResult = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resultMatch) return;
+    setSavingResult(true);
+    try {
+      await api.esport.setMatchResult(resultMatch.id, {
+        scoreA: Number(resultForm.scoreA),
+        scoreB: Number(resultForm.scoreB),
+        winnerTeamId: resultForm.winnerTeamId || undefined,
+      });
+      toast.success(t('admin.esport.saved'));
+      setResultMatch(null);
+      await refresh();
+    } catch (err: any) {
+      toast.error(err?.message || t('common.error'));
+    } finally {
+      setSavingResult(false);
     }
   };
 
@@ -315,6 +402,17 @@ export default function TeamDetailPage() {
                 <UserPlus size={15} /> {t('teams.join')}
               </Button>
             )}
+          </div>
+        )}
+
+        {amCaptain && (
+          <div className="sm:ml-auto shrink-0 flex flex-col sm:items-end gap-2">
+            <Button size="sm" variant="secondary" onClick={() => setManageOpen(true)}>
+              <Users size={15} /> {t('teams.manageRoster')}
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => setPlanOpen(true)}>
+              <Calendar size={15} /> {t('teams.planMatch')}
+            </Button>
           </div>
         )}
       </div>
@@ -441,7 +539,14 @@ export default function TeamDetailPage() {
         ) : (
           <div className="space-y-2">
             {matches.map((m, i) => (
-              <MatchRow key={m.id ?? i} m={m} t={t} />
+              <MatchRow
+                key={m.id ?? i}
+                m={m}
+                t={t}
+                onResult={
+                  amCaptain && m.type !== 'official' ? () => openResult(m) : undefined
+                }
+              />
             ))}
           </div>
         )}
@@ -482,6 +587,183 @@ export default function TeamDetailPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Capitaine : gérer l'effectif */}
+      <Modal
+        open={manageOpen}
+        onClose={() => setManageOpen(false)}
+        maxWidth="max-w-2xl"
+        closeLabel={t('common.close')}
+        title={t('teams.rosterTitle')}
+      >
+        {members.length === 0 ? (
+          <p className="text-sm text-gray-500">{t('teams.detail.noMembers')}</p>
+        ) : (
+          <div className="space-y-2">
+            {members.map((m) => {
+              const u = m.user || {};
+              const isCap = m.userId === captainId;
+              return (
+                <div
+                  key={m.id ?? m.userId}
+                  className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-lg border border-gaming-border bg-gaming-surface/40 p-2.5"
+                >
+                  <div className="min-w-0 flex-1 flex items-center gap-2">
+                    <span className="text-sm text-white truncate">{u.displayName || u.username}</span>
+                    {isCap && (
+                      <Badge variant="gold" size="sm">
+                        <Crown size={11} className="mr-1" /> {t('teams.detail.captain')}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <RoleSelect
+                      value={m.role || ''}
+                      onChange={(v) => runMember(() => api.esport.updateMember(id, m.userId, { role: v || null }))}
+                      options={LANES}
+                      noneLabel={t('admin.esport.noRole')}
+                      labelFor={(l) => t('lane.' + l)}
+                      disabled={busyMember}
+                    />
+                    <button
+                      onClick={() => runMember(() => api.esport.updateMember(id, m.userId, { isSubstitute: !m.isSubstitute }))}
+                      disabled={busyMember}
+                      className={`px-2 py-1 text-xs rounded-lg border transition-colors ${
+                        m.isSubstitute
+                          ? 'bg-gaming-surface border-gaming-border text-gray-400'
+                          : 'bg-neon-blue/15 border-neon-blue text-neon-blue'
+                      }`}
+                    >
+                      {m.isSubstitute ? t('admin.esport.substitute') : t('admin.esport.starter')}
+                    </button>
+                    {!isCap && (
+                      <button
+                        onClick={() => runMember(() => api.esport.removeMember(id, m.userId))}
+                        disabled={busyMember}
+                        title={t('admin.esport.remove')}
+                        className="inline-flex items-center px-2 py-1 text-xs rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Modal>
+
+      {/* Capitaine : planifier un match amical/entraînement */}
+      <Modal
+        open={planOpen}
+        onClose={() => setPlanOpen(false)}
+        closeLabel={t('common.close')}
+        title={t('teams.planMatch')}
+      >
+        <form onSubmit={submitPlan} className="space-y-3">
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">{t('teams.opponent')}</label>
+            <select
+              value={planForm.opponentId}
+              onChange={(e) => setPlanForm({ ...planForm, opponentId: e.target.value })}
+              required
+              className="w-full px-3 py-2 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 focus:outline-none focus:border-neon-blue"
+            >
+              <option value="">{t('teams.selectOpponent')}</option>
+              {otherTeams.map((o) => (
+                <option key={o.id} value={o.id}>{o.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">{t('admin.matches.type')}</label>
+            <select
+              value={planForm.type}
+              onChange={(e) => setPlanForm({ ...planForm, type: e.target.value })}
+              className="w-full px-3 py-2 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 focus:outline-none focus:border-neon-blue"
+            >
+              <option value="friendly">{t('matchType.friendly')}</option>
+              <option value="training">{t('matchType.training')}</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">{t('admin.matches.date')}</label>
+            <input
+              type="datetime-local"
+              value={planForm.scheduledAt}
+              onChange={(e) => setPlanForm({ ...planForm, scheduledAt: e.target.value })}
+              className="w-full px-3 py-2 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 focus:outline-none focus:border-neon-blue"
+            />
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button size="sm" type="submit" disabled={planning || !planForm.opponentId}>
+              <Calendar size={15} /> {t('admin.matches.schedule')}
+            </Button>
+            <Button size="sm" variant="ghost" type="button" onClick={() => setPlanOpen(false)}>
+              {t('admin.esport.cancel')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Capitaine : saisir le résultat d'un match */}
+      <Modal
+        open={!!resultMatch}
+        onClose={() => setResultMatch(null)}
+        closeLabel={t('common.close')}
+        title={t('admin.matches.result')}
+      >
+        {resultMatch && (
+          <form onSubmit={submitResult} className="space-y-3">
+            <p className="text-sm text-white text-center">
+              {resultMatch.teamA?.name} <span className="text-gray-500">vs</span> {resultMatch.teamB?.name}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">{t('admin.matches.scoreA')}</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={resultForm.scoreA}
+                  onChange={(e) => setResultForm({ ...resultForm, scoreA: Number(e.target.value) })}
+                  className="w-full px-3 py-2 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 focus:outline-none focus:border-neon-blue"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">{t('admin.matches.scoreB')}</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={resultForm.scoreB}
+                  onChange={(e) => setResultForm({ ...resultForm, scoreB: Number(e.target.value) })}
+                  className="w-full px-3 py-2 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 focus:outline-none focus:border-neon-blue"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">{t('admin.matches.winner')}</label>
+              <select
+                value={resultForm.winnerTeamId}
+                onChange={(e) => setResultForm({ ...resultForm, winnerTeamId: e.target.value })}
+                className="w-full px-3 py-2 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 focus:outline-none focus:border-neon-blue"
+              >
+                <option value="">{t('admin.matches.autoWinner')}</option>
+                <option value={resultMatch.teamA?.id}>{resultMatch.teamA?.name}</option>
+                <option value={resultMatch.teamB?.id}>{resultMatch.teamB?.name}</option>
+              </select>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button size="sm" type="submit" disabled={savingResult}>
+                <Check size={15} /> {t('admin.esport.save')}
+              </Button>
+              <Button size="sm" variant="ghost" type="button" onClick={() => setResultMatch(null)}>
+                {t('admin.esport.cancel')}
+              </Button>
+            </div>
+          </form>
+        )}
       </Modal>
     </div>
   );
