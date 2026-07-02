@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardShell from '@/components/layout/DashboardShell';
+import AdminShell from '@/components/layout/AdminShell';
 import { api, getToken, setToken } from '@/lib/api';
 import { useAuthStore } from '@/store/useStore';
 import { RealtimeProvider } from '@/lib/realtime';
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+const ADMIN_ROLES = ['admin', 'moderator'];
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [checked, setChecked] = useState(false);
   const setUser = useAuthStore((s: any) => s.setUser);
@@ -16,20 +18,24 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     const token = getToken();
     if (!token) {
-      router.replace('/');
+      router.replace('/admin-login');
       return;
     }
     api.auth
       .me()
       .then((user: any) => {
+        if (!user || !ADMIN_ROLES.includes(user.roleUser)) {
+          setToken(null);
+          router.replace('/admin-login');
+          return;
+        }
         setUser(user);
         setUserProfile(user);
         setChecked(true);
       })
       .catch(() => {
-
         setToken(null);
-        router.replace('/');
+        router.replace('/admin-login');
       });
   }, [router, setUser, setUserProfile]);
 
@@ -43,7 +49,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <RealtimeProvider>
-      <DashboardShell>{children}</DashboardShell>
+      <AdminShell>{children}</AdminShell>
     </RealtimeProvider>
   );
 }

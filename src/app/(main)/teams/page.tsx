@@ -1,15 +1,21 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Shield, X } from 'lucide-react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { Search, Shield, Users, Plus, Check } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { Button } from '@/components/ui';
+import Modal from '@/components/ui/Modal';
+import toast from 'react-hot-toast';
 
 interface EsportTeam {
   id: string;
   name: string;
   image?: string | null;
+  memberCount?: number;
+  isRecruiting?: boolean;
 }
 
 interface EsportOrg {
@@ -20,29 +26,106 @@ interface EsportOrg {
   teams?: EsportTeam[];
 }
 
+function TeamCard({ tm, accent, t, i }: any) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(i * 0.03, 0.4) }}
+    >
+      <Link
+        href={`/teams/${tm.id}`}
+        className="group block rounded-xl border border-gaming-border bg-gaming-surface/40 overflow-hidden hover:border-neon-blue transition-colors"
+      >
+        <div className="relative aspect-video w-full bg-gaming-dark overflow-hidden">
+          {tm.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={tm.image}
+              alt={tm.name}
+              referrerPolicy="no-referrer"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Shield size={40} className="text-gray-600" />
+            </div>
+          )}
+          <div className="absolute inset-x-0 bottom-0 h-1" style={{ backgroundColor: accent }} />
+          {tm.isRecruiting && (
+            <span className="absolute top-2 right-2 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
+              {t('teams.detail.recruiting')}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-2 p-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Shield size={16} style={{ color: accent }} className="shrink-0" />
+            <p className="text-sm font-semibold text-white truncate">{tm.name}</p>
+          </div>
+          <span className="inline-flex items-center gap-1 text-xs text-gray-400 shrink-0">
+            <Users size={13} /> {tm.memberCount ?? 0}
+          </span>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
 export default function TeamsPage() {
   const t = useT();
   const [org, setOrg] = useState<EsportOrg | null>(null);
+  const [community, setCommunity] = useState<EsportTeam[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  const [preview, setPreview] = useState<EsportTeam | null>(null);
 
   useEffect(() => {
-    api.esport
-      .org()
-      .then((o: any) => setOrg(o))
-      .catch(() => setOrg(null))
+    Promise.all([api.esport.org(), api.esport.teams('community')])
+      .then(([o, c]: any) => {
+        setOrg(o);
+        setCommunity(Array.isArray(c) ? c : []);
+      })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const teams = org?.teams ?? [];
+  const esportTeams = org?.teams ?? [];
   const accent = org?.color || '#E9B84B';
+  const total = esportTeams.length + community.length;
 
-  const filtered = useMemo(() => {
+  const byQuery = (list: EsportTeam[]) => {
     const q = query.trim().toLowerCase();
-    if (!q) return teams;
-    return teams.filter((tm) => (tm.name || '').toLowerCase().includes(q));
-  }, [teams, query]);
+    if (!q) return list;
+    return list.filter((tm) => (tm.name || '').toLowerCase().includes(q));
+  };
+  const filteredEsport = useMemo(() => byQuery(esportTeams), [esportTeams, query]);
+  const filteredCommunity = useMemo(() => byQuery(community), [community, query]);
+
+  const [proposeOpen, setProposeOpen] = useState(false);
+  const [form, setForm] = useState({ proposedName: '', message: '' });
+  const [submitting, setSubmitting] = useState(false);
+
+  const submitProposal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.proposedName.trim()) return;
+    setSubmitting(true);
+    try {
+      await api.teamRequests.create({
+        proposedName: form.proposedName.trim(),
+        message: form.message.trim() || undefined,
+      });
+      toast.success(t('requests.sent'));
+      setProposeOpen(false);
+      setForm({ proposedName: '', message: '' });
+    } catch (err: any) {
+      toast.error(err?.message || t('common.error'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const inputCls =
+    'w-full px-3 py-2 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue';
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto">
@@ -50,17 +133,28 @@ export default function TeamsPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">{t('teams.title')}</h1>
           <p className="text-sm text-gray-400">
-            {loading ? '…' : `${teams.length} ${t('teams.count')}`}
+            {loading ? '…' : `${total} ${t('teams.count')}`}
           </p>
         </div>
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t('teams.search')}
-            className="pl-9 pr-3 py-2 w-full sm:w-64 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t('teams.search')}
+              className="pl-9 pr-3 py-2 w-full sm:w-64 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue"
+            />
+          </div>
+          <Button size="sm" onClick={() => setProposeOpen(true)} className="shrink-0">
+            <Plus size={16} /> <span className="hidden sm:inline">{t('requests.propose')}</span>
+          </Button>
+          <Link
+            href="/my-requests"
+            className="shrink-0 inline-flex items-center px-3 py-2 text-sm rounded-lg border border-gaming-border text-gray-300 hover:text-white hover:border-neon-blue transition-colors"
+          >
+            {t('requests.mine')}
+          </Link>
         </div>
       </div>
 
@@ -90,86 +184,75 @@ export default function TeamsPage() {
         <div className="flex items-center justify-center py-24">
           <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
         </div>
-      ) : teams.length === 0 ? (
+      ) : total === 0 ? (
         <div className="text-center py-20 text-gray-500">{t('teams.empty')}</div>
-      ) : filtered.length === 0 ? (
+      ) : filteredEsport.length === 0 && filteredCommunity.length === 0 ? (
         <div className="text-center py-20 text-gray-500">{t('teams.none')}</div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((tm, i) => (
-            <motion.button
-              key={tm.id}
-              type="button"
-              onClick={() => tm.image && setPreview(tm)}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.03, 0.4) }}
-              className="group text-left rounded-xl border border-gaming-border bg-gaming-surface/40 overflow-hidden hover:border-neon-blue transition-colors"
-            >
-              <div className="relative aspect-video w-full bg-gaming-dark overflow-hidden">
-                {tm.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={tm.image}
-                    alt={tm.name}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Shield size={40} className="text-gray-600" />
-                  </div>
-                )}
-                <div className="absolute inset-x-0 bottom-0 h-1" style={{ backgroundColor: accent }} />
+        <div className="space-y-8">
+          {filteredEsport.length > 0 && (
+            <section>
+              <h2 className="text-sm font-bold uppercase tracking-wide text-neon-gold mb-3">
+                {t('teams.sectionEsport')}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredEsport.map((tm, i) => (
+                  <TeamCard key={tm.id} tm={tm} accent={accent} t={t} i={i} />
+                ))}
               </div>
-              <div className="flex items-center gap-2 p-3">
-                <Shield size={16} style={{ color: accent }} className="shrink-0" />
-                <p className="text-sm font-semibold text-white truncate">{tm.name}</p>
+            </section>
+          )}
+
+          {filteredCommunity.length > 0 && (
+            <section>
+              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-300 mb-3">
+                {t('teams.sectionCommunity')}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredCommunity.map((tm, i) => (
+                  <TeamCard key={tm.id} tm={tm} accent="#5b6b8c" t={t} i={i} />
+                ))}
               </div>
-            </motion.button>
-          ))}
+            </section>
+          )}
         </div>
       )}
 
-      <AnimatePresence>
-        {preview && preview.image && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setPreview(null)}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative max-w-3xl w-full rounded-2xl overflow-hidden border border-gaming-border bg-gaming-darker"
-            >
-              <button
-                type="button"
-                onClick={() => setPreview(null)}
-                aria-label={t('common.close')}
-                className="absolute top-3 right-3 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-black/60 text-white/80 hover:text-white hover:bg-black/80 transition-colors"
-              >
-                <X size={20} />
-              </button>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={preview.image}
-                alt={preview.name}
-                referrerPolicy="no-referrer"
-                className="w-full max-h-[75vh] object-contain bg-black"
-              />
-              <div className="flex items-center gap-2 p-4">
-                <Shield size={18} style={{ color: accent }} />
-                <p className="font-bold text-white">{preview.name}</p>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Modal
+        open={proposeOpen}
+        onClose={() => setProposeOpen(false)}
+        closeLabel={t('common.close')}
+        title={t('requests.propose')}
+      >
+        <p className="text-sm text-gray-400 mb-4">{t('requests.proposeHint')}</p>
+        <form onSubmit={submitProposal} className="space-y-3">
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">{t('requests.form.name')}</label>
+            <input
+              className={inputCls}
+              value={form.proposedName}
+              onChange={(e) => setForm({ ...form, proposedName: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">{t('requests.form.message')}</label>
+            <textarea
+              className={`${inputCls} min-h-[90px] resize-y`}
+              value={form.message}
+              onChange={(e) => setForm({ ...form, message: e.target.value })}
+            />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button size="sm" type="submit" disabled={submitting}>
+              <Check size={16} /> {t('requests.submit')}
+            </Button>
+            <Button size="sm" variant="ghost" type="button" onClick={() => setProposeOpen(false)}>
+              {t('admin.esport.cancel')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

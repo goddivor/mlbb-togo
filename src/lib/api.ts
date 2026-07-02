@@ -6,7 +6,6 @@ import {
   mockTournaments,
   mockEvents,
   mockMatches,
-  mockNotifications,
   mockAdminLogs,
   mockFormTemplates,
   mockFormResponses,
@@ -98,6 +97,9 @@ export const api = {
 
   auth: {
     me: () => request('/auth/me'),
+
+    adminLogin: (data: { username: string; password: string }) =>
+      request('/auth/admin/login', { method: 'POST', body: data, auth: false }),
 
     mlbbSendVc: (data: { roleId: number; zoneId: number }) =>
       request('/auth/mlbb/send-vc', { method: 'POST', body: data, auth: false }),
@@ -245,9 +247,70 @@ export const api = {
 
   esport: {
     org: () => request('/esport', { fallback: null, auth: false }),
-    teams: () => request('/esport/teams', { fallback: [], auth: false }),
+    teams: (type?: string) =>
+      request(`/esport/teams${type ? `?type=${type}` : ''}`, { fallback: [], auth: false }),
+    team: (id: string) => request(`/esport/teams/${id}`, { fallback: null, auth: false }),
     sponsors: () => request('/esport/sponsors', { fallback: [], auth: false }),
     mtl: () => request('/esport/mtl', { fallback: null, auth: false }),
+
+    // Admin
+    updateOrg: (id: string, data: any) =>
+      request(`/esport/${id}`, { method: 'PATCH', body: data }),
+    createTeam: (data: any) => request('/esport/teams', { method: 'POST', body: data }),
+    updateTeam: (id: string, data: any) =>
+      request(`/esport/teams/${id}`, { method: 'PATCH', body: data }),
+    deleteTeam: (id: string) =>
+      request(`/esport/teams/${id}`, { method: 'DELETE' }),
+    transform: (id: string) =>
+      request(`/esport/teams/${id}/transform`, { method: 'PATCH' }),
+
+    // Join requests (recrutement)
+    requestJoin: (teamId: string, data: { message?: string; role?: string }) =>
+      request(`/esport/teams/${teamId}/join`, { method: 'POST', body: data }),
+    joinRequests: (teamId: string) =>
+      request(`/esport/teams/${teamId}/join-requests`, { fallback: [] }),
+    myJoinRequests: () => request('/esport/join-requests/mine', { fallback: [] }),
+    decideJoin: (id: string, status: 'accepted' | 'rejected', role?: string) =>
+      request(`/esport/join-requests/${id}`, { method: 'PATCH', body: { status, role } }),
+    addMember: (teamId: string, data: any) =>
+      request(`/esport/teams/${teamId}/members`, { method: 'POST', body: data }),
+    updateMember: (teamId: string, userId: string, data: any) =>
+      request(`/esport/teams/${teamId}/members/${userId}`, { method: 'PATCH', body: data }),
+    removeMember: (teamId: string, userId: string) =>
+      request(`/esport/teams/${teamId}/members/${userId}`, { method: 'DELETE' }),
+    setCaptain: (teamId: string, userId: string) =>
+      request(`/esport/teams/${teamId}/captain`, { method: 'PATCH', body: { userId } }),
+    createSponsor: (data: any) =>
+      request('/esport/sponsors', { method: 'POST', body: data }),
+    updateSponsor: (id: string, data: any) =>
+      request(`/esport/sponsors/${id}`, { method: 'PATCH', body: data }),
+    deleteSponsor: (id: string) =>
+      request(`/esport/sponsors/${id}`, { method: 'DELETE' }),
+
+    // Seasons
+    seasons: () => request('/esport/seasons', { fallback: [], auth: false }),
+    createSeason: (data: any) => request('/esport/seasons', { method: 'POST', body: data }),
+    updateSeason: (id: string, data: any) =>
+      request(`/esport/seasons/${id}`, { method: 'PATCH', body: data }),
+    deleteSeason: (id: string) =>
+      request(`/esport/seasons/${id}`, { method: 'DELETE' }),
+
+    // Matches
+    matches: (params: { seasonId?: string; teamId?: string; status?: string } = {}) => {
+      const qs = new URLSearchParams(
+        Object.entries(params).filter(([, v]) => v != null && v !== '').map(([k, v]) => [k, String(v)]),
+      ).toString();
+      return request(`/esport/matches${qs ? `?${qs}` : ''}`, { fallback: [], auth: false });
+    },
+    teamMatches: (teamId: string) =>
+      request(`/esport/teams/${teamId}/matches`, { fallback: [], auth: false }),
+    createMatch: (data: any) => request('/esport/matches', { method: 'POST', body: data }),
+    updateMatch: (id: string, data: any) =>
+      request(`/esport/matches/${id}`, { method: 'PATCH', body: data }),
+    setMatchResult: (id: string, data: any) =>
+      request(`/esport/matches/${id}/result`, { method: 'PATCH', body: data }),
+    deleteMatch: (id: string) =>
+      request(`/esport/matches/${id}`, { method: 'DELETE' }),
   },
 
   contact: {
@@ -256,7 +319,30 @@ export const api = {
   },
 
   notifications: {
-    list: () => request('/notifications', { fallback: mockNotifications, auth: false }),
+    list: () => request('/notifications', { fallback: [] }),
+    unreadCount: () => request('/notifications/unread-count', { fallback: { count: 0 } }),
+    markRead: (id: string) => request(`/notifications/${id}/read`, { method: 'PATCH' }),
+    markAllRead: () => request('/notifications/read-all', { method: 'PATCH' }),
+  },
+
+  teamRequests: {
+    create: (data: { proposedName: string; tag?: string; message?: string }) =>
+      request('/team-requests', { method: 'POST', body: data }),
+    mine: () => request('/team-requests/mine', { fallback: [] }),
+    get: (id: string) => request(`/team-requests/${id}`, { fallback: null }),
+    list: (status?: string) =>
+      request(`/team-requests${status ? `?status=${status}` : ''}`, { fallback: [] }),
+    setStatus: (id: string, status: string) =>
+      request(`/team-requests/${id}/status`, { method: 'PATCH', body: { status } }),
+  },
+
+  messages: {
+    startThread: (data: { userId: string; subject?: string; requestId?: string; body: string }) =>
+      request('/messages/threads', { method: 'POST', body: data }),
+    threads: () => request('/messages/threads', { fallback: [] }),
+    thread: (id: string) => request(`/messages/threads/${id}`, { fallback: null }),
+    reply: (id: string, body: string) =>
+      request(`/messages/threads/${id}`, { method: 'POST', body: { body } }),
   },
 };
 

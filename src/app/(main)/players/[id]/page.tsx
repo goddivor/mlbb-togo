@@ -8,6 +8,7 @@ import { ArrowLeft, MapPin, Trophy, Target, Star, Flame, TrendingUp } from 'luci
 import { Card, Badge, StatCard } from '@/components/ui';
 import { api, avatarSrc, mlbbImg } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
+import RoleIcon from '@/components/game/RoleIcon';
 import { useT } from '@/lib/i18n';
 
 export default function PublicProfilePage() {
@@ -109,7 +110,10 @@ export default function PublicProfilePage() {
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-2">
                 <span className="text-xs text-gray-500">{t('users.roles')} :</span>
                 {roles.map((r: any) => (
-                  <Badge key={r.role} variant="purple" size="sm">{t(`role.${r.role}`)}</Badge>
+                  <Badge key={r.role} variant="purple" size="sm" className="gap-1">
+                    <RoleIcon role={r.role} size={14} />
+                    {t(`role.${r.role}`)}
+                  </Badge>
                 ))}
               </div>
             )}
