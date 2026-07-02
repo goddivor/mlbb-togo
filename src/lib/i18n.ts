@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useLangStore } from '@/store/useStore';
 
 type Dict = Record<string, string>;
@@ -1089,5 +1090,8 @@ export const translations: Record<string, Dict> = {
 
 export function useT() {
   const lang = useLangStore((s: any) => s.lang);
-  return (key: string): string => translations[lang]?.[key] ?? translations.fr[key] ?? key;
+  return useCallback(
+    (key: string): string => translations[lang]?.[key] ?? translations.fr[key] ?? key,
+    [lang],
+  );
 }
