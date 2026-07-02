@@ -188,29 +188,35 @@ export default function AdminRequestsPage() {
                       </p>
 
                       <div className="flex flex-wrap gap-2 mt-3">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={acting === r.id + 'in_review'}
-                          onClick={() => changeStatus(r, 'in_review')}
-                        >
-                          <Eye size={14} /> {t('requests.markReview')}
-                        </Button>
-                        <Button
-                          size="sm"
-                          disabled={acting === r.id + 'approved'}
-                          onClick={() => changeStatus(r, 'approved')}
-                        >
-                          <Check size={14} /> {t('requests.approve')}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          disabled={acting === r.id + 'rejected'}
-                          onClick={() => changeStatus(r, 'rejected')}
-                        >
-                          <X size={14} /> {t('requests.reject')}
-                        </Button>
+                        {(r.status === 'pending' || r.status === 'in_review') && (
+                          <>
+                            {r.status === 'pending' && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={acting === r.id + 'in_review'}
+                                onClick={() => changeStatus(r, 'in_review')}
+                              >
+                                <Eye size={14} /> {t('requests.markReview')}
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              disabled={acting === r.id + 'approved'}
+                              onClick={() => changeStatus(r, 'approved')}
+                            >
+                              <Check size={14} /> {t('requests.approve')}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              disabled={acting === r.id + 'rejected'}
+                              onClick={() => changeStatus(r, 'rejected')}
+                            >
+                              <X size={14} /> {t('requests.reject')}
+                            </Button>
+                          </>
+                        )}
                         {requester?.id && (
                           <Button size="sm" variant="ghost" onClick={() => openContact(r)}>
                             <MessageSquare size={14} /> {t('requests.contact')}
