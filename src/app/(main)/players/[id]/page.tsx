@@ -110,8 +110,8 @@ export default function PublicProfilePage() {
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-2">
                 <span className="text-xs text-gray-500">{t('users.roles')} :</span>
                 {roles.map((r: any) => (
-                  <Badge key={r.role} variant="purple" size="sm">
-                    <RoleIcon role={r.role} size={13} className="mr-1" />
+                  <Badge key={r.role} variant="purple" size="sm" className="gap-1">
+                    <RoleIcon role={r.role} size={14} />
                     {t(`role.${r.role}`)}
                   </Badge>
                 ))}

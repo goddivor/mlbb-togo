@@ -21,6 +21,7 @@ import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import RoleIcon from '@/components/game/RoleIcon';
+import RoleSelect from '@/components/game/RoleSelect';
 import toast from 'react-hot-toast';
 
 const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
@@ -495,19 +496,14 @@ function MembersPanel({
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  <select
+                  <RoleSelect
                     value={m.role || ''}
+                    onChange={(v) => changeRole(m, v)}
+                    options={LANES}
+                    noneLabel={t('admin.esport.noRole')}
+                    labelFor={(l) => t('lane.' + l)}
                     disabled={busy}
-                    onChange={(e) => changeRole(m, e.target.value)}
-                    className="px-2 py-1 text-xs rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 focus:outline-none focus:border-neon-blue"
-                  >
-                    <option value="">{t('admin.esport.noRole')}</option>
-                    {LANES.map((l) => (
-                      <option key={l} value={l}>
-                        {t('lane.' + l)}
-                      </option>
-                    ))}
-                  </select>
+                  />
 
                   <button
                     onClick={() => toggleSub(m)}

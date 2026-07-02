@@ -45,8 +45,8 @@ function MemberCard({ m, t, highlight = false }: any) {
 
         <div className="flex flex-wrap items-center gap-1.5 mt-1">
           {m.role && (
-            <Badge variant="purple" size="sm">
-              <RoleIcon role={m.role} size={13} className="mr-1" />
+            <Badge variant="purple" size="sm" className="gap-1">
+              <RoleIcon role={m.role} size={14} />
               {t('lane.' + m.role)}
             </Badge>
           )}
