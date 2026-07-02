@@ -11,6 +11,7 @@ import { Card, Badge, StatCard, Button, ProgressBar } from '@/components/ui';
 import { useAuthStore } from '@/store/useStore';
 import { api, avatarSrc, mlbbImg } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
+import RoleIcon from '@/components/game/RoleIcon';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
 
@@ -152,7 +153,10 @@ export default function Dashboard() {
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-2">
                 <span className="text-xs text-gray-500">{t('dashboard.rolesLabel')}</span>
                 {userProfile.gameRoles.map((r: any) => (
-                  <Badge key={r.role} variant="purple" size="sm">{t(ROLE_KEYS[r.role] || r.role)}</Badge>
+                  <Badge key={r.role} variant="purple" size="sm">
+                    <RoleIcon role={r.role} size={13} className="mr-1" />
+                    {t(ROLE_KEYS[r.role] || r.role)}
+                  </Badge>
                 ))}
               </div>
             )}

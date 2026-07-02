@@ -7,6 +7,7 @@ import { ArrowLeft, Shield, Crown, Users, Calendar, MapPin } from 'lucide-react'
 import { Badge } from '@/components/ui';
 import { api, avatarSrc } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
+import RoleIcon from '@/components/game/RoleIcon';
 import { useT } from '@/lib/i18n';
 
 function MemberCard({ m, t, highlight = false }: any) {
@@ -45,6 +46,7 @@ function MemberCard({ m, t, highlight = false }: any) {
         <div className="flex flex-wrap items-center gap-1.5 mt-1">
           {m.role && (
             <Badge variant="purple" size="sm">
+              <RoleIcon role={m.role} size={13} className="mr-1" />
               {t('lane.' + m.role)}
             </Badge>
           )}

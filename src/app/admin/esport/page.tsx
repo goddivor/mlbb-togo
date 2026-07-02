@@ -20,6 +20,7 @@ import { Badge, Button } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
+import RoleIcon from '@/components/game/RoleIcon';
 import toast from 'react-hot-toast';
 
 const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
@@ -483,6 +484,7 @@ function MembersPanel({
                 )}
 
                 <div className="min-w-0 flex-1 flex items-center gap-2">
+                  {m.role && <RoleIcon role={m.role} size={16} />}
                   <span className="text-sm text-white truncate">{u.displayName || u.username}</span>
                   {hasRankBadge(u.gameRank) && <RankBadge rank={u.gameRank} size={16} />}
                   {m.isCaptain && (
