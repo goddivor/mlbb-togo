@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { ArrowLeft, Shield, Crown, Users, Calendar, MapPin } from 'lucide-react';
-import { Card, Badge } from '@/components/ui';
+import { Badge } from '@/components/ui';
 import { api, avatarSrc } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import { useT } from '@/lib/i18n';
@@ -175,30 +174,32 @@ export default function TeamDetailPage() {
     <div className="p-4 sm:p-6 max-w-4xl mx-auto">
       <Link
         href="/teams"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-4"
+        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-5"
       >
         <ArrowLeft size={16} /> {t('teams.back')}
       </Link>
 
-      {/* Hero compact : image en fond + dégradé, contenu superposé */}
-      <div className="relative rounded-2xl overflow-hidden border border-gaming-border mb-5">
-        <div className="relative h-44 sm:h-56 w-full bg-gaming-dark">
+      {/* En-tête profil : avatar rond + infos */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 mb-8">
+        <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-full overflow-hidden border-2 border-gaming-border bg-gaming-surface">
           {team.image ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={team.image}
               alt={team.name}
               referrerPolicy="no-referrer"
-              className="absolute inset-0 w-full h-full object-cover"
+              className="w-full h-full object-cover"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gaming-surface to-gaming-dark">
-              <Shield size={72} className="text-neon-blue/25" />
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-neon-blue to-neon-purple text-3xl font-bold text-white">
+              {team.name?.[0]?.toUpperCase() || 'T'}
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-gaming-dark via-gaming-dark/55 to-transparent" />
+        </div>
 
-          <div className="absolute top-3 right-3 flex flex-wrap justify-end gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">{team.name}</h1>
             <Badge variant={team.type === 'esport' ? 'gold' : 'default'} size="sm">
               {t('admin.esport.badge.' + (team.type || 'community'))}
             </Badge>
@@ -209,79 +210,63 @@ export default function TeamDetailPage() {
             )}
           </div>
 
-          <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">{team.name}</h1>
-            <div className="flex flex-wrap items-center gap-4 mt-1.5 text-xs sm:text-sm text-gray-200">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-gray-400">
+            <span className="inline-flex items-center gap-1.5">
+              <Users size={14} className="text-neon-blue" />
+              {team.memberCount ?? members.length} {t('teams.members')}
+            </span>
+            {foundedLabel && (
               <span className="inline-flex items-center gap-1.5">
-                <Users size={14} /> {team.memberCount ?? members.length} {t('teams.members')}
+                <Calendar size={14} className="text-neon-blue" />
+                {t('teams.detail.founded')} {foundedLabel}
               </span>
-              {foundedLabel && (
-                <span className="inline-flex items-center gap-1.5">
-                  <Calendar size={14} /> {t('teams.detail.founded')} {foundedLabel}
-                </span>
-              )}
-            </div>
+            )}
           </div>
+
+          {team.description && (
+            <p className="text-sm text-gray-400 mt-2 whitespace-pre-line">{team.description}</p>
+          )}
         </div>
       </div>
 
-      {team.description && (
-        <p className="text-sm text-gray-400 mb-6 whitespace-pre-line">{team.description}</p>
-      )}
-
       {/* Bilan */}
       {stats.played > 0 && (
-        <div className="mb-6">
-          <h2 className="text-lg font-bold text-white mb-3">{t('teams.detail.record')}</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatBox label={t('teams.detail.played')} value={stats.played} />
-            <StatBox label={t('teams.detail.wins')} value={stats.wins} color="text-green-400" />
-            <StatBox label={t('teams.detail.losses')} value={stats.losses} color="text-red-400" />
-            <StatBox label={t('teams.detail.winRate')} value={`${stats.winRate ?? 0}%`} color="text-neon-blue" />
-          </div>
+        <div className="grid grid-cols-4 gap-3 mb-8">
+          <StatBox label={t('teams.detail.played')} value={stats.played} />
+          <StatBox label={t('teams.detail.wins')} value={stats.wins} color="text-green-400" />
+          <StatBox label={t('teams.detail.losses')} value={stats.losses} color="text-red-400" />
+          <StatBox label={t('teams.detail.winRate')} value={`${stats.winRate ?? 0}%`} color="text-neon-blue" />
         </div>
       )}
 
       {/* Effectif */}
-      <Card hover={false}>
+      <section className="mb-8">
         <h2 className="text-lg font-bold text-white mb-4">{t('teams.detail.roster')}</h2>
 
         {!captainMember && members.length === 0 ? (
-          <p className="text-center text-gray-500 py-8">{t('teams.detail.noMembers')}</p>
+          <p className="text-sm text-gray-500">{t('teams.detail.noMembers')}</p>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-5">
             {captainMember && (
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Crown size={16} className="text-yellow-400" />
-                  <Badge variant="gold" size="sm">
+                <div className="flex items-center gap-2 mb-2.5">
+                  <Crown size={15} className="text-yellow-400" />
+                  <span className="text-xs font-semibold uppercase tracking-wide text-yellow-400">
                     {t('teams.detail.captain')}
-                  </Badge>
+                  </span>
                 </div>
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <MemberCard m={captainMember} t={t} highlight />
-                </motion.div>
+                <MemberCard m={captainMember} t={t} highlight />
               </div>
             )}
 
             {starters.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-300 mb-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2.5">
                   {t('teams.detail.starters')}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {starters.map((m, i) => (
-                    <motion.div
-                      key={m.id ?? m.userId ?? i}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: Math.min(i * 0.03, 0.4) }}
-                    >
-                      <MemberCard m={m} t={t} />
-                    </motion.div>
+                    <MemberCard key={m.id ?? m.userId ?? i} m={m} t={t} />
                   ))}
                 </div>
               </div>
@@ -289,47 +274,33 @@ export default function TeamDetailPage() {
 
             {substitutes.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-300 mb-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2.5">
                   {t('teams.detail.substitutes')}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {substitutes.map((m, i) => (
-                    <motion.div
-                      key={m.id ?? m.userId ?? i}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: Math.min(i * 0.03, 0.4) }}
-                    >
-                      <MemberCard m={m} t={t} />
-                    </motion.div>
+                    <MemberCard key={m.id ?? m.userId ?? i} m={m} t={t} />
                   ))}
                 </div>
               </div>
             )}
           </div>
         )}
-      </Card>
+      </section>
 
       {/* Matchs récents */}
-      <Card hover={false} className="mt-6">
+      <section>
         <h2 className="text-lg font-bold text-white mb-4">{t('teams.detail.matches')}</h2>
         {matches.length === 0 ? (
-          <p className="text-center text-gray-500 py-6">{t('teams.detail.noMatches')}</p>
+          <p className="text-sm text-gray-500">{t('teams.detail.noMatches')}</p>
         ) : (
           <div className="space-y-2">
             {matches.map((m, i) => (
-              <motion.div
-                key={m.id ?? i}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.03, 0.4) }}
-              >
-                <MatchRow m={m} t={t} />
-              </motion.div>
+              <MatchRow key={m.id ?? i} m={m} t={t} />
             ))}
           </div>
         )}
-      </Card>
+      </section>
     </div>
   );
 }
