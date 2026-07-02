@@ -98,6 +98,12 @@ export default function TeamsPage() {
           <Button size="sm" onClick={() => setProposeOpen(true)} className="shrink-0">
             <Plus size={16} /> <span className="hidden sm:inline">{t('requests.propose')}</span>
           </Button>
+          <Link
+            href="/my-requests"
+            className="shrink-0 inline-flex items-center px-3 py-2 text-sm rounded-lg border border-gaming-border text-gray-300 hover:text-white hover:border-neon-blue transition-colors"
+          >
+            {t('requests.mine')}
+          </Link>
         </div>
       </div>
 
