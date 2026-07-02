@@ -3,9 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Search, Shield, Users } from 'lucide-react';
+import { Search, Shield, Users, Plus, Check } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { Button } from '@/components/ui';
+import Modal from '@/components/ui/Modal';
+import toast from 'react-hot-toast';
 
 interface EsportTeam {
   id: string;
@@ -46,6 +49,33 @@ export default function TeamsPage() {
     return teams.filter((tm) => (tm.name || '').toLowerCase().includes(q));
   }, [teams, query]);
 
+  const [proposeOpen, setProposeOpen] = useState(false);
+  const [form, setForm] = useState({ proposedName: '', tag: '', message: '' });
+  const [submitting, setSubmitting] = useState(false);
+
+  const submitProposal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.proposedName.trim()) return;
+    setSubmitting(true);
+    try {
+      await api.teamRequests.create({
+        proposedName: form.proposedName.trim(),
+        tag: form.tag.trim() || undefined,
+        message: form.message.trim() || undefined,
+      });
+      toast.success(t('requests.sent'));
+      setProposeOpen(false);
+      setForm({ proposedName: '', tag: '', message: '' });
+    } catch (err: any) {
+      toast.error(err?.message || t('common.error'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const inputCls =
+    'w-full px-3 py-2 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue';
+
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
@@ -55,14 +85,19 @@ export default function TeamsPage() {
             {loading ? '…' : `${teams.length} ${t('teams.count')}`}
           </p>
         </div>
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t('teams.search')}
-            className="pl-9 pr-3 py-2 w-full sm:w-64 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t('teams.search')}
+              className="pl-9 pr-3 py-2 w-full sm:w-64 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue"
+            />
+          </div>
+          <Button size="sm" onClick={() => setProposeOpen(true)} className="shrink-0">
+            <Plus size={16} /> <span className="hidden sm:inline">{t('requests.propose')}</span>
+          </Button>
         </div>
       </div>
 
@@ -144,6 +179,50 @@ export default function TeamsPage() {
           ))}
         </div>
       )}
+
+      <Modal
+        open={proposeOpen}
+        onClose={() => setProposeOpen(false)}
+        closeLabel={t('common.close')}
+        title={t('requests.propose')}
+      >
+        <p className="text-sm text-gray-400 mb-4">{t('requests.proposeHint')}</p>
+        <form onSubmit={submitProposal} className="space-y-3">
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">{t('requests.form.name')}</label>
+            <input
+              className={inputCls}
+              value={form.proposedName}
+              onChange={(e) => setForm({ ...form, proposedName: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">{t('requests.form.tag')}</label>
+            <input
+              className={inputCls}
+              value={form.tag}
+              onChange={(e) => setForm({ ...form, tag: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">{t('requests.form.message')}</label>
+            <textarea
+              className={`${inputCls} min-h-[90px] resize-y`}
+              value={form.message}
+              onChange={(e) => setForm({ ...form, message: e.target.value })}
+            />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button size="sm" type="submit" disabled={submitting}>
+              <Check size={16} /> {t('requests.submit')}
+            </Button>
+            <Button size="sm" variant="ghost" type="button" onClick={() => setProposeOpen(false)}>
+              {t('admin.esport.cancel')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

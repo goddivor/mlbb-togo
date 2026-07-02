@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LogOut, ExternalLink } from 'lucide-react';
+import { LogOut, ExternalLink, MessageSquare } from 'lucide-react';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
+import NotificationBell from '@/components/common/NotificationBell';
 import { useT } from '@/lib/i18n';
 import { setToken } from '@/lib/api';
 import { useAuthStore } from '@/store/useStore';
@@ -25,6 +26,14 @@ export default function AdminHeader() {
       <h2 className="text-sm font-semibold text-white">{t('admin.area')}</h2>
 
       <div className="flex items-center gap-3">
+        <Link
+          href="/admin/messages"
+          title={t('header.messages')}
+          className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-300 hover:text-white hover:bg-gaming-surface transition-colors"
+        >
+          <MessageSquare size={18} />
+        </Link>
+        <NotificationBell />
         <LanguageSwitcher />
 
         <Link

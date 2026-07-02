@@ -6,7 +6,6 @@ import {
   mockTournaments,
   mockEvents,
   mockMatches,
-  mockNotifications,
   mockAdminLogs,
   mockFormTemplates,
   mockFormResponses,
@@ -308,7 +307,29 @@ export const api = {
   },
 
   notifications: {
-    list: () => request('/notifications', { fallback: mockNotifications, auth: false }),
+    list: () => request('/notifications', { fallback: [] }),
+    unreadCount: () => request('/notifications/unread-count', { fallback: { count: 0 } }),
+    markRead: (id: string) => request(`/notifications/${id}/read`, { method: 'PATCH' }),
+    markAllRead: () => request('/notifications/read-all', { method: 'PATCH' }),
+  },
+
+  teamRequests: {
+    create: (data: { proposedName: string; tag?: string; message?: string }) =>
+      request('/team-requests', { method: 'POST', body: data }),
+    mine: () => request('/team-requests/mine', { fallback: [] }),
+    list: (status?: string) =>
+      request(`/team-requests${status ? `?status=${status}` : ''}`, { fallback: [] }),
+    setStatus: (id: string, status: string) =>
+      request(`/team-requests/${id}/status`, { method: 'PATCH', body: { status } }),
+  },
+
+  messages: {
+    startThread: (data: { userId: string; subject?: string; requestId?: string; body: string }) =>
+      request('/messages/threads', { method: 'POST', body: data }),
+    threads: () => request('/messages/threads', { fallback: [] }),
+    thread: (id: string) => request(`/messages/threads/${id}`, { fallback: null }),
+    reply: (id: string, body: string) =>
+      request(`/messages/threads/${id}`, { method: 'POST', body: { body } }),
   },
 };
 
