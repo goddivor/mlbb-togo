@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Trophy, Handshake, ShieldCheck } from 'lucide-react';
+import { Trophy, Handshake, ShieldCheck, CalendarDays, Swords } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
 const NAV = [
   { href: '/admin/esport', key: 'admin.esport.title', icon: Trophy },
+  { href: '/admin/seasons', key: 'admin.seasons.title', icon: CalendarDays },
+  { href: '/admin/matches', key: 'admin.matches.title', icon: Swords },
   { href: '/admin/sponsors', key: 'admin.sponsors.title', icon: Handshake },
 ];
 

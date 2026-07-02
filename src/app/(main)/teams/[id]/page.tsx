@@ -67,6 +67,46 @@ function MemberCard({ m, t, highlight = false }: any) {
   );
 }
 
+function StatBox({ label, value, color = 'text-white' }: any) {
+  return (
+    <div className="rounded-xl border border-gaming-border bg-gaming-surface/40 p-3 text-center">
+      <p className={`text-xl font-bold ${color}`}>{value}</p>
+      <p className="text-[11px] text-gray-400 mt-0.5">{label}</p>
+    </div>
+  );
+}
+
+function MatchRow({ m, t }: any) {
+  const completed = m.status === 'completed';
+  const aWin = m.winnerTeamId && m.winnerTeamId === m.teamA?.id;
+  const bWin = m.winnerTeamId && m.winnerTeamId === m.teamB?.id;
+  let dateLabel = '';
+  if (m.scheduledAt) {
+    const d = new Date(m.scheduledAt);
+    if (!isNaN(d.getTime())) dateLabel = d.toLocaleDateString();
+  }
+  return (
+    <div className="rounded-lg border border-gaming-border bg-gaming-surface/40 p-3">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-sm">
+        <span className={`text-right truncate ${aWin ? 'text-neon-gold font-bold' : 'text-white'}`}>
+          {m.teamA?.name}
+        </span>
+        <span className="px-2 text-gray-400 font-semibold shrink-0">
+          {completed ? `${m.scoreA} - ${m.scoreB}` : 'vs'}
+        </span>
+        <span className={`text-left truncate ${bWin ? 'text-neon-gold font-bold' : 'text-white'}`}>
+          {m.teamB?.name}
+        </span>
+      </div>
+      <div className="flex items-center justify-center gap-2 mt-2 flex-wrap">
+        <Badge variant="purple" size="sm">{t('matchType.' + m.type)}</Badge>
+        <Badge variant={completed ? 'green' : 'default'} size="sm">{t('matchStatus.' + m.status)}</Badge>
+        {dateLabel && <span className="text-xs text-gray-500">{dateLabel}</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function TeamDetailPage() {
   const t = useT();
   const params = useParams();
@@ -107,6 +147,8 @@ export default function TeamDetailPage() {
   }
 
   const members: any[] = Array.isArray(team.members) ? team.members : [];
+  const matches: any[] = Array.isArray(team.matches) ? team.matches : [];
+  const stats = team.stats || {};
   const captainUserId = team.captain?.id ?? team.captain?.userId;
 
   // Le capitaine est listé une seule fois, en tête ; on l'exclut des sections.
@@ -186,6 +228,19 @@ export default function TeamDetailPage() {
         </div>
       </Card>
 
+      {/* Bilan */}
+      {stats.played > 0 && (
+        <div className="mb-6">
+          <h2 className="text-lg font-bold text-white mb-3">{t('teams.detail.record')}</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatBox label={t('teams.detail.played')} value={stats.played} />
+            <StatBox label={t('teams.detail.wins')} value={stats.wins} color="text-green-400" />
+            <StatBox label={t('teams.detail.losses')} value={stats.losses} color="text-red-400" />
+            <StatBox label={t('teams.detail.winRate')} value={`${stats.winRate ?? 0}%`} color="text-neon-blue" />
+          </div>
+        </div>
+      )}
+
       {/* Effectif */}
       <Card hover={false}>
         <h2 className="text-lg font-bold text-white mb-4">{t('teams.detail.roster')}</h2>
@@ -250,6 +305,27 @@ export default function TeamDetailPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+      </Card>
+
+      {/* Matchs récents */}
+      <Card hover={false} className="mt-6">
+        <h2 className="text-lg font-bold text-white mb-4">{t('teams.detail.matches')}</h2>
+        {matches.length === 0 ? (
+          <p className="text-center text-gray-500 py-6">{t('teams.detail.noMatches')}</p>
+        ) : (
+          <div className="space-y-2">
+            {matches.map((m, i) => (
+              <motion.div
+                key={m.id ?? i}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(i * 0.03, 0.4) }}
+              >
+                <MatchRow m={m} t={t} />
+              </motion.div>
+            ))}
           </div>
         )}
       </Card>

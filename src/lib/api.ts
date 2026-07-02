@@ -275,6 +275,31 @@ export const api = {
       request(`/esport/sponsors/${id}`, { method: 'PATCH', body: data }),
     deleteSponsor: (id: string) =>
       request(`/esport/sponsors/${id}`, { method: 'DELETE' }),
+
+    // Seasons
+    seasons: () => request('/esport/seasons', { fallback: [], auth: false }),
+    createSeason: (data: any) => request('/esport/seasons', { method: 'POST', body: data }),
+    updateSeason: (id: string, data: any) =>
+      request(`/esport/seasons/${id}`, { method: 'PATCH', body: data }),
+    deleteSeason: (id: string) =>
+      request(`/esport/seasons/${id}`, { method: 'DELETE' }),
+
+    // Matches
+    matches: (params: { seasonId?: string; teamId?: string; status?: string } = {}) => {
+      const qs = new URLSearchParams(
+        Object.entries(params).filter(([, v]) => v != null && v !== '').map(([k, v]) => [k, String(v)]),
+      ).toString();
+      return request(`/esport/matches${qs ? `?${qs}` : ''}`, { fallback: [], auth: false });
+    },
+    teamMatches: (teamId: string) =>
+      request(`/esport/teams/${teamId}/matches`, { fallback: [], auth: false }),
+    createMatch: (data: any) => request('/esport/matches', { method: 'POST', body: data }),
+    updateMatch: (id: string, data: any) =>
+      request(`/esport/matches/${id}`, { method: 'PATCH', body: data }),
+    setMatchResult: (id: string, data: any) =>
+      request(`/esport/matches/${id}/result`, { method: 'PATCH', body: data }),
+    deleteMatch: (id: string) =>
+      request(`/esport/matches/${id}`, { method: 'DELETE' }),
   },
 
   contact: {
