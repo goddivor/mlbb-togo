@@ -2,25 +2,27 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Swords, Users, Shield } from 'lucide-react';
+import { Trophy, Handshake, ShieldCheck } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
 const NAV = [
-  { href: '/dashboard', key: 'header.dashboard', icon: LayoutDashboard },
-  { href: '/heroes', key: 'header.heroes', icon: Swords },
-  { href: '/players', key: 'header.players', icon: Users },
-  { href: '/teams', key: 'header.teams', icon: Shield },
+  { href: '/admin/esport', key: 'admin.esport.title', icon: Trophy },
+  { href: '/admin/sponsors', key: 'admin.sponsors.title', icon: Handshake },
 ];
 
-export default function DashboardSidebar() {
+export default function AdminSidebar() {
   const pathname = usePathname();
   const t = useT();
-  const nav = NAV;
 
   return (
-    <aside className="sticky top-16 h-[calc(100vh-4rem)] w-16 md:w-56 shrink-0 border-r border-gaming-border bg-gaming-card/40 p-2 md:p-3">
+    <aside className="sticky top-0 h-screen w-16 md:w-60 shrink-0 border-r border-gaming-border bg-gaming-card/60 flex flex-col p-2 md:p-3">
+      <Link href="/admin/esport" className="flex items-center gap-2 px-2 py-3 mb-2">
+        <ShieldCheck className="text-neon-blue shrink-0" size={22} />
+        <span className="hidden md:block font-bold text-white truncate">{t('admin.area')}</span>
+      </Link>
+
       <nav className="flex flex-col gap-1">
-        {nav.map((item) => {
+        {NAV.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
