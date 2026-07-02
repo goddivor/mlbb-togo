@@ -99,6 +99,9 @@ export const api = {
   auth: {
     me: () => request('/auth/me'),
 
+    adminLogin: (data: { username: string; password: string }) =>
+      request('/auth/admin/login', { method: 'POST', body: data, auth: false }),
+
     mlbbSendVc: (data: { roleId: number; zoneId: number }) =>
       request('/auth/mlbb/send-vc', { method: 'POST', body: data, auth: false }),
     mlbbLogin: (data: { roleId: number; zoneId: number; vc: number }) =>
@@ -246,8 +249,32 @@ export const api = {
   esport: {
     org: () => request('/esport', { fallback: null, auth: false }),
     teams: () => request('/esport/teams', { fallback: [], auth: false }),
+    team: (id: string) => request(`/esport/teams/${id}`, { fallback: null, auth: false }),
     sponsors: () => request('/esport/sponsors', { fallback: [], auth: false }),
     mtl: () => request('/esport/mtl', { fallback: null, auth: false }),
+
+    // Admin
+    updateOrg: (id: string, data: any) =>
+      request(`/esport/${id}`, { method: 'PATCH', body: data }),
+    createTeam: (data: any) => request('/esport/teams', { method: 'POST', body: data }),
+    updateTeam: (id: string, data: any) =>
+      request(`/esport/teams/${id}`, { method: 'PATCH', body: data }),
+    deleteTeam: (id: string) =>
+      request(`/esport/teams/${id}`, { method: 'DELETE' }),
+    addMember: (teamId: string, data: any) =>
+      request(`/esport/teams/${teamId}/members`, { method: 'POST', body: data }),
+    updateMember: (teamId: string, userId: string, data: any) =>
+      request(`/esport/teams/${teamId}/members/${userId}`, { method: 'PATCH', body: data }),
+    removeMember: (teamId: string, userId: string) =>
+      request(`/esport/teams/${teamId}/members/${userId}`, { method: 'DELETE' }),
+    setCaptain: (teamId: string, userId: string) =>
+      request(`/esport/teams/${teamId}/captain`, { method: 'PATCH', body: { userId } }),
+    createSponsor: (data: any) =>
+      request('/esport/sponsors', { method: 'POST', body: data }),
+    updateSponsor: (id: string, data: any) =>
+      request(`/esport/sponsors/${id}`, { method: 'PATCH', body: data }),
+    deleteSponsor: (id: string) =>
+      request(`/esport/sponsors/${id}`, { method: 'DELETE' }),
   },
 
   contact: {

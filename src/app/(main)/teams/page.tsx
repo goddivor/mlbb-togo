@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Shield, X } from 'lucide-react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { Search, Shield, Users } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 
@@ -10,6 +11,8 @@ interface EsportTeam {
   id: string;
   name: string;
   image?: string | null;
+  memberCount?: number;
+  isRecruiting?: boolean;
 }
 
 interface EsportOrg {
@@ -25,7 +28,6 @@ export default function TeamsPage() {
   const [org, setOrg] = useState<EsportOrg | null>(null);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  const [preview, setPreview] = useState<EsportTeam | null>(null);
 
   useEffect(() => {
     api.esport
@@ -97,79 +99,51 @@ export default function TeamsPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((tm, i) => (
-            <motion.button
+            <motion.div
               key={tm.id}
-              type="button"
-              onClick={() => tm.image && setPreview(tm)}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(i * 0.03, 0.4) }}
-              className="group text-left rounded-xl border border-gaming-border bg-gaming-surface/40 overflow-hidden hover:border-neon-blue transition-colors"
             >
-              <div className="relative aspect-video w-full bg-gaming-dark overflow-hidden">
-                {tm.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={tm.image}
-                    alt={tm.name}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Shield size={40} className="text-gray-600" />
+              <Link
+                href={`/teams/${tm.id}`}
+                className="group block rounded-xl border border-gaming-border bg-gaming-surface/40 overflow-hidden hover:border-neon-blue transition-colors"
+              >
+                <div className="relative aspect-video w-full bg-gaming-dark overflow-hidden">
+                  {tm.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={tm.image}
+                      alt={tm.name}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Shield size={40} className="text-gray-600" />
+                    </div>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 h-1" style={{ backgroundColor: accent }} />
+                  {tm.isRecruiting && (
+                    <span className="absolute top-2 right-2 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
+                      {t('teams.detail.recruiting')}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between gap-2 p-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Shield size={16} style={{ color: accent }} className="shrink-0" />
+                    <p className="text-sm font-semibold text-white truncate">{tm.name}</p>
                   </div>
-                )}
-                <div className="absolute inset-x-0 bottom-0 h-1" style={{ backgroundColor: accent }} />
-              </div>
-              <div className="flex items-center gap-2 p-3">
-                <Shield size={16} style={{ color: accent }} className="shrink-0" />
-                <p className="text-sm font-semibold text-white truncate">{tm.name}</p>
-              </div>
-            </motion.button>
+                  <span className="inline-flex items-center gap-1 text-xs text-gray-400 shrink-0">
+                    <Users size={13} /> {tm.memberCount ?? 0}
+                  </span>
+                </div>
+              </Link>
+            </motion.div>
           ))}
         </div>
       )}
-
-      <AnimatePresence>
-        {preview && preview.image && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setPreview(null)}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative max-w-3xl w-full rounded-2xl overflow-hidden border border-gaming-border bg-gaming-darker"
-            >
-              <button
-                type="button"
-                onClick={() => setPreview(null)}
-                aria-label={t('common.close')}
-                className="absolute top-3 right-3 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-black/60 text-white/80 hover:text-white hover:bg-black/80 transition-colors"
-              >
-                <X size={20} />
-              </button>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={preview.image}
-                alt={preview.name}
-                referrerPolicy="no-referrer"
-                className="w-full max-h-[75vh] object-contain bg-black"
-              />
-              <div className="flex items-center gap-2 p-4">
-                <Shield size={18} style={{ color: accent }} />
-                <p className="font-bold text-white">{preview.name}</p>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

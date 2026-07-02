@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Swords, Users, Shield } from 'lucide-react';
+import { LayoutDashboard, Swords, Users, Shield, ShieldCheck } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import { useAuthStore } from '@/store/useStore';
 
 const NAV = [
   { href: '/dashboard', key: 'header.dashboard', icon: LayoutDashboard },
@@ -12,14 +13,20 @@ const NAV = [
   { href: '/teams', key: 'header.teams', icon: Shield },
 ];
 
+const ADMIN_ROLES = ['admin', 'moderator'];
+
 export default function DashboardSidebar() {
   const pathname = usePathname();
   const t = useT();
+  const user = useAuthStore((s: any) => s.user);
+  const nav = ADMIN_ROLES.includes(user?.roleUser)
+    ? [...NAV, { href: '/admin/esport', key: 'header.admin', icon: ShieldCheck }]
+    : NAV;
 
   return (
     <aside className="sticky top-16 h-[calc(100vh-4rem)] w-16 md:w-56 shrink-0 border-r border-gaming-border bg-gaming-card/40 p-2 md:p-3">
       <nav className="flex flex-col gap-1">
-        {NAV.map((item) => {
+        {nav.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
