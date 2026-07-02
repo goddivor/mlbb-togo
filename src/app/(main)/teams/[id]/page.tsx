@@ -3,12 +3,18 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Shield, Crown, Users, Calendar, MapPin } from 'lucide-react';
-import { Badge } from '@/components/ui';
+import { ArrowLeft, Shield, Crown, Users, Calendar, MapPin, UserPlus, Check, X } from 'lucide-react';
+import { Badge, Button } from '@/components/ui';
+import Modal from '@/components/ui/Modal';
 import { api, avatarSrc } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import RoleIcon from '@/components/game/RoleIcon';
+import RoleSelect from '@/components/game/RoleSelect';
+import { useAuthStore } from '@/store/useStore';
 import { useT } from '@/lib/i18n';
+import toast from 'react-hot-toast';
+
+const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
 
 function MemberCard({ m, t, highlight = false }: any) {
   const u = m?.user || {};
@@ -114,6 +120,21 @@ export default function TeamDetailPage() {
   const id = String(params?.id || '');
   const [team, setTeam] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const myId = useAuthStore((s: any) => s.user?.id);
+  const isAdmin = useAuthStore((s: any) => ['admin', 'moderator'].includes(s.user?.roleUser));
+
+  const [joinReqs, setJoinReqs] = useState<any[]>([]);
+  const [joinOpen, setJoinOpen] = useState(false);
+  const [joinForm, setJoinForm] = useState<{ message: string; role: string }>({ message: '', role: '' });
+  const [joining, setJoining] = useState(false);
+  const [actingId, setActingId] = useState<string | null>(null);
+  const [myPending, setMyPending] = useState(false);
+
+  const refresh = () =>
+    api.esport
+      .team(id)
+      .then(setTeam)
+      .catch(() => setTeam(null));
 
   useEffect(() => {
     if (!id) return;
@@ -124,6 +145,60 @@ export default function TeamDetailPage() {
       .catch(() => setTeam(null))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const members: any[] = Array.isArray(team?.members) ? team.members : [];
+  const isMember = !!myId && members.some((m) => m.userId === myId);
+  const captainId = team?.captain?.userId ?? team?.captain?.id;
+  const amCaptain = !!myId && captainId === myId;
+  const canManage = amCaptain || isAdmin;
+
+  useEffect(() => {
+    if (!id || !canManage) return;
+    api.esport.joinRequests(id).then((r: any) => setJoinReqs(Array.isArray(r) ? r : [])).catch(() => {});
+  }, [id, canManage]);
+
+  useEffect(() => {
+    if (!myId || !id) return;
+    api.esport
+      .myJoinRequests()
+      .then((r: any) =>
+        setMyPending(Array.isArray(r) && r.some((x: any) => x.teamId === id && x.status === 'pending')),
+      )
+      .catch(() => {});
+  }, [myId, id]);
+
+  const submitJoin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setJoining(true);
+    try {
+      await api.esport.requestJoin(id, {
+        message: joinForm.message.trim() || undefined,
+        role: joinForm.role || undefined,
+      });
+      toast.success(t('teams.joinSent'));
+      setJoinOpen(false);
+      setJoinForm({ message: '', role: '' });
+      setMyPending(true);
+    } catch (err: any) {
+      toast.error(err?.message || t('common.error'));
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  const decide = async (r: any, status: 'accepted' | 'rejected') => {
+    setActingId(r.id + status);
+    try {
+      await api.esport.decideJoin(r.id, status);
+      toast.success(status === 'accepted' ? t('teams.accepted') : t('teams.refused'));
+      setJoinReqs((prev) => prev.filter((x) => x.id !== r.id));
+      if (status === 'accepted') await refresh();
+    } catch (err: any) {
+      toast.error(err?.message || t('common.error'));
+    } finally {
+      setActingId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -147,10 +222,9 @@ export default function TeamDetailPage() {
     );
   }
 
-  const members: any[] = Array.isArray(team.members) ? team.members : [];
   const matches: any[] = Array.isArray(team.matches) ? team.matches : [];
   const stats = team.stats || {};
-  const captainUserId = team.captain?.id ?? team.captain?.userId;
+  const captainUserId = captainId;
 
   // Le capitaine est listé une seule fois, en tête ; on l'exclut des sections.
   const others = members.filter(
@@ -229,7 +303,76 @@ export default function TeamDetailPage() {
             <p className="text-sm text-gray-400 mt-2 whitespace-pre-line">{team.description}</p>
           )}
         </div>
+
+        {myId && !isMember && (
+          <div className="sm:ml-auto shrink-0">
+            {myPending ? (
+              <span className="inline-flex items-center gap-1.5 text-xs text-gray-400 border border-gaming-border rounded-lg px-3 py-2">
+                {t('teams.joinPending')}
+              </span>
+            ) : (
+              <Button size="sm" onClick={() => setJoinOpen(true)}>
+                <UserPlus size={15} /> {t('teams.join')}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Demandes de recrutement (capitaine / admin) */}
+      {canManage && joinReqs.length > 0 && (
+        <section className="mb-8">
+          <h2 className="text-lg font-bold text-white mb-3">
+            {t('teams.joinRequests')}{' '}
+            <span className="text-sm font-normal text-gray-500">({joinReqs.length})</span>
+          </h2>
+          <div className="space-y-2">
+            {joinReqs.map((r) => {
+              const u = r.user || {};
+              const name = u.displayName || u.username || '—';
+              return (
+                <div
+                  key={r.id}
+                  className="flex items-center gap-3 rounded-lg border border-gaming-border bg-gaming-surface/40 p-3"
+                >
+                  {u.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={avatarSrc(u.avatar, 64)}
+                      alt={name}
+                      referrerPolicy="no-referrer"
+                      className="w-9 h-9 rounded-full object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-xs font-bold text-white shrink-0">
+                      {name[0]?.toUpperCase() || 'J'}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-white truncate">{name}</span>
+                      {r.role && (
+                        <Badge variant="purple" size="sm" className="gap-1">
+                          <RoleIcon role={r.role} size={13} /> {t('lane.' + r.role)}
+                        </Badge>
+                      )}
+                    </div>
+                    {r.message && <p className="text-xs text-gray-400 truncate">{r.message}</p>}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button size="sm" disabled={actingId === r.id + 'accepted'} onClick={() => decide(r, 'accepted')}>
+                      <Check size={14} /> {t('teams.accept')}
+                    </Button>
+                    <Button size="sm" variant="danger" disabled={actingId === r.id + 'rejected'} onClick={() => decide(r, 'rejected')}>
+                      <X size={14} /> {t('teams.refuse')}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Bilan */}
       {stats.played > 0 && (
@@ -303,6 +446,43 @@ export default function TeamDetailPage() {
           </div>
         )}
       </section>
+
+      <Modal
+        open={joinOpen}
+        onClose={() => setJoinOpen(false)}
+        closeLabel={t('common.close')}
+        title={t('teams.joinTitle')}
+      >
+        <p className="text-sm text-gray-400 mb-4">{t('teams.joinHint')}</p>
+        <form onSubmit={submitJoin} className="space-y-3">
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">{t('teams.joinRole')}</label>
+            <RoleSelect
+              value={joinForm.role}
+              onChange={(v) => setJoinForm({ ...joinForm, role: v })}
+              options={LANES}
+              noneLabel={t('admin.esport.noRole')}
+              labelFor={(l) => t('lane.' + l)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">{t('teams.joinMessage')}</label>
+            <textarea
+              className="w-full px-3 py-2 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue min-h-[80px] resize-y"
+              value={joinForm.message}
+              onChange={(e) => setJoinForm({ ...joinForm, message: e.target.value })}
+            />
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button size="sm" type="submit" disabled={joining}>
+              <UserPlus size={15} /> {t('teams.joinSubmit')}
+            </Button>
+            <Button size="sm" variant="ghost" type="button" onClick={() => setJoinOpen(false)}>
+              {t('admin.esport.cancel')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
