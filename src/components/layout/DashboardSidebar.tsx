@@ -15,11 +15,12 @@ const NAV = [
 export default function DashboardSidebar() {
   const pathname = usePathname();
   const t = useT();
+  const nav = NAV;
 
   return (
     <aside className="sticky top-16 h-[calc(100vh-4rem)] w-16 md:w-56 shrink-0 border-r border-gaming-border bg-gaming-card/40 p-2 md:p-3">
       <nav className="flex flex-col gap-1">
-        {NAV.map((item) => {
+        {nav.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (

@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, LogOut, ChevronDown } from 'lucide-react';
+import { User, LogOut, ChevronDown, MessageSquare } from 'lucide-react';
 import { useAuthStore, useLangStore } from '@/store/useStore';
 import { setToken, avatarSrc } from '@/lib/api';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
+import NotificationBell from '@/components/common/NotificationBell';
+import { disconnectSocket } from '@/lib/realtime';
 import { useT } from '@/lib/i18n';
 
 export default function DashboardHeader() {
@@ -24,6 +26,7 @@ export default function DashboardHeader() {
   }, [lang, setLang]);
 
   const logout = () => {
+    disconnectSocket();
     setToken(null);
     useAuthStore.getState().logout();
     router.replace('/');
@@ -41,6 +44,16 @@ export default function DashboardHeader() {
         </Link>
 
         <div className="flex items-center gap-2">
+
+          <Link
+            href="/messages"
+            title={t('header.messages')}
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-300 hover:text-white hover:bg-gaming-surface transition-colors"
+          >
+            <MessageSquare size={18} />
+          </Link>
+
+          <NotificationBell />
 
           <LanguageSwitcher />
 
