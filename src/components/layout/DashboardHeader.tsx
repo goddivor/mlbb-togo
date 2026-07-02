@@ -9,6 +9,7 @@ import { useAuthStore, useLangStore } from '@/store/useStore';
 import { setToken, avatarSrc } from '@/lib/api';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
 import NotificationBell from '@/components/common/NotificationBell';
+import { disconnectSocket } from '@/lib/realtime';
 import { useT } from '@/lib/i18n';
 
 export default function DashboardHeader() {
@@ -25,6 +26,7 @@ export default function DashboardHeader() {
   }, [lang, setLang]);
 
   const logout = () => {
+    disconnectSocket();
     setToken(null);
     useAuthStore.getState().logout();
     router.replace('/');

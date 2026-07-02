@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AdminShell from '@/components/layout/AdminShell';
 import { api, getToken, setToken } from '@/lib/api';
 import { useAuthStore } from '@/store/useStore';
+import { RealtimeProvider } from '@/lib/realtime';
 
 const ADMIN_ROLES = ['admin', 'moderator'];
 
@@ -46,5 +47,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  return <AdminShell>{children}</AdminShell>;
+  return (
+    <RealtimeProvider>
+      <AdminShell>{children}</AdminShell>
+    </RealtimeProvider>
+  );
 }

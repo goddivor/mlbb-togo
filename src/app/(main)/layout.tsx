@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import DashboardShell from '@/components/layout/DashboardShell';
 import { api, getToken, setToken } from '@/lib/api';
 import { useAuthStore } from '@/store/useStore';
+import { RealtimeProvider } from '@/lib/realtime';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -40,5 +41,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     );
   }
 
-  return <DashboardShell>{children}</DashboardShell>;
+  return (
+    <RealtimeProvider>
+      <DashboardShell>{children}</DashboardShell>
+    </RealtimeProvider>
+  );
 }

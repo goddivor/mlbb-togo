@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Bell } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { getSocket, usePresence } from '@/lib/realtime';
 
 export default function NotificationBell() {
   const t = useT();
@@ -13,6 +14,8 @@ export default function NotificationBell() {
   const [items, setItems] = useState<any[]>([]);
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
+  const connected = usePresence((s) => s.connected);
+  const openRef = useRef(false);
 
   const loadCount = () =>
     api.notifications
@@ -33,8 +36,23 @@ export default function NotificationBell() {
   }, []);
 
   useEffect(() => {
+    openRef.current = open;
     if (open) loadList();
   }, [open]);
+
+  // Notifications en direct (WebSocket).
+  useEffect(() => {
+    const s = getSocket();
+    if (!s) return;
+    const onNotif = (n: any) => {
+      setCount((c) => c + 1);
+      if (openRef.current) setItems((prev) => [n, ...prev]);
+    };
+    s.on('notification:new', onNotif);
+    return () => {
+      s.off('notification:new', onNotif);
+    };
+  }, [connected]);
 
   useEffect(() => {
     const h = (e: MouseEvent) => {

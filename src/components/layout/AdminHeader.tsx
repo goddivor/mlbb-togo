@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { LogOut, ExternalLink, MessageSquare } from 'lucide-react';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
 import NotificationBell from '@/components/common/NotificationBell';
+import { disconnectSocket } from '@/lib/realtime';
 import { useT } from '@/lib/i18n';
 import { setToken } from '@/lib/api';
 import { useAuthStore } from '@/store/useStore';
@@ -16,6 +17,7 @@ export default function AdminHeader() {
   const logout = useAuthStore((s: any) => s.logout);
 
   const signOut = () => {
+    disconnectSocket();
     setToken(null);
     logout?.();
     router.replace('/admin-login');

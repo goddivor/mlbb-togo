@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowLeft, Send, MessageSquare, Shield } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { getSocket, usePresence } from '@/lib/realtime';
+import { useAuthStore } from '@/store/useStore';
 import toast from 'react-hot-toast';
 
 const initialOf = (o: any): string =>
@@ -23,6 +25,13 @@ export default function MessagesInbox() {
   const [sending, setSending] = useState(false);
   const [text, setText] = useState('');
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const myId = useAuthStore((s: any) => s.user?.id);
+  const online = usePresence((s) => s.online);
+  const connected = usePresence((s) => s.connected);
+  const activeIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -80,6 +89,52 @@ export default function MessagesInbox() {
     }
   }, [text, activeId, sending, scrollToBottom, loadThreads, t]);
 
+  // Réception des messages en direct (WebSocket).
+  useEffect(() => {
+    const s = getSocket();
+    if (!s) return;
+    const onMsg = (payload: any) => {
+      const threadId = payload?.threadId;
+      const message = payload?.message;
+      if (!threadId || !message) return;
+
+      if (threadId === activeIdRef.current) {
+        setThread((prev: any) => {
+          if (!prev) return prev;
+          if ((prev.messages || []).some((m: any) => m.id === message.id)) return prev;
+          return {
+            ...prev,
+            messages: [
+              ...(prev.messages || []),
+              { ...message, mine: message.senderId === myId },
+            ],
+          };
+        });
+        scrollToBottom();
+      }
+
+      setThreads((prev: any[]) => {
+        const idx = prev.findIndex((th) => th.id === threadId);
+        const preview = {
+          body: message.body,
+          senderId: message.senderId,
+          createdAt: message.createdAt,
+        };
+        if (idx === -1) {
+          loadThreads();
+          return prev;
+        }
+        const copy = [...prev];
+        const [th] = copy.splice(idx, 1);
+        return [{ ...th, lastMessage: preview, lastMessageAt: message.createdAt }, ...copy];
+      });
+    };
+    s.on('message:new', onMsg);
+    return () => {
+      s.off('message:new', onMsg);
+    };
+  }, [connected, myId, scrollToBottom, loadThreads]);
+
   const other = thread?.other;
 
   return (
@@ -116,19 +171,24 @@ export default function MessagesInbox() {
                           : 'border-l-2 border-transparent hover:bg-gaming-surface/60'
                       }`}
                     >
-                      {o?.avatar ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={avatarSrc(o.avatar, 64)}
-                          alt={nameOf(o)}
-                          referrerPolicy="no-referrer"
-                          className="w-10 h-10 rounded-full object-cover shrink-0 bg-gaming-dark"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full shrink-0 bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-sm font-bold text-white">
-                          {initialOf(o)}
-                        </div>
-                      )}
+                      <div className="relative shrink-0">
+                        {o?.avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={avatarSrc(o.avatar, 64)}
+                            alt={nameOf(o)}
+                            referrerPolicy="no-referrer"
+                            className="w-10 h-10 rounded-full object-cover bg-gaming-dark"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-sm font-bold text-white">
+                            {initialOf(o)}
+                          </div>
+                        )}
+                        {o?.id && online.has(o.id) && (
+                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-gaming-surface" />
+                        )}
+                      </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <p className="text-sm font-semibold text-white truncate">
@@ -179,19 +239,24 @@ export default function MessagesInbox() {
               >
                 <ArrowLeft size={18} />
               </button>
-              {other?.avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={avatarSrc(other.avatar, 64)}
-                  alt={nameOf(other)}
-                  referrerPolicy="no-referrer"
-                  className="w-8 h-8 rounded-full object-cover shrink-0 bg-gaming-dark"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full shrink-0 bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-xs font-bold text-white">
-                  {initialOf(other)}
-                </div>
-              )}
+              <div className="relative shrink-0">
+                {other?.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarSrc(other.avatar, 64)}
+                    alt={nameOf(other)}
+                    referrerPolicy="no-referrer"
+                    className="w-8 h-8 rounded-full object-cover bg-gaming-dark"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-xs font-bold text-white">
+                    {initialOf(other)}
+                  </div>
+                )}
+                {other?.id && online.has(other.id) && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-gaming-surface" />
+                )}
+              </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-white truncate">
                   {nameOf(other) || thread?.subject || ''}
