@@ -15,7 +15,6 @@ interface EsportTeam {
   name: string;
   image?: string | null;
   memberCount?: number;
-  isRecruiting?: boolean;
 }
 
 interface EsportOrg {
@@ -52,11 +51,6 @@ function TeamCard({ tm, accent, t, i }: any) {
             </div>
           )}
           <div className="absolute inset-x-0 bottom-0 h-1" style={{ backgroundColor: accent }} />
-          {tm.isRecruiting && (
-            <span className="absolute top-2 right-2 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
-              {t('teams.detail.recruiting')}
-            </span>
-          )}
         </div>
         <div className="flex items-center justify-between gap-2 p-3">
           <div className="flex items-center gap-2 min-w-0">

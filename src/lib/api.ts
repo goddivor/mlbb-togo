@@ -263,15 +263,6 @@ export const api = {
       request(`/esport/teams/${id}`, { method: 'DELETE' }),
     transform: (id: string) =>
       request(`/esport/teams/${id}/transform`, { method: 'PATCH' }),
-
-    // Join requests (recrutement)
-    requestJoin: (teamId: string, data: { message?: string; role?: string }) =>
-      request(`/esport/teams/${teamId}/join`, { method: 'POST', body: data }),
-    joinRequests: (teamId: string) =>
-      request(`/esport/teams/${teamId}/join-requests`, { fallback: [] }),
-    myJoinRequests: () => request('/esport/join-requests/mine', { fallback: [] }),
-    decideJoin: (id: string, status: 'accepted' | 'rejected', role?: string) =>
-      request(`/esport/join-requests/${id}`, { method: 'PATCH', body: { status, role } }),
     addMember: (teamId: string, data: any) =>
       request(`/esport/teams/${teamId}/members`, { method: 'POST', body: data }),
     updateMember: (teamId: string, userId: string, data: any) =>
@@ -311,6 +302,21 @@ export const api = {
       request(`/esport/matches/${id}/result`, { method: 'PATCH', body: data }),
     deleteMatch: (id: string) =>
       request(`/esport/matches/${id}`, { method: 'DELETE' }),
+  },
+
+  recruitment: {
+    listOpen: (role?: string) =>
+      request(`/recruitment${role ? `?role=${role}` : ''}`, { fallback: [], auth: false }),
+    mine: () => request('/recruitment/mine', { fallback: [] }),
+    byTeam: (teamId: string) => request(`/recruitment/team/${teamId}`, { fallback: [] }),
+    create: (data: any) => request('/recruitment', { method: 'POST', body: data }),
+    update: (id: string, data: any) =>
+      request(`/recruitment/${id}`, { method: 'PATCH', body: data }),
+    remove: (id: string) => request(`/recruitment/${id}`, { method: 'DELETE' }),
+    apply: (id: string, data: { role?: string; message?: string }) =>
+      request(`/recruitment/${id}/apply`, { method: 'POST', body: data }),
+    decide: (appId: string, status: 'accepted' | 'rejected') =>
+      request(`/recruitment/applications/${appId}`, { method: 'PATCH', body: { status } }),
   },
 
   friends: {

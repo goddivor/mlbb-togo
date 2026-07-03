@@ -36,7 +36,7 @@ export default function AdminRequestsPage() {
 
   // Modal de création d'équipe (depuis une demande)
   const [createReq, setCreateReq] = useState<any | null>(null);
-  const [createForm, setCreateForm] = useState({ name: '', image: '', description: '', isRecruiting: false });
+  const [createForm, setCreateForm] = useState({ name: '', image: '', description: '' });
   const [creating, setCreating] = useState(false);
 
   const errMsg = (e: any) => e?.message || t('admin.esport.errorGeneric');
@@ -74,7 +74,7 @@ export default function AdminRequestsPage() {
 
   const openCreate = (r: any) => {
     setCreateReq(r);
-    setCreateForm({ name: r.proposedName || '', image: '', description: '', isRecruiting: false });
+    setCreateForm({ name: r.proposedName || '', image: '', description: '' });
   };
 
   // Accepter : on marque approuvée puis on ouvre le modal de création prérempli.
@@ -100,7 +100,6 @@ export default function AdminRequestsPage() {
         name: createForm.name.trim(),
         image: createForm.image.trim() || undefined,
         description: createForm.description.trim() || undefined,
-        isRecruiting: createForm.isRecruiting,
         type: 'community',
         requestId: createReq.id,
       });
@@ -369,15 +368,6 @@ export default function AdminRequestsPage() {
               onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
             />
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-            <input
-              type="checkbox"
-              className="accent-neon-blue"
-              checked={createForm.isRecruiting}
-              onChange={(e) => setCreateForm({ ...createForm, isRecruiting: e.target.checked })}
-            />
-            {t('admin.esport.recruiting')}
-          </label>
           <div className="flex gap-2 pt-2">
             <Button size="sm" type="submit" disabled={creating || !createForm.name.trim()}>
               <Check size={16} /> {t('admin.esport.create')}
