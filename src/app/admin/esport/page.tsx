@@ -30,14 +30,12 @@ type TeamForm = {
   name: string;
   image: string;
   description: string;
-  isRecruiting: boolean;
 };
 
 const emptyTeamForm: TeamForm = {
   name: '',
   image: '',
   description: '',
-  isRecruiting: false,
 };
 
 const inputCls =
@@ -191,11 +189,6 @@ export default function AdminEsportPage() {
                     {team.name?.[0]?.toUpperCase() || 'T'}
                   </div>
                 )}
-                {team.isRecruiting && (
-                  <span className="absolute top-2 right-2 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
-                    {t('admin.esport.recruiting')}
-                  </span>
-                )}
               </div>
 
               <div className="p-3 flex-1 flex flex-col">
@@ -311,7 +304,6 @@ function TeamFormModal({
             name: team.name || '',
             image: team.image || '',
             description: team.description || '',
-            isRecruiting: !!team.isRecruiting,
           }
         : emptyTeamForm,
     );
@@ -326,7 +318,6 @@ function TeamFormModal({
         name: form.name.trim(),
         image: form.image.trim() || undefined,
         description: form.description.trim() || undefined,
-        isRecruiting: form.isRecruiting,
       };
       if (team) await api.esport.updateTeam(team.id, payload);
       else await api.esport.createTeam({ ...payload, type });
@@ -364,15 +355,6 @@ function TeamFormModal({
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
         </div>
-        <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-          <input
-            type="checkbox"
-            className="accent-neon-blue"
-            checked={form.isRecruiting}
-            onChange={(e) => setForm({ ...form, isRecruiting: e.target.checked })}
-          />
-          {t('admin.esport.recruiting')}
-        </label>
         <div className="flex gap-2 pt-2">
           <Button size="sm" type="submit" disabled={saving}>
             <Check size={16} /> {team ? t('admin.esport.save') : t('admin.esport.create')}

@@ -263,17 +263,6 @@ export const api = {
       request(`/esport/teams/${id}`, { method: 'DELETE' }),
     transform: (id: string) =>
       request(`/esport/teams/${id}/transform`, { method: 'PATCH' }),
-    setRecruiting: (id: string, data: { isRecruiting?: boolean; lookingFor?: string[] }) =>
-      request(`/esport/teams/${id}/recruiting`, { method: 'PATCH', body: data }),
-
-    // Join requests (recrutement)
-    requestJoin: (teamId: string, data: { message?: string; role?: string }) =>
-      request(`/esport/teams/${teamId}/join`, { method: 'POST', body: data }),
-    joinRequests: (teamId: string) =>
-      request(`/esport/teams/${teamId}/join-requests`, { fallback: [] }),
-    myJoinRequests: () => request('/esport/join-requests/mine', { fallback: [] }),
-    decideJoin: (id: string, status: 'accepted' | 'rejected', role?: string) =>
-      request(`/esport/join-requests/${id}`, { method: 'PATCH', body: { status, role } }),
     addMember: (teamId: string, data: any) =>
       request(`/esport/teams/${teamId}/members`, { method: 'POST', body: data }),
     updateMember: (teamId: string, userId: string, data: any) =>
