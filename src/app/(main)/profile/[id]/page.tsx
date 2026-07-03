@@ -6,15 +6,13 @@ import {
   MapPin, Calendar, Trophy, Star, Flame, Target, Edit,
   Shield, Swords, Crown, Award, TrendingUp,
 } from 'lucide-react';
-import { Card, Badge, Avatar, Button, Tabs, StatCard, ProgressBar, LoadingSpinner } from '@/components/ui';
-import { useThemeStore } from '@/store/useStore';
+import { Card, Badge, Avatar, Button, Tabs, StatCard, ProgressBar, LoadingSpinner, EmptyState } from '@/components/ui';
 import { api } from '@/lib/api';
 import { MLBB_RANKS, MLBB_ROLES, BADGES } from '@/lib/constants';
 import { calculateWinRate, getRankName, formatDate } from '@/lib/helpers';
 import { useT } from '@/lib/i18n';
 
 function ProfileView({ player }: { player: any }) {
-  const { theme } = useThemeStore();
   const t = useT();
   const [activeTab, setActiveTab] = useState('stats');
   const [isEditing, setIsEditing] = useState(false);
@@ -42,67 +40,64 @@ function ProfileView({ player }: { player: any }) {
   const playerBadges = BADGES.filter((b) => (player.badges || []).includes(b.id));
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
 
-      <Card className="mb-6 relative overflow-hidden" hover={false}>
+      {/* En-tête de profil */}
+      <Card>
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <Avatar name={player.username} size="xl" online={player.isOnline} />
 
-        <div className="absolute inset-0 h-32 bg-gradient-to-r from-neon-blue/20 to-neon-purple/20" />
-        <div className="absolute top-0 left-0 right-0 h-32 bg-grid opacity-20" />
-
-        <div className="relative pt-16 pb-4">
-          <div className="flex flex-col md:flex-row items-start md:items-end gap-4">
-            <Avatar name={player.username} size="xl" online={player.isOnline} className="border-4 border-gaming-dark -mt-8" />
-
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                  {player.username}
-                </h1>
-                {player.isOnline && (
-                  <Badge variant="green" size="sm">🟢 {t('profileView.online')}</Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="neon" size="lg">
-                  <Crown size={14} className="mr-1" style={{ color: '#00d4ff' }} />
-                  {getRankName(player.rank)}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              <h1 className="text-2xl font-bold text-white">
+                {player.username}
+              </h1>
+              {player.isOnline && (
+                <Badge variant="green" size="sm">🟢 {t('profileView.online')}</Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="neon" size="lg">
+                <Crown size={14} className="mr-1" style={{ color: '#00d4ff' }} />
+                {getRankName(player.rank)}
+              </Badge>
+              <Badge variant="purple" size="lg">
+                {MLBB_ROLES.find((r) => r.id === player.role)?.icon} {player.role}
+              </Badge>
+              {team && (
+                <Badge variant="gold" size="lg">
+                  <Shield size={14} className="mr-1" />
+                  {team.name}
                 </Badge>
-                <Badge variant="purple" size="lg">
-                  {MLBB_ROLES.find((r) => r.id === player.role)?.icon} {player.role}
-                </Badge>
-                {team && (
-                  <Badge variant="gold" size="lg">
-                    <Shield size={14} className="mr-1" />
-                    {team.name}
-                  </Badge>
-                )}
-              </div>
+              )}
             </div>
 
-            <Button variant="secondary" onClick={() => setIsEditing(!isEditing)}>
-              <Edit size={16} />
-              {t('profileView.editProfile')}
-            </Button>
+            {player.bio && (
+              <p className="mt-3 text-sm text-gray-400">
+                {player.bio}
+              </p>
+            )}
+
+            <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
+              <span className="flex items-center gap-1">
+                <MapPin size={12} />
+                {player.city}, {player.country}
+              </span>
+              <span className="flex items-center gap-1">
+                <Calendar size={12} />
+                {t('profileView.memberSince')} {formatDate(player.joinedAt)}
+              </span>
+            </div>
           </div>
 
-          <p className={`mt-4 text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            {player.bio}
-          </p>
-
-          <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
-            <span className="flex items-center gap-1">
-              <MapPin size={12} />
-              {player.city}, {player.country}
-            </span>
-            <span className="flex items-center gap-1">
-              <Calendar size={12} />
-              {t('profileView.memberSince')} {formatDate(player.joinedAt)}
-            </span>
-          </div>
+          <Button variant="secondary" onClick={() => setIsEditing(!isEditing)}>
+            <Edit size={16} />
+            {t('profileView.editProfile')}
+          </Button>
         </div>
       </Card>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label={t('profileView.stat.wins')} value={player.wins} icon={<TrendingUp size={16} />} trend={5} />
         <StatCard label="Win Rate" value={`${winRate}%`} icon={<Target size={16} />} />
         <StatCard label="MVP" value={player.mvpCount} icon={<Star size={16} />} />
@@ -118,14 +113,13 @@ function ProfileView({ player }: { player: any }) {
         ]}
         active={activeTab}
         onChange={setActiveTab}
-        className="mb-6"
       />
 
       {activeTab === 'stats' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
           <Card>
-            <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('profileView.winLossRatio')}</h3>
+            <h3 className="font-bold mb-4 text-white">{t('profileView.winLossRatio')}</h3>
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-1">
@@ -143,8 +137,8 @@ function ProfileView({ player }: { player: any }) {
               </div>
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-yellow-400">MVP Rate</span>
-                  <span className="text-yellow-400 font-bold">
+                  <span className="text-amber-400">MVP Rate</span>
+                  <span className="text-amber-400 font-bold">
                     {((player.mvpCount / (player.wins + player.losses)) * 100).toFixed(1)}%
                   </span>
                 </div>
@@ -154,14 +148,14 @@ function ProfileView({ player }: { player: any }) {
           </Card>
 
           <Card>
-            <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('profileView.rankProgression')}</h3>
+            <h3 className="font-bold mb-4 text-white">{t('profileView.rankProgression')}</h3>
             <div className="space-y-3">
               {MLBB_RANKS.map((rank) => (
                 <div key={rank.id} className={`flex items-center gap-3 p-2 rounded-lg ${
                   player.rank === rank.id ? 'bg-neon-blue/10 border border-neon-blue/30' : ''
                 }`}>
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: rank.color }} />
-                  <span className={`text-sm flex-1 ${player.rank === rank.id ? 'text-neon-blue font-bold' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <span className={`text-sm flex-1 ${player.rank === rank.id ? 'text-neon-blue font-bold' : 'text-gray-300'}`}>
                     {rank.name}
                   </span>
                   {player.rank === rank.id && (
@@ -173,7 +167,7 @@ function ProfileView({ player }: { player: any }) {
           </Card>
 
           <Card className="md:col-span-2">
-            <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('profileView.generalStats')}</h3>
+            <h3 className="font-bold mb-4 text-white">{t('profileView.generalStats')}</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 { label: t('profileView.totalMatches'), value: player.wins + player.losses },
@@ -182,7 +176,7 @@ function ProfileView({ player }: { player: any }) {
                 { label: t('profileView.country'), value: player.country },
               ].map((stat) => (
                 <div key={stat.label} className="text-center p-3 rounded-lg bg-gaming-surface/50">
-                  <p className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{stat.value}</p>
+                  <p className="text-lg font-bold text-white">{stat.value}</p>
                   <p className="text-xs text-gray-400">{stat.label}</p>
                 </div>
               ))}
@@ -196,20 +190,19 @@ function ProfileView({ player }: { player: any }) {
           {playerBadges.map((badge) => (
             <Card key={badge.id}>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 flex items-center justify-center text-2xl">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center text-2xl">
                   {badge.icon}
                 </div>
                 <div>
-                  <h4 className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{badge.name}</h4>
+                  <h4 className="font-bold text-white">{badge.name}</h4>
                   <p className="text-xs text-gray-400">{badge.description}</p>
                 </div>
               </div>
             </Card>
           ))}
           {playerBadges.length === 0 && (
-            <div className="col-span-full text-center py-12">
-              <Award className="w-12 h-12 mx-auto mb-3 text-gray-500" />
-              <p className="text-sm text-gray-400">{t('profileView.noBadges')}</p>
+            <div className="col-span-full">
+              <EmptyState icon={<Award size={28} />} title={t('profileView.noBadges')} />
             </div>
           )}
         </div>
@@ -217,7 +210,7 @@ function ProfileView({ player }: { player: any }) {
 
       {activeTab === 'heroes' && (
         <Card>
-          <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('profileView.favoriteHeroes')}</h3>
+          <h3 className="font-bold mb-4 text-white">{t('profileView.favoriteHeroes')}</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {(player.favoriteHeroes || []).map((hero: string) => (
               <div key={hero} className="flex items-center gap-3 p-3 rounded-lg bg-gaming-surface/50">
@@ -225,7 +218,7 @@ function ProfileView({ player }: { player: any }) {
                   {hero[0]}
                 </div>
                 <div>
-                  <p className={`font-medium text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{hero}</p>
+                  <p className="font-medium text-sm text-white">{hero}</p>
                   <p className="text-xs text-gray-400">{player.role}</p>
                 </div>
               </div>
@@ -246,9 +239,9 @@ function ProfileView({ player }: { player: any }) {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 text-sm">
-                    <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{match.team1.name}</span>
+                    <span className="font-medium text-white">{match.team1.name}</span>
                     <span className="text-gray-500">{match.team1.score} - {match.team2.score}</span>
-                    <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{match.team2.name}</span>
+                    <span className="font-medium text-white">{match.team2.name}</span>
                   </div>
                   <p className="text-xs text-gray-400 mt-1">{match.tournament} • {formatDate(match.date)}</p>
                 </div>

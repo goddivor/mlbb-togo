@@ -37,8 +37,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'Poppins', 'system-ui', 'sans-serif'],
-        display: ['Poppins', 'sans-serif'],
+        sans: ['Space Grotesk', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['Space Grotesk', 'Poppins', 'sans-serif'],
       },
       animation: {
         glow: 'glow 2s ease-in-out infinite alternate',

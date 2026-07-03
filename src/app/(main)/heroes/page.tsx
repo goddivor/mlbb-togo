@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search } from 'lucide-react';
+import { Search, Swords } from 'lucide-react';
 import { api, mlbbImg } from '@/lib/api';
+import { PageHeader, SectionCard, Button, EmptyState, LoadingSpinner } from '@/components/ui';
 import HeroDetailModal from '@/components/game/HeroDetailModal';
 import { useT } from '@/lib/i18n';
 
@@ -43,47 +44,45 @@ export default function HeroesPage() {
   }, [heroes, role, query]);
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
-        <div>
-          <h1 className="text-2xl font-bold text-white">{t('heroes.title')}</h1>
-          <p className="text-sm text-gray-400">
-            {loading ? t('heroes.loading') : `${heroes.length} ${t('heroes.count')}`}
-          </p>
-        </div>
-        <div className="relative">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+      <PageHeader
+        variant="default"
+        icon={<Swords size={28} className="text-white" />}
+        title={t('heroes.title')}
+        subtitle={loading ? t('heroes.loading') : `${heroes.length} ${t('heroes.count')}`}
+      />
+
+      {/* Filtres : recherche + rôles */}
+      <SectionCard className="flex flex-col gap-3 !p-4">
+        <div className="relative w-full sm:max-w-xs">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('heroes.search')}
-            className="pl-9 pr-3 py-2 w-full sm:w-64 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue"
+            className="pl-9 pr-3 py-2 w-full text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue"
           />
         </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-6">
-        {ROLES.map((r) => (
-          <button
-            key={r.key}
-            onClick={() => setRole(r.key)}
-            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              role === r.key
-                ? 'bg-neon-blue text-white'
-                : 'bg-gaming-surface text-gray-300 hover:text-white border border-gaming-border'
-            }`}
-          >
-            {t(r.labelKey)}
-          </button>
-        ))}
-      </div>
+        <div className="flex flex-wrap gap-2">
+          {ROLES.map((r) => (
+            <Button
+              key={r.key}
+              size="sm"
+              variant={role === r.key ? 'primary' : 'outline'}
+              onClick={() => setRole(r.key)}
+            >
+              {t(r.labelKey)}
+            </Button>
+          ))}
+        </div>
+      </SectionCard>
 
       {loading ? (
         <div className="flex items-center justify-center py-24">
-          <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
+          <LoadingSpinner size="lg" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">{t('heroes.none')}</div>
+        <EmptyState icon={<Search size={26} />} title={t('heroes.none')} />
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
           {filtered.map((h, i) => (
@@ -93,7 +92,7 @@ export default function HeroesPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(i * 0.015, 0.4) }}
               onClick={() => setSelected(h.heroId)}
-              className="group rounded-xl overflow-hidden border border-gaming-border bg-gaming-surface/40 hover:border-neon-blue transition-colors text-left"
+              className="group rounded-xl overflow-hidden border border-gaming-border bg-gaming-card hover:border-neon-blue transition-colors text-left"
             >
               <div className="aspect-square bg-gaming-dark overflow-hidden">
                 {h.image && (

@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Gamepad2, Check, Link2, Unlink, RefreshCw, ShieldCheck, Trophy, Star, Target, Flame,
+  Gamepad2, Check, Link2, Unlink, RefreshCw, ShieldCheck, Trophy, Star, Target, Flame, User,
 } from 'lucide-react';
-import { Card, Badge, Button } from '@/components/ui';
+import { Card, Badge, Button, PageHeader, Avatar } from '@/components/ui';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useAuthStore } from '@/store/useStore';
 import { api, avatarSrc, mlbbImg } from '@/lib/api';
 import LinkGameModal from '@/components/profile/LinkGameModal';
@@ -17,6 +18,7 @@ export default function ProfilePage() {
   const setUserProfile = useAuthStore((s: any) => s.setUserProfile);
   const setUser = useAuthStore((s: any) => s.setUser);
   const [linkGameOpen, setLinkGameOpen] = useState(false);
+  const [unlinkOpen, setUnlinkOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const t = useT();
 
@@ -100,13 +102,13 @@ export default function ProfilePage() {
     }
   };
 
-  const unlinkGame = async () => {
-    if (!window.confirm(t('profile.gameUnlinkConfirm'))) return;
+  const doUnlinkGame = async () => {
     setBusy('unlink');
     try {
       const updated: any = await api.auth.unlinkMlbb();
       apply(updated);
       toast.success(t('profile.gameUnlinkSuccess'));
+      setUnlinkOpen(false);
     } catch (e: any) {
       toast.error(e?.message || t('profile.gameUnlinkError'));
     } finally {
@@ -119,26 +121,19 @@ export default function ProfilePage() {
   const name = userProfile.displayName || userProfile.username;
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-white mb-1">{t('profile.title')}</h1>
-      <p className="text-sm text-gray-400 mb-6">
-        {t('profile.subtitle')}
-      </p>
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
 
-      <Card className="mb-6" hover={false}>
+      <PageHeader
+        icon={<User size={28} />}
+        title={t('profile.title')}
+        subtitle={t('profile.subtitle')}
+        variant="purple"
+      />
+
+      {/* En-tête d'identité */}
+      <Card>
         <div className="flex items-center gap-4">
-          {userProfile.avatar ? (
-            <img
-              src={avatarSrc(userProfile.avatar, 160)}
-              alt={name}
-              referrerPolicy="no-referrer"
-              className="w-20 h-20 rounded-2xl object-cover border-2 border-neon-blue/40"
-            />
-          ) : (
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-2xl font-bold text-white">
-              {name?.[0]?.toUpperCase() || 'J'}
-            </div>
-          )}
+          <Avatar name={name} src={userProfile.avatar ? avatarSrc(userProfile.avatar, 160) : undefined} size="xl" />
           <div>
             <h2 className="text-xl font-bold text-white">{name}</h2>
             <p className="text-sm text-gray-400">
@@ -151,7 +146,7 @@ export default function ProfilePage() {
         </div>
       </Card>
 
-      <Card className="mb-6" hover={false}>
+      <Card>
         <h3 className="font-bold text-white mb-1">{t('profile.shownProfile')}</h3>
         <p className="text-sm text-gray-400 mb-4">
           {t('profile.subtitle')}
@@ -197,7 +192,7 @@ export default function ProfilePage() {
         </div>
       </Card>
 
-      <Card className="mb-6" hover={false}>
+      <Card>
         <h3 className="font-bold text-white mb-4">{t('profile.linkedAccounts')}</h3>
         <div className="space-y-3">
           <div className="flex items-center gap-3 p-3 rounded-xl border border-gaming-border">
@@ -235,7 +230,7 @@ export default function ProfilePage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={unlinkGame}
+                  onClick={() => setUnlinkOpen(true)}
                   disabled={busy === 'unlink' || !userProfile.hasGoogle}
                   title={!userProfile.hasGoogle ? t('profile.gameUnlinkNeedsGoogle') : undefined}
                 >
@@ -252,7 +247,7 @@ export default function ProfilePage() {
       </Card>
 
       {userProfile.hasGame && (
-        <Card hover={false}>
+        <Card>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-white">{t('profile.gameData')}</h3>
@@ -302,6 +297,18 @@ export default function ProfilePage() {
       )}
 
       <LinkGameModal open={linkGameOpen} onClose={() => setLinkGameOpen(false)} />
+
+      {/* Confirmation de dissociation du compte de jeu */}
+      <ConfirmModal
+        open={unlinkOpen}
+        onClose={() => setUnlinkOpen(false)}
+        onConfirm={doUnlinkGame}
+        variant="danger"
+        title={t('profile.gameUnlink')}
+        message={t('profile.gameUnlinkConfirm')}
+        confirmLabel={t('profile.gameUnlink')}
+        loading={busy === 'unlink'}
+      />
     </div>
   );
 }

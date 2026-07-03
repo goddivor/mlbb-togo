@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Trophy, Users, Shield, MessageSquare, Swords, Calendar, Sparkles, ArrowRight } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import { Badge } from '@/components/ui';
 
 const features = [
   { key: 'tournaments', icon: Trophy, href: '/tournaments', color: 'text-neon-gold', ring: 'bg-neon-gold/10' },
@@ -23,7 +24,7 @@ export default function Features() {
     <div>
 
       <div className="text-center mb-12">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-neon-blue mb-3">{t('features.eyebrow')}</p>
+        <Badge variant="neon" size="sm" className="mb-3 uppercase tracking-[0.2em]">{t('features.eyebrow')}</Badge>
         <h2 className="text-3xl sm:text-5xl font-bold text-white">
           {t('features.titlePre')} <span className="text-gradient">MLBB Togo</span>
         </h2>

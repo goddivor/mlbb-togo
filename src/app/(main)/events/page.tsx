@@ -6,8 +6,9 @@ import {
   Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight,
   Plus, Swords, BookOpen, Trophy,
 } from 'lucide-react';
-import { Card, Badge, Button, Tabs } from '@/components/ui';
-import { useThemeStore, useEventStore } from '@/store/useStore';
+import { Badge, Button, Tabs, Card, PageHeader, EmptyState, Input, Textarea, Select } from '@/components/ui';
+import Modal from '@/components/ui/Modal';
+import { useEventStore } from '@/store/useStore';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 
@@ -21,10 +22,11 @@ const MONTH_KEYS = [
   'events.month.sep', 'events.month.oct', 'events.month.nov', 'events.month.dec',
 ];
 
-const eventTypeColors: Record<string, any> = {
-  scrim: { bg: 'bg-neon-blue/20', text: 'text-neon-blue', border: 'border-neon-blue/30' },
-  coaching: { bg: 'bg-neon-purple/20', text: 'text-neon-purple', border: 'border-neon-purple/30' },
-  tournament: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
+// Styles de bordure/fond par type d'évènement
+const eventTypeCard: Record<string, string> = {
+  scrim: 'bg-neon-blue/10 border-neon-blue/30',
+  coaching: 'bg-neon-purple/10 border-neon-purple/30',
+  tournament: 'bg-amber-500/10 border-amber-500/30',
 };
 
 const eventTypeIcons: Record<string, any> = {
@@ -35,7 +37,6 @@ const eventTypeIcons: Record<string, any> = {
 
 export default function Events() {
   const t = useT();
-  const { theme } = useThemeStore();
   const { events, setEvents } = useEventStore();
   const [currentDate, setCurrentDate] = useState(new Date(2024, 2, 1));
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
@@ -77,48 +78,45 @@ export default function Events() {
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
 
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            <CalendarIcon className="inline w-8 h-8 mr-2 text-neon-green" />
-            {t('events.title')}
-          </h1>
-          <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            {t('events.subtitle')}
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Tabs
-            tabs={[
-              { id: 'calendar', label: t('events.tab.calendar') },
-              { id: 'list', label: t('events.tab.list') },
-            ]}
-            active={viewMode}
-            onChange={setViewMode}
-          />
-          <Button onClick={() => setShowCreate(true)}>
-            <Plus size={16} />
-            {t('events.new')}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        icon={<CalendarIcon size={28} />}
+        title={t('events.title')}
+        subtitle={t('events.subtitle')}
+        variant="green"
+        action={
+          <div className="flex flex-wrap items-center gap-3">
+            <Tabs
+              tabs={[
+                { id: 'calendar', label: t('events.tab.calendar') },
+                { id: 'list', label: t('events.tab.list') },
+              ]}
+              active={viewMode}
+              onChange={setViewMode}
+            />
+            <Button onClick={() => setShowCreate(true)}>
+              <Plus size={16} />
+              {t('events.new')}
+            </Button>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         <div className="lg:col-span-2">
-          <Card hover={false}>
+          <Card>
 
             <div className="flex items-center justify-between mb-6">
-              <button onClick={prevMonth} className={`p-2 rounded-lg transition-colors ${theme === 'dark' ? 'hover:bg-gaming-surface' : 'hover:bg-gray-100'}`}>
-                <ChevronLeft size={20} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} />
+              <button onClick={prevMonth} className="p-2 rounded-lg transition-colors hover:bg-gaming-surface">
+                <ChevronLeft size={20} className="text-gray-400" />
               </button>
-              <h2 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              <h2 className="text-xl font-bold text-white">
                 {t(MONTH_KEYS[month])} {year}
               </h2>
-              <button onClick={nextMonth} className={`p-2 rounded-lg transition-colors ${theme === 'dark' ? 'hover:bg-gaming-surface' : 'hover:bg-gray-100'}`}>
-                <ChevronRight size={20} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} />
+              <button onClick={nextMonth} className="p-2 rounded-lg transition-colors hover:bg-gaming-surface">
+                <ChevronRight size={20} className="text-gray-400" />
               </button>
             </div>
 
@@ -150,9 +148,7 @@ export default function Events() {
                           ? 'bg-neon-blue/20 border border-neon-blue/40'
                           : isToday
                             ? 'bg-gaming-surface border border-neon-blue/20'
-                            : theme === 'dark'
-                              ? 'hover:bg-gaming-surface border border-transparent'
-                              : 'hover:bg-gray-50 border border-transparent'
+                            : 'hover:bg-gaming-surface border border-transparent'
                     }`}
                   >
                     {day && (
@@ -162,7 +158,7 @@ export default function Events() {
                             ? 'text-neon-blue'
                             : isToday
                               ? 'text-neon-blue font-bold'
-                              : theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                              : 'text-gray-300'
                         }`}>
                           {day}
                         </span>
@@ -171,7 +167,7 @@ export default function Events() {
                             {dayEvents.slice(0, 3).map((evt: any, i: number) => (
                               <div key={i} className={`w-1.5 h-1.5 rounded-full ${
                                 evt.type === 'scrim' ? 'bg-neon-blue' :
-                                evt.type === 'tournament' ? 'bg-yellow-400' : 'bg-neon-purple'
+                                evt.type === 'tournament' ? 'bg-amber-400' : 'bg-neon-purple'
                               }`} />
                             ))}
                           </div>
@@ -186,32 +182,33 @@ export default function Events() {
         </div>
 
         <div>
-          <Card hover={false}>
-            <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+          <Card>
+            <h3 className="font-bold mb-4 text-white">
               {selectedDate ? `${t('events.eventsOfDayPrefix')} ${selectedDate} ${t(MONTH_KEYS[month])}` : t('events.allEvents')}
             </h3>
             <div className="space-y-3">
               {selectedEvents.map((event: any) => {
-                const colors = eventTypeColors[event.type] || eventTypeColors.scrim;
+                const cardStyle = eventTypeCard[event.type] || eventTypeCard.scrim;
                 const Icon = eventTypeIcons[event.type] || Swords;
+                const iconColor = event.type === 'tournament' ? 'text-amber-400' : event.type === 'coaching' ? 'text-neon-purple' : 'text-neon-blue';
 
                 return (
                   <motion.div
                     key={event.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`p-3 rounded-lg border ${colors.bg} ${colors.border}`}
+                    className={`p-3 rounded-lg border ${cardStyle}`}
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <Icon size={14} className={colors.text} />
+                      <Icon size={14} className={iconColor} />
                       <Badge variant={event.type === 'tournament' ? 'gold' : event.type === 'scrim' ? 'neon' : 'purple'} size="sm">
                         {event.type}
                       </Badge>
                     </div>
-                    <h4 className={`font-semibold text-sm mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                    <h4 className="font-semibold text-sm mb-1 text-white">
                       {event.title}
                     </h4>
-                    <p className={`text-xs mb-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <p className="text-xs mb-2 text-gray-400">
                       {event.description}
                     </p>
                     <div className="flex items-center gap-3 text-xs text-gray-400">
@@ -229,74 +226,42 @@ export default function Events() {
               })}
 
               {selectedEvents.length === 0 && (
-                <div className="text-center py-8">
-                  <CalendarIcon className="w-8 h-8 mx-auto mb-2 text-gray-500" />
-                  <p className="text-sm text-gray-400">{t('events.noneToday')}</p>
-                </div>
+                <EmptyState
+                  icon={<CalendarIcon size={28} />}
+                  title={t('events.noneToday')}
+                />
               )}
             </div>
           </Card>
         </div>
       </div>
 
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className={`w-full max-w-lg rounded-2xl border p-6 ${
-              theme === 'dark' ? 'bg-gaming-card border-gaming-border' : 'bg-white border-gray-200'
-            }`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              {t('events.new')}
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('events.form.type')}</label>
-                <select className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white focus:outline-none focus:border-neon-blue/50 ${
-                  theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                }`}>
-                  <option value="scrim">⚔️ {t('events.form.typeScrim')}</option>
-                  <option value="tournament">🏆 {t('events.form.typeTournament')}</option>
-                  <option value="coaching">📚 {t('events.form.typeCoaching')}</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('events.form.title')}</label>
-                <input type="text" placeholder={t('events.form.namePlaceholder')} className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 ${
-                  theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                }`} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('events.form.date')}</label>
-                  <input type="date" className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white focus:outline-none focus:border-neon-blue/50 ${
-                    theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                  }`} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('events.form.time')}</label>
-                  <input type="time" className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white focus:outline-none focus:border-neon-blue/50 ${
-                    theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                  }`} />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('events.form.description')}</label>
-                <textarea rows={3} placeholder={t('events.form.descriptionPlaceholder')} className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 resize-none ${
-                  theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                }`} />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button variant="ghost" onClick={() => setShowCreate(false)} className="flex-1">{t('events.cancel')}</Button>
-                <Button onClick={() => setShowCreate(false)} className="flex-1">{t('events.create')}</Button>
-              </div>
-            </div>
-          </motion.div>
+      {/* Modale de création d'évènement */}
+      <Modal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title={t('events.new')}
+        icon={<CalendarIcon size={20} />}
+        size="md"
+      >
+        <div className="space-y-4">
+          <Select label={t('events.form.type')}>
+            <option value="scrim">⚔️ {t('events.form.typeScrim')}</option>
+            <option value="tournament">🏆 {t('events.form.typeTournament')}</option>
+            <option value="coaching">📚 {t('events.form.typeCoaching')}</option>
+          </Select>
+          <Input label={t('events.form.title')} type="text" placeholder={t('events.form.namePlaceholder')} />
+          <div className="grid grid-cols-2 gap-3">
+            <Input label={t('events.form.date')} type="date" />
+            <Input label={t('events.form.time')} type="time" />
+          </div>
+          <Textarea label={t('events.form.description')} rows={3} placeholder={t('events.form.descriptionPlaceholder')} />
+          <div className="flex gap-3 pt-2">
+            <Button variant="ghost" onClick={() => setShowCreate(false)} className="flex-1">{t('events.cancel')}</Button>
+            <Button onClick={() => setShowCreate(false)} className="flex-1">{t('events.create')}</Button>
+          </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

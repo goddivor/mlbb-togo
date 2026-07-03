@@ -3,18 +3,18 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  MessageSquare, Plus, Heart, MessageCircle, Eye, Pin, Search,
+  MessagesSquare, Plus, Heart, MessageCircle, Eye, Pin, Search,
   TrendingUp, Clock,
 } from 'lucide-react';
-import { Card, Badge, Avatar, Button } from '@/components/ui';
-import { useThemeStore, useForumStore, useAuthStore } from '@/store/useStore';
+import { Card, SectionCard, Badge, Avatar, Button, PageHeader, EmptyState, Input, Select, Textarea } from '@/components/ui';
+import Modal from '@/components/ui/Modal';
+import { useForumStore, useAuthStore } from '@/store/useStore';
 import { api } from '@/lib/api';
 import { timeAgo, getRankName } from '@/lib/helpers';
 import { useT } from '@/lib/i18n';
 
 export default function Forum() {
   const t = useT();
-  const { theme } = useThemeStore();
   const { posts, categories, setPosts, addPost, likePost } = useForumStore();
   const { userProfile } = useAuthStore();
   const [activeCategory, setActiveCategory] = useState('all');
@@ -73,36 +73,33 @@ export default function Forum() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
 
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            <MessageSquare className="inline w-8 h-8 mr-2 text-neon-pink" />
-            {t('forum.title')}
-          </h1>
-          <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            {t('forum.subtitle')}
-          </p>
-        </div>
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus size={16} />
-          {t('forum.newPost')}
-        </Button>
-      </div>
+      <PageHeader
+        icon={<MessagesSquare size={28} />}
+        title={t('forum.title')}
+        subtitle={t('forum.subtitle')}
+        variant="danger"
+        action={
+          <Button onClick={() => setShowCreate(true)}>
+            <Plus size={16} />
+            {t('forum.newPost')}
+          </Button>
+        }
+      />
 
       <div className="flex flex-col lg:flex-row gap-6">
 
         <div className="lg:w-64 flex-shrink-0">
-          <Card hover={false}>
-            <h3 className={`font-bold text-sm mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('forum.categories')}</h3>
+          <SectionCard>
+            <h3 className="font-bold text-sm mb-3 text-white">{t('forum.categories')}</h3>
             <div className="space-y-1">
               <button
                 onClick={() => setActiveCategory('all')}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                   activeCategory === 'all'
                     ? 'bg-neon-blue/10 text-neon-blue'
-                    : theme === 'dark' ? 'text-gray-400 hover:bg-gaming-surface' : 'text-gray-500 hover:bg-gray-50'
+                    : 'text-gray-400 hover:bg-gaming-surface'
                 }`}
               >
                 📋 {t('forum.allCategories')}
@@ -114,54 +111,52 @@ export default function Forum() {
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                     activeCategory === cat.id
                       ? 'bg-neon-blue/10 text-neon-blue'
-                      : theme === 'dark' ? 'text-gray-400 hover:bg-gaming-surface' : 'text-gray-500 hover:bg-gray-50'
+                      : 'text-gray-400 hover:bg-gaming-surface'
                   }`}
                 >
                   {cat.icon} {cat.name}
                 </button>
               ))}
             </div>
-          </Card>
+          </SectionCard>
         </div>
 
         <div className="flex-1">
 
-          <div className="flex flex-col sm:flex-row gap-3 mb-6">
-            <div className="flex-1 relative">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
-              <input
-                type="text"
-                placeholder={t('forum.searchPlaceholder')}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className={`w-full pl-10 pr-4 py-2.5 rounded-lg text-sm transition-all focus:outline-none ${
-                  theme === 'dark'
-                    ? 'bg-gaming-card border border-gaming-border text-white placeholder-gray-500 focus:border-neon-blue/50'
-                    : 'bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-primary-500'
-                }`}
-              />
+          <SectionCard className="!p-4 mb-6">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder={t('forum.searchPlaceholder')}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg text-sm transition-all focus:outline-none bg-gaming-surface border border-gaming-border text-white placeholder-gray-500 focus:border-neon-blue/50"
+                />
+              </div>
+              <div className="flex gap-2">
+                {[
+                  { id: 'recent', label: t('forum.sortRecent'), icon: Clock },
+                  { id: 'popular', label: t('forum.sortPopular'), icon: TrendingUp },
+                  { id: 'comments', label: t('forum.sortDiscussed'), icon: MessageCircle },
+                ].map((sort) => (
+                  <button
+                    key={sort.id}
+                    onClick={() => setActiveSort(sort.id)}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                      activeSort === sort.id
+                        ? 'bg-neon-blue/10 text-neon-blue'
+                        : 'text-gray-400 hover:bg-gaming-surface'
+                    }`}
+                  >
+                    <sort.icon size={14} />
+                    {sort.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex gap-2">
-              {[
-                { id: 'recent', label: t('forum.sortRecent'), icon: Clock },
-                { id: 'popular', label: t('forum.sortPopular'), icon: TrendingUp },
-                { id: 'comments', label: t('forum.sortDiscussed'), icon: MessageCircle },
-              ].map((sort) => (
-                <button
-                  key={sort.id}
-                  onClick={() => setActiveSort(sort.id)}
-                  className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                    activeSort === sort.id
-                      ? 'bg-neon-blue/10 text-neon-blue'
-                      : theme === 'dark' ? 'text-gray-400 hover:bg-gaming-card' : 'text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
-                  <sort.icon size={14} />
-                  {sort.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          </SectionCard>
 
           <div className="space-y-4">
             {filteredPosts.map((post: any, index: number) => {
@@ -179,23 +174,23 @@ export default function Forum() {
                       <Avatar name={post.authorName} size="md" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
-                          {post.isPinned && <Pin size={14} className="text-yellow-400" />}
+                          {post.isPinned && <Pin size={14} className="text-amber-400" />}
                           <Badge variant="purple" size="sm">{category?.icon} {category?.name}</Badge>
-                          <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
+                          <span className="text-xs text-gray-500">
                             {timeAgo(post.createdAt)}
                           </span>
                         </div>
-                        <h3 className={`font-bold text-base mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                        <h3 className="font-bold text-base mb-1 text-white">
                           {post.title}
                         </h3>
-                        <p className={`text-sm line-clamp-2 mb-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <p className="text-sm line-clamp-2 mb-3 text-gray-400">
                           {post.content}
                         </p>
 
                         <div className="flex items-center gap-4 text-xs text-gray-400">
                           <div className="flex items-center gap-1.5">
                             <Avatar name={post.authorName} size="sm" />
-                            <span className={`font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                            <span className="font-medium text-gray-300">
                               {post.authorName}
                             </span>
                             <Badge variant="neon" size="sm">{getRankName(post.authorRank)}</Badge>
@@ -223,7 +218,7 @@ export default function Forum() {
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
-                            className={`mt-4 pt-4 border-t ${theme === 'dark' ? 'border-gaming-border' : 'border-gray-100'}`}
+                            className="mt-4 pt-4 border-t border-gaming-border"
                           >
                             <p className="text-xs text-gray-400 mb-3">{t('forum.comments')} ({post.comments.length})</p>
                             {post.comments.map((comment: any) => (
@@ -231,12 +226,12 @@ export default function Forum() {
                                 <Avatar name={comment.authorName} size="sm" />
                                 <div>
                                   <div className="flex items-center gap-2">
-                                    <span className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                                    <span className="text-sm font-medium text-white">
                                       {comment.authorName}
                                     </span>
                                     <span className="text-xs text-gray-500">{timeAgo(comment.createdAt)}</span>
                                   </div>
-                                  <p className={`text-sm mt-0.5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                  <p className="text-sm mt-0.5 text-gray-400">
                                     {comment.content}
                                   </p>
                                 </div>
@@ -247,11 +242,7 @@ export default function Forum() {
                                 type="text"
                                 placeholder={t('forum.addComment')}
                                 onClick={(e) => e.stopPropagation()}
-                                className={`flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none ${
-                                  theme === 'dark'
-                                    ? 'bg-gaming-surface border border-gaming-border text-white placeholder-gray-500 focus:border-neon-blue/50'
-                                    : 'bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-primary-500'
-                                }`}
+                                className="flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none bg-gaming-surface border border-gaming-border text-white placeholder-gray-500 focus:border-neon-blue/50"
                               />
                               <Button size="sm">{t('forum.send')}</Button>
                             </div>
@@ -266,79 +257,53 @@ export default function Forum() {
           </div>
 
           {filteredPosts.length === 0 && (
-            <div className="text-center py-16">
-              <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-500" />
-              <h3 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                {t('forum.noPostsFound')}
-              </h3>
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                {t('forum.beFirstToPost')}
-              </p>
-            </div>
+            <EmptyState
+              icon={<MessagesSquare size={28} />}
+              title={t('forum.noPostsFound')}
+              description={t('forum.beFirstToPost')}
+            />
           )}
         </div>
       </div>
 
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className={`w-full max-w-lg rounded-2xl border p-6 ${
-              theme === 'dark' ? 'bg-gaming-card border-gaming-border' : 'bg-white border-gray-200'
-            }`}
-            onClick={(e) => e.stopPropagation()}
+      {/* Modale de création de sujet */}
+      <Modal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title={t('forum.newPost')}
+        icon={<MessagesSquare size={20} />}
+        size="md"
+      >
+        <div className="space-y-4">
+          <Select
+            label={t('forum.category')}
+            value={newCategory}
+            onChange={(e: any) => setNewCategory(e.target.value)}
           >
-            <h2 className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              {t('forum.newPost')}
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('forum.category')}</label>
-                <select
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white focus:outline-none focus:border-neon-blue/50 ${
-                    theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                  }`}
-                >
-                  {categories.map((cat: any) => (
-                    <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('forum.postTitle')}</label>
-                <input
-                  type="text"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder={t('forum.postTitlePlaceholder')}
-                  className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 ${
-                    theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                  }`}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('forum.content')}</label>
-                <textarea
-                  value={newContent}
-                  onChange={(e) => setNewContent(e.target.value)}
-                  placeholder={t('forum.contentPlaceholder')}
-                  rows={5}
-                  className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 resize-none ${
-                    theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                  }`}
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button variant="ghost" onClick={() => setShowCreate(false)} className="flex-1">{t('forum.cancel')}</Button>
-                <Button onClick={handleCreate} className="flex-1">{t('forum.publish')}</Button>
-              </div>
-            </div>
-          </motion.div>
+            {categories.map((cat: any) => (
+              <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+            ))}
+          </Select>
+          <Input
+            label={t('forum.postTitle')}
+            type="text"
+            value={newTitle}
+            onChange={(e: any) => setNewTitle(e.target.value)}
+            placeholder={t('forum.postTitlePlaceholder')}
+          />
+          <Textarea
+            label={t('forum.content')}
+            value={newContent}
+            onChange={(e: any) => setNewContent(e.target.value)}
+            placeholder={t('forum.contentPlaceholder')}
+            rows={5}
+          />
+          <div className="flex gap-3 pt-2">
+            <Button variant="ghost" onClick={() => setShowCreate(false)} className="flex-1">{t('forum.cancel')}</Button>
+            <Button onClick={handleCreate} className="flex-1">{t('forum.publish')}</Button>
+          </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

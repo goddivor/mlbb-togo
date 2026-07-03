@@ -7,7 +7,10 @@ import {
   TrendingUp, Target, Star, Flame, Swords, Clock, Trophy,
   Gamepad2, RefreshCw, ArrowUpRight, MapPin,
 } from 'lucide-react';
-import { Card, Badge, StatCard, Button, ProgressBar } from '@/components/ui';
+import {
+  Card, SectionCard, Badge, StatCard, Button, ProgressBar,
+  PageHeader, EmptyState, LoadingSpinner,
+} from '@/components/ui';
 import { useAuthStore } from '@/store/useStore';
 import { api, avatarSrc, mlbbImg } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
@@ -43,27 +46,27 @@ export default function Dashboard() {
   if (!userProfile) {
     return (
       <div className="p-6 max-w-7xl mx-auto flex items-center justify-center min-h-[50vh]">
-        <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   if (!userProfile.hasGame) {
     return (
-      <div className="p-6 max-w-3xl mx-auto">
-        <Card className="text-center py-14">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-neon-blue/10 flex items-center justify-center mb-5">
-            <Gamepad2 size={30} className="text-neon-blue" />
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-2">{t('dashboard.noGame.title')}</h2>
-          <p className="text-gray-400 max-w-md mx-auto mb-6">
-            {t('dashboard.noGame.desc')}
-          </p>
-          <Link href="/profile">
-            <Button variant="primary" size="lg">
-              <Gamepad2 size={18} /> {t('dashboard.noGame.link')}
-            </Button>
-          </Link>
+      <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-6">
+        <Card hover={false}>
+          <EmptyState
+            icon={<Gamepad2 size={30} className="text-neon-blue" />}
+            title={t('dashboard.noGame.title')}
+            description={t('dashboard.noGame.desc')}
+            action={
+              <Link href="/profile">
+                <Button variant="primary" size="lg">
+                  <Gamepad2 size={18} /> {t('dashboard.noGame.link')}
+                </Button>
+              </Link>
+            }
+          />
         </Card>
       </div>
     );
@@ -103,92 +106,91 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-      <Card className="mb-6 overflow-hidden" hover={false}>
-        <div className="flex flex-col sm:flex-row items-center gap-5">
-          {userProfile.avatar ? (
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+      {/* Bannière profil + compteurs clés */}
+      <PageHeader
+        variant="default"
+        icon={
+          userProfile.avatar ? (
             <img
               src={avatarSrc(userProfile.avatar, 160)}
               alt={userProfile.displayName}
               referrerPolicy="no-referrer"
-              className="w-24 h-24 rounded-2xl object-cover border-2 border-neon-blue/40"
+              className="w-14 h-14 rounded-xl object-cover"
             />
           ) : (
-            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-3xl font-bold text-white">
+            <span className="w-14 h-14 flex items-center justify-center text-2xl font-bold text-white">
               {userProfile.displayName?.[0]?.toUpperCase() || 'J'}
-            </div>
-          )}
-
-          <div className="flex-1 text-center sm:text-left">
-            <h1 className="text-2xl md:text-3xl font-bold text-white">
-              {userProfile.gameNickname || userProfile.displayName}
-            </h1>
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-2">
-              {userProfile.gameRank && (
-                <div className="flex items-center gap-2">
-                  {hasRankBadge(userProfile.gameRank) ? (
-                    <RankBadge rank={userProfile.gameRank} size={40} />
-                  ) : (
-                    <Trophy size={18} className="text-yellow-400" />
-                  )}
-                  <div className="leading-tight text-left">
-                    <p className="text-sm font-bold text-white">{userProfile.gameRank}</p>
-                    {userProfile.gameRankLevel != null && (
-                      <p className="text-[11px] text-gray-400">{userProfile.gameRankLevel} pts</p>
-                    )}
-                  </div>
-                </div>
-              )}
-              {userProfile.gameLevel != null && (
-                <Badge variant="neon" size="sm">{t('dashboard.level')} {userProfile.gameLevel}</Badge>
-              )}
-              {userProfile.gameCountry && (
-                <span className="inline-flex items-center gap-1 text-xs text-gray-400">
-                  <MapPin size={12} /> {userProfile.gameCountry}
-                </span>
-              )}
-            </div>
-
-            {userProfile.gameRoles?.length > 0 && (
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-2">
-                <span className="text-xs text-gray-500">{t('dashboard.rolesLabel')}</span>
-                {userProfile.gameRoles.map((r: any) => (
-                  <Badge key={r.role} variant="purple" size="sm" className="gap-1">
-                    <RoleIcon role={r.role} size={14} />
-                    {t(ROLE_KEYS[r.role] || r.role)}
-                  </Badge>
-                ))}
-              </div>
-            )}
-
-            <p className="text-xs text-gray-500 mt-2">
-              {t('dashboard.gameId')} {userProfile.mlbbRoleId} · {t('dashboard.gameServer')} {userProfile.mlbbZoneId}
-            </p>
-          </div>
-
-          <Button variant="ghost" size="sm" onClick={sync} disabled={syncing}>
+            </span>
+          )
+        }
+        title={userProfile.gameNickname || userProfile.displayName}
+        subtitle={`${t('dashboard.gameId')} ${userProfile.mlbbRoleId} · ${t('dashboard.gameServer')} ${userProfile.mlbbZoneId}`}
+        action={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={sync}
+            disabled={syncing}
+            className="!text-white hover:!bg-white/10"
+          >
             <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
             {syncing ? t('dashboard.syncing') : t('dashboard.sync')}
           </Button>
+        }
+      >
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard translucent label={t('dashboard.stats.wins')} value={stats.wins ?? 0} icon={<TrendingUp size={16} />} />
+          <StatCard translucent label={t('dashboard.stats.winRate')} value={`${winRate}%`} icon={<Target size={16} />} />
+          <StatCard translucent label={t('dashboard.stats.mvp')} value={stats.mvpCount ?? 0} icon={<Star size={16} />} />
+          <StatCard translucent label={t('dashboard.stats.bestStreak')} value={`${stats.winStreak ?? 0} 🔥`} icon={<Flame size={16} />} />
         </div>
-      </Card>
+      </PageHeader>
 
-      <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-lg font-bold text-white">{t('dashboard.stats.title')}</h2>
-        <Badge variant="neon" size="sm">{t('dashboard.stats.allModes')}</Badge>
-      </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label={t('dashboard.stats.wins')} value={stats.wins ?? 0} icon={<TrendingUp size={16} />} />
-        <StatCard label={t('dashboard.stats.winRate')} value={`${winRate}%`} icon={<Target size={16} />} />
-        <StatCard label={t('dashboard.stats.mvp')} value={stats.mvpCount ?? 0} icon={<Star size={16} />} />
-        <StatCard label={t('dashboard.stats.bestStreak')} value={`${stats.winStreak ?? 0} 🔥`} icon={<Flame size={16} />} />
-      </div>
+      {/* Identité de jeu : rang, niveau, rôles */}
+      <SectionCard className="flex flex-wrap items-center gap-3 !p-4">
+        {userProfile.gameRank && (
+          <div className="flex items-center gap-2">
+            {hasRankBadge(userProfile.gameRank) ? (
+              <RankBadge rank={userProfile.gameRank} size={40} />
+            ) : (
+              <Trophy size={18} className="text-yellow-400" />
+            )}
+            <div className="leading-tight">
+              <p className="text-sm font-bold text-white">{userProfile.gameRank}</p>
+              {userProfile.gameRankLevel != null && (
+                <p className="text-[11px] text-gray-400">{userProfile.gameRankLevel} pts</p>
+              )}
+            </div>
+          </div>
+        )}
+        {userProfile.gameLevel != null && (
+          <Badge variant="neon" size="sm">{t('dashboard.level')} {userProfile.gameLevel}</Badge>
+        )}
+        {userProfile.gameCountry && (
+          <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+            <MapPin size={12} /> {userProfile.gameCountry}
+          </span>
+        )}
+        {userProfile.gameRoles?.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-gray-500">{t('dashboard.rolesLabel')}</span>
+            {userProfile.gameRoles.map((r: any) => (
+              <Badge key={r.role} variant="purple" size="sm" className="gap-1">
+                <RoleIcon role={r.role} size={14} />
+                {t(ROLE_KEYS[r.role] || r.role)}
+              </Badge>
+            ))}
+          </div>
+        )}
+      </SectionCard>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card>
+        {/* Détail des stats */}
+        <Card hover={false}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-white">{t('dashboard.detail.title')}</h3>
-            <span className="text-xs text-gray-500">{t('dashboard.stats.allModes')}</span>
+            <Badge variant="neon" size="sm">{t('dashboard.stats.allModes')}</Badge>
           </div>
           <div className="space-y-4">
             <div>
@@ -196,14 +198,14 @@ export default function Dashboard() {
                 <span className="text-gray-400">{t('dashboard.detail.wins')}</span>
                 <span className="text-green-400 font-medium">{stats.wins ?? 0}</span>
               </div>
-              <ProgressBar value={winRate} color="green" />
+              <ProgressBar value={winRate} />
             </div>
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-gray-400">{t('dashboard.detail.losses')}</span>
                 <span className="text-red-400 font-medium">{stats.losses ?? 0}</span>
               </div>
-              <ProgressBar value={100 - winRate} color="red" />
+              <ProgressBar value={100 - winRate} />
             </div>
             <div className="grid grid-cols-2 gap-3 pt-2">
               <div className="rounded-lg border border-gaming-border bg-gaming-surface/30 p-3 text-center">
@@ -234,7 +236,8 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card className="lg:col-span-2">
+        {/* Héros favoris */}
+        <Card hover={false} className="lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <h3 className="font-bold text-white">{t('dashboard.favorites.title')}</h3>
             <div className="flex items-center gap-2">
@@ -256,7 +259,7 @@ export default function Dashboard() {
 
           {heroesLoading ? (
             <div className="flex items-center justify-center py-10">
-              <div className="w-8 h-8 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
+              <LoadingSpinner />
             </div>
           ) : heroes.length === 0 ? (
             <div className="text-center py-10 text-gray-500 text-sm">
@@ -300,7 +303,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="mt-6 flex justify-center">
+      <div className="flex justify-center">
         <Link href="/profile">
           <Button variant="ghost" size="sm">
             {t('dashboard.manageProfile')} <ArrowUpRight size={14} />

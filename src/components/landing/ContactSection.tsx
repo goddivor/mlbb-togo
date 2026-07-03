@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Send } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { Badge, Button, Input, Textarea } from '@/components/ui';
 import toast from 'react-hot-toast';
 
 export default function ContactSection() {
@@ -39,32 +40,22 @@ export default function ContactSection() {
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="card-gaming relative z-10 p-6 sm:p-10 lg:pr-[40%]"
+        className="rounded-xl border border-gaming-border bg-gaming-card shadow-gaming relative z-10 p-6 sm:p-10 lg:pr-[40%]"
       >
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-neon-blue mb-2">{t('contact.eyebrow')}</p>
+        <Badge variant="neon" size="sm" className="mb-3 uppercase tracking-[0.2em]">{t('contact.eyebrow')}</Badge>
         <h2 className="text-2xl sm:text-3xl font-bold text-white">{t('contact.title')}</h2>
         <p className="text-gray-400 mt-2">{t('contact.subtitle')}</p>
 
         <form onSubmit={submit} className="mt-6 space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
-            <input className="input-gaming" placeholder={t('contact.name')} value={form.name} onChange={handle('name')} />
-            <input className="input-gaming" type="email" placeholder={t('contact.email')} value={form.email} onChange={handle('email')} />
+            <Input placeholder={t('contact.name')} value={form.name} onChange={handle('name')} />
+            <Input type="email" placeholder={t('contact.email')} value={form.email} onChange={handle('email')} />
           </div>
-          <input className="input-gaming" placeholder={t('contact.subject')} value={form.subject} onChange={handle('subject')} />
-          <textarea className="input-gaming resize-none" rows={5} placeholder={t('contact.message')} value={form.message} onChange={handle('message')} />
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-primary w-full flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <>
-                {t('contact.send')} <Send size={16} />
-              </>
-            )}
-          </button>
+          <Input placeholder={t('contact.subject')} value={form.subject} onChange={handle('subject')} />
+          <Textarea rows={5} placeholder={t('contact.message')} value={form.message} onChange={handle('message')} />
+          <Button type="submit" variant="primary" loading={loading} className="w-full">
+            {t('contact.send')} <Send size={16} />
+          </Button>
         </form>
       </motion.div>
 

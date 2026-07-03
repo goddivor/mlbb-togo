@@ -1,11 +1,17 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Check, Trophy, Swords } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Badge, Button } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  PageHeader,
+  StatCard,
+  EmptyState,
+  LoadingSpinner,
+} from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import toast from 'react-hot-toast';
@@ -131,36 +137,47 @@ export default function AdminMatchesPage() {
       },
     });
 
+  const completedCount = matches.filter((m) => m.status === 'completed').length;
+
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white">{t('admin.matches.title')}</h1>
-        <Button
-          size="sm"
-          onClick={() => {
-            setEditMatch(null);
-            setFormOpen(true);
-          }}
-        >
-          <Plus size={16} /> {t('admin.matches.new')}
-        </Button>
-      </div>
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+      <PageHeader
+        icon={<Swords size={28} />}
+        title={t('admin.matches.title')}
+        variant="purple"
+        action={
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditMatch(null);
+              setFormOpen(true);
+            }}
+          >
+            <Plus size={16} /> {t('admin.matches.new')}
+          </Button>
+        }
+      >
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard translucent label={t('admin.matches.title')} value={matches.length} icon={<Swords size={18} />} />
+          <StatCard
+            translucent
+            label={t('matchStatus.completed')}
+            value={completedCount}
+            icon={<Trophy size={18} />}
+          />
+        </div>
+      </PageHeader>
 
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
-        </div>
+        <LoadingSpinner size="lg" className="py-24" />
       ) : matches.length === 0 ? (
-        <div className="text-center py-16 text-gray-500">{t('admin.matches.none')}</div>
+        <EmptyState icon={<Swords size={28} />} title={t('admin.matches.none')} />
       ) : (
         <div className="space-y-3">
-          {matches.map((m, i) => (
-            <motion.div
+          {matches.map((m) => (
+            <div
               key={m.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.03, 0.3) }}
-              className="rounded-xl border border-gaming-border bg-gaming-surface/40 p-3 sm:p-4"
+              className="rounded-xl border border-gaming-border bg-gaming-card p-3 sm:p-4"
             >
               <div className="flex items-center gap-2 flex-wrap mb-3">
                 <Badge variant="default" size="sm">
@@ -233,7 +250,7 @@ export default function AdminMatchesPage() {
                   <Trash2 size={14} />
                 </Button>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       )}
@@ -349,6 +366,8 @@ function MatchFormModal({
       onClose={onClose}
       closeLabel={t('common.close')}
       title={match ? t('admin.matches.edit') : t('admin.matches.new')}
+      icon={<Swords size={20} />}
+      headerVariant={match ? 'plain' : 'gradient'}
     >
       <form onSubmit={submit} className="space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -509,6 +528,7 @@ function ResultModal({
       onClose={onClose}
       closeLabel={t('common.close')}
       title={t('admin.matches.result')}
+      icon={<Trophy size={20} />}
     >
       {match && (
         <form onSubmit={submit} className="space-y-3">

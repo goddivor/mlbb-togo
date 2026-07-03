@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ScrollText, Search, Ban, Trash2, Trophy, FileText, Shield, Crown, Edit } from 'lucide-react';
 import { api } from '@/lib/api';
+import { PageHeader, SectionCard, Select, EmptyState } from '@/components/ui';
 
 const actionIcons: Record<string, any> = {
   user_ban: { icon: Ban, color: 'text-orange-400', bg: 'bg-orange-500/20' },
@@ -43,29 +44,35 @@ export default function AdminLogs() {
   const uniqueActions = [...new Set(logs.map((l: any) => l.action))];
 
   return (
-    <div className="space-y-6">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-3"><ScrollText className="text-orange-400" size={32} /> Logs Admin</h1>
-        <p className="text-gray-400 mt-1">{filtered.length} entrées</p>
-      </motion.div>
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+      <PageHeader
+        icon={<ScrollText size={28} />}
+        title="Logs Admin"
+        subtitle={`${filtered.length} entrées`}
+        variant="default"
+      />
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher dans les logs..." className="w-full pl-10 pr-4 py-2.5 bg-gaming-card border border-gaming-border rounded-lg text-white placeholder-gray-500 focus:border-neon-blue focus:outline-none" />
+      {/* Filtres */}
+      <SectionCard className="!p-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher dans les logs..." className="w-full pl-10 pr-4 py-2.5 bg-gaming-surface border border-gaming-border rounded-lg text-gray-100 placeholder-gray-500 focus:border-neon-blue focus:outline-none focus:ring-2 focus:ring-neon-blue/50" />
+          </div>
+          <Select value={actionFilter} onChange={(e: any) => setActionFilter(e.target.value)} className="sm:w-64">
+            <option value="all">Toutes les actions</option>
+            {uniqueActions.map((a: any) => <option key={a} value={a}>{actionLabels[a] || a}</option>)}
+          </Select>
         </div>
-        <select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} className="px-4 py-2.5 bg-gaming-card border border-gaming-border rounded-lg text-white focus:border-neon-blue focus:outline-none">
-          <option value="all">Toutes les actions</option>
-          {uniqueActions.map((a: any) => <option key={a} value={a}>{actionLabels[a] || a}</option>)}
-        </select>
-      </div>
+      </SectionCard>
 
+      {/* Liste des logs */}
       <div className="space-y-3">
         {filtered.map((log: any, i: number) => {
           const config = actionIcons[log.action] || { icon: FileText, color: 'text-gray-400', bg: 'bg-gray-500/20' };
           const Icon = config.icon;
           return (
-            <motion.div key={log.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} className="bg-gaming-card border border-gaming-border rounded-xl p-4 flex items-center gap-4 hover:border-orange-400/20 transition-all">
+            <motion.div key={log.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} className="bg-gaming-card border border-gaming-border rounded-xl p-4 flex items-center gap-4 hover:border-neon-blue/20 transition-all">
               <div className={`p-3 rounded-lg ${config.bg}`}><Icon size={18} className={config.color} /></div>
               <div className="flex-1 min-w-0">
                 <p className="text-white font-medium">{actionLabels[log.action] || log.action}</p>
@@ -76,6 +83,9 @@ export default function AdminLogs() {
             </motion.div>
           );
         })}
+        {filtered.length === 0 && (
+          <EmptyState icon={<ScrollText size={28} />} title="Aucune entrée" description="Aucun log ne correspond à votre recherche." />
+        )}
       </div>
     </div>
   );

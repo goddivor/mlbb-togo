@@ -5,8 +5,8 @@ import { motion } from 'framer-motion';
 import {
   Swords, Clock, Star, TrendingUp, BarChart3,
 } from 'lucide-react';
-import { Card, Badge, Tabs, StatCard } from '@/components/ui';
-import { useThemeStore, useMatchStore } from '@/store/useStore';
+import { Card, Badge, Tabs, StatCard, PageHeader, SectionCard, EmptyState } from '@/components/ui';
+import { useMatchStore } from '@/store/useStore';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/helpers';
 import { Line } from 'react-chartjs-2';
@@ -18,7 +18,6 @@ import {
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend);
 
 export default function Matches() {
-  const { theme } = useThemeStore();
   const { matches, setMatches } = useMatchStore();
   const [activeTab, setActiveTab] = useState('all');
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
@@ -78,35 +77,33 @@ export default function Matches() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
 
-      <div className="mb-8">
-        <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-          <Swords className="inline w-8 h-8 mr-2 text-neon-blue" />
-          Matchs
-        </h1>
-        <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-          Historique et suivi des matchs
-        </p>
-      </div>
+      <PageHeader
+        icon={<Swords size={28} />}
+        title="Matchs"
+        subtitle="Historique et suivi des matchs"
+        variant="blue"
+      >
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard translucent label="Matchs joués" value={matches.filter((m: any) => m.status === 'completed').length} icon={<Swords size={16} />} />
+          <StatCard translucent label="Victoires" value={matches.filter((m: any) => m.status === 'completed' && m.team1.score > m.team2.score).length} icon={<TrendingUp size={16} />} trend={12} />
+          <StatCard translucent label="MVP obtenus" value={matches.filter((m: any) => m.mvp).length} icon={<Star size={16} />} />
+          <StatCard translucent label="À venir" value={matches.filter((m: any) => m.status === 'upcoming').length} icon={<Clock size={16} />} />
+        </div>
+      </PageHeader>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Matchs joués" value={matches.filter((m: any) => m.status === 'completed').length} icon={<Swords size={16} />} />
-        <StatCard label="Victoires" value={matches.filter((m: any) => m.status === 'completed' && m.team1.score > m.team2.score).length} icon={<TrendingUp size={16} />} trend={12} />
-        <StatCard label="MVP obtenus" value={matches.filter((m: any) => m.mvp).length} icon={<Star size={16} />} />
-        <StatCard label="À venir" value={matches.filter((m: any) => m.status === 'upcoming').length} icon={<Clock size={16} />} />
-      </div>
-
-      <Tabs
-        tabs={[
-          { id: 'all', label: 'Tous' },
-          { id: 'completed', label: 'Terminés' },
-          { id: 'upcoming', label: 'À venir' },
-        ]}
-        active={activeTab}
-        onChange={setActiveTab}
-        className="mb-6"
-      />
+      <SectionCard className="!p-4">
+        <Tabs
+          tabs={[
+            { id: 'all', label: 'Tous' },
+            { id: 'completed', label: 'Terminés' },
+            { id: 'upcoming', label: 'À venir' },
+          ]}
+          active={activeTab}
+          onChange={setActiveTab}
+        />
+      </SectionCard>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -131,7 +128,7 @@ export default function Matches() {
 
                 <div className="flex items-center gap-4">
                   <div className="flex-1 text-center">
-                    <p className={`font-bold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{m.team1.name}</p>
+                    <p className="font-bold mb-1 text-white">{m.team1.name}</p>
                     <p className={`text-3xl font-black ${
                       m.status === 'completed' && m.team1.score > m.team2.score ? 'text-green-400' :
                       m.status === 'completed' && m.team1.score < m.team2.score ? 'text-red-400' :
@@ -142,9 +139,7 @@ export default function Matches() {
                   </div>
 
                   <div className="flex flex-col items-center">
-                    <div className={`px-4 py-2 rounded-xl text-xs font-black ${
-                      theme === 'dark' ? 'bg-gaming-surface text-gray-300' : 'bg-gray-100 text-gray-600'
-                    }`}>
+                    <div className="px-4 py-2 rounded-xl text-xs font-black bg-gaming-surface text-gray-300">
                       VS
                     </div>
                     {m.duration && (
@@ -153,7 +148,7 @@ export default function Matches() {
                   </div>
 
                   <div className="flex-1 text-center">
-                    <p className={`font-bold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{m.team2.name}</p>
+                    <p className="font-bold mb-1 text-white">{m.team2.name}</p>
                     <p className={`text-3xl font-black ${
                       m.status === 'completed' && m.team2.score > m.team1.score ? 'text-green-400' :
                       m.status === 'completed' && m.team2.score < m.team1.score ? 'text-red-400' :
@@ -166,8 +161,8 @@ export default function Matches() {
 
                 {m.mvp && (
                   <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-gaming-border">
-                    <Star size={14} className="text-yellow-400" />
-                    <span className="text-xs text-gray-400">MVP: <span className="text-yellow-400 font-medium">{m.mvp}</span></span>
+                    <Star size={14} className="text-amber-400" />
+                    <span className="text-xs text-gray-400">MVP: <span className="text-amber-400 font-medium">{m.mvp}</span></span>
                   </div>
                 )}
 
@@ -177,12 +172,20 @@ export default function Matches() {
               </Card>
             </motion.div>
           ))}
+
+          {filtered.length === 0 && (
+            <EmptyState
+              icon={<Swords size={28} />}
+              title="Aucun match"
+              description="Aucun match ne correspond à ce filtre."
+            />
+          )}
         </div>
 
         <div>
           {match ? (
             <Card>
-              <h3 className={`font-bold text-lg mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              <h3 className="font-bold text-lg mb-4 text-white">
                 Détails du match
               </h3>
 
@@ -210,9 +213,9 @@ export default function Matches() {
 
               <div className="mb-6">
                 <p className="text-xs text-gray-400 mb-2">MVP</p>
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-                  <Star size={20} className="text-yellow-400" />
-                  <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{match.mvp}</span>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <Star size={20} className="text-amber-400" />
+                  <span className="font-bold text-white">{match.mvp}</span>
                 </div>
               </div>
 
@@ -227,7 +230,7 @@ export default function Matches() {
             <Card>
               <div className="text-center py-8">
                 <BarChart3 className="w-10 h-10 mx-auto mb-3 text-gray-500" />
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className="text-sm text-gray-400">
                   Sélectionnez un match pour voir les détails
                 </p>
               </div>

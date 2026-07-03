@@ -1,11 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Check, CalendarDays } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Card, Button } from '@/components/ui';
+import {
+  Card,
+  Button,
+  PageHeader,
+  StatCard,
+  EmptyState,
+  LoadingSpinner,
+} from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import toast from 'react-hot-toast';
@@ -117,35 +123,38 @@ export default function AdminSeasonsPage() {
     }
   };
 
+  const activeCount = seasons.filter((s) => s.isActive).length;
+
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white">{t('admin.seasons.title')}</h1>
-        <Button size="sm" onClick={openCreate}>
-          <Plus size={16} /> {t('admin.seasons.new')}
-        </Button>
-      </div>
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+      <PageHeader
+        icon={<CalendarDays size={28} />}
+        title={t('admin.seasons.title')}
+        variant="cyan"
+        action={
+          <Button size="sm" onClick={openCreate}>
+            <Plus size={16} /> {t('admin.seasons.new')}
+          </Button>
+        }
+      >
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard translucent label={t('admin.seasons.title')} value={seasons.length} icon={<CalendarDays size={18} />} />
+          <StatCard translucent label={t('admin.seasons.active')} value={activeCount} icon={<Check size={18} />} />
+        </div>
+      </PageHeader>
 
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
-        </div>
+        <LoadingSpinner size="lg" className="py-24" />
       ) : seasons.length === 0 ? (
-        <div className="text-center py-16 text-gray-500">{t('admin.seasons.none')}</div>
+        <EmptyState icon={<CalendarDays size={28} />} title={t('admin.seasons.none')} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {seasons.map((s, i) => {
+          {seasons.map((s) => {
             const start = fmtDate(s.startDate);
             const end = fmtDate(s.endDate);
             const period = start || end ? `${start || '—'} → ${end || '—'}` : null;
             return (
-              <motion.div
-                key={s.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.03, 0.3) }}
-              >
-                <Card hover={false} className="!p-4 flex flex-col gap-2 h-full">
+              <Card key={s.id} hover={false} className="!p-4 flex flex-col gap-2 h-full">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -171,11 +180,10 @@ export default function AdminSeasonsPage() {
                       </Button>
                     </div>
                   </div>
-                  {s.description && (
-                    <p className="text-xs text-gray-400 whitespace-pre-line">{s.description}</p>
-                  )}
-                </Card>
-              </motion.div>
+                {s.description && (
+                  <p className="text-xs text-gray-400 whitespace-pre-line">{s.description}</p>
+                )}
+              </Card>
             );
           })}
         </div>
@@ -186,6 +194,8 @@ export default function AdminSeasonsPage() {
         onClose={() => setFormOpen(false)}
         closeLabel={t('common.close')}
         title={editId ? t('admin.seasons.edit') : t('admin.seasons.new')}
+        icon={<CalendarDays size={20} />}
+        headerVariant={editId ? 'plain' : 'gradient'}
       >
         <form onSubmit={submit} className="space-y-3">
           <div>

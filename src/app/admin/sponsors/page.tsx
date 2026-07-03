@@ -1,11 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Pencil, Trash2, Check, ExternalLink } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, ExternalLink, Handshake } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Card, Button } from '@/components/ui';
+import {
+  Card,
+  Button,
+  PageHeader,
+  StatCard,
+  EmptyState,
+  LoadingSpinner,
+} from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import toast from 'react-hot-toast';
@@ -97,30 +103,30 @@ export default function AdminSponsorsPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white">{t('admin.sponsors.title')}</h1>
-        <Button size="sm" onClick={openCreate}>
-          <Plus size={16} /> {t('admin.esport.newSponsor')}
-        </Button>
-      </div>
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+      <PageHeader
+        icon={<Handshake size={28} />}
+        title={t('admin.sponsors.title')}
+        variant="gold"
+        action={
+          <Button size="sm" onClick={openCreate}>
+            <Plus size={16} /> {t('admin.esport.newSponsor')}
+          </Button>
+        }
+      >
+        <div className="grid grid-cols-1 gap-3">
+          <StatCard translucent label={t('admin.sponsors.title')} value={sponsors.length} icon={<Handshake size={18} />} />
+        </div>
+      </PageHeader>
 
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
-        </div>
+        <LoadingSpinner size="lg" className="py-24" />
       ) : sponsors.length === 0 ? (
-        <div className="text-center py-16 text-gray-500">{t('admin.esport.noSponsors')}</div>
+        <EmptyState icon={<Handshake size={28} />} title={t('admin.esport.noSponsors')} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {sponsors.map((s, i) => (
-            <motion.div
-              key={s.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.03, 0.3) }}
-            >
-              <Card hover={false} className="!p-3 flex items-center gap-3">
+          {sponsors.map((s) => (
+            <Card key={s.id} hover={false} className="!p-3 flex items-center gap-3">
                 {s.logo ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -153,8 +159,7 @@ export default function AdminSponsorsPage() {
                     <Trash2 size={14} />
                   </Button>
                 </div>
-              </Card>
-            </motion.div>
+            </Card>
           ))}
         </div>
       )}
@@ -164,6 +169,8 @@ export default function AdminSponsorsPage() {
         onClose={() => setFormOpen(false)}
         closeLabel={t('common.close')}
         title={editId ? t('admin.esport.editSponsor') : t('admin.esport.newSponsor')}
+        icon={<Handshake size={20} />}
+        headerVariant={editId ? 'plain' : 'gradient'}
       >
         <form onSubmit={submit} className="space-y-3">
           <div>
