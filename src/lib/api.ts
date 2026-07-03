@@ -313,6 +313,16 @@ export const api = {
       request(`/esport/matches/${id}`, { method: 'DELETE' }),
   },
 
+  friends: {
+    list: () => request('/friends', { fallback: [] }),
+    requests: () => request('/friends/requests', { fallback: [] }),
+    status: (userId: string) =>
+      request(`/friends/status/${userId}`, { fallback: { status: 'none' } }),
+    request: (userId: string) => request(`/friends/${userId}`, { method: 'POST' }),
+    accept: (userId: string) => request(`/friends/${userId}/accept`, { method: 'POST' }),
+    remove: (userId: string) => request(`/friends/${userId}`, { method: 'DELETE' }),
+  },
+
   contact: {
     send: (data: { name: string; email: string; subject?: string; message: string }) =>
       request('/contact', { method: 'POST', body: data, auth: false }),

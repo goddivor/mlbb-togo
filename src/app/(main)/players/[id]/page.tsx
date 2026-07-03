@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowLeft, MapPin, Trophy, Target, Star, Flame, TrendingUp } from 'lucide-react';
-import { Card, Badge, StatCard } from '@/components/ui';
+import { ArrowLeft, MapPin, Trophy, Target, Star, Flame, TrendingUp, UserPlus, UserCheck, UserMinus, Check, X } from 'lucide-react';
+import { Card, Badge, StatCard, Button } from '@/components/ui';
 import { api, avatarSrc, mlbbImg } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import RoleIcon from '@/components/game/RoleIcon';
+import { useAuthStore } from '@/store/useStore';
 import { useT } from '@/lib/i18n';
+import toast from 'react-hot-toast';
 
 export default function PublicProfilePage() {
   const t = useT();
@@ -17,6 +19,9 @@ export default function PublicProfilePage() {
   const id = String(params?.id || '');
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const myId = useAuthStore((s: any) => s.user?.id);
+  const [fstatus, setFstatus] = useState<string>('none');
+  const [fbusy, setFbusy] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -27,6 +32,24 @@ export default function PublicProfilePage() {
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!id || !myId || id === myId) return;
+    api.friends.status(id).then((r: any) => setFstatus(r?.status || 'none')).catch(() => {});
+  }, [id, myId]);
+
+  const friendAct = async (fn: () => Promise<any>, next: string, done?: string) => {
+    setFbusy(true);
+    try {
+      await fn();
+      setFstatus(next);
+      if (done) toast.success(done);
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error'));
+    } finally {
+      setFbusy(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -81,6 +104,41 @@ export default function PublicProfilePage() {
                 <Badge variant="purple" size="sm">{user.roleUser}</Badge>
               )}
             </div>
+
+            {myId && id !== myId && (
+              <div className="flex items-center justify-center sm:justify-start gap-2 mt-3">
+                {fstatus === 'none' && (
+                  <Button size="sm" disabled={fbusy} onClick={() => friendAct(() => api.friends.request(id), 'pending_out', t('friends.sent'))}>
+                    <UserPlus size={15} /> {t('friends.add')}
+                  </Button>
+                )}
+                {fstatus === 'pending_out' && (
+                  <Button size="sm" variant="secondary" disabled={fbusy} onClick={() => friendAct(() => api.friends.remove(id), 'none')}>
+                    {t('friends.cancel')}
+                  </Button>
+                )}
+                {fstatus === 'pending_in' && (
+                  <>
+                    <Button size="sm" disabled={fbusy} onClick={() => friendAct(() => api.friends.accept(id), 'friends', t('friends.added'))}>
+                      <Check size={15} /> {t('friends.accept')}
+                    </Button>
+                    <Button size="sm" variant="danger" disabled={fbusy} onClick={() => friendAct(() => api.friends.remove(id), 'none')}>
+                      <X size={15} /> {t('friends.refuse')}
+                    </Button>
+                  </>
+                )}
+                {fstatus === 'friends' && (
+                  <>
+                    <Badge variant="green" size="md" className="gap-1">
+                      <UserCheck size={14} /> {t('friends.friends')}
+                    </Badge>
+                    <Button size="sm" variant="ghost" disabled={fbusy} onClick={() => friendAct(() => api.friends.remove(id), 'none', t('friends.removed'))}>
+                      <UserMinus size={14} /> {t('friends.remove')}
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
 
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-2">
               {user.gameRank && (
