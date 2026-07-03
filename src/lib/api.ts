@@ -263,6 +263,8 @@ export const api = {
       request(`/esport/teams/${id}`, { method: 'DELETE' }),
     transform: (id: string) =>
       request(`/esport/teams/${id}/transform`, { method: 'PATCH' }),
+    setRecruiting: (id: string, data: { isRecruiting?: boolean; lookingFor?: string[] }) =>
+      request(`/esport/teams/${id}/recruiting`, { method: 'PATCH', body: data }),
 
     // Join requests (recrutement)
     requestJoin: (teamId: string, data: { message?: string; role?: string }) =>
