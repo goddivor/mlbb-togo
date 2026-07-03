@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
 import {
   Users,
   Plus,
@@ -13,10 +12,20 @@ import {
   Check,
   Star,
   Rocket,
+  Trophy,
 } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Badge, Button } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  PageHeader,
+  StatCard,
+  SectionCard,
+  EmptyState,
+  LoadingSpinner,
+  Tabs,
+} from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
@@ -86,6 +95,15 @@ export default function AdminEsportPage() {
     [teams, tab],
   );
 
+  const communityCount = useMemo(
+    () => teams.filter((tm) => (tm.type || 'community') === 'community').length,
+    [teams],
+  );
+  const esportCount = useMemo(
+    () => teams.filter((tm) => tm.type === 'esport').length,
+    [teams],
+  );
+
   const membersTeam = useMemo(
     () => teams.find((tm) => tm.id === membersId) || null,
     [teams, membersId],
@@ -129,51 +147,61 @@ export default function AdminEsportPage() {
     });
 
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-white">{t('header.teams')}</h1>
-        <Button
-          size="sm"
-          onClick={() => {
-            setEditTeam(null);
-            setFormOpen(true);
-          }}
-        >
-          <Plus size={16} /> {t('admin.esport.newTeam')}
-        </Button>
-      </div>
-
-      <div className="flex gap-2 mb-6">
-        {(['community', 'esport'] as const).map((tb) => (
-          <button
-            key={tb}
-            onClick={() => setTab(tb)}
-            className={`px-4 py-2 text-sm font-semibold rounded-lg border transition-colors ${
-              tab === tb
-                ? 'bg-neon-blue/15 border-neon-blue text-neon-blue'
-                : 'bg-gaming-surface/40 border-gaming-border text-gray-400 hover:text-gray-200'
-            }`}
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+      <PageHeader
+        icon={<Trophy size={28} />}
+        title={t('header.teams')}
+        variant="default"
+        action={
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditTeam(null);
+              setFormOpen(true);
+            }}
           >
-            {t('admin.esport.type.' + tb)}
-          </button>
-        ))}
-      </div>
+            <Plus size={16} /> {t('admin.esport.newTeam')}
+          </Button>
+        }
+      >
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <StatCard translucent label={t('header.teams')} value={teams.length} icon={<Users size={18} />} />
+          <StatCard
+            translucent
+            label={t('admin.esport.type.community')}
+            value={communityCount}
+            icon={<Users size={18} />}
+          />
+          <StatCard
+            translucent
+            label={t('admin.esport.type.esport')}
+            value={esportCount}
+            icon={<Trophy size={18} />}
+          />
+        </div>
+      </PageHeader>
+
+      <SectionCard className="!p-4">
+        <Tabs
+          active={tab}
+          onChange={(id: 'community' | 'esport') => setTab(id)}
+          tabs={[
+            { id: 'community', label: t('admin.esport.type.community') },
+            { id: 'esport', label: t('admin.esport.type.esport') },
+          ]}
+        />
+      </SectionCard>
 
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
-        </div>
+        <LoadingSpinner size="lg" className="py-24" />
       ) : visibleTeams.length === 0 ? (
-        <div className="text-center py-16 text-gray-500">{t('admin.esport.noTeams')}</div>
+        <EmptyState icon={<Users size={28} />} title={t('admin.esport.noTeams')} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {visibleTeams.map((team, i) => (
-            <motion.div
+          {visibleTeams.map((team) => (
+            <div
               key={team.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.03, 0.3) }}
-              className="rounded-xl border border-gaming-border bg-gaming-surface/40 overflow-hidden flex flex-col"
+              className="rounded-xl border border-gaming-border bg-gaming-card overflow-hidden flex flex-col"
             >
               <div className="relative aspect-video w-full bg-gaming-dark">
                 {team.image ? (
@@ -229,7 +257,7 @@ export default function AdminEsportPage() {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       )}
@@ -337,6 +365,8 @@ function TeamFormModal({
       onClose={onClose}
       closeLabel={t('common.close')}
       title={team ? t('admin.esport.editTeam') : t('admin.esport.newTeam')}
+      icon={<Users size={20} />}
+      headerVariant={team ? 'plain' : 'gradient'}
     >
       <form onSubmit={submit} className="space-y-3">
         <div>

@@ -7,7 +7,9 @@ import {
   ArrowLeft, Crown, Users, Calendar, Check, X,
   Swords, MessageSquare, Plus, Trash2, Send, Megaphone,
 } from 'lucide-react';
-import { Badge, Button } from '@/components/ui';
+import {
+  Badge, Button, Card, SectionCard, StatCard, EmptyState, LoadingSpinner, Tabs, Input, Textarea, Select,
+} from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { api, avatarSrc } from '@/lib/api';
@@ -19,23 +21,15 @@ import { useT } from '@/lib/i18n';
 import toast from 'react-hot-toast';
 
 const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
-const inputCls =
-  'w-full px-3 py-2 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue';
-
-function StatBox({ label, value, color = 'text-white' }: any) {
-  return (
-    <div className="rounded-xl border border-gaming-border bg-gaming-surface/40 p-3 text-center">
-      <p className={`text-xl font-bold ${color}`}>{value}</p>
-      <p className="text-[11px] text-gray-400 mt-0.5">{label}</p>
-    </div>
-  );
-}
+// Champ compact (quantité de slots) : Input ne convient pas en ligne
+const numCls =
+  'w-20 px-2 py-1 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 focus:outline-none focus:border-neon-blue';
 
 function MemberCard({ m, t, highlight = false }: any) {
   const u = m?.user || {};
   const name = u.displayName || u.username || '';
   return (
-    <Link href={`/players/${m.userId}`} className={`flex items-center gap-3 rounded-xl border bg-gaming-surface/40 p-3 transition-colors ${highlight ? 'border-yellow-500/40 hover:border-yellow-400' : 'border-gaming-border hover:border-neon-blue'}`}>
+    <Link href={`/players/${m.userId}`} className={`flex items-center gap-3 rounded-xl border bg-gaming-card p-3 transition-colors ${highlight ? 'border-yellow-500/40 hover:border-yellow-400' : 'border-gaming-border hover:border-neon-blue'}`}>
       {u.avatar ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={avatarSrc(u.avatar, 96)} alt={name} referrerPolicy="no-referrer" className="w-12 h-12 rounded-xl object-cover border border-gaming-border" />
@@ -63,7 +57,7 @@ function MatchRow({ m, t, onResult }: any) {
   let dateLabel = '';
   if (m.scheduledAt) { const d = new Date(m.scheduledAt); if (!isNaN(d.getTime())) dateLabel = d.toLocaleDateString(); }
   return (
-    <div className="rounded-lg border border-gaming-border bg-gaming-surface/40 p-3">
+    <div className="rounded-xl border border-gaming-border bg-gaming-card p-3">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-sm">
         <span className={`text-right truncate ${aWin ? 'text-neon-gold font-bold' : 'text-white'}`}>{m.teamA?.name}</span>
         <span className="px-2 text-gray-400 font-semibold shrink-0">{completed ? `${m.scoreA} - ${m.scoreB}` : 'vs'}</span>
@@ -73,7 +67,7 @@ function MatchRow({ m, t, onResult }: any) {
         <Badge variant="purple" size="sm">{t('matchType.' + m.type)}</Badge>
         <Badge variant={completed ? 'green' : 'default'} size="sm">{t('matchStatus.' + m.status)}</Badge>
         {dateLabel && <span className="text-xs text-gray-500">{dateLabel}</span>}
-        {onResult && <button type="button" onClick={onResult} className="text-xs text-neon-blue hover:underline">{t('admin.matches.setResult')}</button>}
+        {onResult && <Button variant="ghost" size="sm" onClick={onResult}>{t('admin.matches.setResult')}</Button>}
       </div>
     </div>
   );
@@ -83,7 +77,7 @@ function ApplicationRow({ a, t, onDecide, onContact, acting }: any) {
   const u = a.user || {};
   const name = u.displayName || u.username || '—';
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-gaming-border bg-gaming-surface/40 p-2.5">
+    <div className="flex items-center gap-3 rounded-xl border border-gaming-border bg-gaming-card p-2.5">
       {u.avatar ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={avatarSrc(u.avatar, 64)} alt={name} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full object-cover shrink-0" />
@@ -98,7 +92,7 @@ function ApplicationRow({ a, t, onDecide, onContact, acting }: any) {
         {a.message && <p className="text-xs text-gray-400 truncate">{a.message}</p>}
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
-        <Button size="sm" disabled={acting === a.id + 'accepted'} onClick={() => onDecide(a, 'accepted')}><Check size={14} /></Button>
+        <Button size="sm" variant="success" disabled={acting === a.id + 'accepted'} onClick={() => onDecide(a, 'accepted')}><Check size={14} /></Button>
         <Button size="sm" variant="danger" disabled={acting === a.id + 'rejected'} onClick={() => onDecide(a, 'rejected')}><X size={14} /></Button>
         <Button size="sm" variant="ghost" title={t('teams.contact')} onClick={() => onContact(u)}><MessageSquare size={14} /></Button>
       </div>
@@ -280,13 +274,17 @@ export default function TeamDetailPage() {
   const pendingCandidates = campaigns.reduce((n, c) => n + (c.applicationCount || 0), 0);
 
   if (loading) {
-    return <div className="p-4 sm:p-6 max-w-4xl mx-auto flex items-center justify-center min-h-[50vh]"><div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" /></div>;
+    return (
+      <div className="p-4 sm:p-6 max-w-4xl mx-auto flex items-center justify-center min-h-[50vh]">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
   }
   if (!team) {
     return (
-      <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-        <Link href="/teams" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-6"><ArrowLeft size={16} /> {t('teams.back')}</Link>
-        <p className="text-center text-gray-500 py-20">{t('teams.detail.notFound')}</p>
+      <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+        <Link href="/teams" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white"><ArrowLeft size={16} /> {t('teams.back')}</Link>
+        <EmptyState icon={<Users size={28} />} title={t('teams.detail.notFound')} />
       </div>
     );
   }
@@ -295,17 +293,28 @@ export default function TeamDetailPage() {
   if (team.foundedAt) { const d = new Date(team.foundedAt); if (!isNaN(d.getTime())) foundedLabel = d.toLocaleDateString(); }
 
   const TABS = [
-    { key: 'roster' as const, label: t('teams.tab.roster') },
-    { key: 'recruitment' as const, label: t('teams.tab.recruitment'), badge: canManage ? pendingCandidates : 0 },
-    { key: 'matches' as const, label: t('teams.tab.matches') },
+    { id: 'roster', icon: Users, label: t('teams.tab.roster') },
+    {
+      id: 'recruitment',
+      icon: Megaphone,
+      label: (
+        <span className="flex items-center gap-1.5">
+          {t('teams.tab.recruitment')}
+          {canManage && pendingCandidates > 0 && (
+            <span className="text-[10px] px-1.5 rounded-full bg-neon-blue/20 text-neon-blue">{pendingCandidates}</span>
+          )}
+        </span>
+      ),
+    },
+    { id: 'matches', icon: Swords, label: t('teams.tab.matches') },
   ];
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-      <Link href="/teams" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-5"><ArrowLeft size={16} /> {t('teams.back')}</Link>
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+      <Link href="/teams" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white"><ArrowLeft size={16} /> {t('teams.back')}</Link>
 
       {/* En-tête profil */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 mb-6">
+      <Card className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
         <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-full overflow-hidden border-2 border-gaming-border bg-gaming-surface">
           {team.image ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -325,39 +334,31 @@ export default function TeamDetailPage() {
           </div>
           {team.description && <p className="text-sm text-gray-400 mt-2 whitespace-pre-line">{team.description}</p>}
         </div>
-      </div>
+      </Card>
 
       {/* Bilan */}
       {stats.played > 0 && (
-        <div className="grid grid-cols-4 gap-3 mb-6">
-          <StatBox label={t('teams.detail.played')} value={stats.played} />
-          <StatBox label={t('teams.detail.wins')} value={stats.wins} color="text-green-400" />
-          <StatBox label={t('teams.detail.losses')} value={stats.losses} color="text-red-400" />
-          <StatBox label={t('teams.detail.winRate')} value={`${stats.winRate ?? 0}%`} color="text-neon-blue" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard label={t('teams.detail.played')} value={stats.played} />
+          <StatCard label={t('teams.detail.wins')} value={stats.wins} />
+          <StatCard label={t('teams.detail.losses')} value={stats.losses} />
+          <StatCard label={t('teams.detail.winRate')} value={`${stats.winRate ?? 0}%`} />
         </div>
       )}
 
       {/* Onglets */}
-      <div className="flex gap-2 mb-6 border-b border-gaming-border">
-        {TABS.map((tb) => (
-          <button key={tb.key} onClick={() => setTab(tb.key)}
-            className={`px-4 py-2.5 text-sm font-semibold -mb-px border-b-2 transition-colors ${tab === tb.key ? 'border-neon-blue text-neon-blue' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
-            {tb.label}
-            {tb.badge ? <span className="ml-1.5 text-xs px-1.5 rounded-full bg-neon-blue/20 text-neon-blue">{tb.badge}</span> : null}
-          </button>
-        ))}
-      </div>
+      <Tabs tabs={TABS} active={tab} onChange={(v: string) => setTab(v as typeof tab)} className="flex-wrap" />
 
       {/* Onglet Effectif */}
       {tab === 'roster' && (
         <div>
           {amCaptain ? (
-            members.length === 0 ? <p className="text-sm text-gray-500">{t('teams.detail.noMembers')}</p> : (
+            members.length === 0 ? <EmptyState icon={<Users size={28} />} title={t('teams.detail.noMembers')} /> : (
               <div className="space-y-2">
                 {members.map((m) => {
                   const u = m.user || {}; const isCap = m.userId === captainId;
                   return (
-                    <div key={m.id ?? m.userId} className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-lg border border-gaming-border bg-gaming-surface/40 p-2.5">
+                    <div key={m.id ?? m.userId} className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-xl border border-gaming-border bg-gaming-card p-2.5">
                       <div className="min-w-0 flex-1 flex items-center gap-2">
                         <span className="text-sm text-white truncate">{u.displayName || u.username}</span>
                         {isCap && <Badge variant="gold" size="sm" className="gap-1"><Crown size={11} /> {t('teams.detail.captain')}</Badge>}
@@ -365,18 +366,17 @@ export default function TeamDetailPage() {
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <RoleSelect value={m.role || ''} onChange={(v) => runMember(() => api.esport.updateMember(id, m.userId, { role: v || null }))} options={LANES} noneLabel={t('admin.esport.noRole')} labelFor={(l) => t('lane.' + l)} disabled={busyMember} />
-                        <button onClick={() => runMember(() => api.esport.updateMember(id, m.userId, { isSubstitute: !m.isSubstitute }))} disabled={busyMember}
-                          className={`px-2 py-1 text-xs rounded-lg border transition-colors ${m.isSubstitute ? 'bg-gaming-surface border-gaming-border text-gray-400' : 'bg-neon-blue/15 border-neon-blue text-neon-blue'}`}>
+                        <Button size="sm" variant={m.isSubstitute ? 'outline' : 'secondary'} onClick={() => runMember(() => api.esport.updateMember(id, m.userId, { isSubstitute: !m.isSubstitute }))} disabled={busyMember}>
                           {m.isSubstitute ? t('admin.esport.substitute') : t('admin.esport.starter')}
-                        </button>
-                        {!isCap && <button onClick={() => runMember(() => api.esport.removeMember(id, m.userId))} disabled={busyMember} title={t('admin.esport.remove')} className="inline-flex items-center px-2 py-1 text-xs rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors"><X size={12} /></button>}
+                        </Button>
+                        {!isCap && <Button size="sm" variant="danger" onClick={() => runMember(() => api.esport.removeMember(id, m.userId))} disabled={busyMember} title={t('admin.esport.remove')}><X size={12} /></Button>}
                       </div>
                     </div>
                   );
                 })}
               </div>
             )
-          ) : !captainMember && members.length === 0 ? <p className="text-sm text-gray-500">{t('teams.detail.noMembers')}</p> : (
+          ) : !captainMember && members.length === 0 ? <EmptyState icon={<Users size={28} />} title={t('teams.detail.noMembers')} /> : (
             <div className="space-y-5">
               {captainMember && (
                 <div>
@@ -411,12 +411,12 @@ export default function TeamDetailPage() {
           )}
 
           {campaigns.length === 0 ? (
-            <p className="text-sm text-gray-500">{canManage ? t('recruitment.noCampaigns') : t('teams.notRecruitingMsg')}</p>
+            <EmptyState icon={<Megaphone size={28} />} title={canManage ? t('recruitment.noCampaigns') : t('teams.notRecruitingMsg')} />
           ) : (
             campaigns.map((c) => {
               const applied = myAppliedIds.has(c.id);
               return (
-                <div key={c.id} className="rounded-xl border border-gaming-border bg-gaming-surface/40 p-4">
+                <div key={c.id} className="rounded-xl border border-gaming-border bg-gaming-card p-4">
                   <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Megaphone size={16} className="text-neon-blue" />
@@ -463,104 +463,86 @@ export default function TeamDetailPage() {
       {tab === 'matches' && (
         <div>
           {amCaptain && <div className="flex justify-end mb-4"><Button size="sm" onClick={() => setPlanOpen(true)}><Swords size={15} /> {t('teams.planMatch')}</Button></div>}
-          {matches.length === 0 ? <p className="text-sm text-gray-500">{t('teams.detail.noMatches')}</p> : (
+          {matches.length === 0 ? <EmptyState icon={<Swords size={28} />} title={t('teams.detail.noMatches')} /> : (
             <div className="space-y-2">{matches.map((m, i) => <MatchRow key={m.id ?? i} m={m} t={t} onResult={amCaptain && m.type !== 'official' ? () => openResult(m) : undefined} />)}</div>
           )}
         </div>
       )}
 
       {/* Modal nouveau recrutement */}
-      <Modal open={newOpen} onClose={() => setNewOpen(false)} closeLabel={t('common.close')} title={t('recruitment.newTitle')}>
-        <form onSubmit={createCampaign} className="space-y-3">
+      <Modal open={newOpen} onClose={() => setNewOpen(false)} closeLabel={t('common.close')} title={t('recruitment.newTitle')} icon={<Megaphone size={20} />} headerVariant="gradient">
+        <form onSubmit={createCampaign} className="space-y-4">
           <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('recruitment.pickRoles')}</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">{t('recruitment.pickRoles')}</label>
             <p className="text-xs text-gray-500 mb-2">{t('recruitment.pickRolesHint')}</p>
             <div className="space-y-2">
               {LANES.map((l) => (
                 <div key={l} className="flex items-center gap-2">
                   <RoleIcon role={l} size={16} />
                   <span className="text-sm text-gray-200 flex-1">{t('lane.' + l)}</span>
-                  <input type="number" min={0} max={20} value={newSlots[l] || 0} onChange={(e) => setNewSlots({ ...newSlots, [l]: Math.max(0, parseInt(e.target.value, 10) || 0) })} className="w-20 px-2 py-1 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 focus:outline-none focus:border-neon-blue" />
+                  <input type="number" min={0} max={20} value={newSlots[l] || 0} onChange={(e) => setNewSlots({ ...newSlots, [l]: Math.max(0, parseInt(e.target.value, 10) || 0) })} className={numCls} />
                 </div>
               ))}
             </div>
           </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('recruitment.message')}</label>
-            <textarea className={`${inputCls} min-h-[70px] resize-y`} value={newMsg} onChange={(e) => setNewMsg(e.target.value)} />
-          </div>
+          <Textarea label={t('recruitment.message')} value={newMsg} onChange={(e: any) => setNewMsg(e.target.value)} className="min-h-[70px]" />
           <div className="flex gap-2 pt-1">
-            <Button size="sm" type="submit" disabled={creating}><Megaphone size={15} /> {t('recruitment.create')}</Button>
+            <Button size="sm" type="submit" loading={creating} disabled={creating}><Megaphone size={15} /> {t('recruitment.create')}</Button>
             <Button size="sm" variant="ghost" type="button" onClick={() => setNewOpen(false)}>{t('admin.esport.cancel')}</Button>
           </div>
         </form>
       </Modal>
 
       {/* Modal postuler */}
-      <Modal open={!!applyCampaign} onClose={() => setApplyCampaign(null)} closeLabel={t('common.close')} title={t('recruitment.applyTitle')}>
-        <form onSubmit={submitApply} className="space-y-3">
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('recruitment.applyRole')}</label>
+      <Modal open={!!applyCampaign} onClose={() => setApplyCampaign(null)} closeLabel={t('common.close')} title={t('recruitment.applyTitle')} icon={<Send size={20} />} headerVariant="gradient">
+        <form onSubmit={submitApply} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-300">{t('recruitment.applyRole')}</label>
             <RoleSelect value={applyForm.role} onChange={(v) => setApplyForm({ ...applyForm, role: v })} options={(applyCampaign?.slots || []).map((s: any) => s.role)} noneLabel={t('admin.esport.noRole')} labelFor={(l) => t('lane.' + l)} />
           </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('recruitment.applyMessage')}</label>
-            <textarea className={`${inputCls} min-h-[80px] resize-y`} value={applyForm.message} onChange={(e) => setApplyForm({ ...applyForm, message: e.target.value })} />
-          </div>
+          <Textarea label={t('recruitment.applyMessage')} value={applyForm.message} onChange={(e: any) => setApplyForm({ ...applyForm, message: e.target.value })} className="min-h-[80px]" />
           <div className="flex gap-2 pt-1">
-            <Button size="sm" type="submit" disabled={applying}><Send size={15} /> {t('recruitment.applySubmit')}</Button>
+            <Button size="sm" type="submit" loading={applying} disabled={applying}><Send size={15} /> {t('recruitment.applySubmit')}</Button>
             <Button size="sm" variant="ghost" type="button" onClick={() => setApplyCampaign(null)}>{t('admin.esport.cancel')}</Button>
           </div>
         </form>
       </Modal>
 
       {/* Modal planifier match */}
-      <Modal open={planOpen} onClose={() => setPlanOpen(false)} closeLabel={t('common.close')} title={t('teams.planMatch')}>
-        <form onSubmit={submitPlan} className="space-y-3">
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('teams.opponent')}</label>
-            <select value={planForm.opponentId} onChange={(e) => setPlanForm({ ...planForm, opponentId: e.target.value })} required className={inputCls}>
-              <option value="">{t('teams.selectOpponent')}</option>
-              {otherTeams.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('admin.matches.type')}</label>
-            <select value={planForm.type} onChange={(e) => setPlanForm({ ...planForm, type: e.target.value })} className={inputCls}>
-              <option value="friendly">{t('matchType.friendly')}</option>
-              <option value="training">{t('matchType.training')}</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('admin.matches.date')}</label>
-            <input type="datetime-local" value={planForm.scheduledAt} onChange={(e) => setPlanForm({ ...planForm, scheduledAt: e.target.value })} className={inputCls} />
-          </div>
+      <Modal open={planOpen} onClose={() => setPlanOpen(false)} closeLabel={t('common.close')} title={t('teams.planMatch')} icon={<Swords size={20} />} headerVariant="gradient">
+        <form onSubmit={submitPlan} className="space-y-4">
+          <Select label={t('teams.opponent')} value={planForm.opponentId} onChange={(e: any) => setPlanForm({ ...planForm, opponentId: e.target.value })} required>
+            <option value="">{t('teams.selectOpponent')}</option>
+            {otherTeams.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+          </Select>
+          <Select label={t('admin.matches.type')} value={planForm.type} onChange={(e: any) => setPlanForm({ ...planForm, type: e.target.value })}>
+            <option value="friendly">{t('matchType.friendly')}</option>
+            <option value="training">{t('matchType.training')}</option>
+          </Select>
+          <Input label={t('admin.matches.date')} type="datetime-local" value={planForm.scheduledAt} onChange={(e: any) => setPlanForm({ ...planForm, scheduledAt: e.target.value })} />
           <div className="flex gap-2 pt-1">
-            <Button size="sm" type="submit" disabled={planning || !planForm.opponentId}><Calendar size={15} /> {t('admin.matches.schedule')}</Button>
+            <Button size="sm" type="submit" loading={planning} disabled={planning || !planForm.opponentId}><Calendar size={15} /> {t('admin.matches.schedule')}</Button>
             <Button size="sm" variant="ghost" type="button" onClick={() => setPlanOpen(false)}>{t('admin.esport.cancel')}</Button>
           </div>
         </form>
       </Modal>
 
       {/* Modal résultat */}
-      <Modal open={!!resultMatch} onClose={() => setResultMatch(null)} closeLabel={t('common.close')} title={t('admin.matches.result')}>
+      <Modal open={!!resultMatch} onClose={() => setResultMatch(null)} closeLabel={t('common.close')} title={t('admin.matches.result')} icon={<Check size={20} />} headerVariant="gradient">
         {resultMatch && (
-          <form onSubmit={submitResult} className="space-y-3">
+          <form onSubmit={submitResult} className="space-y-4">
             <p className="text-sm text-white text-center">{resultMatch.teamA?.name} <span className="text-gray-500">vs</span> {resultMatch.teamB?.name}</p>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block text-xs text-gray-400 mb-1">{t('admin.matches.scoreA')}</label><input type="number" min={0} value={resultForm.scoreA} onChange={(e) => setResultForm({ ...resultForm, scoreA: Number(e.target.value) })} className={inputCls} /></div>
-              <div><label className="block text-xs text-gray-400 mb-1">{t('admin.matches.scoreB')}</label><input type="number" min={0} value={resultForm.scoreB} onChange={(e) => setResultForm({ ...resultForm, scoreB: Number(e.target.value) })} className={inputCls} /></div>
+              <Input label={t('admin.matches.scoreA')} type="number" min={0} value={resultForm.scoreA} onChange={(e: any) => setResultForm({ ...resultForm, scoreA: Number(e.target.value) })} />
+              <Input label={t('admin.matches.scoreB')} type="number" min={0} value={resultForm.scoreB} onChange={(e: any) => setResultForm({ ...resultForm, scoreB: Number(e.target.value) })} />
             </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">{t('admin.matches.winner')}</label>
-              <select value={resultForm.winnerTeamId} onChange={(e) => setResultForm({ ...resultForm, winnerTeamId: e.target.value })} className={inputCls}>
-                <option value="">{t('admin.matches.autoWinner')}</option>
-                <option value={resultMatch.teamA?.id}>{resultMatch.teamA?.name}</option>
-                <option value={resultMatch.teamB?.id}>{resultMatch.teamB?.name}</option>
-              </select>
-            </div>
+            <Select label={t('admin.matches.winner')} value={resultForm.winnerTeamId} onChange={(e: any) => setResultForm({ ...resultForm, winnerTeamId: e.target.value })}>
+              <option value="">{t('admin.matches.autoWinner')}</option>
+              <option value={resultMatch.teamA?.id}>{resultMatch.teamA?.name}</option>
+              <option value={resultMatch.teamB?.id}>{resultMatch.teamB?.name}</option>
+            </Select>
             <div className="flex gap-2 pt-1">
-              <Button size="sm" type="submit" disabled={savingResult}><Check size={15} /> {t('admin.esport.save')}</Button>
+              <Button size="sm" type="submit" loading={savingResult} disabled={savingResult}><Check size={15} /> {t('admin.esport.save')}</Button>
               <Button size="sm" variant="ghost" type="button" onClick={() => setResultMatch(null)}>{t('admin.esport.cancel')}</Button>
             </div>
           </form>
@@ -568,11 +550,11 @@ export default function TeamDetailPage() {
       </Modal>
 
       {/* Modal contacter */}
-      <Modal open={!!contactUser} onClose={() => setContactUser(null)} closeLabel={t('common.close')} title={`${t('messages.newMessageTo')} ${contactUser?.displayName || contactUser?.username || ''}`}>
-        <form onSubmit={sendContact} className="space-y-3">
-          <textarea className={`${inputCls} min-h-[100px] resize-y`} value={contactBody} onChange={(e) => setContactBody(e.target.value)} placeholder={t('messages.placeholder')} required />
+      <Modal open={!!contactUser} onClose={() => setContactUser(null)} closeLabel={t('common.close')} title={`${t('messages.newMessageTo')} ${contactUser?.displayName || contactUser?.username || ''}`} icon={<MessageSquare size={20} />} headerVariant="gradient">
+        <form onSubmit={sendContact} className="space-y-4">
+          <Textarea value={contactBody} onChange={(e: any) => setContactBody(e.target.value)} placeholder={t('messages.placeholder')} required className="min-h-[100px]" />
           <div className="flex gap-2 pt-1">
-            <Button size="sm" type="submit" disabled={contactSending || !contactBody.trim()}><MessageSquare size={15} /> {t('messages.send')}</Button>
+            <Button size="sm" type="submit" loading={contactSending} disabled={contactSending || !contactBody.trim()}><MessageSquare size={15} /> {t('messages.send')}</Button>
             <Button size="sm" variant="ghost" type="button" onClick={() => setContactUser(null)}>{t('admin.esport.cancel')}</Button>
           </div>
         </form>
@@ -582,7 +564,7 @@ export default function TeamDetailPage() {
         open={!!pendingDel}
         onClose={() => setPendingDel(null)}
         onConfirm={doDeleteCampaign}
-        danger
+        variant="danger"
         title={t('admin.confirm.title')}
         message={t('recruitment.deleteConfirm')}
         confirmLabel={t('admin.esport.delete')}

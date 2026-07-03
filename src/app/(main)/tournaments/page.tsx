@@ -6,13 +6,12 @@ import {
   Trophy, Calendar, Users, Play, ChevronRight,
   ExternalLink, Medal, Swords, Target,
 } from 'lucide-react';
-import { Card, Badge, Button, Tabs } from '@/components/ui';
-import { useThemeStore, useTournamentStore, useTeamStore } from '@/store/useStore';
+import { Card, Badge, Button, Tabs, PageHeader, SectionCard, EmptyState, ProgressBar } from '@/components/ui';
+import { useTournamentStore, useTeamStore } from '@/store/useStore';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/helpers';
 
 export default function Tournaments() {
-  const { theme } = useThemeStore();
   const { tournaments, setTournaments } = useTournamentStore();
   const { teams, setTeams } = useTeamStore();
   const [activeTab, setActiveTab] = useState('all');
@@ -35,29 +34,27 @@ export default function Tournaments() {
     : null;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
 
-      <div className="mb-8">
-        <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-          <Trophy className="inline w-8 h-8 mr-2 text-yellow-400" />
-          Tournois
-        </h1>
-        <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-          Participez aux tournois et montrez votre talent
-        </p>
-      </div>
-
-      <Tabs
-        tabs={[
-          { id: 'all', label: `Tous (${tournaments.length})` },
-          { id: 'upcoming', label: 'À venir' },
-          { id: 'ongoing', label: 'En cours' },
-          { id: 'completed', label: 'Terminés' },
-        ]}
-        active={activeTab}
-        onChange={setActiveTab}
-        className="mb-6"
+      <PageHeader
+        icon={<Trophy size={28} />}
+        title="Tournois"
+        subtitle="Participez aux tournois et montrez votre talent"
+        variant="gold"
       />
+
+      <SectionCard className="!p-4">
+        <Tabs
+          tabs={[
+            { id: 'all', label: `Tous (${tournaments.length})` },
+            { id: 'upcoming', label: 'À venir' },
+            { id: 'ongoing', label: 'En cours' },
+            { id: 'completed', label: 'Terminés' },
+          ]}
+          active={activeTab}
+          onChange={setActiveTab}
+        />
+      </SectionCard>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -81,17 +78,17 @@ export default function Tournaments() {
                       </Badge>
                       <Badge variant="purple" size="sm">{tour.format}</Badge>
                     </div>
-                    <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                    <h3 className="text-xl font-bold text-white">
                       {tour.name}
                     </h3>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-yellow-400">{tour.prizePool}</p>
+                    <p className="text-lg font-bold text-amber-400">{tour.prizePool}</p>
                     <p className="text-xs text-gray-400">Prize Pool</p>
                   </div>
                 </div>
 
-                <p className={`text-sm mb-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className="text-sm mb-4 text-gray-400">
                   {tour.description}
                 </p>
 
@@ -111,14 +108,7 @@ export default function Tournaments() {
                 </div>
 
                 <div className="mb-4">
-                  <div className="h-2 rounded-full bg-gaming-surface overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(tour.registeredTeams.length / tour.maxTeams) * 100}%` }}
-                      transition={{ duration: 1 }}
-                      className="h-full rounded-full bg-gradient-to-r from-neon-blue to-neon-purple"
-                    />
-                  </div>
+                  <ProgressBar value={tour.registeredTeams.length} max={tour.maxTeams} />
                   <p className="text-xs text-gray-400 mt-1">
                     {tour.registeredTeams.length}/{tour.maxTeams} inscrits
                   </p>
@@ -161,22 +151,18 @@ export default function Tournaments() {
           ))}
 
           {filtered.length === 0 && (
-            <div className="text-center py-16">
-              <Trophy className="w-12 h-12 mx-auto mb-4 text-gray-500" />
-              <h3 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                Aucun tournoi trouvé
-              </h3>
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                Revenez bientôt pour de nouveaux tournois!
-              </p>
-            </div>
+            <EmptyState
+              icon={<Trophy size={28} />}
+              title="Aucun tournoi trouvé"
+              description="Revenez bientôt pour de nouveaux tournois!"
+            />
           )}
         </div>
 
         <div>
           {tournament ? (
             <Card>
-              <h3 className={`font-bold text-lg mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              <h3 className="font-bold text-lg mb-4 text-white">
                 {tournament.name}
               </h3>
 
@@ -188,19 +174,19 @@ export default function Tournaments() {
 
                 <div>
                   <p className="text-xs text-gray-400 mb-2">Organisateur</p>
-                  <p className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{tournament.organizer}</p>
+                  <p className="text-sm font-medium text-white">{tournament.organizer}</p>
                 </div>
 
                 <div>
                   <p className="text-xs text-gray-400 mb-2">Dates</p>
-                  <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <p className="text-sm text-gray-300">
                     {formatDate(tournament.startDate)} → {formatDate(tournament.endDate)}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-xs text-gray-400 mb-2">Prize Pool</p>
-                  <p className="text-2xl font-bold text-yellow-400">{tournament.prizePool}</p>
+                  <p className="text-2xl font-bold text-amber-400">{tournament.prizePool}</p>
                 </div>
 
                 <div>
@@ -213,7 +199,7 @@ export default function Tournaments() {
                           <div className="w-6 h-6 rounded bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center text-[10px] font-bold text-white">
                             {team?.tag}
                           </div>
-                          <span className={`text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{team?.name}</span>
+                          <span className="text-sm text-white">{team?.name}</span>
                         </div>
                       );
                     })}
@@ -239,7 +225,7 @@ export default function Tournaments() {
             <Card>
               <div className="text-center py-8">
                 <Medal className="w-10 h-10 mx-auto mb-3 text-gray-500" />
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className="text-sm text-gray-400">
                   Sélectionnez un tournoi pour voir les détails
                 </p>
               </div>

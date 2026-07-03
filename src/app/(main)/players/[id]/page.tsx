@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Trophy, Target, Star, Flame, TrendingUp, UserPlus, UserCheck, UserMinus, Check, X } from 'lucide-react';
-import { Card, Badge, StatCard, Button } from '@/components/ui';
+import { Card, Badge, StatCard, Button, Avatar, EmptyState, LoadingSpinner } from '@/components/ui';
 import { api, avatarSrc, mlbbImg } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import RoleIcon from '@/components/game/RoleIcon';
@@ -54,18 +53,18 @@ export default function PublicProfilePage() {
   if (loading) {
     return (
       <div className="p-6 max-w-4xl mx-auto flex items-center justify-center min-h-[50vh]">
-        <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="p-6 max-w-4xl mx-auto">
-        <Link href="/players" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-6">
+      <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+        <Link href="/players" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white">
           <ArrowLeft size={16} /> {t('users.back')}
         </Link>
-        <p className="text-center text-gray-500 py-20">{t('users.notFound')}</p>
+        <EmptyState icon={<UserPlus size={26} />} title={t('users.notFound')} />
       </div>
     );
   }
@@ -76,26 +75,15 @@ export default function PublicProfilePage() {
   const name = user.displayName || user.username;
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-      <Link href="/players" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-4">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+      <Link href="/players" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white">
         <ArrowLeft size={16} /> {t('users.back')}
       </Link>
 
-      <Card className="mb-6" hover={false}>
+      {/* En-tête profil */}
+      <Card hover={false}>
         <div className="flex flex-col sm:flex-row items-center gap-5">
-          {user.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarSrc(user.avatar, 160)}
-              alt={name}
-              referrerPolicy="no-referrer"
-              className="w-24 h-24 rounded-2xl object-cover border-2 border-neon-blue/40"
-            />
-          ) : (
-            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-3xl font-bold text-white">
-              {name?.[0]?.toUpperCase() || 'J'}
-            </div>
-          )}
+          <Avatar name={name} src={user.avatar ? avatarSrc(user.avatar, 160) : undefined} size="xl" />
 
           <div className="flex-1 text-center sm:text-left">
             <div className="flex items-center justify-center sm:justify-start gap-2">
@@ -140,7 +128,7 @@ export default function PublicProfilePage() {
               </div>
             )}
 
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-2">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-3">
               {user.gameRank && (
                 <div className="flex items-center gap-2">
                   {hasRankBadge(user.gameRank) ? (
@@ -185,7 +173,7 @@ export default function PublicProfilePage() {
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard label={t('dashboard.detail.wins')} value={stats.wins ?? 0} icon={<TrendingUp size={16} />} />
             <StatCard label={t('heroes.winRate')} value={`${stats.winRate ?? 0}%`} icon={<Target size={16} />} />
             <StatCard label="MVP" value={stats.mvpCount ?? 0} icon={<Star size={16} />} />

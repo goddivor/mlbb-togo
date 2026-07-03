@@ -11,6 +11,7 @@ import {
 import { useLangStore, useAuthStore } from '@/store/useStore';
 import { useT } from '@/lib/i18n';
 import { api, getToken, setToken, avatarSrc } from '@/lib/api';
+import { Button } from '@/components/ui';
 import SignInModal from './SignInModal';
 
 const LANGS = [
@@ -220,13 +221,9 @@ export default function LandingHeader() {
               </AnimatePresence>
             </div>
           ) : (
-            <button
-              onClick={() => setSignInOpen(true)}
-              className="px-6 py-1.5 rounded-md text-white text-sm font-semibold border border-white/20 shadow-md transition-all hover:brightness-110"
-              style={{ background: 'linear-gradient(180deg, #4aa6ff 0%, #1e6fd0 100%)' }}
-            >
+            <Button variant="primary" size="sm" onClick={() => setSignInOpen(true)}>
               {t('header.login')}
-            </button>
+            </Button>
           )}
 
           <div className="relative md:hidden">

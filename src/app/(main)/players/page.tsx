@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Search, MapPin } from 'lucide-react';
+import { Search, MapPin, Users } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
+import { PageHeader, SectionCard, Badge, EmptyState, LoadingSpinner } from '@/components/ui';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import { useT } from '@/lib/i18n';
 
@@ -33,31 +34,33 @@ export default function PlayersPage() {
   }, [users, query]);
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">{t('users.title')}</h1>
-          <p className="text-sm text-gray-400">
-            {loading ? '…' : `${users.length} ${t('users.count')}`}
-          </p>
-        </div>
-        <div className="relative">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+      <PageHeader
+        variant="default"
+        icon={<Users size={28} className="text-white" />}
+        title={t('users.title')}
+        subtitle={loading ? '…' : `${users.length} ${t('users.count')}`}
+      />
+
+      {/* Recherche */}
+      <SectionCard className="!p-4">
+        <div className="relative w-full sm:max-w-xs">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('users.search')}
-            className="pl-9 pr-3 py-2 w-full sm:w-64 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue"
+            className="pl-9 pr-3 py-2 w-full text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue"
           />
         </div>
-      </div>
+      </SectionCard>
 
       {loading ? (
         <div className="flex items-center justify-center py-24">
-          <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
+          <LoadingSpinner size="lg" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">{t('users.none')}</div>
+        <EmptyState icon={<Users size={26} />} title={t('users.none')} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filtered.map((u, i) => (
@@ -69,7 +72,7 @@ export default function PlayersPage() {
             >
               <Link
                 href={`/players/${u.id}`}
-                className="flex items-center gap-3 rounded-xl border border-gaming-border bg-gaming-surface/40 hover:border-neon-blue transition-colors p-3"
+                className="flex items-center gap-3 rounded-xl border border-gaming-border bg-gaming-card hover:border-neon-blue transition-colors p-3"
               >
                 {u.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -105,9 +108,7 @@ export default function PlayersPage() {
                 </div>
 
                 {u.roleUser && u.roleUser !== 'user' && (
-                  <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-neon-purple/15 text-neon-purple border border-neon-purple/30">
-                    {u.roleUser}
-                  </span>
+                  <Badge variant="purple" size="sm" className="uppercase">{u.roleUser}</Badge>
                 )}
               </Link>
             </motion.div>

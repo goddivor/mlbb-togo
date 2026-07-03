@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Inbox, Plus } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Badge, Button } from '@/components/ui';
+import { Badge, Button, PageHeader, EmptyState, LoadingSpinner } from '@/components/ui';
 
 const STATUS_VARIANT: Record<string, any> = {
   pending: 'default',
@@ -29,32 +29,30 @@ export default function MyRequestsPage() {
   }, []);
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-6">
       <Link
         href="/teams"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-4"
+        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white"
       >
         <ArrowLeft size={16} /> {t('teams.back')}
       </Link>
 
-      <div className="flex items-center gap-2 mb-6">
-        <Inbox size={22} className="text-neon-blue" />
-        <h1 className="text-2xl font-bold text-white">{t('requests.mine')}</h1>
-      </div>
+      <PageHeader icon={<Inbox size={28} />} title={t('requests.mine')} variant="blue" />
 
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
-        </div>
+        <LoadingSpinner size="lg" className="py-24" />
       ) : requests.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-gray-500 mb-4">{t('requests.none')}</p>
-          <Link href="/teams">
-            <Button size="sm">
-              <Plus size={16} /> {t('requests.propose')}
-            </Button>
-          </Link>
-        </div>
+        <EmptyState
+          icon={<Inbox size={28} />}
+          title={t('requests.none')}
+          action={
+            <Link href="/teams">
+              <Button size="sm">
+                <Plus size={16} /> {t('requests.propose')}
+              </Button>
+            </Link>
+          }
+        />
       ) : (
         <div className="space-y-3">
           {requests.map((r, i) => {
@@ -69,7 +67,7 @@ export default function MyRequestsPage() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: Math.min(i * 0.03, 0.3) }}
-                className="rounded-xl border border-gaming-border bg-gaming-surface/40 p-4"
+                className="rounded-xl border border-gaming-border bg-gaming-card p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

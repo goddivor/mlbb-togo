@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Trophy } from 'lucide-react';
 import { api } from '@/lib/api';
+import { Badge } from '@/components/ui';
 
 interface MtlImage {
   id: string;
@@ -47,10 +48,10 @@ export default function MtlSection() {
     <div>
 
       <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-2 text-neon-gold mb-3">
-          <Trophy size={20} />
-          <span className="text-sm font-bold uppercase tracking-[0.2em]">MTL{mtl.season ? ` · ${mtl.season}` : ''}</span>
-        </div>
+        <Badge variant="gold" size="lg" className="mb-3 uppercase tracking-[0.2em]">
+          <Trophy size={16} />
+          MTL{mtl.season ? ` · ${mtl.season}` : ''}
+        </Badge>
         <h2 className="text-2xl sm:text-4xl font-bold text-white">{mtl.name}</h2>
         {mtl.description && (
           <p className="text-gray-400 mt-3 max-w-2xl mx-auto">{mtl.description}</p>

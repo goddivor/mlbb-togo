@@ -2,11 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { Check, X, Eye, MessageSquare, Inbox, Plus, ExternalLink } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Card, Badge, Button } from '@/components/ui';
+import {
+  Card,
+  Badge,
+  Button,
+  PageHeader,
+  SectionCard,
+  EmptyState,
+  LoadingSpinner,
+} from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 
@@ -146,13 +153,14 @@ export default function AdminRequestsPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
-      <div className="flex items-center gap-2 mb-6">
-        <Inbox size={22} className="text-neon-blue" />
-        <h1 className="text-2xl font-bold text-white">{t('requests.title')}</h1>
-      </div>
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+      <PageHeader
+        icon={<Inbox size={28} />}
+        title={t('requests.title')}
+        variant="blue"
+      />
 
-      <div className="flex flex-wrap gap-2 mb-6">
+      <SectionCard className="!p-4 flex flex-wrap gap-2">
         <button
           onClick={() => setFilter('')}
           className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
@@ -176,28 +184,20 @@ export default function AdminRequestsPage() {
             {t('requests.status.' + s)}
           </button>
         ))}
-      </div>
+      </SectionCard>
 
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
-        </div>
+        <LoadingSpinner size="lg" className="py-24" />
       ) : requests.length === 0 ? (
-        <div className="text-center py-16 text-gray-500">{t('requests.none')}</div>
+        <EmptyState icon={<Inbox size={28} />} title={t('requests.none')} />
       ) : (
         <div className="space-y-3">
-          {requests.map((r, i) => {
+          {requests.map((r) => {
             const requester = r.requester;
             const name = requester?.displayName || requester?.username || '—';
             const initial = (name || '?').charAt(0).toUpperCase();
             return (
-              <motion.div
-                key={r.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.03, 0.3) }}
-              >
-                <Card hover={false} className="!p-4">
+              <Card key={r.id} hover={false} className="!p-4">
                   <div className="flex items-start gap-3">
                     {requester?.avatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -283,8 +283,7 @@ export default function AdminRequestsPage() {
                       </div>
                     </div>
                   </div>
-                </Card>
-              </motion.div>
+              </Card>
             );
           })}
         </div>
@@ -294,6 +293,7 @@ export default function AdminRequestsPage() {
         open={!!contact}
         onClose={closeContact}
         closeLabel={t('common.close')}
+        icon={<MessageSquare size={20} />}
         title={`${t('messages.newMessageTo')} ${
           contact?.requester?.displayName || contact?.requester?.username || ''
         }`}
@@ -333,6 +333,8 @@ export default function AdminRequestsPage() {
         onClose={() => setCreateReq(null)}
         closeLabel={t('common.close')}
         title={t('admin.teams.createTitle')}
+        icon={<Plus size={20} />}
+        headerVariant="gradient"
       >
         {createReq?.requester && (
           <p className="text-sm text-gray-400 mb-4">
