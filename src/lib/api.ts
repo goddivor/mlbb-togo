@@ -315,6 +315,21 @@ export const api = {
       request(`/esport/matches/${id}`, { method: 'DELETE' }),
   },
 
+  recruitment: {
+    listOpen: (role?: string) =>
+      request(`/recruitment${role ? `?role=${role}` : ''}`, { fallback: [], auth: false }),
+    mine: () => request('/recruitment/mine', { fallback: [] }),
+    byTeam: (teamId: string) => request(`/recruitment/team/${teamId}`, { fallback: [] }),
+    create: (data: any) => request('/recruitment', { method: 'POST', body: data }),
+    update: (id: string, data: any) =>
+      request(`/recruitment/${id}`, { method: 'PATCH', body: data }),
+    remove: (id: string) => request(`/recruitment/${id}`, { method: 'DELETE' }),
+    apply: (id: string, data: { role?: string; message?: string }) =>
+      request(`/recruitment/${id}/apply`, { method: 'POST', body: data }),
+    decide: (appId: string, status: 'accepted' | 'rejected') =>
+      request(`/recruitment/applications/${appId}`, { method: 'PATCH', body: { status } }),
+  },
+
   friends: {
     list: () => request('/friends', { fallback: [] }),
     requests: () => request('/friends/requests', { fallback: [] }),

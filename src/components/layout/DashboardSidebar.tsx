@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Swords, Users, Shield, Users2 } from 'lucide-react';
+import { LayoutDashboard, Swords, Users, Shield, Users2, Megaphone } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
 const NAV = [
@@ -10,6 +10,7 @@ const NAV = [
   { href: '/heroes', key: 'header.heroes', icon: Swords },
   { href: '/players', key: 'header.players', icon: Users },
   { href: '/teams', key: 'header.teams', icon: Shield },
+  { href: '/recruitment', key: 'header.recruitment', icon: Megaphone },
   { href: '/friends', key: 'header.friends', icon: Users2 },
 ];
 

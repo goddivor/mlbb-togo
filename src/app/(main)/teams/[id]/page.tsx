@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
-  ArrowLeft, Shield, Crown, Users, Calendar, MapPin, UserPlus, Check, X,
-  Swords, MessageSquare, Trash2,
+  ArrowLeft, Crown, Users, Calendar, Check, X,
+  Swords, MessageSquare, Plus, Trash2, Send, Megaphone,
 } from 'lucide-react';
 import { Badge, Button } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { api, avatarSrc } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import RoleIcon from '@/components/game/RoleIcon';
@@ -34,19 +35,12 @@ function MemberCard({ m, t, highlight = false }: any) {
   const u = m?.user || {};
   const name = u.displayName || u.username || '';
   return (
-    <Link
-      href={`/players/${m.userId}`}
-      className={`flex items-center gap-3 rounded-xl border bg-gaming-surface/40 p-3 transition-colors ${
-        highlight ? 'border-yellow-500/40 hover:border-yellow-400' : 'border-gaming-border hover:border-neon-blue'
-      }`}
-    >
+    <Link href={`/players/${m.userId}`} className={`flex items-center gap-3 rounded-xl border bg-gaming-surface/40 p-3 transition-colors ${highlight ? 'border-yellow-500/40 hover:border-yellow-400' : 'border-gaming-border hover:border-neon-blue'}`}>
       {u.avatar ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={avatarSrc(u.avatar, 96)} alt={name} referrerPolicy="no-referrer" className="w-12 h-12 rounded-xl object-cover border border-gaming-border" />
       ) : (
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-lg font-bold text-white">
-          {name?.[0]?.toUpperCase() || 'J'}
-        </div>
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-lg font-bold text-white">{name?.[0]?.toUpperCase() || 'J'}</div>
       )}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
@@ -54,16 +48,8 @@ function MemberCard({ m, t, highlight = false }: any) {
           <p className="text-sm font-semibold text-white truncate">{name}</p>
         </div>
         <div className="flex flex-wrap items-center gap-1.5 mt-1">
-          {m.role && (
-            <Badge variant="purple" size="sm" className="gap-1">
-              <RoleIcon role={m.role} size={14} /> {t('lane.' + m.role)}
-            </Badge>
-          )}
-          {hasRankBadge(u.gameRank) && (
-            <span className="inline-flex items-center gap-1 text-xs text-gray-300">
-              <RankBadge rank={u.gameRank} size={16} /> {u.gameRank}
-            </span>
-          )}
+          {m.role && <Badge variant="purple" size="sm" className="gap-1"><RoleIcon role={m.role} size={14} /> {t('lane.' + m.role)}</Badge>}
+          {hasRankBadge(u.gameRank) && <span className="inline-flex items-center gap-1 text-xs text-gray-300"><RankBadge rank={u.gameRank} size={16} /> {u.gameRank}</span>}
         </div>
       </div>
     </Link>
@@ -75,10 +61,7 @@ function MatchRow({ m, t, onResult }: any) {
   const aWin = m.winnerTeamId && m.winnerTeamId === m.teamA?.id;
   const bWin = m.winnerTeamId && m.winnerTeamId === m.teamB?.id;
   let dateLabel = '';
-  if (m.scheduledAt) {
-    const d = new Date(m.scheduledAt);
-    if (!isNaN(d.getTime())) dateLabel = d.toLocaleDateString();
-  }
+  if (m.scheduledAt) { const d = new Date(m.scheduledAt); if (!isNaN(d.getTime())) dateLabel = d.toLocaleDateString(); }
   return (
     <div className="rounded-lg border border-gaming-border bg-gaming-surface/40 p-3">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-sm">
@@ -90,11 +73,34 @@ function MatchRow({ m, t, onResult }: any) {
         <Badge variant="purple" size="sm">{t('matchType.' + m.type)}</Badge>
         <Badge variant={completed ? 'green' : 'default'} size="sm">{t('matchStatus.' + m.status)}</Badge>
         {dateLabel && <span className="text-xs text-gray-500">{dateLabel}</span>}
-        {onResult && (
-          <button type="button" onClick={onResult} className="text-xs text-neon-blue hover:underline">
-            {t('admin.matches.setResult')}
-          </button>
-        )}
+        {onResult && <button type="button" onClick={onResult} className="text-xs text-neon-blue hover:underline">{t('admin.matches.setResult')}</button>}
+      </div>
+    </div>
+  );
+}
+
+function ApplicationRow({ a, t, onDecide, onContact, acting }: any) {
+  const u = a.user || {};
+  const name = u.displayName || u.username || '—';
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-gaming-border bg-gaming-surface/40 p-2.5">
+      {u.avatar ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={avatarSrc(u.avatar, 64)} alt={name} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full object-cover shrink-0" />
+      ) : (
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-xs font-bold text-white shrink-0">{name[0]?.toUpperCase() || 'J'}</div>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <Link href={`/players/${a.userId}`} className="text-sm font-medium text-white truncate hover:text-neon-blue">{name}</Link>
+          {a.role && <Badge variant="purple" size="sm" className="gap-1"><RoleIcon role={a.role} size={13} /> {t('lane.' + a.role)}</Badge>}
+        </div>
+        {a.message && <p className="text-xs text-gray-400 truncate">{a.message}</p>}
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <Button size="sm" disabled={acting === a.id + 'accepted'} onClick={() => onDecide(a, 'accepted')}><Check size={14} /></Button>
+        <Button size="sm" variant="danger" disabled={acting === a.id + 'rejected'} onClick={() => onDecide(a, 'rejected')}><X size={14} /></Button>
+        <Button size="sm" variant="ghost" title={t('teams.contact')} onClick={() => onContact(u)}><MessageSquare size={14} /></Button>
       </div>
     </div>
   );
@@ -124,29 +130,92 @@ export default function TeamDetailPage() {
   const amCaptain = !!myId && captainId === myId;
   const canManage = amCaptain || isAdmin;
 
-  // Candidatures (capitaine/admin)
-  const [joinReqs, setJoinReqs] = useState<any[]>([]);
-  const [actingId, setActingId] = useState<string | null>(null);
-  const [myPending, setMyPending] = useState(false);
+  const err = (e: any) => toast.error(e?.message || t('common.error'));
+
+  // --- Recrutement (campagnes) ---
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [myAppliedIds, setMyAppliedIds] = useState<Set<string>>(new Set());
+  const [actingApp, setActingApp] = useState<string | null>(null);
+  const [newOpen, setNewOpen] = useState(false);
+  const [newMsg, setNewMsg] = useState('');
+  const [newSlots, setNewSlots] = useState<Record<string, number>>({});
+  const [creating, setCreating] = useState(false);
+  const [applyCampaign, setApplyCampaign] = useState<any | null>(null);
+  const [applyForm, setApplyForm] = useState({ role: '', message: '' });
+  const [applying, setApplying] = useState(false);
+  const [pendingDel, setPendingDel] = useState<any | null>(null);
+
+  const loadCampaigns = () =>
+    api.recruitment.byTeam(id).then((r: any) => setCampaigns(Array.isArray(r) ? r : [])).catch(() => {});
 
   useEffect(() => {
-    if (!id || !canManage) return;
-    api.esport.joinRequests(id).then((r: any) => setJoinReqs(Array.isArray(r) ? r : [])).catch(() => {});
-  }, [id, canManage]);
+    if (!id) return;
+    loadCampaigns();
+    if (myId) api.recruitment.mine().then((m: any) => setMyAppliedIds(new Set((Array.isArray(m) ? m : []).filter((a: any) => a.status === 'pending').map((a: any) => a.recruitmentId)))).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, myId, canManage]);
 
-  useEffect(() => {
-    if (!myId || !id) return;
-    api.esport.myJoinRequests()
-      .then((r: any) => setMyPending(Array.isArray(r) && r.some((x: any) => x.teamId === id && x.status === 'pending')))
-      .catch(() => {});
-  }, [myId, id]);
+  const createCampaign = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const slots = LANES.filter((l) => (newSlots[l] || 0) > 0).map((l) => ({ role: l, quantity: newSlots[l] }));
+    if (slots.length === 0) { toast.error(t('recruitment.needRole')); return; }
+    setCreating(true);
+    try {
+      await api.recruitment.create({ teamId: id, message: newMsg.trim() || undefined, slots });
+      toast.success(t('admin.esport.saved'));
+      setNewOpen(false); setNewMsg(''); setNewSlots({});
+      await loadCampaigns();
+    } catch (e2: any) { err(e2); } finally { setCreating(false); }
+  };
 
-  // Modales / états
-  const [joinOpen, setJoinOpen] = useState(false);
-  const [joinForm, setJoinForm] = useState({ message: '', role: '' });
-  const [joining, setJoining] = useState(false);
+  const toggleCampaign = async (c: any) => {
+    try {
+      await api.recruitment.update(c.id, { status: c.status === 'open' ? 'closed' : 'open' });
+      await loadCampaigns();
+    } catch (e2: any) { err(e2); }
+  };
+
+  const doDeleteCampaign = async () => {
+    if (!pendingDel) return;
+    try {
+      await api.recruitment.remove(pendingDel.id);
+      toast.success(t('admin.esport.deleted'));
+      setPendingDel(null);
+      await loadCampaigns();
+    } catch (e2: any) { err(e2); }
+  };
+
+  const decideApp = async (a: any, status: 'accepted' | 'rejected') => {
+    setActingApp(a.id + status);
+    try {
+      await api.recruitment.decide(a.id, status);
+      toast.success(status === 'accepted' ? t('teams.accepted') : t('teams.refused'));
+      await loadCampaigns();
+      if (status === 'accepted') await refresh();
+    } catch (e2: any) { err(e2); } finally { setActingApp(null); }
+  };
+
+  const openApply = (c: any) => { setApplyCampaign(c); setApplyForm({ role: c.slots?.[0]?.role || '', message: '' }); };
+  const submitApply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!applyCampaign) return;
+    setApplying(true);
+    try {
+      await api.recruitment.apply(applyCampaign.id, { role: applyForm.role || undefined, message: applyForm.message.trim() || undefined });
+      toast.success(t('recruitment.applySent'));
+      setMyAppliedIds((prev) => new Set(prev).add(applyCampaign.id));
+      setApplyCampaign(null);
+    } catch (e2: any) { err(e2); } finally { setApplying(false); }
+  };
+
+  // --- Membres (capitaine) ---
   const [busyMember, setBusyMember] = useState(false);
-  const [savingRecruit, setSavingRecruit] = useState(false);
+  const runMember = async (fn: () => Promise<any>) => {
+    setBusyMember(true);
+    try { await fn(); await refresh(); } catch (e2: any) { err(e2); } finally { setBusyMember(false); }
+  };
+
+  // --- Matchs (capitaine) ---
   const [planOpen, setPlanOpen] = useState(false);
   const [otherTeams, setOtherTeams] = useState<any[]>([]);
   const [planForm, setPlanForm] = useState({ opponentId: '', type: 'friendly', scheduledAt: '' });
@@ -154,61 +223,11 @@ export default function TeamDetailPage() {
   const [resultMatch, setResultMatch] = useState<any | null>(null);
   const [resultForm, setResultForm] = useState({ scoreA: 0, scoreB: 0, winnerTeamId: '' });
   const [savingResult, setSavingResult] = useState(false);
-  const [contactUser, setContactUser] = useState<any | null>(null);
-  const [contactBody, setContactBody] = useState('');
-  const [contactSending, setContactSending] = useState(false);
 
   useEffect(() => {
     if (!amCaptain) return;
     api.esport.teams().then((all: any) => setOtherTeams(Array.isArray(all) ? all.filter((x: any) => x.id !== id) : [])).catch(() => {});
   }, [amCaptain, id]);
-
-  const err = (e: any) => toast.error(e?.message || t('common.error'));
-
-  const submitJoin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setJoining(true);
-    try {
-      await api.esport.requestJoin(id, { message: joinForm.message.trim() || undefined, role: joinForm.role || undefined });
-      toast.success(t('teams.joinSent'));
-      setJoinOpen(false);
-      setJoinForm({ message: '', role: '' });
-      setMyPending(true);
-    } catch (e2: any) { err(e2); } finally { setJoining(false); }
-  };
-
-  const decide = async (r: any, status: 'accepted' | 'rejected') => {
-    setActingId(r.id + status);
-    try {
-      await api.esport.decideJoin(r.id, status);
-      toast.success(status === 'accepted' ? t('teams.accepted') : t('teams.refused'));
-      setJoinReqs((prev) => prev.filter((x) => x.id !== r.id));
-      if (status === 'accepted') await refresh();
-    } catch (e2: any) { err(e2); } finally { setActingId(null); }
-  };
-
-  const runMember = async (fn: () => Promise<any>) => {
-    setBusyMember(true);
-    try { await fn(); await refresh(); } catch (e2: any) { err(e2); } finally { setBusyMember(false); }
-  };
-
-  const toggleRecruiting = async () => {
-    setSavingRecruit(true);
-    try {
-      const updated: any = await api.esport.setRecruiting(id, { isRecruiting: !team.isRecruiting });
-      setTeam(updated);
-    } catch (e2: any) { err(e2); } finally { setSavingRecruit(false); }
-  };
-
-  const toggleOpenRole = async (role: string) => {
-    const current: string[] = Array.isArray(team.lookingFor) ? team.lookingFor : [];
-    const next = current.includes(role) ? current.filter((r) => r !== role) : [...current, role];
-    setSavingRecruit(true);
-    try {
-      const updated: any = await api.esport.setRecruiting(id, { lookingFor: next });
-      setTeam(updated);
-    } catch (e2: any) { err(e2); } finally { setSavingRecruit(false); }
-  };
 
   const submitPlan = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -217,31 +236,27 @@ export default function TeamDetailPage() {
     try {
       await api.esport.createMatch({ teamAId: id, teamBId: planForm.opponentId, type: planForm.type, scheduledAt: planForm.scheduledAt || undefined });
       toast.success(t('admin.esport.saved'));
-      setPlanOpen(false);
-      setPlanForm({ opponentId: '', type: 'friendly', scheduledAt: '' });
+      setPlanOpen(false); setPlanForm({ opponentId: '', type: 'friendly', scheduledAt: '' });
       await refresh();
     } catch (e2: any) { err(e2); } finally { setPlanning(false); }
   };
-
-  const openResult = (m: any) => {
-    setResultMatch(m);
-    setResultForm({ scoreA: m.scoreA ?? 0, scoreB: m.scoreB ?? 0, winnerTeamId: m.winnerTeamId || '' });
-  };
-
+  const openResult = (m: any) => { setResultMatch(m); setResultForm({ scoreA: m.scoreA ?? 0, scoreB: m.scoreB ?? 0, winnerTeamId: m.winnerTeamId || '' }); };
   const submitResult = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resultMatch) return;
     setSavingResult(true);
     try {
-      await api.esport.setMatchResult(resultMatch.id, {
-        scoreA: Number(resultForm.scoreA), scoreB: Number(resultForm.scoreB), winnerTeamId: resultForm.winnerTeamId || undefined,
-      });
+      await api.esport.setMatchResult(resultMatch.id, { scoreA: Number(resultForm.scoreA), scoreB: Number(resultForm.scoreB), winnerTeamId: resultForm.winnerTeamId || undefined });
       toast.success(t('admin.esport.saved'));
       setResultMatch(null);
       await refresh();
     } catch (e2: any) { err(e2); } finally { setSavingResult(false); }
   };
 
+  // --- Contacter ---
+  const [contactUser, setContactUser] = useState<any | null>(null);
+  const [contactBody, setContactBody] = useState('');
+  const [contactSending, setContactSending] = useState(false);
   const sendContact = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contactUser || !contactBody.trim()) return;
@@ -249,15 +264,12 @@ export default function TeamDetailPage() {
     try {
       await api.messages.startThread({ userId: contactUser.id, subject: team?.name, body: contactBody.trim() });
       toast.success(t('messages.sent'));
-      setContactUser(null);
-      setContactBody('');
+      setContactUser(null); setContactBody('');
     } catch (e2: any) { err(e2); } finally { setContactSending(false); }
   };
 
   const stats = team?.stats || {};
   const matches: any[] = Array.isArray(team?.matches) ? team.matches : [];
-  const lookingFor: string[] = Array.isArray(team?.lookingFor) ? team.lookingFor : [];
-
   const captainMember = useMemo(
     () => members.find((m) => m.isCaptain || m.userId === captainId) || (team?.captain ? { userId: captainId, isCaptain: true, role: null, user: team.captain } : null),
     [members, captainId, team],
@@ -265,42 +277,32 @@ export default function TeamDetailPage() {
   const others = members.filter((m) => m.userId !== captainId && !m.isCaptain);
   const starters = others.filter((m) => !m.isSubstitute);
   const substitutes = others.filter((m) => m.isSubstitute);
+  const pendingCandidates = campaigns.reduce((n, c) => n + (c.applicationCount || 0), 0);
 
   if (loading) {
-    return (
-      <div className="p-4 sm:p-6 max-w-4xl mx-auto flex items-center justify-center min-h-[50vh]">
-        <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
-      </div>
-    );
+    return <div className="p-4 sm:p-6 max-w-4xl mx-auto flex items-center justify-center min-h-[50vh]"><div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" /></div>;
   }
   if (!team) {
     return (
       <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-        <Link href="/teams" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-6">
-          <ArrowLeft size={16} /> {t('teams.back')}
-        </Link>
+        <Link href="/teams" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-6"><ArrowLeft size={16} /> {t('teams.back')}</Link>
         <p className="text-center text-gray-500 py-20">{t('teams.detail.notFound')}</p>
       </div>
     );
   }
 
   let foundedLabel = '';
-  if (team.foundedAt) {
-    const d = new Date(team.foundedAt);
-    if (!isNaN(d.getTime())) foundedLabel = d.toLocaleDateString();
-  }
+  if (team.foundedAt) { const d = new Date(team.foundedAt); if (!isNaN(d.getTime())) foundedLabel = d.toLocaleDateString(); }
 
   const TABS = [
     { key: 'roster' as const, label: t('teams.tab.roster') },
-    { key: 'recruitment' as const, label: t('teams.tab.recruitment'), badge: canManage && joinReqs.length ? joinReqs.length : 0 },
+    { key: 'recruitment' as const, label: t('teams.tab.recruitment'), badge: canManage ? pendingCandidates : 0 },
     { key: 'matches' as const, label: t('teams.tab.matches') },
   ];
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-      <Link href="/teams" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-5">
-        <ArrowLeft size={16} /> {t('teams.back')}
-      </Link>
+      <Link href="/teams" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-5"><ArrowLeft size={16} /> {t('teams.back')}</Link>
 
       {/* En-tête profil */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 mb-6">
@@ -309,18 +311,13 @@ export default function TeamDetailPage() {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={team.image} alt={team.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-neon-blue to-neon-purple text-3xl font-bold text-white">
-              {team.name?.[0]?.toUpperCase() || 'T'}
-            </div>
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-neon-blue to-neon-purple text-3xl font-bold text-white">{team.name?.[0]?.toUpperCase() || 'T'}</div>
           )}
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-bold text-white">{team.name}</h1>
-            <Badge variant={team.type === 'esport' ? 'gold' : 'default'} size="sm">
-              {t('admin.esport.badge.' + (team.type || 'community'))}
-            </Badge>
-            {team.isRecruiting && <Badge variant="green" size="sm">{t('teams.detail.recruiting')}</Badge>}
+            <Badge variant={team.type === 'esport' ? 'gold' : 'default'} size="sm">{t('admin.esport.badge.' + (team.type || 'community'))}</Badge>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-gray-400">
             <span className="inline-flex items-center gap-1.5"><Users size={14} className="text-neon-blue" />{team.memberCount ?? members.length} {t('teams.members')}</span>
@@ -328,16 +325,6 @@ export default function TeamDetailPage() {
           </div>
           {team.description && <p className="text-sm text-gray-400 mt-2 whitespace-pre-line">{team.description}</p>}
         </div>
-
-        {myId && !isMember && (
-          <div className="sm:ml-auto shrink-0">
-            {myPending ? (
-              <span className="inline-flex items-center gap-1.5 text-xs text-gray-400 border border-gaming-border rounded-lg px-3 py-2">{t('teams.joinPending')}</span>
-            ) : (
-              <Button size="sm" onClick={() => setJoinOpen(true)}><UserPlus size={15} /> {t('teams.join')}</Button>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Bilan */}
@@ -353,13 +340,8 @@ export default function TeamDetailPage() {
       {/* Onglets */}
       <div className="flex gap-2 mb-6 border-b border-gaming-border">
         {TABS.map((tb) => (
-          <button
-            key={tb.key}
-            onClick={() => setTab(tb.key)}
-            className={`px-4 py-2.5 text-sm font-semibold -mb-px border-b-2 transition-colors ${
-              tab === tb.key ? 'border-neon-blue text-neon-blue' : 'border-transparent text-gray-400 hover:text-gray-200'
-            }`}
-          >
+          <button key={tb.key} onClick={() => setTab(tb.key)}
+            className={`px-4 py-2.5 text-sm font-semibold -mb-px border-b-2 transition-colors ${tab === tb.key ? 'border-neon-blue text-neon-blue' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
             {tb.label}
             {tb.badge ? <span className="ml-1.5 text-xs px-1.5 rounded-full bg-neon-blue/20 text-neon-blue">{tb.badge}</span> : null}
           </button>
@@ -370,13 +352,10 @@ export default function TeamDetailPage() {
       {tab === 'roster' && (
         <div>
           {amCaptain ? (
-            members.length === 0 ? (
-              <p className="text-sm text-gray-500">{t('teams.detail.noMembers')}</p>
-            ) : (
+            members.length === 0 ? <p className="text-sm text-gray-500">{t('teams.detail.noMembers')}</p> : (
               <div className="space-y-2">
                 {members.map((m) => {
-                  const u = m.user || {};
-                  const isCap = m.userId === captainId;
+                  const u = m.user || {}; const isCap = m.userId === captainId;
                   return (
                     <div key={m.id ?? m.userId} className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-lg border border-gaming-border bg-gaming-surface/40 p-2.5">
                       <div className="min-w-0 flex-1 flex items-center gap-2">
@@ -390,19 +369,14 @@ export default function TeamDetailPage() {
                           className={`px-2 py-1 text-xs rounded-lg border transition-colors ${m.isSubstitute ? 'bg-gaming-surface border-gaming-border text-gray-400' : 'bg-neon-blue/15 border-neon-blue text-neon-blue'}`}>
                           {m.isSubstitute ? t('admin.esport.substitute') : t('admin.esport.starter')}
                         </button>
-                        {!isCap && (
-                          <button onClick={() => runMember(() => api.esport.removeMember(id, m.userId))} disabled={busyMember} title={t('admin.esport.remove')}
-                            className="inline-flex items-center px-2 py-1 text-xs rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors"><X size={12} /></button>
-                        )}
+                        {!isCap && <button onClick={() => runMember(() => api.esport.removeMember(id, m.userId))} disabled={busyMember} title={t('admin.esport.remove')} className="inline-flex items-center px-2 py-1 text-xs rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors"><X size={12} /></button>}
                       </div>
                     </div>
                   );
                 })}
               </div>
             )
-          ) : !captainMember && members.length === 0 ? (
-            <p className="text-sm text-gray-500">{t('teams.detail.noMembers')}</p>
-          ) : (
+          ) : !captainMember && members.length === 0 ? <p className="text-sm text-gray-500">{t('teams.detail.noMembers')}</p> : (
             <div className="space-y-5">
               {captainMember && (
                 <div>
@@ -429,84 +403,58 @@ export default function TeamDetailPage() {
 
       {/* Onglet Recrutement */}
       {tab === 'recruitment' && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <Badge variant={team.isRecruiting ? 'green' : 'default'} size="md">
-              {team.isRecruiting ? t('teams.recruitingOn') : t('teams.recruitingOff')}
-            </Badge>
-            {canManage && (
-              <Button size="sm" variant="secondary" disabled={savingRecruit} onClick={toggleRecruiting}>
-                {team.isRecruiting ? t('teams.closeRecruit') : t('teams.openRecruit')}
-              </Button>
-            )}
-          </div>
-
-          <div>
-            <h3 className="text-sm font-bold text-white mb-2">{t('teams.openRoles')}</h3>
-            {canManage && <p className="text-xs text-gray-500 mb-3">{t('teams.openRolesHint')}</p>}
-            {canManage ? (
-              <div className="flex flex-wrap gap-2">
-                {LANES.map((l) => {
-                  const on = lookingFor.includes(l);
-                  return (
-                    <button key={l} onClick={() => toggleOpenRole(l)} disabled={savingRecruit}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border transition-colors ${on ? 'bg-neon-blue/15 border-neon-blue text-neon-blue' : 'bg-gaming-surface/40 border-gaming-border text-gray-400 hover:text-gray-200'}`}>
-                      <RoleIcon role={l} size={14} /> {t('lane.' + l)}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : lookingFor.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {lookingFor.map((l) => (
-                  <Badge key={l} variant="purple" size="md" className="gap-1"><RoleIcon role={l} size={14} /> {t('lane.' + l)}</Badge>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">{t('teams.noOpenRoles')}</p>
-            )}
-          </div>
-
+        <div className="space-y-4">
           {canManage && (
-            <div>
-              <h3 className="text-sm font-bold text-white mb-3">{t('teams.joinRequests')}</h3>
-              {joinReqs.length === 0 ? (
-                <p className="text-sm text-gray-500">{t('teams.candidatesNone')}</p>
-              ) : (
-                <div className="space-y-2">
-                  {joinReqs.map((r) => {
-                    const u = r.user || {};
-                    const name = u.displayName || u.username || '—';
-                    return (
-                      <div key={r.id} className="flex items-center gap-3 rounded-lg border border-gaming-border bg-gaming-surface/40 p-3">
-                        {u.avatar ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={avatarSrc(u.avatar, 64)} alt={name} referrerPolicy="no-referrer" className="w-9 h-9 rounded-full object-cover shrink-0" />
-                        ) : (
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-xs font-bold text-white shrink-0">{name[0]?.toUpperCase() || 'J'}</div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <Link href={`/players/${r.userId}`} className="text-sm font-medium text-white truncate hover:text-neon-blue">{name}</Link>
-                            {r.role && <Badge variant="purple" size="sm" className="gap-1"><RoleIcon role={r.role} size={13} /> {t('lane.' + r.role)}</Badge>}
-                          </div>
-                          {r.message && <p className="text-xs text-gray-400 truncate">{r.message}</p>}
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <Button size="sm" disabled={actingId === r.id + 'accepted'} onClick={() => decide(r, 'accepted')}><Check size={14} /></Button>
-                          <Button size="sm" variant="danger" disabled={actingId === r.id + 'rejected'} onClick={() => decide(r, 'rejected')}><X size={14} /></Button>
-                          <Button size="sm" variant="ghost" title={t('teams.contact')} onClick={() => { setContactUser(u); setContactBody(''); }}><MessageSquare size={14} /></Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+            <div className="flex justify-end">
+              <Button size="sm" onClick={() => setNewOpen(true)}><Plus size={15} /> {t('recruitment.new')}</Button>
             </div>
           )}
 
-          {!canManage && !team.isRecruiting && lookingFor.length === 0 && (
-            <p className="text-sm text-gray-500">{t('teams.notRecruitingMsg')}</p>
+          {campaigns.length === 0 ? (
+            <p className="text-sm text-gray-500">{canManage ? t('recruitment.noCampaigns') : t('teams.notRecruitingMsg')}</p>
+          ) : (
+            campaigns.map((c) => {
+              const applied = myAppliedIds.has(c.id);
+              return (
+                <div key={c.id} className="rounded-xl border border-gaming-border bg-gaming-surface/40 p-4">
+                  <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Megaphone size={16} className="text-neon-blue" />
+                      {(c.slots || []).map((s: any) => (
+                        <Badge key={s.role} variant="purple" size="sm" className="gap-1">
+                          <RoleIcon role={s.role} size={13} /> {t('lane.' + s.role)}{s.quantity > 1 && <span className="ml-0.5 opacity-80">×{s.quantity}</span>}
+                        </Badge>
+                      ))}
+                      <Badge variant={c.status === 'open' ? 'green' : 'default'} size="sm">{c.status === 'open' ? t('recruitment.statusOpen') : t('recruitment.statusClosed')}</Badge>
+                    </div>
+                    {canManage ? (
+                      <div className="flex items-center gap-1.5">
+                        <Button size="sm" variant="secondary" onClick={() => toggleCampaign(c)}>{c.status === 'open' ? t('recruitment.close') : t('recruitment.reopen')}</Button>
+                        <Button size="sm" variant="danger" title={t('recruitment.close')} onClick={() => setPendingDel(c)}><Trash2 size={14} /></Button>
+                      </div>
+                    ) : c.status === 'open' && !isMember && myId ? (
+                      applied ? <span className="text-xs text-gray-400">{t('recruitment.applied')}</span> : <Button size="sm" onClick={() => openApply(c)}><Send size={14} /> {t('recruitment.apply')}</Button>
+                    ) : null}
+                  </div>
+                  {c.message && <p className="text-sm text-gray-400 mb-3 whitespace-pre-line">{c.message}</p>}
+
+                  {canManage && (
+                    <div className="pt-3 border-t border-gaming-border">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('recruitment.candidates')}{c.applicationCount ? ` (${c.applicationCount})` : ''}</p>
+                      {(c.applications || []).length === 0 ? (
+                        <p className="text-sm text-gray-500">{t('recruitment.noCandidates')}</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {c.applications.map((a: any) => (
+                            <ApplicationRow key={a.id} a={a} t={t} acting={actingApp} onDecide={decideApp} onContact={(u: any) => { setContactUser(u); setContactBody(''); }} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       )}
@@ -514,38 +462,54 @@ export default function TeamDetailPage() {
       {/* Onglet Matchs */}
       {tab === 'matches' && (
         <div>
-          {amCaptain && (
-            <div className="flex justify-end mb-4">
-              <Button size="sm" onClick={() => setPlanOpen(true)}><Swords size={15} /> {t('teams.planMatch')}</Button>
-            </div>
-          )}
-          {matches.length === 0 ? (
-            <p className="text-sm text-gray-500">{t('teams.detail.noMatches')}</p>
-          ) : (
-            <div className="space-y-2">
-              {matches.map((m, i) => (
-                <MatchRow key={m.id ?? i} m={m} t={t} onResult={amCaptain && m.type !== 'official' ? () => openResult(m) : undefined} />
-              ))}
-            </div>
+          {amCaptain && <div className="flex justify-end mb-4"><Button size="sm" onClick={() => setPlanOpen(true)}><Swords size={15} /> {t('teams.planMatch')}</Button></div>}
+          {matches.length === 0 ? <p className="text-sm text-gray-500">{t('teams.detail.noMatches')}</p> : (
+            <div className="space-y-2">{matches.map((m, i) => <MatchRow key={m.id ?? i} m={m} t={t} onResult={amCaptain && m.type !== 'official' ? () => openResult(m) : undefined} />)}</div>
           )}
         </div>
       )}
 
-      {/* Modal rejoindre */}
-      <Modal open={joinOpen} onClose={() => setJoinOpen(false)} closeLabel={t('common.close')} title={t('teams.joinTitle')}>
-        <p className="text-sm text-gray-400 mb-4">{t('teams.joinHint')}</p>
-        <form onSubmit={submitJoin} className="space-y-3">
+      {/* Modal nouveau recrutement */}
+      <Modal open={newOpen} onClose={() => setNewOpen(false)} closeLabel={t('common.close')} title={t('recruitment.newTitle')}>
+        <form onSubmit={createCampaign} className="space-y-3">
           <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('teams.joinRole')}</label>
-            <RoleSelect value={joinForm.role} onChange={(v) => setJoinForm({ ...joinForm, role: v })} options={LANES} noneLabel={t('admin.esport.noRole')} labelFor={(l) => t('lane.' + l)} />
+            <label className="block text-xs text-gray-400 mb-1">{t('recruitment.pickRoles')}</label>
+            <p className="text-xs text-gray-500 mb-2">{t('recruitment.pickRolesHint')}</p>
+            <div className="space-y-2">
+              {LANES.map((l) => (
+                <div key={l} className="flex items-center gap-2">
+                  <RoleIcon role={l} size={16} />
+                  <span className="text-sm text-gray-200 flex-1">{t('lane.' + l)}</span>
+                  <input type="number" min={0} max={20} value={newSlots[l] || 0} onChange={(e) => setNewSlots({ ...newSlots, [l]: Math.max(0, parseInt(e.target.value, 10) || 0) })} className="w-20 px-2 py-1 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 focus:outline-none focus:border-neon-blue" />
+                </div>
+              ))}
+            </div>
           </div>
           <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('teams.joinMessage')}</label>
-            <textarea className={`${inputCls} min-h-[80px] resize-y`} value={joinForm.message} onChange={(e) => setJoinForm({ ...joinForm, message: e.target.value })} />
+            <label className="block text-xs text-gray-400 mb-1">{t('recruitment.message')}</label>
+            <textarea className={`${inputCls} min-h-[70px] resize-y`} value={newMsg} onChange={(e) => setNewMsg(e.target.value)} />
           </div>
           <div className="flex gap-2 pt-1">
-            <Button size="sm" type="submit" disabled={joining}><UserPlus size={15} /> {t('teams.joinSubmit')}</Button>
-            <Button size="sm" variant="ghost" type="button" onClick={() => setJoinOpen(false)}>{t('admin.esport.cancel')}</Button>
+            <Button size="sm" type="submit" disabled={creating}><Megaphone size={15} /> {t('recruitment.create')}</Button>
+            <Button size="sm" variant="ghost" type="button" onClick={() => setNewOpen(false)}>{t('admin.esport.cancel')}</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal postuler */}
+      <Modal open={!!applyCampaign} onClose={() => setApplyCampaign(null)} closeLabel={t('common.close')} title={t('recruitment.applyTitle')}>
+        <form onSubmit={submitApply} className="space-y-3">
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">{t('recruitment.applyRole')}</label>
+            <RoleSelect value={applyForm.role} onChange={(v) => setApplyForm({ ...applyForm, role: v })} options={(applyCampaign?.slots || []).map((s: any) => s.role)} noneLabel={t('admin.esport.noRole')} labelFor={(l) => t('lane.' + l)} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">{t('recruitment.applyMessage')}</label>
+            <textarea className={`${inputCls} min-h-[80px] resize-y`} value={applyForm.message} onChange={(e) => setApplyForm({ ...applyForm, message: e.target.value })} />
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button size="sm" type="submit" disabled={applying}><Send size={15} /> {t('recruitment.applySubmit')}</Button>
+            <Button size="sm" variant="ghost" type="button" onClick={() => setApplyCampaign(null)}>{t('admin.esport.cancel')}</Button>
           </div>
         </form>
       </Modal>
@@ -584,14 +548,8 @@ export default function TeamDetailPage() {
           <form onSubmit={submitResult} className="space-y-3">
             <p className="text-sm text-white text-center">{resultMatch.teamA?.name} <span className="text-gray-500">vs</span> {resultMatch.teamB?.name}</p>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">{t('admin.matches.scoreA')}</label>
-                <input type="number" min={0} value={resultForm.scoreA} onChange={(e) => setResultForm({ ...resultForm, scoreA: Number(e.target.value) })} className={inputCls} />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">{t('admin.matches.scoreB')}</label>
-                <input type="number" min={0} value={resultForm.scoreB} onChange={(e) => setResultForm({ ...resultForm, scoreB: Number(e.target.value) })} className={inputCls} />
-              </div>
+              <div><label className="block text-xs text-gray-400 mb-1">{t('admin.matches.scoreA')}</label><input type="number" min={0} value={resultForm.scoreA} onChange={(e) => setResultForm({ ...resultForm, scoreA: Number(e.target.value) })} className={inputCls} /></div>
+              <div><label className="block text-xs text-gray-400 mb-1">{t('admin.matches.scoreB')}</label><input type="number" min={0} value={resultForm.scoreB} onChange={(e) => setResultForm({ ...resultForm, scoreB: Number(e.target.value) })} className={inputCls} /></div>
             </div>
             <div>
               <label className="block text-xs text-gray-400 mb-1">{t('admin.matches.winner')}</label>
@@ -609,7 +567,7 @@ export default function TeamDetailPage() {
         )}
       </Modal>
 
-      {/* Modal contacter un candidat */}
+      {/* Modal contacter */}
       <Modal open={!!contactUser} onClose={() => setContactUser(null)} closeLabel={t('common.close')} title={`${t('messages.newMessageTo')} ${contactUser?.displayName || contactUser?.username || ''}`}>
         <form onSubmit={sendContact} className="space-y-3">
           <textarea className={`${inputCls} min-h-[100px] resize-y`} value={contactBody} onChange={(e) => setContactBody(e.target.value)} placeholder={t('messages.placeholder')} required />
@@ -619,6 +577,18 @@ export default function TeamDetailPage() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        open={!!pendingDel}
+        onClose={() => setPendingDel(null)}
+        onConfirm={doDeleteCampaign}
+        danger
+        title={t('admin.confirm.title')}
+        message={t('recruitment.deleteConfirm')}
+        confirmLabel={t('admin.esport.delete')}
+        cancelLabel={t('admin.esport.cancel')}
+        closeLabel={t('common.close')}
+      />
     </div>
   );
 }
