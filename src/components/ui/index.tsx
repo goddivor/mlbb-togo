@@ -100,7 +100,7 @@ export function Button({
 /* ------------------------------------------------------------------ */
 
 export function Card({ children, className, hover = false, glow = false, ...props }: any) {
-  // hover/glow sont consommés ici pour ne pas fuir en attributs DOM.
+  // hover/glow are consumed here so they don't leak as DOM attributes.
   return (
     <div
       className={cn(

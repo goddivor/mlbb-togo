@@ -146,7 +146,7 @@ export default function TeamsPage() {
         }
       />
 
-      {/* Organisation esport */}
+      {/* Esport organisation */}
       {org && (
         <SectionCard className="flex items-center gap-4">
           {org.logo && (
@@ -167,7 +167,7 @@ export default function TeamsPage() {
         </SectionCard>
       )}
 
-      {/* Onglets + recherche */}
+      {/* Tabs + search */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <Tabs
           active={tab}
@@ -191,7 +191,7 @@ export default function TeamsPage() {
         </div>
       </div>
 
-      {/* Contenu de l'onglet actif */}
+      {/* Active tab content */}
       {loading ? (
         <LoadingSpinner size="lg" className="py-24" />
       ) : activeList.length === 0 ? (

@@ -47,40 +47,75 @@ interface RequestOptions {
   auth?: boolean;
 }
 
+// Lightweight in-memory cache + GET request de-duplication. Avoids repeated or
+// concurrent calls (React StrictMode double-invoke in dev, navigations, several
+// components reading the same resource). Any write clears the cache to stay fresh.
+const GET_TTL = 20_000; // 20s
+const getCache = new Map<string, { at: number; data: any }>();
+const inFlight = new Map<string, Promise<any>>();
+
+export function clearApiCache() {
+  getCache.clear();
+  inFlight.clear();
+}
+
 async function request<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, fallback, auth = true } = options;
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const isGet = method === 'GET';
   const token = getToken();
+
+  // A write may make the read cache stale.
+  if (!isGet) getCache.clear();
+
+  const key = `${path}|${auth && token ? 'a' : 'g'}`;
+
+  if (isGet) {
+    const cached = getCache.get(key);
+    if (cached && Date.now() - cached.at < GET_TTL) return cached.data as T;
+    const pending = inFlight.get(key);
+    if (pending) return pending as Promise<T>;
+  }
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (auth && token) headers['Authorization'] = `Bearer ${token}`;
 
-  try {
-    const res = await fetch(`${API_URL}${path}`, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-      cache: 'no-store',
-    });
-    if (!res.ok) {
-      let message = `Erreur ${res.status}`;
-      try {
-        const data = await res.json();
-        message = data.message || message;
-      } catch {
-
+  const doFetch = async (): Promise<T> => {
+    try {
+      const res = await fetch(`${API_URL}${path}`, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+        cache: 'no-store',
+      });
+      if (!res.ok) {
+        let message = `Erreur ${res.status}`;
+        try {
+          const data = await res.json();
+          message = data.message || message;
+        } catch {
+          //
+        }
+        throw new ApiError(message, res.status);
       }
-      throw new ApiError(message, res.status);
+      const data = res.status === 204 ? (undefined as T) : ((await res.json()) as T);
+      if (isGet) getCache.set(key, { at: Date.now(), data });
+      return data;
+    } catch (err) {
+      if (fallback !== undefined) {
+        // eslint-disable-next-line no-console
+        console.warn(`[api] échec sur ${path}, repli.`);
+        return fallback as T;
+      }
+      throw err;
     }
-    if (res.status === 204) return undefined as T;
-    return (await res.json()) as T;
-  } catch (err) {
+  };
 
-    if (fallback !== undefined) {
-      // eslint-disable-next-line no-console
-      console.warn(`[api] échec sur ${path}, repli.`);
-      return fallback as T;
-    }
-    throw err;
-  }
+  if (!isGet) return doFetch();
+
+  // De-duplication: identical in-flight GETs share one promise.
+  const p = doFetch().finally(() => inFlight.delete(key));
+  inFlight.set(key, p);
+  return p;
 }
 
 export class ApiError extends Error {
