@@ -53,7 +53,7 @@ export default function AdminUsers() {
     toast.success(`${user.username} promu ${newRole}`);
   };
 
-  // Suppression confirmée via ConfirmModal
+  // Deletion confirmed via ConfirmModal
   const confirmDelete = () => {
     const user = deleteTarget;
     deletePlayer(user.id);
@@ -74,7 +74,7 @@ export default function AdminUsers() {
         variant="blue"
       />
 
-      {/* Filtres */}
+      {/* Filters */}
       <SectionCard className="!p-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -90,7 +90,7 @@ export default function AdminUsers() {
         </div>
       </SectionCard>
 
-      {/* Table utilisateurs */}
+      {/* Users table */}
       <div className="bg-gaming-card border border-gaming-border rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -168,7 +168,7 @@ export default function AdminUsers() {
         )}
       </div>
 
-      {/* Profil utilisateur */}
+      {/* User profile */}
       <Modal
         open={showModal && !!selectedUser}
         onClose={() => setShowModal(false)}
@@ -193,7 +193,7 @@ export default function AdminUsers() {
         )}
       </Modal>
 
-      {/* Suppression */}
+      {/* Deletion */}
       <ConfirmModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}

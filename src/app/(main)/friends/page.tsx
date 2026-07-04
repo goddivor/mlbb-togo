@@ -41,7 +41,7 @@ export default function FriendsPage() {
     })();
   }, []);
 
-  // Rafraîchit sur notification d'ami en direct.
+  // Refresh on live friend notification.
   useEffect(() => {
     const s = getSocket();
     if (!s) return;
@@ -67,7 +67,7 @@ export default function FriendsPage() {
     }
   };
 
-  // Confirmation de suppression / refus.
+  // Removal / refusal confirmation.
   const runConfirm = async () => {
     if (!confirm) return;
     const u = confirm.user;
@@ -177,7 +177,7 @@ export default function FriendsPage() {
         </div>
       )}
 
-      {/* Confirmation retrait / refus */}
+      {/* Removal / refusal confirmation */}
       <ConfirmModal
         open={!!confirm}
         onClose={() => setConfirm(null)}

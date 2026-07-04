@@ -1,19 +1,19 @@
 import type { ComponentType } from 'react';
 
 /**
- * Tokens de design centralisés (façon ShortHub, adaptés à l'identité
- * sombre/gaming de MLBB Togo). L'accent de marque est le dégradé
- * bleu néon -> violet propre à l'univers Mobile Legends.
+ * Centralized design tokens (ShortHub-style, adapted to the dark/gaming
+ * identity of MLBB Togo). The brand accent is the neon blue -> purple
+ * gradient specific to the Mobile Legends universe.
  *
- * La plupart des composants consomment directement les classes Tailwind
- * (tokens `gaming-*`, `neon-*`, `primary-*`), mais ce fichier fait office
- * de référence unique pour les valeurs sémantiques et les dégradés.
+ * Most components consume the Tailwind classes directly (`gaming-*`,
+ * `neon-*`, `primary-*` tokens), but this file acts as the single
+ * reference for semantic values and gradients.
  */
 
 export interface AppTheme {
   primary: string;
   primaryPurple: string;
-  gradient: string; // classes tailwind du dégradé de marque
+  gradient: string; // tailwind classes for the brand gradient
   bgPrimary: string;
   textPrimary: string;
   borderPrimary: string;
@@ -30,7 +30,7 @@ export const theme: AppTheme = {
   ringPrimary: 'ring-neon-blue',
 };
 
-/** Couleurs sémantiques (hex) pour icônes et accents ponctuels. */
+/** Semantic colors (hex) for icons and occasional accents. */
 export const colors = {
   primary: '#00d4ff',
   purple: '#a855f7',
@@ -49,8 +49,8 @@ export const radius = { sm: '6px', md: '8px', lg: '12px', xl: '16px', full: '999
 export const shadows = { sm: 'shadow-sm', md: 'shadow-md', lg: 'shadow-lg', xl: 'shadow-xl' };
 
 /**
- * Dégradés de bannière d'en-tête de page. Choisis pour garder un bon
- * contraste avec le texte blanc tout en restant dans l'univers néon.
+ * Page header banner gradients. Chosen to keep good contrast with white
+ * text while staying within the neon universe.
  */
 export const banners = {
   default: 'from-primary-600 via-primary-700 to-neon-purple',
@@ -72,17 +72,17 @@ export const sidebarStyles = {
   activeIndicatorWidth: '3px',
 };
 
-/** Structure d'un item de menu déclaratif. */
+/** Structure of a declarative menu item. */
 export interface MenuItemConfig {
   href: string;
-  labelKey: string; // clé i18n
+  labelKey: string; // i18n key
   icon: ComponentType<{ size?: number | string; className?: string }>;
-  descKey?: string; // clé i18n de la description (optionnelle)
+  descKey?: string; // i18n key of the description (optional)
 }
 
 export interface MenuGroupConfig {
   id: string;
-  titleKey?: string; // clé i18n du titre de section (optionnelle)
+  titleKey?: string; // i18n key of the section title (optional)
   collapsible?: boolean;
   defaultOpen?: boolean;
   items: MenuItemConfig[];

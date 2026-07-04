@@ -116,7 +116,7 @@ export function Card({ children, className, hover = false, glow = false, ...prop
   );
 }
 
-/** Carte de section neutre (filtres, blocs de contenu). */
+/** Neutral section card (filters, content blocks). */
 export function SectionCard({ children, className, ...props }: any) {
   return (
     <div
@@ -163,7 +163,7 @@ export function Badge({ children, variant = 'default', size = 'md', className }:
 }
 
 /* ------------------------------------------------------------------ */
-/* Champs de formulaire                                                */
+/* Form fields                                                        */
 /* ------------------------------------------------------------------ */
 
 const fieldBase =
@@ -284,7 +284,7 @@ export function ProgressBar({ value, max = 100, className }: any) {
 }
 
 /* ------------------------------------------------------------------ */
-/* StatCard — dans les bannières (fond translucide) ou en grille       */
+/* StatCard - in banners (translucent background) or in a grid         */
 /* ------------------------------------------------------------------ */
 
 export function StatCard({ label, value, icon, trend, translucent = false, className }: any) {
@@ -320,7 +320,7 @@ export function StatCard({ label, value, icon, trend, translucent = false, class
 }
 
 /* ------------------------------------------------------------------ */
-/* PageHeader — bannière dégradée signature                            */
+/* PageHeader - signature gradient banner                              */
 /* ------------------------------------------------------------------ */
 
 export function PageHeader({
@@ -336,7 +336,7 @@ export function PageHeader({
   title: React.ReactNode;
   subtitle?: React.ReactNode;
   action?: React.ReactNode;
-  children?: React.ReactNode; // grille de StatCard translucides
+  children?: React.ReactNode; // grid of translucent StatCards
   variant?: BannerVariant;
   className?: string;
 }) {

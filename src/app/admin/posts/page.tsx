@@ -28,7 +28,7 @@ export default function AdminPosts() {
     return matchSearch && matchCat;
   });
 
-  // Suppression confirmée via ConfirmModal
+  // Deletion confirmed via ConfirmModal
   const confirmDelete = () => {
     const post = deleteTarget;
     setPosts(posts.filter((p) => p.id !== post.id));
@@ -55,7 +55,7 @@ export default function AdminPosts() {
         variant="green"
       />
 
-      {/* Filtres */}
+      {/* Filters */}
       <SectionCard className="!p-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -68,7 +68,7 @@ export default function AdminPosts() {
         </div>
       </SectionCard>
 
-      {/* Liste des posts */}
+      {/* Posts list */}
       <div className="space-y-3">
         {filtered.map((post: any, i: number) => (
           <motion.div key={post.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-gaming-card border border-gaming-border rounded-xl p-5 hover:border-emerald-400/30 transition-all">
@@ -98,7 +98,7 @@ export default function AdminPosts() {
         )}
       </div>
 
-      {/* Suppression */}
+      {/* Deletion */}
       <ConfirmModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}

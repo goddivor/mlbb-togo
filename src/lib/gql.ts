@@ -9,8 +9,8 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3006/api';
 export const GQL_URL = `${API_BASE.replace(/\/api\/?$/, '')}/graphql`;
 
 /**
- * Exécute une requête GraphQL et renvoie `data` typé.
- * Lève une erreur si le serveur renvoie des `errors`.
+ * Execute a GraphQL query and return typed `data`.
+ * Throws an error if the server returns `errors`.
  */
 // Cache + de-duplication (same idea as the REST client): avoids StrictMode
 // duplicates and identical re-reads on the landing.

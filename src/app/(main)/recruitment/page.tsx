@@ -81,7 +81,7 @@ export default function RecruitmentPage() {
         variant="purple"
       />
 
-      {/* Filtre par rôle */}
+      {/* Role filter */}
       <SectionCard className="!p-4">
         <div className="flex flex-wrap gap-2">
           <button
@@ -160,7 +160,7 @@ export default function RecruitmentPage() {
         </div>
       )}
 
-      {/* Modale de candidature */}
+      {/* Application modal */}
       <Modal
         open={!!apply}
         onClose={() => setApply(null)}

@@ -30,12 +30,12 @@ export default function Modal({
   subtitle?: React.ReactNode;
   icon?: React.ReactNode;
   children: React.ReactNode;
-  /** Taille sm | md | lg | xl. Ignorée si `maxWidth` est fourni. */
+  /** Size sm | md | lg | xl. Ignored if `maxWidth` is provided. */
   size?: 'sm' | 'md' | 'lg' | 'xl';
-  /** Override direct de la largeur (ex. "max-w-3xl"). Prioritaire sur `size`. */
+  /** Direct width override (e.g. "max-w-3xl"). Takes precedence over `size`. */
   maxWidth?: string;
   closeLabel?: string;
-  /** "plain" (header sobre) ou "gradient" (bandeau dégradé coloré). */
+  /** "plain" (subtle header) or "gradient" (colored gradient banner). */
   headerVariant?: 'plain' | 'gradient';
   headerGradient?: string;
 }) {

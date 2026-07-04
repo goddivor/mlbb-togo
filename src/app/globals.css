@@ -13,7 +13,7 @@
     --color-gaming-border: #1e1e3f;
     --color-gaming-surface: #1a1a3e;
 
-    /* Palette pilotée (triplets RGB) — valeurs SOMBRES par défaut. */
+    /* Driven palette (RGB triplets) - DARK values by default. */
     --gaming-dark: 10 10 26;
     --gaming-darker: 5 5 16;
     --gaming-card: 18 18 42;
@@ -23,7 +23,7 @@
     --page-text: #e2e8f0;
   }
 
-  /* Thème SOMBRE (classe .dark présente sur <html>). */
+  /* DARK theme (.dark class present on <html>). */
   .dark {
     --gaming-dark: 10 10 26;
     --gaming-darker: 5 5 16;
@@ -34,7 +34,7 @@
     --page-text: #e2e8f0;
   }
 
-  /* Thème CLAIR (pas de classe .dark). */
+  /* LIGHT theme (no .dark class). */
   html:not(.dark) {
     --gaming-dark: 243 244 248;
     --gaming-darker: 248 250 252;
@@ -327,11 +327,11 @@
 .role-support { color: #1abc9c; }
 
 /* ============================================================
-   THÈME CLAIR — ajustements (les fonds/bordures gaming-* basculent
-   déjà via les variables CSS ; ici on traite cartes, inputs et texte).
+   LIGHT THEME - adjustments (gaming-* backgrounds/borders already
+   switch via CSS variables; here we handle cards, inputs and text).
    ============================================================ */
 
-/* Cartes */
+/* Cards */
 html:not(.dark) .card-gaming {
   background: #ffffff;
   border-color: rgb(226 232 240);
@@ -342,7 +342,7 @@ html:not(.dark) .card-gaming:hover {
   box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
 }
 
-/* Champs de saisie */
+/* Input fields */
 html:not(.dark) .input-gaming {
   background: #ffffff;
   color: #0f172a;
@@ -350,14 +350,14 @@ html:not(.dark) .input-gaming {
 html:not(.dark) .input-gaming::placeholder { color: #94a3b8; }
 html:not(.dark) .input-gaming:focus { background: #ffffff; }
 
-/* Squelette de chargement */
+/* Loading skeleton */
 html:not(.dark) .skeleton { background: rgb(226 232 240); }
 
-/* Barre de défilement claire */
+/* Light scrollbar */
 html:not(.dark) *::-webkit-scrollbar-track { background: #e2e8f0; }
 html:not(.dark) *::-webkit-scrollbar-thumb { background: #94a3b8; }
 
-/* Texte : bascule des blancs/gris codés en dur */
+/* Text: switch hardcoded whites/grays */
 html:not(.dark) .text-white { color: #0f172a; }
 html:not(.dark) .text-gray-200 { color: #1e293b; }
 html:not(.dark) .text-gray-300 { color: #475569; }
@@ -365,7 +365,7 @@ html:not(.dark) .text-gray-400 { color: #64748b; }
 html:not(.dark) .text-gray-500 { color: #64748b; }
 html:not(.dark) .text-gray-600 { color: #475569; }
 
-/* Conserver le texte BLANC sur les éléments colorés / dégradés */
+/* Keep WHITE text on colored / gradient elements */
 html:not(.dark) .btn-primary,
 html:not(.dark) .text-white.bg-gradient-to-br,
 html:not(.dark) .text-white.bg-gradient-to-r,

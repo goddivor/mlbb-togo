@@ -107,7 +107,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
-      {/* Bannière profil + compteurs clés */}
+      {/* Profile banner + key counters */}
       <PageHeader
         variant="default"
         icon={
@@ -147,7 +147,7 @@ export default function Dashboard() {
         </div>
       </PageHeader>
 
-      {/* Identité de jeu : rang, niveau, rôles */}
+      {/* Game identity: rank, level, roles */}
       <SectionCard className="flex flex-wrap items-center gap-3 !p-4">
         {userProfile.gameRank && (
           <div className="flex items-center gap-2">
@@ -186,7 +186,7 @@ export default function Dashboard() {
       </SectionCard>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Détail des stats */}
+        {/* Stats detail */}
         <Card hover={false}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-white">{t('dashboard.detail.title')}</h3>
@@ -236,7 +236,7 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        {/* Héros favoris */}
+        {/* Favorite heroes */}
         <Card hover={false} className="lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <h3 className="font-bold text-white">{t('dashboard.favorites.title')}</h3>

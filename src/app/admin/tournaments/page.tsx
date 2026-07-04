@@ -26,7 +26,7 @@ export default function AdminTournaments() {
     return matchSearch && matchStatus;
   });
 
-  // Suppression confirmée via ConfirmModal
+  // Deletion confirmed via ConfirmModal
   const confirmDelete = () => {
     const t = deleteTarget;
     deleteTournament(t.id);
@@ -48,7 +48,7 @@ export default function AdminTournaments() {
         variant="gold"
       />
 
-      {/* Filtres */}
+      {/* Filters */}
       <SectionCard className="!p-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -64,7 +64,7 @@ export default function AdminTournaments() {
         </div>
       </SectionCard>
 
-      {/* Liste des tournois */}
+      {/* Tournaments list */}
       <div className="space-y-4">
         {filtered.map((t: any, i: number) => (
           <motion.div key={t.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} className="bg-gaming-card border border-gaming-border rounded-xl p-5 hover:border-amber-400/30 transition-all">
@@ -95,7 +95,7 @@ export default function AdminTournaments() {
         )}
       </div>
 
-      {/* Suppression */}
+      {/* Deletion */}
       <ConfirmModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}

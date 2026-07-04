@@ -130,7 +130,7 @@ export default function ProfilePage() {
         variant="purple"
       />
 
-      {/* En-tête d'identité */}
+      {/* Identity header */}
       <Card>
         <div className="flex items-center gap-4">
           <Avatar name={name} src={userProfile.avatar ? avatarSrc(userProfile.avatar, 160) : undefined} size="xl" />
@@ -298,7 +298,7 @@ export default function ProfilePage() {
 
       <LinkGameModal open={linkGameOpen} onClose={() => setLinkGameOpen(false)} />
 
-      {/* Confirmation de dissociation du compte de jeu */}
+      {/* Game account unlink confirmation */}
       <ConfirmModal
         open={unlinkOpen}
         onClose={() => setUnlinkOpen(false)}

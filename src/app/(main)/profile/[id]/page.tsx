@@ -42,7 +42,7 @@ function ProfileView({ player }: { player: any }) {
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
 
-      {/* En-tête de profil */}
+      {/* Profile header */}
       <Card>
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <Avatar name={player.username} size="xl" online={player.isOnline} />

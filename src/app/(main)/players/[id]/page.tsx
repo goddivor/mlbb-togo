@@ -80,7 +80,7 @@ export default function PublicProfilePage() {
         <ArrowLeft size={16} /> {t('users.back')}
       </Link>
 
-      {/* En-tête profil */}
+      {/* Profile header */}
       <Card hover={false}>
         <div className="flex flex-col sm:flex-row items-center gap-5">
           <Avatar name={name} src={user.avatar ? avatarSrc(user.avatar, 160) : undefined} size="xl" />
