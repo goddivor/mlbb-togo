@@ -99,11 +99,14 @@ export function Button({
 /* Card / SectionCard                                                  */
 /* ------------------------------------------------------------------ */
 
-export function Card({ children, className, ...props }: any) {
+export function Card({ children, className, hover = false, glow = false, ...props }: any) {
+  // hover/glow sont consommés ici pour ne pas fuir en attributs DOM.
   return (
     <div
       className={cn(
         'rounded-xl border border-gaming-border bg-gaming-card shadow-gaming p-6',
+        hover && 'transition-colors hover:border-neon-blue/30',
+        glow && 'shadow-neon',
         className
       )}
       {...props}

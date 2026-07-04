@@ -13,6 +13,7 @@ import {
   PageHeader,
   EmptyState,
   LoadingSpinner,
+  Tabs,
 } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
@@ -73,6 +74,7 @@ export default function TeamsPage() {
   const [community, setCommunity] = useState<EsportTeam[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const [tab, setTab] = useState<'esport' | 'community'>('esport');
 
   useEffect(() => {
     Promise.all([api.esport.org(), api.esport.teams('community')])
@@ -95,6 +97,9 @@ export default function TeamsPage() {
   };
   const filteredEsport = useMemo(() => byQuery(esportTeams), [esportTeams, query]);
   const filteredCommunity = useMemo(() => byQuery(community), [community, query]);
+
+  const activeList = tab === 'esport' ? filteredEsport : filteredCommunity;
+  const activeAccent = tab === 'esport' ? accent : '#5b6b8c';
 
   const [proposeOpen, setProposeOpen] = useState(false);
   const [form, setForm] = useState({ proposedName: '', message: '' });
@@ -141,22 +146,6 @@ export default function TeamsPage() {
         }
       />
 
-      {/* Barre de recherche */}
-      <SectionCard className="!p-4">
-        <div className="relative">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 z-10"
-          />
-          <Input
-            value={query}
-            onChange={(e: any) => setQuery(e.target.value)}
-            placeholder={t('teams.search')}
-            className="pl-9"
-          />
-        </div>
-      </SectionCard>
-
       {/* Organisation esport */}
       {org && (
         <SectionCard className="flex items-center gap-4">
@@ -178,39 +167,43 @@ export default function TeamsPage() {
         </SectionCard>
       )}
 
+      {/* Onglets + recherche */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <Tabs
+          active={tab}
+          onChange={(id: 'esport' | 'community') => setTab(id)}
+          tabs={[
+            { id: 'esport', label: `${t('teams.sectionEsport')} (${esportTeams.length})`, icon: Shield },
+            { id: 'community', label: `${t('teams.sectionCommunity')} (${community.length})`, icon: Users },
+          ]}
+        />
+        <div className="relative w-full sm:w-72">
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 z-10"
+          />
+          <Input
+            value={query}
+            onChange={(e: any) => setQuery(e.target.value)}
+            placeholder={t('teams.search')}
+            className="pl-9"
+          />
+        </div>
+      </div>
+
+      {/* Contenu de l'onglet actif */}
       {loading ? (
         <LoadingSpinner size="lg" className="py-24" />
-      ) : total === 0 ? (
-        <EmptyState icon={<Shield size={28} />} title={t('teams.empty')} />
-      ) : filteredEsport.length === 0 && filteredCommunity.length === 0 ? (
-        <EmptyState icon={<Search size={28} />} title={t('teams.none')} />
+      ) : activeList.length === 0 ? (
+        <EmptyState
+          icon={tab === 'esport' ? <Shield size={28} /> : <Users size={28} />}
+          title={query.trim() ? t('teams.none') : t('teams.empty')}
+        />
       ) : (
-        <div className="space-y-8">
-          {filteredEsport.length > 0 && (
-            <section>
-              <h2 className="text-sm font-bold uppercase tracking-wide text-neon-gold mb-3">
-                {t('teams.sectionEsport')}
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredEsport.map((tm) => (
-                  <TeamCard key={tm.id} tm={tm} accent={accent} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {filteredCommunity.length > 0 && (
-            <section>
-              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-300 mb-3">
-                {t('teams.sectionCommunity')}
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredCommunity.map((tm) => (
-                  <TeamCard key={tm.id} tm={tm} accent="#5b6b8c" />
-                ))}
-              </div>
-            </section>
-          )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {activeList.map((tm) => (
+            <TeamCard key={tm.id} tm={tm} accent={activeAccent} />
+          ))}
         </div>
       )}
 
