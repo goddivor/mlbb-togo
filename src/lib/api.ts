@@ -225,19 +225,19 @@ export const api = {
     list: (role?: string) =>
       request(`/heroes${role ? `?role=${role}` : ''}`, { fallback: [], auth: false }),
     get: (id: string) => request(`/heroes/${id}`, { auth: false }),
-    // Admin : resynchronise les héros depuis MLBB, renvoie { updated }.
+    // Admin: resync heroes from MLBB, returns { updated }.
     refresh: (): Promise<{ updated: number }> =>
       request('/heroes/refresh', { method: 'POST' }),
   },
 
   lanes: {
     list: () => request('/lanes', { fallback: [], auth: false }),
-    // Admin : met à jour une lane par sa clé.
+    // Admin: update a lane by its key.
     update: (key: string, payload: any) =>
       request(`/lanes/${key}`, { method: 'PATCH', body: payload }),
   },
 
-  // Couche lecture via GraphQL (/graphql) — mêmes formes que le REST.
+  // Read layer via GraphQL (/graphql) - same shapes as REST.
   catalog: {
     esportOrg: () =>
       gql<{ esportOrg: any }>(

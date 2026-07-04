@@ -21,7 +21,7 @@ export default function AdminTeams() {
 
   const filtered = teams.filter((t: any) => t.name.toLowerCase().includes(search.toLowerCase()));
 
-  // Suppression confirmée via ConfirmModal
+  // Deletion confirmed via ConfirmModal
   const confirmDelete = () => {
     const team = deleteTarget;
     deleteTeam(team.id);
@@ -40,13 +40,13 @@ export default function AdminTeams() {
         variant="purple"
       />
 
-      {/* Recherche */}
+      {/* Search */}
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher une équipe..." className="w-full pl-10 pr-4 py-2.5 bg-gaming-surface border border-gaming-border rounded-lg text-gray-100 placeholder-gray-500 focus:border-neon-blue focus:outline-none focus:ring-2 focus:ring-neon-blue/50" />
       </div>
 
-      {/* Grille d'équipes */}
+      {/* Teams grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map((team: any, i: number) => (
           <motion.div key={team.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-gaming-card border border-gaming-border rounded-xl p-5 hover:border-neon-purple/30 transition-all">
@@ -77,7 +77,7 @@ export default function AdminTeams() {
         <EmptyState icon={<Users size={28} />} title="Aucune équipe" description="Aucune équipe ne correspond à votre recherche." />
       )}
 
-      {/* Suppression */}
+      {/* Deletion */}
       <ConfirmModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}

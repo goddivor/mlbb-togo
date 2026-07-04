@@ -89,7 +89,7 @@ export default function MessagesInbox() {
     }
   }, [text, activeId, sending, scrollToBottom, loadThreads, t]);
 
-  // Réception des messages en direct (WebSocket).
+  // Live message reception (WebSocket).
   useEffect(() => {
     const s = getSocket();
     if (!s) return;
@@ -139,7 +139,7 @@ export default function MessagesInbox() {
 
   return (
     <div className="flex gap-4 h-[calc(100vh-12rem)] min-h-[24rem]">
-      {/* Volet gauche : liste des conversations */}
+      {/* Left pane: conversation list */}
       <div
         className={`${
           activeId ? 'hidden sm:flex' : 'flex'
@@ -213,7 +213,7 @@ export default function MessagesInbox() {
         </div>
       </div>
 
-      {/* Volet droit : fil de discussion */}
+      {/* Right pane: discussion thread */}
       <div
         className={`${
           activeId ? 'flex' : 'hidden sm:flex'
@@ -226,7 +226,7 @@ export default function MessagesInbox() {
           </div>
         ) : (
           <>
-            {/* En-tête */}
+            {/* Header */}
             <div className="flex items-center gap-2 p-3 border-b border-gaming-border shrink-0">
               <button
                 type="button"
@@ -296,7 +296,7 @@ export default function MessagesInbox() {
               )}
             </div>
 
-            {/* Saisie */}
+            {/* Input */}
             <div className="flex items-end gap-2 p-3 border-t border-gaming-border shrink-0">
               <textarea
                 value={text}

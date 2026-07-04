@@ -41,7 +41,7 @@ export default function AdminRequestsPage() {
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
 
-  // Modal de création d'équipe (depuis une demande)
+  // Team creation modal (from a request)
   const [createReq, setCreateReq] = useState<any | null>(null);
   const [createForm, setCreateForm] = useState({ name: '', image: '', description: '' });
   const [creating, setCreating] = useState(false);
@@ -84,7 +84,7 @@ export default function AdminRequestsPage() {
     setCreateForm({ name: r.proposedName || '', image: '', description: '' });
   };
 
-  // Accepter : on marque approuvée puis on ouvre le modal de création prérempli.
+  // Accept: mark as approved then open the prefilled creation modal.
   const approveAndCreate = async (r: any) => {
     setActing(r.id + 'approved');
     try {

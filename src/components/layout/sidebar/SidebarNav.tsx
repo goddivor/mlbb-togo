@@ -4,7 +4,7 @@ import type { MenuGroupConfig } from '@/config/theme';
 import { useT } from '@/lib/i18n';
 import SidebarItem from './SidebarItem';
 
-/** Rend une liste de groupes de menu déclaratifs (titre de section + items). */
+/** Renders a list of declarative menu groups (section title + items). */
 export default function SidebarNav({ groups }: { groups: MenuGroupConfig[] }) {
   const t = useT();
   return (

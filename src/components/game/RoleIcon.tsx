@@ -3,7 +3,7 @@
 import { mlbbImg } from '@/lib/api';
 import { MLBB_ROLE_ICONS } from '@/lib/constants';
 
-// Les rôles esport (lanes) réutilisent les icônes de classe du jeu.
+// Esport roles (lanes) reuse the game's class icons.
 const LANE_TO_CLASS: Record<string, string> = {
   roam: 'tank',
   exp: 'fighter',

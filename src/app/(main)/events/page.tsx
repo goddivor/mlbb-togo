@@ -22,7 +22,7 @@ const MONTH_KEYS = [
   'events.month.sep', 'events.month.oct', 'events.month.nov', 'events.month.dec',
 ];
 
-// Styles de bordure/fond par type d'évènement
+// Border/background styles per event type
 const eventTypeCard: Record<string, string> = {
   scrim: 'bg-neon-blue/10 border-neon-blue/30',
   coaching: 'bg-neon-purple/10 border-neon-purple/30',
@@ -236,7 +236,7 @@ export default function Events() {
         </div>
       </div>
 
-      {/* Modale de création d'évènement */}
+      {/* Event creation modal */}
       <Modal
         open={showCreate}
         onClose={() => setShowCreate(false)}

@@ -56,7 +56,7 @@ export default function ConfirmModal({
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: Variant;
-  /** Alias rétrocompatible : `danger` => variant "danger". */
+  /** Backward-compatible alias: `danger` => variant "danger". */
   danger?: boolean;
   loading?: boolean;
   loadingLabel?: string;

@@ -46,7 +46,7 @@ export function useIsOnline(userId?: string): boolean {
   return usePresence((s) => (userId ? s.online.has(userId) : false));
 }
 
-/** Ouvre (une seule fois) la connexion temps réel et alimente la présence. */
+/** Open (once) the real-time connection and feed presence. */
 export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = getToken();

@@ -266,7 +266,7 @@ export default function Forum() {
         </div>
       </div>
 
-      {/* Modale de création de sujet */}
+      {/* Post creation modal */}
       <Modal
         open={showCreate}
         onClose={() => setShowCreate(false)}

@@ -154,7 +154,7 @@ export default function FormBuilder() {
         action={<Button size="sm" onClick={startCreate}><Plus size={16} /> Créer</Button>}
       />
 
-      {/* Onglets */}
+      {/* Tabs */}
       <SectionCard className="!p-4">
         <Tabs
           tabs={[
@@ -241,7 +241,7 @@ export default function FormBuilder() {
         </div>
       )}
 
-      {/* Réponses du formulaire */}
+      {/* Form responses */}
       <Modal
         open={!!viewingResponses}
         onClose={() => setViewingResponses(null)}

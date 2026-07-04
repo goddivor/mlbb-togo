@@ -52,7 +52,7 @@ export default function HeroesPage() {
         subtitle={loading ? t('heroes.loading') : `${heroes.length} ${t('heroes.count')}`}
       />
 
-      {/* Filtres : recherche + rôles */}
+      {/* Filters: search + roles */}
       <SectionCard className="flex flex-col gap-3 !p-4">
         <div className="relative w-full sm:max-w-xs">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />

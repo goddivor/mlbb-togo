@@ -18,7 +18,7 @@ import {
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 
-// Forme d'une lane telle que renvoyée par GraphQL / REST.
+// Shape of a lane as returned by GraphQL / REST.
 interface Lane {
   id: string;
   key: string;
@@ -31,7 +31,7 @@ interface Lane {
   sort: number;
 }
 
-// Champs éditables dans la modale (classes en chaîne séparée par virgules).
+// Editable fields in the modal (classes as a comma-separated string).
 type LaneForm = {
   name: string;
   shortName: string;
@@ -53,7 +53,7 @@ export default function AdminCatalogPage() {
   const [form, setForm] = useState<LaneForm | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Charge lanes + nombre de héros via GraphQL.
+  // Load lanes + hero count via GraphQL.
   const load = async () => {
     try {
       const [ls, hs] = await Promise.all([
@@ -153,7 +153,7 @@ export default function AdminCatalogPage() {
         <LoadingSpinner size="lg" className="py-24" />
       ) : (
         <>
-          {/* Section Lanes */}
+          {/* Lanes section */}
           <SectionCard>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-white">Lanes</h2>
@@ -205,7 +205,7 @@ export default function AdminCatalogPage() {
             </div>
           </SectionCard>
 
-          {/* Section Héros */}
+          {/* Heroes section */}
           <SectionCard>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
@@ -222,7 +222,7 @@ export default function AdminCatalogPage() {
         </>
       )}
 
-      {/* Modale d'édition d'une lane */}
+      {/* Lane edit modal */}
       <Modal
         open={!!editKey}
         onClose={closeEdit}

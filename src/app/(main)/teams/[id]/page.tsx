@@ -21,7 +21,7 @@ import { useT } from '@/lib/i18n';
 import toast from 'react-hot-toast';
 
 const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
-// Champ compact (quantité de slots) : Input ne convient pas en ligne
+// Compact field (slot quantity): Input doesn't fit inline
 const numCls =
   'w-20 px-2 py-1 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 focus:outline-none focus:border-neon-blue';
 
@@ -126,7 +126,7 @@ export default function TeamDetailPage() {
 
   const err = (e: any) => toast.error(e?.message || t('common.error'));
 
-  // --- Recrutement (campagnes) ---
+  // --- Recruitment (campaigns) ---
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [myAppliedIds, setMyAppliedIds] = useState<Set<string>>(new Set());
   const [actingApp, setActingApp] = useState<string | null>(null);
@@ -202,14 +202,14 @@ export default function TeamDetailPage() {
     } catch (e2: any) { err(e2); } finally { setApplying(false); }
   };
 
-  // --- Membres (capitaine) ---
+  // --- Members (captain) ---
   const [busyMember, setBusyMember] = useState(false);
   const runMember = async (fn: () => Promise<any>) => {
     setBusyMember(true);
     try { await fn(); await refresh(); } catch (e2: any) { err(e2); } finally { setBusyMember(false); }
   };
 
-  // --- Matchs (capitaine) ---
+  // --- Matches (captain) ---
   const [planOpen, setPlanOpen] = useState(false);
   const [otherTeams, setOtherTeams] = useState<any[]>([]);
   const [planForm, setPlanForm] = useState({ opponentId: '', type: 'friendly', scheduledAt: '' });
@@ -247,7 +247,7 @@ export default function TeamDetailPage() {
     } catch (e2: any) { err(e2); } finally { setSavingResult(false); }
   };
 
-  // --- Contacter ---
+  // --- Contact ---
   const [contactUser, setContactUser] = useState<any | null>(null);
   const [contactBody, setContactBody] = useState('');
   const [contactSending, setContactSending] = useState(false);
@@ -313,7 +313,7 @@ export default function TeamDetailPage() {
     <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
       <Link href="/teams" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white"><ArrowLeft size={16} /> {t('teams.back')}</Link>
 
-      {/* En-tête profil */}
+      {/* Profile header */}
       <Card className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
         <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-full overflow-hidden border-2 border-gaming-border bg-gaming-surface">
           {team.image ? (
@@ -336,7 +336,7 @@ export default function TeamDetailPage() {
         </div>
       </Card>
 
-      {/* Bilan */}
+      {/* Summary */}
       {stats.played > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StatCard label={t('teams.detail.played')} value={stats.played} />
@@ -346,10 +346,10 @@ export default function TeamDetailPage() {
         </div>
       )}
 
-      {/* Onglets */}
+      {/* Tabs */}
       <Tabs tabs={TABS} active={tab} onChange={(v: string) => setTab(v as typeof tab)} className="flex-wrap" />
 
-      {/* Onglet Effectif */}
+      {/* Roster tab */}
       {tab === 'roster' && (
         <div>
           {amCaptain ? (
@@ -401,7 +401,7 @@ export default function TeamDetailPage() {
         </div>
       )}
 
-      {/* Onglet Recrutement */}
+      {/* Recruitment tab */}
       {tab === 'recruitment' && (
         <div className="space-y-4">
           {canManage && (
@@ -459,7 +459,7 @@ export default function TeamDetailPage() {
         </div>
       )}
 
-      {/* Onglet Matchs */}
+      {/* Matches tab */}
       {tab === 'matches' && (
         <div>
           {amCaptain && <div className="flex justify-end mb-4"><Button size="sm" onClick={() => setPlanOpen(true)}><Swords size={15} /> {t('teams.planMatch')}</Button></div>}
@@ -469,7 +469,7 @@ export default function TeamDetailPage() {
         </div>
       )}
 
-      {/* Modal nouveau recrutement */}
+      {/* New recruitment modal */}
       <Modal open={newOpen} onClose={() => setNewOpen(false)} closeLabel={t('common.close')} title={t('recruitment.newTitle')} icon={<Megaphone size={20} />} headerVariant="gradient">
         <form onSubmit={createCampaign} className="space-y-4">
           <div>
@@ -493,7 +493,7 @@ export default function TeamDetailPage() {
         </form>
       </Modal>
 
-      {/* Modal postuler */}
+      {/* Apply modal */}
       <Modal open={!!applyCampaign} onClose={() => setApplyCampaign(null)} closeLabel={t('common.close')} title={t('recruitment.applyTitle')} icon={<Send size={20} />} headerVariant="gradient">
         <form onSubmit={submitApply} className="space-y-4">
           <div className="space-y-1.5">
@@ -508,7 +508,7 @@ export default function TeamDetailPage() {
         </form>
       </Modal>
 
-      {/* Modal planifier match */}
+      {/* Schedule match modal */}
       <Modal open={planOpen} onClose={() => setPlanOpen(false)} closeLabel={t('common.close')} title={t('teams.planMatch')} icon={<Swords size={20} />} headerVariant="gradient">
         <form onSubmit={submitPlan} className="space-y-4">
           <Select label={t('teams.opponent')} value={planForm.opponentId} onChange={(e: any) => setPlanForm({ ...planForm, opponentId: e.target.value })} required>
@@ -527,7 +527,7 @@ export default function TeamDetailPage() {
         </form>
       </Modal>
 
-      {/* Modal résultat */}
+      {/* Result modal */}
       <Modal open={!!resultMatch} onClose={() => setResultMatch(null)} closeLabel={t('common.close')} title={t('admin.matches.result')} icon={<Check size={20} />} headerVariant="gradient">
         {resultMatch && (
           <form onSubmit={submitResult} className="space-y-4">
@@ -549,7 +549,7 @@ export default function TeamDetailPage() {
         )}
       </Modal>
 
-      {/* Modal contacter */}
+      {/* Contact modal */}
       <Modal open={!!contactUser} onClose={() => setContactUser(null)} closeLabel={t('common.close')} title={`${t('messages.newMessageTo')} ${contactUser?.displayName || contactUser?.username || ''}`} icon={<MessageSquare size={20} />} headerVariant="gradient">
         <form onSubmit={sendContact} className="space-y-4">
           <Textarea value={contactBody} onChange={(e: any) => setContactBody(e.target.value)} placeholder={t('messages.placeholder')} required className="min-h-[100px]" />

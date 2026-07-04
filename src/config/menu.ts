@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
-/** Menu du dashboard joueur (groupé par section). */
+/** Player dashboard menu (grouped by section). */
 export const playerMenuGroups: MenuGroupConfig[] = [
   {
     id: 'menu',
@@ -40,7 +40,7 @@ export const playerMenuGroups: MenuGroupConfig[] = [
   },
 ];
 
-/** Menu de l'interface admin (groupé par section). */
+/** Admin interface menu (grouped by section). */
 export const adminMenuGroups: MenuGroupConfig[] = [
   {
     id: 'catalog',
