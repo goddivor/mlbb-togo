@@ -37,9 +37,9 @@ function TeamCard({ tm, accent }: { tm: EsportTeam; accent: string }) {
   return (
     <Link
       href={`/teams/${tm.id}`}
-      className="group block rounded-xl border border-gaming-border bg-gaming-card overflow-hidden hover:border-neon-blue transition-colors"
+      className="group block overflow-hidden rounded-sm border border-stroke bg-white shadow-default transition-colors hover:border-primary dark:border-strokedark dark:bg-boxdark"
     >
-      <div className="relative aspect-video w-full bg-gaming-surface overflow-hidden">
+      <div className="relative aspect-video w-full overflow-hidden bg-gray-2 dark:bg-meta-4">
         {tm.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -50,7 +50,7 @@ function TeamCard({ tm, accent }: { tm: EsportTeam; accent: string }) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Shield size={40} className="text-gray-600" />
+            <Shield size={40} className="text-bodydark2" />
           </div>
         )}
         <div className="absolute inset-x-0 bottom-0 h-1" style={{ backgroundColor: accent }} />
@@ -58,9 +58,9 @@ function TeamCard({ tm, accent }: { tm: EsportTeam; accent: string }) {
       <div className="flex items-center justify-between gap-2 p-3">
         <div className="flex items-center gap-2 min-w-0">
           <Shield size={16} style={{ color: accent }} className="shrink-0" />
-          <p className="text-sm font-semibold text-white truncate">{tm.name}</p>
+          <p className="truncate text-sm font-medium text-black dark:text-white">{tm.name}</p>
         </div>
-        <span className="inline-flex items-center gap-1 text-xs text-gray-400 shrink-0">
+        <span className="inline-flex shrink-0 items-center gap-1 text-xs text-body dark:text-bodydark">
           <Users size={13} /> {tm.memberCount ?? 0}
         </span>
       </div>
@@ -125,7 +125,7 @@ export default function TeamsPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader
         icon={<Shield size={28} />}
         title={t('teams.title')}
@@ -138,7 +138,7 @@ export default function TeamsPage() {
             </Button>
             <Link
               href="/my-requests"
-              className="shrink-0 inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg bg-white/15 text-white hover:bg-white/25 transition-colors"
+              className="inline-flex shrink-0 items-center rounded-md border border-stroke px-3 py-1.5 text-xs font-medium text-body transition-colors hover:border-primary hover:text-primary dark:border-strokedark dark:text-bodydark"
             >
               {t('requests.mine')}
             </Link>
@@ -155,14 +155,14 @@ export default function TeamsPage() {
               src={org.logo}
               alt={org.name}
               referrerPolicy="no-referrer"
-              className="w-16 h-16 rounded-xl object-contain bg-gaming-surface p-1"
+              className="h-16 w-16 rounded-sm bg-gray-2 object-contain p-1 dark:bg-meta-4"
             />
           )}
           <div className="min-w-0">
             <h2 className="text-lg font-bold" style={{ color: accent }}>
               {org.name}
             </h2>
-            {org.description && <p className="text-sm text-gray-400 mt-0.5">{t('teams.orgDesc')}</p>}
+            {org.description && <p className="mt-0.5 text-sm text-body dark:text-bodydark">{t('teams.orgDesc')}</p>}
           </div>
         </SectionCard>
       )}
@@ -180,7 +180,7 @@ export default function TeamsPage() {
         <div className="relative w-full sm:w-72">
           <Search
             size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 z-10"
+            className="absolute left-3 top-1/2 z-10 -translate-y-1/2 text-bodydark2"
           />
           <Input
             value={query}

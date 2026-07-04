@@ -29,10 +29,10 @@ export default function MyRequestsPage() {
   }, []);
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-6">
+    <div className="space-y-6">
       <Link
         href="/teams"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white"
+        className="inline-flex items-center gap-1.5 text-sm text-body hover:text-black dark:text-bodydark dark:hover:text-white"
       >
         <ArrowLeft size={16} /> {t('teams.back')}
       </Link>
@@ -67,15 +67,15 @@ export default function MyRequestsPage() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: Math.min(i * 0.03, 0.3) }}
-                className="rounded-xl border border-gaming-border bg-gaming-card p-4"
+                className="rounded-sm border border-stroke bg-white shadow-default p-4 dark:border-strokedark dark:bg-boxdark"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-semibold text-white truncate">{r.proposedName}</p>
+                      <p className="text-sm font-semibold text-black dark:text-white truncate">{r.proposedName}</p>
                     </div>
-                    {r.message && <p className="text-sm text-gray-400 mt-1 whitespace-pre-line">{r.message}</p>}
-                    {dateLabel && <p className="text-xs text-gray-500 mt-2">{dateLabel}</p>}
+                    {r.message && <p className="text-sm text-body dark:text-bodydark mt-1 whitespace-pre-line">{r.message}</p>}
+                    {dateLabel && <p className="text-xs text-bodydark2 mt-2">{dateLabel}</p>}
                   </div>
                   <Badge variant={STATUS_VARIANT[r.status] || 'default'} size="sm">
                     {t('requests.status.' + r.status)}

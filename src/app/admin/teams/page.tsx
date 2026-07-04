@@ -32,7 +32,7 @@ export default function AdminTeams() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader
         icon={<Users size={28} />}
         title="Gestion des Équipes"
@@ -42,29 +42,29 @@ export default function AdminTeams() {
 
       {/* Search */}
       <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher une équipe..." className="w-full pl-10 pr-4 py-2.5 bg-gaming-surface border border-gaming-border rounded-lg text-gray-100 placeholder-gray-500 focus:border-neon-blue focus:outline-none focus:ring-2 focus:ring-neon-blue/50" />
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-bodydark2 z-10" />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher une équipe..." className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-stroke bg-white text-black placeholder-bodydark2 shadow-default focus:border-primary focus:outline-none dark:border-strokedark dark:bg-boxdark dark:text-white" />
       </div>
 
       {/* Teams grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map((team: any, i: number) => (
-          <motion.div key={team.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-gaming-card border border-gaming-border rounded-xl p-5 hover:border-neon-purple/30 transition-all">
+          <motion.div key={team.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-white dark:bg-boxdark border border-stroke dark:border-strokedark rounded-sm shadow-default p-5 transition-colors hover:border-primary">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-white font-bold text-lg">{team.tag}</div>
+                <div className="w-12 h-12 rounded-sm bg-primary flex items-center justify-center text-white font-bold text-lg">{team.tag}</div>
                 <div>
-                  <h3 className="text-white font-semibold">{team.name}</h3>
-                  <p className="text-gray-500 text-sm">#{team.rank} • {team.region}</p>
+                  <h3 className="text-black dark:text-white font-semibold">{team.name}</h3>
+                  <p className="text-bodydark2 text-sm">#{team.rank} • {team.region}</p>
                 </div>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2 mb-4">
-              <div className="text-center p-2 bg-gaming-surface rounded-lg"><p className="text-green-400 font-bold">{team.wins}</p><p className="text-gray-500 text-xs">W</p></div>
-              <div className="text-center p-2 bg-gaming-surface rounded-lg"><p className="text-red-400 font-bold">{team.losses}</p><p className="text-gray-500 text-xs">L</p></div>
-              <div className="text-center p-2 bg-gaming-surface rounded-lg"><p className="text-neon-blue font-bold">{team.winRate}%</p><p className="text-gray-500 text-xs">WR</p></div>
+              <div className="text-center p-2 bg-gray-2 dark:bg-meta-4 rounded-sm"><p className="text-success font-bold">{team.wins}</p><p className="text-bodydark2 text-xs">W</p></div>
+              <div className="text-center p-2 bg-gray-2 dark:bg-meta-4 rounded-sm"><p className="text-danger font-bold">{team.losses}</p><p className="text-bodydark2 text-xs">L</p></div>
+              <div className="text-center p-2 bg-gray-2 dark:bg-meta-4 rounded-sm"><p className="text-primary font-bold">{team.winRate}%</p><p className="text-bodydark2 text-xs">WR</p></div>
             </div>
-            <div className="flex items-center gap-2 mb-4 text-sm text-gray-400"><Users size={14} /> {team.members.length}/{team.maxMembers} membres</div>
+            <div className="flex items-center gap-2 mb-4 text-sm text-body dark:text-bodydark"><Users size={14} /> {team.members.length}/{team.maxMembers} membres</div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" className="flex-1"><Eye size={14} /> Voir</Button>
               <Button variant="secondary" size="sm" className="flex-1"><Edit size={14} /> Éditer</Button>

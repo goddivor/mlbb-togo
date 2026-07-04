@@ -2,64 +2,106 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LogOut, ExternalLink, MessageSquare } from 'lucide-react';
+import { Menu, Search } from 'lucide-react';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
-import NotificationBell from '@/components/common/NotificationBell';
 import { disconnectSocket } from '@/lib/realtime';
 import { useT } from '@/lib/i18n';
-import { setToken } from '@/lib/api';
-import { useAuthStore } from '@/store/useStore';
+import { setToken, avatarSrc } from '@/lib/api';
+import { useAuthStore, useLangStore } from '@/store/useStore';
+import DarkModeToggle from './DarkModeToggle';
+import NotificationDropdown from './NotificationDropdown';
+import MessageDropdown from './MessageDropdown';
+import ProfileDropdown from './ProfileDropdown';
 
-export default function AdminHeader() {
+interface HeaderProps {
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+}
+
+/** Admin dashboard header (TailAdmin top bar). */
+export default function AdminHeader({ sidebarOpen, setSidebarOpen }: HeaderProps) {
   const t = useT();
   const router = useRouter();
   const user = useAuthStore((s: any) => s.user);
-  const logout = useAuthStore((s: any) => s.logout);
+  const storeLogout = useAuthStore((s: any) => s.logout);
+  const lang = useLangStore((s: any) => s.lang);
 
+  // Same logout logic as before: drop the socket + token, clear the auth
+  // store, then bounce back to the admin login.
   const signOut = () => {
     disconnectSocket();
     setToken(null);
-    logout?.();
+    storeLogout?.();
     router.replace('/admin-login');
   };
 
+  const name = user?.username || user?.displayName || 'Admin';
+  const avatarUrl = user?.avatar ? avatarSrc(user.avatar) : null;
+
   return (
-    <header className="sticky top-0 z-30 h-14 shrink-0 border-b border-gaming-border bg-gaming-dark/90 backdrop-blur-sm flex items-center justify-between px-4 sm:px-6">
-      <h2 className="text-sm font-semibold text-white">{t('admin.area')}</h2>
+    <header className="sticky top-0 z-999 flex w-full bg-white shadow-default dark:bg-boxdark">
+      <div className="flex flex-grow items-center justify-between px-4 py-4 md:px-6 2xl:px-11">
+        <div className="flex items-center gap-2 sm:gap-4 lg:hidden">
+          {/* Hamburger Toggle BTN */}
+          <button
+            type="button"
+            aria-label="Ouvrir le menu"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSidebarOpen(!sidebarOpen);
+            }}
+            className="z-99999 block rounded-sm border border-stroke bg-white p-1.5 text-black shadow-sm dark:border-strokedark dark:bg-boxdark dark:text-white lg:hidden"
+          >
+            <Menu size={20} />
+          </button>
 
-      <div className="flex items-center gap-3">
-        <Link
-          href="/admin/messages"
-          title={t('header.messages')}
-          className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-300 hover:text-white hover:bg-gaming-surface transition-colors"
-        >
-          <MessageSquare size={18} />
-        </Link>
-        <NotificationBell />
-        <LanguageSwitcher />
+          <Link href="/admin/esport" className="block flex-shrink-0 lg:hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/mlbbtogo-icon.png" alt="MLBB Togo" className="h-8 w-8" />
+          </Link>
+        </div>
 
-        <Link
-          href="/"
-          className="hidden sm:inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors"
-        >
-          <ExternalLink size={14} /> {t('admin.backToSite')}
-        </Link>
+        {/* Search (optional) */}
+        <div className="hidden sm:block">
+          <div className="relative">
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 text-body dark:text-bodydark">
+              <Search size={20} />
+            </span>
+            <input
+              type="text"
+              placeholder={lang === 'fr' ? 'Rechercher...' : 'Search...'}
+              className="w-full bg-transparent pl-9 pr-4 text-black focus:outline-none dark:text-white xl:w-125"
+            />
+          </div>
+        </div>
 
-        {user?.username && (
-          <span className="hidden sm:inline text-xs text-gray-500 max-w-[10rem] truncate">
-            {user.username}
-          </span>
-        )}
+        <div className="flex items-center gap-3 sm:gap-7">
+          <ul className="flex items-center gap-2 sm:gap-4">
+            <li>
+              <DarkModeToggle />
+            </li>
+            <li>
+              <NotificationDropdown />
+            </li>
+            <li>
+              <MessageDropdown href="/admin/messages" />
+            </li>
+            <li>
+              <LanguageSwitcher />
+            </li>
+          </ul>
 
-        <button
-          type="button"
-          onClick={signOut}
-          title={t('header.logout')}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
-        >
-          <LogOut size={15} />
-          <span className="hidden sm:inline">{t('header.logout')}</span>
-        </button>
+          <ProfileDropdown
+            name={name}
+            subtitle={t('admin.area')}
+            avatarUrl={avatarUrl}
+            logoutLabel={t('header.logout')}
+            onLogout={signOut}
+            links={[
+              { href: '/', label: t('admin.backToSite'), icon: 'external' },
+            ]}
+          />
+        </div>
       </div>
     </header>
   );

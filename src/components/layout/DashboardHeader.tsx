@@ -1,20 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { User, LogOut, ChevronDown, MessageSquare } from 'lucide-react';
+import { Menu, Search } from 'lucide-react';
 import { useAuthStore, useLangStore } from '@/store/useStore';
 import { setToken, avatarSrc } from '@/lib/api';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
-import NotificationBell from '@/components/common/NotificationBell';
 import { disconnectSocket } from '@/lib/realtime';
 import { useT } from '@/lib/i18n';
+import DarkModeToggle from './DarkModeToggle';
+import NotificationDropdown from './NotificationDropdown';
+import MessageDropdown from './MessageDropdown';
+import ProfileDropdown from './ProfileDropdown';
 
-export default function DashboardHeader() {
+interface HeaderProps {
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+}
+
+/** Player dashboard header (TailAdmin top bar). */
+export default function DashboardHeader({ sidebarOpen, setSidebarOpen }: HeaderProps) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const userProfile = useAuthStore((s: any) => s.userProfile);
   const lang = useLangStore((s: any) => s.lang);
   const setLang = useLangStore((s: any) => s.setLang);
@@ -25,6 +32,8 @@ export default function DashboardHeader() {
     if (saved && saved !== lang) setLang(saved);
   }, [lang, setLang]);
 
+  // Same logout logic as before: drop the socket + token, clear the auth
+  // store, then bounce back to the public landing.
   const logout = () => {
     disconnectSocket();
     setToken(null);
@@ -33,81 +42,71 @@ export default function DashboardHeader() {
   };
 
   const name = userProfile?.displayName || userProfile?.username || 'Joueur';
+  const avatarUrl = userProfile?.avatar ? avatarSrc(userProfile.avatar) : null;
 
   return (
-    <header className="sticky top-0 z-40 h-16 bg-gaming-card/95 backdrop-blur border-b border-gaming-border">
-      <div className="h-full px-4 sm:px-6 flex items-center justify-between">
-
-        <Link href="/" className="flex items-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/mlbb-togo-logo.png" alt="MLBB Togo" className="h-9 w-auto" />
-        </Link>
-
-        <div className="flex items-center gap-2">
-
-          <Link
-            href="/messages"
-            title={t('header.messages')}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-300 hover:text-white hover:bg-gaming-surface transition-colors"
+    <header className="sticky top-0 z-999 flex w-full bg-white shadow-default dark:bg-boxdark">
+      <div className="flex flex-grow items-center justify-between px-4 py-4 md:px-6 2xl:px-11">
+        <div className="flex items-center gap-2 sm:gap-4 lg:hidden">
+          {/* Hamburger Toggle BTN */}
+          <button
+            type="button"
+            aria-label="Ouvrir le menu"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSidebarOpen(!sidebarOpen);
+            }}
+            className="z-99999 block rounded-sm border border-stroke bg-white p-1.5 text-black shadow-sm dark:border-strokedark dark:bg-boxdark dark:text-white lg:hidden"
           >
-            <MessageSquare size={18} />
+            <Menu size={20} />
+          </button>
+
+          <Link href="/dashboard" className="block flex-shrink-0 lg:hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/mlbbtogo-icon.png" alt="MLBB Togo" className="h-8 w-8" />
           </Link>
+        </div>
 
-          <NotificationBell />
-
-          <LanguageSwitcher />
-
+        {/* Search (optional) */}
+        <div className="hidden sm:block">
           <div className="relative">
-            <button
-              onClick={() => setOpen((v) => !v)}
-              className="flex items-center gap-2 p-1 rounded-lg hover:bg-gaming-surface transition-colors"
-              aria-label="Profil"
-            >
-              {userProfile?.avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={avatarSrc(userProfile.avatar)}
-                  alt={name}
-                  referrerPolicy="no-referrer"
-                  className="w-9 h-9 rounded-lg object-cover border border-gaming-border"
-                />
-              ) : (
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-sm font-bold text-white">
-                  {name[0]?.toUpperCase() || 'J'}
-                </div>
-              )}
-              <span className="hidden sm:block text-sm font-medium text-gray-200 max-w-[140px] truncate">{name}</span>
-              <ChevronDown size={14} className="text-gray-400" />
-            </button>
-
-            <AnimatePresence>
-              {open && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-                  <motion.div
-                    initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                    className="absolute right-0 top-12 z-50 w-52 rounded-xl border border-gaming-border bg-gaming-card shadow-gaming overflow-hidden py-1"
-                  >
-                    <Link
-                      href="/profile"
-                      onClick={() => setOpen(false)}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-300 hover:bg-gaming-surface hover:text-white transition-colors"
-                    >
-                      <User size={16} /> {t('header.menu.profile')}
-                    </Link>
-                    <button
-                      onClick={logout}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors text-left"
-                    >
-                      <LogOut size={16} /> {t('header.logout')}
-                    </button>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 text-body dark:text-bodydark">
+              <Search size={20} />
+            </span>
+            <input
+              type="text"
+              placeholder={lang === 'fr' ? 'Rechercher...' : 'Search...'}
+              className="w-full bg-transparent pl-9 pr-4 text-black focus:outline-none dark:text-white xl:w-125"
+            />
           </div>
+        </div>
+
+        <div className="flex items-center gap-3 sm:gap-7">
+          <ul className="flex items-center gap-2 sm:gap-4">
+            <li>
+              <DarkModeToggle />
+            </li>
+            <li>
+              <NotificationDropdown />
+            </li>
+            <li>
+              <MessageDropdown href="/messages" />
+            </li>
+            <li>
+              <LanguageSwitcher />
+            </li>
+          </ul>
+
+          <ProfileDropdown
+            name={name}
+            avatarUrl={avatarUrl}
+            logoutLabel={t('header.logout')}
+            onLogout={logout}
+            links={[
+              { href: '/profile', label: t('header.menu.profile'), icon: 'profile' },
+              { href: '/settings', label: t('header.menu.settings'), icon: 'settings' },
+            ]}
+          />
         </div>
       </div>
     </header>

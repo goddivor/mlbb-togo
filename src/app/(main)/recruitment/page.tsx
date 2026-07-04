@@ -73,7 +73,7 @@ export default function RecruitmentPage() {
   const slotRoles = useMemo(() => (apply?.slots || []).map((s: any) => s.role), [apply]);
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader
         icon={<Megaphone size={28} />}
         title={t('recruitment.title')}
@@ -86,7 +86,7 @@ export default function RecruitmentPage() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setRole('')}
-            className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${role === '' ? 'bg-neon-blue/20 text-neon-blue border-neon-blue/30' : 'bg-gaming-surface text-gray-400 border-gaming-border hover:text-gray-200'}`}
+            className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${role === '' ? 'border-primary bg-primary/10 text-primary' : 'border-stroke bg-gray-2 text-body hover:text-black dark:border-strokedark dark:bg-meta-4 dark:text-bodydark dark:hover:text-white'}`}
           >
             {t('recruitment.filterAll')}
           </button>
@@ -94,7 +94,7 @@ export default function RecruitmentPage() {
             <button
               key={l}
               onClick={() => setRole(l)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border transition-colors ${role === l ? 'bg-neon-blue/20 text-neon-blue border-neon-blue/30' : 'bg-gaming-surface text-gray-400 border-gaming-border hover:text-gray-200'}`}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors ${role === l ? 'border-primary bg-primary/10 text-primary' : 'border-stroke bg-gray-2 text-body hover:text-black dark:border-strokedark dark:bg-meta-4 dark:text-bodydark dark:hover:text-white'}`}
             >
               <RoleIcon role={l} size={14} /> {t('lane.' + l)}
             </button>
@@ -117,20 +117,20 @@ export default function RecruitmentPage() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: Math.min(i * 0.03, 0.3) }}
-                className="rounded-xl border border-gaming-border bg-gaming-card p-4 flex flex-col"
+                className="flex flex-col rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark"
               >
-                <Link href={`/teams/${c.teamId}`} className="flex items-center gap-3 mb-3">
+                <Link href={`/teams/${c.teamId}`} className="mb-3 flex items-center gap-3">
                   {team.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={team.image} alt={team.name} referrerPolicy="no-referrer" className="w-11 h-11 rounded-full object-cover border border-gaming-border" />
+                    <img src={team.image} alt={team.name} referrerPolicy="no-referrer" className="h-11 w-11 rounded-full border border-stroke object-cover dark:border-strokedark" />
                   ) : (
-                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center font-bold text-white">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary font-bold text-white">
                       {team.name?.[0]?.toUpperCase() || 'T'}
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">{team.name}</p>
-                    <p className="text-xs text-gray-500">{t('recruitment.recruits')}</p>
+                    <p className="truncate text-sm font-medium text-black dark:text-white">{team.name}</p>
+                    <p className="text-xs text-bodydark2">{t('recruitment.recruits')}</p>
                   </div>
                 </Link>
 
@@ -143,7 +143,7 @@ export default function RecruitmentPage() {
                   ))}
                 </div>
 
-                {c.message && <p className="text-sm text-gray-400 mb-3 whitespace-pre-line">{c.message}</p>}
+                {c.message && <p className="mb-3 whitespace-pre-line text-sm text-body dark:text-bodydark">{c.message}</p>}
 
                 <div className="mt-auto">
                   {applied ? (
@@ -171,7 +171,7 @@ export default function RecruitmentPage() {
       >
         <form onSubmit={submitApply} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('recruitment.applyRole')}</label>
+            <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">{t('recruitment.applyRole')}</label>
             <RoleSelect
               value={applyForm.role}
               onChange={(v) => setApplyForm({ ...applyForm, role: v })}

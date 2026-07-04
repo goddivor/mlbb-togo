@@ -34,7 +34,7 @@ export default function PlayersPage() {
   }, [users, query]);
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader
         variant="default"
         icon={<Users size={28} className="text-white" />}
@@ -45,12 +45,12 @@ export default function PlayersPage() {
       {/* Recherche */}
       <SectionCard className="!p-4">
         <div className="relative w-full sm:max-w-xs">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-bodydark2" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('users.search')}
-            className="pl-9 pr-3 py-2 w-full text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue"
+            className="pl-9 pr-3 py-2 w-full text-sm rounded-sm bg-gray-2 border border-stroke text-black placeholder-bodydark2 focus:outline-none focus:border-primary dark:bg-meta-4 dark:border-strokedark dark:text-white"
           />
         </div>
       </SectionCard>
@@ -72,7 +72,7 @@ export default function PlayersPage() {
             >
               <Link
                 href={`/players/${u.id}`}
-                className="flex items-center gap-3 rounded-xl border border-gaming-border bg-gaming-card hover:border-neon-blue transition-colors p-3"
+                className="flex items-center gap-3 rounded-sm border border-stroke bg-white shadow-default hover:border-primary transition-colors p-3 dark:border-strokedark dark:bg-boxdark"
               >
                 {u.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -80,27 +80,27 @@ export default function PlayersPage() {
                     src={avatarSrc(u.avatar, 96)}
                     alt={u.displayName}
                     referrerPolicy="no-referrer"
-                    className="w-12 h-12 rounded-xl object-cover border border-gaming-border"
+                    className="w-12 h-12 rounded-full object-cover border border-stroke dark:border-strokedark"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-lg font-bold text-white">
+                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-lg font-bold text-white">
                     {(u.displayName || u.username)?.[0]?.toUpperCase() || 'J'}
                   </div>
                 )}
 
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-white truncate">{u.displayName || u.username}</p>
+                  <p className="text-sm font-semibold text-black dark:text-white truncate">{u.displayName || u.username}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     {u.hasGame ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-gray-300">
+                      <span className="inline-flex items-center gap-1 text-xs text-body dark:text-bodydark">
                         {hasRankBadge(u.gameRank) && <RankBadge rank={u.gameRank} size={16} />}
                         {u.gameRank || `${t('dashboard.level')} ${u.gameLevel ?? '?'}`}
                       </span>
                     ) : (
-                      <span className="text-xs text-gray-500">{t('users.noGame')}</span>
+                      <span className="text-xs text-bodydark2">{t('users.noGame')}</span>
                     )}
                     {u.country && (
-                      <span className="inline-flex items-center gap-0.5 text-xs text-gray-500">
+                      <span className="inline-flex items-center gap-0.5 text-xs text-bodydark2">
                         <MapPin size={11} /> {u.country}
                       </span>
                     )}

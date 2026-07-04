@@ -4,11 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  TrendingUp, Target, Star, Flame, Swords, Clock, Trophy,
-  Gamepad2, RefreshCw, ArrowUpRight, MapPin,
+  Trophy, Gamepad2, RefreshCw, ArrowUpRight, MapPin,
 } from 'lucide-react';
 import {
-  Card, SectionCard, Badge, StatCard, Button, ProgressBar,
+  Card, SectionCard, Badge, Button, ProgressBar,
   PageHeader, EmptyState, LoadingSpinner,
 } from '@/components/ui';
 import { useAuthStore } from '@/store/useStore';
@@ -45,7 +44,7 @@ export default function Dashboard() {
 
   if (!userProfile) {
     return (
-      <div className="p-6 max-w-7xl mx-auto flex items-center justify-center min-h-[50vh]">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -53,10 +52,10 @@ export default function Dashboard() {
 
   if (!userProfile.hasGame) {
     return (
-      <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-6">
+      <div className="space-y-6">
         <Card hover={false}>
           <EmptyState
-            icon={<Gamepad2 size={30} className="text-neon-blue" />}
+            icon={<Gamepad2 size={30} className="text-primary" />}
             title={t('dashboard.noGame.title')}
             description={t('dashboard.noGame.desc')}
             action={
@@ -106,46 +105,40 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
-      {/* Profile banner + key counters */}
+    <div className="space-y-6">
+      {/* Profile banner */}
       <PageHeader
         variant="default"
-        icon={
-          userProfile.avatar ? (
-            <img
-              src={avatarSrc(userProfile.avatar, 160)}
-              alt={userProfile.displayName}
-              referrerPolicy="no-referrer"
-              className="w-14 h-14 rounded-xl object-cover"
-            />
-          ) : (
-            <span className="w-14 h-14 flex items-center justify-center text-2xl font-bold text-white">
-              {userProfile.displayName?.[0]?.toUpperCase() || 'J'}
-            </span>
-          )
+        title={
+          <span className="flex items-center gap-3">
+            {userProfile.avatar ? (
+              <img
+                src={avatarSrc(userProfile.avatar, 160)}
+                alt={userProfile.displayName}
+                referrerPolicy="no-referrer"
+                className="w-12 h-12 rounded-full object-cover"
+              />
+            ) : (
+              <span className="w-12 h-12 flex items-center justify-center rounded-full bg-primary text-xl font-bold text-white">
+                {userProfile.displayName?.[0]?.toUpperCase() || 'J'}
+              </span>
+            )}
+            {userProfile.gameNickname || userProfile.displayName}
+          </span>
         }
-        title={userProfile.gameNickname || userProfile.displayName}
         subtitle={`${t('dashboard.gameId')} ${userProfile.mlbbRoleId} · ${t('dashboard.gameServer')} ${userProfile.mlbbZoneId}`}
         action={
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={sync}
             disabled={syncing}
-            className="!text-white hover:!bg-white/10"
           >
             <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
             {syncing ? t('dashboard.syncing') : t('dashboard.sync')}
           </Button>
         }
-      >
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard translucent label={t('dashboard.stats.wins')} value={stats.wins ?? 0} icon={<TrendingUp size={16} />} />
-          <StatCard translucent label={t('dashboard.stats.winRate')} value={`${winRate}%`} icon={<Target size={16} />} />
-          <StatCard translucent label={t('dashboard.stats.mvp')} value={stats.mvpCount ?? 0} icon={<Star size={16} />} />
-          <StatCard translucent label={t('dashboard.stats.bestStreak')} value={`${stats.winStreak ?? 0} 🔥`} icon={<Flame size={16} />} />
-        </div>
-      </PageHeader>
+      />
 
       {/* Game identity: rank, level, roles */}
       <SectionCard className="flex flex-wrap items-center gap-3 !p-4">
@@ -157,9 +150,9 @@ export default function Dashboard() {
               <Trophy size={18} className="text-yellow-400" />
             )}
             <div className="leading-tight">
-              <p className="text-sm font-bold text-white">{userProfile.gameRank}</p>
+              <p className="text-sm font-bold text-black dark:text-white">{userProfile.gameRank}</p>
               {userProfile.gameRankLevel != null && (
-                <p className="text-[11px] text-gray-400">{userProfile.gameRankLevel} pts</p>
+                <p className="text-[11px] text-body dark:text-bodydark">{userProfile.gameRankLevel} pts</p>
               )}
             </div>
           </div>
@@ -168,13 +161,13 @@ export default function Dashboard() {
           <Badge variant="neon" size="sm">{t('dashboard.level')} {userProfile.gameLevel}</Badge>
         )}
         {userProfile.gameCountry && (
-          <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+          <span className="inline-flex items-center gap-1 text-xs text-body dark:text-bodydark">
             <MapPin size={12} /> {userProfile.gameCountry}
           </span>
         )}
         {userProfile.gameRoles?.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-gray-500">{t('dashboard.rolesLabel')}</span>
+            <span className="text-xs text-bodydark2">{t('dashboard.rolesLabel')}</span>
             {userProfile.gameRoles.map((r: any) => (
               <Badge key={r.role} variant="purple" size="sm" className="gap-1">
                 <RoleIcon role={r.role} size={14} />
@@ -189,49 +182,23 @@ export default function Dashboard() {
         {/* Stats detail */}
         <Card hover={false}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-white">{t('dashboard.detail.title')}</h3>
+            <h3 className="font-bold text-black dark:text-white">{t('dashboard.detail.title')}</h3>
             <Badge variant="neon" size="sm">{t('dashboard.stats.allModes')}</Badge>
           </div>
           <div className="space-y-4">
             <div>
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-400">{t('dashboard.detail.wins')}</span>
-                <span className="text-green-400 font-medium">{stats.wins ?? 0}</span>
+                <span className="text-body dark:text-bodydark">{t('dashboard.detail.wins')}</span>
+                <span className="text-success font-medium">{stats.wins ?? 0}</span>
               </div>
               <ProgressBar value={winRate} />
             </div>
             <div>
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-400">{t('dashboard.detail.losses')}</span>
-                <span className="text-red-400 font-medium">{stats.losses ?? 0}</span>
+                <span className="text-body dark:text-bodydark">{t('dashboard.detail.losses')}</span>
+                <span className="text-danger font-medium">{stats.losses ?? 0}</span>
               </div>
               <ProgressBar value={100 - winRate} />
-            </div>
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <div className="rounded-lg border border-gaming-border bg-gaming-surface/30 p-3 text-center">
-                <div className="flex items-center justify-center gap-1 text-neon-blue mb-1">
-                  <Swords size={14} /> <span className="text-lg font-bold">{stats.total ?? 0}</span>
-                </div>
-                <p className="text-xs text-gray-400">{t('dashboard.detail.gamesPlayed')}</p>
-              </div>
-              <div className="rounded-lg border border-gaming-border bg-gaming-surface/30 p-3 text-center">
-                <div className="flex items-center justify-center gap-1 text-neon-purple mb-1">
-                  <Star size={14} /> <span className="text-lg font-bold">{stats.avgScore ?? 0}</span>
-                </div>
-                <p className="text-xs text-gray-400">{t('dashboard.detail.avgScore')}</p>
-              </div>
-              <div className="rounded-lg border border-gaming-border bg-gaming-surface/30 p-3 text-center">
-                <div className="flex items-center justify-center gap-1 text-amber-400 mb-1">
-                  <Clock size={14} /> <span className="text-lg font-bold">{Math.round(stats.gameTime ?? 0)}h</span>
-                </div>
-                <p className="text-xs text-gray-400">{t('dashboard.detail.gameTime')}</p>
-              </div>
-              <div className="rounded-lg border border-gaming-border bg-gaming-surface/30 p-3 text-center">
-                <div className="flex items-center justify-center gap-1 text-green-400 mb-1">
-                  <Trophy size={14} /> <span className="text-lg font-bold">{stats.mvpCount ?? 0}</span>
-                </div>
-                <p className="text-xs text-gray-400">{t('dashboard.detail.mvp')}</p>
-              </div>
             </div>
           </div>
         </Card>
@@ -239,14 +206,14 @@ export default function Dashboard() {
         {/* Favorite heroes */}
         <Card hover={false} className="lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h3 className="font-bold text-white">{t('dashboard.favorites.title')}</h3>
+            <h3 className="font-bold text-black dark:text-white">{t('dashboard.favorites.title')}</h3>
             <div className="flex items-center gap-2">
               {seasons.length > 0 && (
                 <select
                   value={season ?? ''}
                   onChange={(e) => changeSeason(Number(e.target.value))}
                   disabled={heroesLoading}
-                  className="text-xs bg-gaming-surface border border-gaming-border rounded-lg px-2.5 py-1.5 text-gray-200 focus:outline-none focus:border-neon-blue disabled:opacity-60"
+                  className="text-xs bg-gray-2 border border-stroke rounded-sm px-2.5 py-1.5 text-body focus:outline-none focus:border-primary disabled:opacity-60 dark:bg-meta-4 dark:border-strokedark dark:text-bodydark"
                 >
                   {seasons.map((s) => (
                     <option key={s} value={s}>{t('dashboard.favorites.seasonLabel')} {s}</option>
@@ -262,7 +229,7 @@ export default function Dashboard() {
               <LoadingSpinner />
             </div>
           ) : heroes.length === 0 ? (
-            <div className="text-center py-10 text-gray-500 text-sm">
+            <div className="text-center py-10 text-bodydark2 text-sm">
               {t('dashboard.favorites.none')}
             </div>
           ) : (
@@ -273,24 +240,24 @@ export default function Dashboard() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className="flex items-center gap-3 rounded-lg border border-gaming-border bg-gaming-surface/30 p-2.5"
+                  className="flex items-center gap-3 rounded-sm border border-stroke bg-gray-2 p-2.5 dark:border-strokedark dark:bg-meta-4"
                 >
                   {h.image ? (
                     <img
                       src={mlbbImg(h.image, 80)}
                       alt={h.name}
                       referrerPolicy="no-referrer"
-                      className="w-12 h-12 rounded-lg object-cover bg-gaming-dark"
+                      className="w-12 h-12 rounded-sm object-cover bg-gray dark:bg-boxdark"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-lg bg-gaming-dark" />
+                    <div className="w-12 h-12 rounded-sm bg-gray dark:bg-boxdark" />
                   )}
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">{h.name}</p>
-                    <p className="text-xs text-gray-400">{h.matches} {t('dashboard.favorites.matches')}</p>
+                    <p className="text-sm font-semibold text-black dark:text-white truncate">{h.name}</p>
+                    <p className="text-xs text-body dark:text-bodydark">{h.matches} {t('dashboard.favorites.matches')}</p>
                     <p
                       className={`text-xs font-medium ${
-                        h.winRate >= 50 ? 'text-green-400' : 'text-red-400'
+                        h.winRate >= 50 ? 'text-success' : 'text-danger'
                       }`}
                     >
                       {h.winRate}{t('dashboard.favorites.winRate')}

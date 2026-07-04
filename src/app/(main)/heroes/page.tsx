@@ -44,7 +44,7 @@ export default function HeroesPage() {
   }, [heroes, role, query]);
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader
         variant="default"
         icon={<Swords size={28} className="text-white" />}
@@ -55,12 +55,12 @@ export default function HeroesPage() {
       {/* Filters: search + roles */}
       <SectionCard className="flex flex-col gap-3 !p-4">
         <div className="relative w-full sm:max-w-xs">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-bodydark2" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('heroes.search')}
-            className="pl-9 pr-3 py-2 w-full text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue"
+            className="pl-9 pr-3 py-2 w-full text-sm rounded-sm bg-gray-2 border border-stroke text-black placeholder-bodydark2 focus:outline-none focus:border-primary dark:bg-meta-4 dark:border-strokedark dark:text-white"
           />
         </div>
         <div className="flex flex-wrap gap-2">
@@ -92,9 +92,9 @@ export default function HeroesPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(i * 0.015, 0.4) }}
               onClick={() => setSelected(h.heroId)}
-              className="group rounded-xl overflow-hidden border border-gaming-border bg-gaming-card hover:border-neon-blue transition-colors text-left"
+              className="group rounded-sm overflow-hidden border border-stroke bg-white shadow-default hover:border-primary transition-colors text-left dark:border-strokedark dark:bg-boxdark"
             >
-              <div className="aspect-square bg-gaming-dark overflow-hidden">
+              <div className="aspect-square bg-gray dark:bg-meta-4 overflow-hidden">
                 {h.image && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -106,8 +106,8 @@ export default function HeroesPage() {
                 )}
               </div>
               <div className="p-2">
-                <p className="text-xs font-semibold text-white truncate">{h.name}</p>
-                <p className="text-[10px] text-gray-400 truncate">{(h.roles || []).join(' · ')}</p>
+                <p className="text-xs font-semibold text-black dark:text-white truncate">{h.name}</p>
+                <p className="text-[10px] text-body dark:text-bodydark truncate">{(h.roles || []).join(' · ')}</p>
               </div>
             </motion.button>
           ))}

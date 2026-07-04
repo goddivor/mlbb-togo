@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, MapPin, Trophy, Target, Star, Flame, TrendingUp, UserPlus, UserCheck, UserMinus, Check, X } from 'lucide-react';
-import { Card, Badge, StatCard, Button, Avatar, EmptyState, LoadingSpinner } from '@/components/ui';
+import { ArrowLeft, MapPin, Trophy, UserPlus, UserCheck, UserMinus, Check, X } from 'lucide-react';
+import { Card, Badge, Button, Avatar, EmptyState, LoadingSpinner } from '@/components/ui';
 import { api, avatarSrc, mlbbImg } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import RoleIcon from '@/components/game/RoleIcon';
@@ -52,7 +52,7 @@ export default function PublicProfilePage() {
 
   if (loading) {
     return (
-      <div className="p-6 max-w-4xl mx-auto flex items-center justify-center min-h-[50vh]">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -60,8 +60,8 @@ export default function PublicProfilePage() {
 
   if (!user) {
     return (
-      <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
-        <Link href="/players" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white">
+      <div className="space-y-6">
+        <Link href="/players" className="inline-flex items-center gap-1.5 text-sm text-body hover:text-black dark:text-bodydark dark:hover:text-white">
           <ArrowLeft size={16} /> {t('users.back')}
         </Link>
         <EmptyState icon={<UserPlus size={26} />} title={t('users.notFound')} />
@@ -69,14 +69,13 @@ export default function PublicProfilePage() {
     );
   }
 
-  const stats = user.gameStats || {};
   const heroes: any[] = user.gameFrequentHeroes || [];
   const roles: any[] = user.gameRoles || [];
   const name = user.displayName || user.username;
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
-      <Link href="/players" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white">
+    <div className="space-y-6">
+      <Link href="/players" className="inline-flex items-center gap-1.5 text-sm text-body hover:text-black dark:text-bodydark dark:hover:text-white">
         <ArrowLeft size={16} /> {t('users.back')}
       </Link>
 
@@ -87,7 +86,7 @@ export default function PublicProfilePage() {
 
           <div className="flex-1 text-center sm:text-left">
             <div className="flex items-center justify-center sm:justify-start gap-2">
-              <h1 className="text-2xl md:text-3xl font-bold text-white">{name}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-black dark:text-white">{name}</h1>
               {user.roleUser && user.roleUser !== 'user' && (
                 <Badge variant="purple" size="sm">{user.roleUser}</Badge>
               )}
@@ -137,16 +136,16 @@ export default function PublicProfilePage() {
                     <Trophy size={18} className="text-yellow-400" />
                   )}
                   <div className="leading-tight text-left">
-                    <p className="text-sm font-bold text-white">{user.gameRank}</p>
+                    <p className="text-sm font-bold text-black dark:text-white">{user.gameRank}</p>
                     {user.gameRankLevel != null && (
-                      <p className="text-[11px] text-gray-400">{user.gameRankLevel} pts</p>
+                      <p className="text-[11px] text-body dark:text-bodydark">{user.gameRankLevel} pts</p>
                     )}
                   </div>
                 </div>
               )}
               {user.gameLevel != null && <Badge variant="neon" size="sm">{t('dashboard.level')} {user.gameLevel}</Badge>}
               {user.country && (
-                <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+                <span className="inline-flex items-center gap-1 text-xs text-body dark:text-bodydark">
                   <MapPin size={12} /> {user.country}
                 </span>
               )}
@@ -154,7 +153,7 @@ export default function PublicProfilePage() {
 
             {roles.length > 0 && (
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-2">
-                <span className="text-xs text-gray-500">{t('users.roles')} :</span>
+                <span className="text-xs text-bodydark2">{t('users.roles')} :</span>
                 {roles.map((r: any) => (
                   <Badge key={r.role} variant="purple" size="sm" className="gap-1">
                     <RoleIcon role={r.role} size={14} />
@@ -168,51 +167,42 @@ export default function PublicProfilePage() {
       </Card>
 
       {!user.hasGame ? (
-        <Card className="text-center py-10 text-gray-500" hover={false}>
+        <Card className="text-center py-10 text-bodydark2" hover={false}>
           {t('users.noGame')}
         </Card>
       ) : (
-        <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label={t('dashboard.detail.wins')} value={stats.wins ?? 0} icon={<TrendingUp size={16} />} />
-            <StatCard label={t('heroes.winRate')} value={`${stats.winRate ?? 0}%`} icon={<Target size={16} />} />
-            <StatCard label="MVP" value={stats.mvpCount ?? 0} icon={<Star size={16} />} />
-            <StatCard label="Streak" value={`${stats.winStreak ?? 0} 🔥`} icon={<Flame size={16} />} />
-          </div>
-
-          {heroes.length > 0 && (
-            <Card hover={false}>
-              <h3 className="font-bold text-white mb-4">{t('users.favoriteHeroes')}</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {heroes.map((h, i) => (
-                  <div
-                    key={h.heroId ?? i}
-                    className="flex items-center gap-3 rounded-lg border border-gaming-border bg-gaming-surface/30 p-2.5"
-                  >
-                    {h.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={mlbbImg(h.image, 80)}
-                        alt={h.name}
-                        referrerPolicy="no-referrer"
-                        className="w-12 h-12 rounded-lg object-cover bg-gaming-dark"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-lg bg-gaming-dark" />
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-white truncate">{h.name}</p>
-                      <p className="text-xs text-gray-400">{h.matches} {t('dashboard.favorites.matches')}</p>
-                      <p className={`text-xs font-medium ${h.winRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
-                        {h.winRate}{t('dashboard.favorites.winRate')}
-                      </p>
-                    </div>
+        heroes.length > 0 && (
+          <Card hover={false}>
+            <h3 className="font-bold text-black dark:text-white mb-4">{t('users.favoriteHeroes')}</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {heroes.map((h, i) => (
+                <div
+                  key={h.heroId ?? i}
+                  className="flex items-center gap-3 rounded-sm border border-stroke bg-gray-2 p-2.5 dark:border-strokedark dark:bg-meta-4"
+                >
+                  {h.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={mlbbImg(h.image, 80)}
+                      alt={h.name}
+                      referrerPolicy="no-referrer"
+                      className="w-12 h-12 rounded-sm object-cover bg-gray dark:bg-boxdark"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-sm bg-gray dark:bg-boxdark" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-black dark:text-white truncate">{h.name}</p>
+                    <p className="text-xs text-body dark:text-bodydark">{h.matches} {t('dashboard.favorites.matches')}</p>
+                    <p className={`text-xs font-medium ${h.winRate >= 50 ? 'text-success' : 'text-danger'}`}>
+                      {h.winRate}{t('dashboard.favorites.winRate')}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </Card>
-          )}
-        </>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )
       )}
     </div>
   );

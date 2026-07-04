@@ -21,8 +21,8 @@ export const useLangStore = create<any>((set) => ({
 export const useThemeStore = create<any>((set) => ({
   theme:
     typeof window !== 'undefined'
-      ? localStorage.getItem('mlbb-theme') || 'dark'
-      : 'dark',
+      ? localStorage.getItem('mlbb-theme') || 'light'
+      : 'light',
   toggleTheme: () =>
     set((state: any) => {
       const newTheme = state.theme === 'dark' ? 'light' : 'dark';

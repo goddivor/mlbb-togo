@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { LayoutGrid, Pencil, Check, RefreshCw, Swords } from 'lucide-react';
+import { LayoutGrid, Pencil, Check, RefreshCw } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import {
@@ -12,7 +12,6 @@ import {
   Input,
   Textarea,
   PageHeader,
-  StatCard,
   LoadingSpinner,
 } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
@@ -136,18 +135,13 @@ export default function AdminCatalogPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader
         icon={<LayoutGrid size={28} />}
         title={t('admin.catalog.title')}
         subtitle="Lanes et synchronisation des héros"
         variant="purple"
-      >
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard translucent label="Lanes" value={lanes.length} icon={<LayoutGrid size={18} />} />
-          <StatCard translucent label="Héros" value={heroCount ?? '—'} icon={<Swords size={18} />} />
-        </div>
-      </PageHeader>
+      />
 
       {loading ? (
         <LoadingSpinner size="lg" className="py-24" />
@@ -156,7 +150,7 @@ export default function AdminCatalogPage() {
           {/* Lanes section */}
           <SectionCard>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">Lanes</h2>
+              <h2 className="text-lg font-semibold text-black dark:text-white">Lanes</h2>
               <Badge variant="purple" size="sm">
                 {lanes.length}
               </Badge>
@@ -170,14 +164,14 @@ export default function AdminCatalogPage() {
                       src={lane.icon}
                       alt={lane.name}
                       referrerPolicy="no-referrer"
-                      className="w-12 h-12 rounded-lg object-contain bg-gaming-surface border border-gaming-border shrink-0"
+                      className="w-12 h-12 rounded-lg object-contain bg-gray-2 border border-stroke shrink-0 dark:bg-meta-4 dark:border-strokedark"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-lg bg-gaming-surface border border-gaming-border shrink-0" />
+                    <div className="w-12 h-12 rounded-lg bg-gray-2 border border-stroke shrink-0 dark:bg-meta-4 dark:border-strokedark" />
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-white truncate">{lane.name}</p>
+                      <p className="text-sm font-semibold text-black dark:text-white truncate">{lane.name}</p>
                       {lane.shortName && (
                         <Badge variant="default" size="sm">
                           {lane.shortName}
@@ -194,7 +188,7 @@ export default function AdminCatalogPage() {
                       </div>
                     )}
                     {lane.description && (
-                      <p className="text-xs text-gray-400 mt-1.5 line-clamp-2">{lane.description}</p>
+                      <p className="text-xs text-body dark:text-bodydark mt-1.5 line-clamp-2">{lane.description}</p>
                     )}
                   </div>
                   <Button size="sm" variant="ghost" onClick={() => openEdit(lane)}>
@@ -209,8 +203,8 @@ export default function AdminCatalogPage() {
           <SectionCard>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold text-white">Héros</h2>
-                <p className="text-sm text-gray-400 mt-0.5">
+                <h2 className="text-lg font-semibold text-black dark:text-white">Héros</h2>
+                <p className="text-sm text-body dark:text-bodydark mt-0.5">
                   {heroCount ?? 0} héros en base. Resynchronise depuis les serveurs MLBB.
                 </p>
               </div>

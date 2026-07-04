@@ -50,7 +50,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6">
 
       <PageHeader
         icon={<SettingsIcon size={28} />}
@@ -75,7 +75,7 @@ export default function Settings() {
       {activeTab === 'profile' && (
         <div className="space-y-6">
           <Card>
-            <h3 className="font-bold text-lg mb-4 text-white">
+            <h3 className="font-bold text-lg mb-4 text-black dark:text-white">
               {t('settings.profileInfo')}
             </h3>
             <div className="space-y-4">
@@ -122,7 +122,7 @@ export default function Settings() {
           </Card>
 
           <Card>
-            <h3 className="font-bold text-lg mb-4 text-white">
+            <h3 className="font-bold text-lg mb-4 text-black dark:text-white">
               {t('settings.changePassword')}
             </h3>
             <div className="space-y-4">
@@ -131,7 +131,7 @@ export default function Settings() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-9 text-gray-500 hover:text-gray-300"
+                  className="absolute right-3 top-9 text-bodydark2 hover:text-body dark:hover:text-bodydark"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -165,15 +165,15 @@ export default function Settings() {
               { key: 'forum', label: t('settings.notifications.forum'), desc: t('settings.notifications.forumDesc') },
               { key: 'email', label: t('settings.notifications.email'), desc: t('settings.notifications.emailDesc') },
             ].map((item) => (
-              <div key={item.key} className="flex items-center justify-between p-3 rounded-lg bg-gaming-surface/30">
+              <div key={item.key} className="flex items-center justify-between p-3 rounded-sm bg-gray-2 dark:bg-meta-4">
                 <div>
-                  <p className="font-medium text-sm text-white">{item.label}</p>
-                  <p className="text-xs text-gray-400">{item.desc}</p>
+                  <p className="font-medium text-sm text-black dark:text-white">{item.label}</p>
+                  <p className="text-xs text-body dark:text-bodydark">{item.desc}</p>
                 </div>
                 <button
                   onClick={() => setNotifications({ ...notifications, [item.key]: !notifications[item.key] })}
                   className={`relative w-12 h-6 rounded-full transition-colors ${
-                    notifications[item.key] ? 'bg-neon-blue' : 'bg-gaming-border'
+                    notifications[item.key] ? 'bg-primary' : 'bg-stroke dark:bg-strokedark'
                   }`}
                 >
                   <motion.div
@@ -205,15 +205,15 @@ export default function Settings() {
               { key: 'showOnline', label: t('settings.privacy.showOnline'), desc: t('settings.privacy.showOnlineDesc') },
               { key: 'allowInvites', label: t('settings.privacy.allowInvites'), desc: t('settings.privacy.allowInvitesDesc') },
             ].map((item) => (
-              <div key={item.key} className="flex items-center justify-between p-3 rounded-lg bg-gaming-surface/30">
+              <div key={item.key} className="flex items-center justify-between p-3 rounded-sm bg-gray-2 dark:bg-meta-4">
                 <div>
-                  <p className="font-medium text-sm text-white">{item.label}</p>
-                  <p className="text-xs text-gray-400">{item.desc}</p>
+                  <p className="font-medium text-sm text-black dark:text-white">{item.label}</p>
+                  <p className="text-xs text-body dark:text-bodydark">{item.desc}</p>
                 </div>
                 <button
                   onClick={() => setPrivacy({ ...privacy, [item.key]: !privacy[item.key] })}
                   className={`relative w-12 h-6 rounded-full transition-colors ${
-                    privacy[item.key] ? 'bg-neon-blue' : 'bg-gaming-border'
+                    privacy[item.key] ? 'bg-primary' : 'bg-stroke dark:bg-strokedark'
                   }`}
                 >
                   <motion.div
@@ -225,8 +225,8 @@ export default function Settings() {
             ))}
           </div>
 
-          <div className="mt-8 pt-6 border-t border-gaming-border">
-            <h4 className="text-red-400 font-bold mb-3">{t('settings.privacy.dangerZone')}</h4>
+          <div className="mt-8 pt-6 border-t border-stroke dark:border-strokedark">
+            <h4 className="text-danger font-bold mb-3">{t('settings.privacy.dangerZone')}</h4>
             <Button variant="danger" onClick={() => setShowDelete(true)}>
               <Trash2 size={16} />
               {t('settings.privacy.deleteAccount')}
@@ -249,14 +249,14 @@ export default function Settings() {
           </h3>
 
           <div className="space-y-6">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-gaming-surface/30">
+            <div className="flex items-center justify-between p-4 rounded-sm bg-gray-2 dark:bg-meta-4">
               <div className="flex items-center gap-3">
-                {theme === 'dark' ? <Moon size={20} className="text-neon-blue" /> : <Sun size={20} className="text-amber-400" />}
+                {theme === 'dark' ? <Moon size={20} className="text-primary" /> : <Sun size={20} className="text-warning" />}
                 <div>
-                  <p className="font-medium text-sm text-white">
+                  <p className="font-medium text-sm text-black dark:text-white">
                     {t('settings.appearance.darkTheme')}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-body dark:text-bodydark">
                     {theme === 'dark' ? t('settings.appearance.darkDesc') : t('settings.appearance.lightDesc')}
                   </p>
                 </div>
@@ -264,35 +264,35 @@ export default function Settings() {
               <button
                 onClick={toggleTheme}
                 className={`relative w-14 h-7 rounded-full transition-colors ${
-                  theme === 'dark' ? 'bg-neon-blue' : 'bg-amber-400'
+                  theme === 'dark' ? 'bg-primary' : 'bg-warning'
                 }`}
               >
                 <motion.div
                   animate={{ x: theme === 'dark' ? 28 : 2 }}
                   className="absolute top-1 w-5 h-5 rounded-full bg-white flex items-center justify-center"
                 >
-                  {theme === 'dark' ? <Moon size={12} className="text-neon-blue" /> : <Sun size={12} className="text-amber-500" />}
+                  {theme === 'dark' ? <Moon size={12} className="text-primary" /> : <Sun size={12} className="text-warning" />}
                 </motion.div>
               </button>
             </div>
 
             <div>
-              <p className="text-sm text-gray-400 mb-3">{t('settings.appearance.preview')}</p>
+              <p className="text-sm text-body dark:text-bodydark mb-3">{t('settings.appearance.preview')}</p>
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl border bg-gaming-card border-gaming-border">
+                <div className="p-4 rounded-sm border bg-white border-stroke shadow-default dark:bg-boxdark dark:border-strokedark">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-blue to-neon-purple" />
+                    <div className="w-8 h-8 rounded-sm bg-primary" />
                     <div>
-                      <p className="text-sm font-bold text-white">{t('settings.appearance.previewCard')}</p>
-                      <p className="text-xs text-gray-400">{t('settings.appearance.previewStyle')}</p>
+                      <p className="text-sm font-bold text-black dark:text-white">{t('settings.appearance.previewCard')}</p>
+                      <p className="text-xs text-body dark:text-bodydark">{t('settings.appearance.previewStyle')}</p>
                     </div>
                   </div>
                 </div>
-                <div className="p-4 rounded-xl bg-gradient-to-br from-neon-blue/20 to-neon-purple/20 border border-neon-blue/30">
+                <div className="p-4 rounded-sm bg-primary/10 border border-primary/30">
                   <div className="flex items-center gap-2 mb-2">
                     <Badge variant="neon" size="sm">{t('settings.appearance.previewGlow')}</Badge>
                   </div>
-                  <p className="text-sm text-white font-bold">{t('settings.appearance.previewEffect')}</p>
+                  <p className="text-sm text-black dark:text-white font-bold">{t('settings.appearance.previewEffect')}</p>
                 </div>
               </div>
             </div>

@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Swords, Clock, Star, TrendingUp, BarChart3,
+  Swords, Star, BarChart3,
 } from 'lucide-react';
-import { Card, Badge, Tabs, StatCard, PageHeader, SectionCard, EmptyState } from '@/components/ui';
+import { Card, Badge, Tabs, PageHeader, SectionCard, EmptyState } from '@/components/ui';
 import { useMatchStore } from '@/store/useStore';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/helpers';
@@ -77,21 +77,14 @@ export default function Matches() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
 
       <PageHeader
         icon={<Swords size={28} />}
         title="Matchs"
         subtitle="Historique et suivi des matchs"
         variant="blue"
-      >
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard translucent label="Matchs joués" value={matches.filter((m: any) => m.status === 'completed').length} icon={<Swords size={16} />} />
-          <StatCard translucent label="Victoires" value={matches.filter((m: any) => m.status === 'completed' && m.team1.score > m.team2.score).length} icon={<TrendingUp size={16} />} trend={12} />
-          <StatCard translucent label="MVP obtenus" value={matches.filter((m: any) => m.mvp).length} icon={<Star size={16} />} />
-          <StatCard translucent label="À venir" value={matches.filter((m: any) => m.status === 'upcoming').length} icon={<Clock size={16} />} />
-        </div>
-      </PageHeader>
+      />
 
       <SectionCard className="!p-4">
         <Tabs
@@ -116,43 +109,43 @@ export default function Matches() {
               transition={{ delay: index * 0.1 }}
             >
               <Card
-                className={`cursor-pointer ${selectedMatch === m.id ? 'border-neon-blue/50 shadow-neon' : ''}`}
+                className={`cursor-pointer ${selectedMatch === m.id ? 'border-primary shadow-lg' : ''}`}
                 onClick={() => setSelectedMatch(m.id)}
               >
-                <div className="flex items-center justify-between mb-4">
+                <div className="mb-4 flex items-center justify-between">
                   <Badge variant={m.status === 'completed' ? 'green' : 'neon'} size="sm">
                     {m.status === 'completed' ? '✅ Terminé' : '📅 À venir'}
                   </Badge>
-                  <span className="text-xs text-gray-400">{formatDate(m.date)} • {m.tournament}</span>
+                  <span className="text-xs text-body dark:text-bodydark">{formatDate(m.date)} • {m.tournament}</span>
                 </div>
 
                 <div className="flex items-center gap-4">
                   <div className="flex-1 text-center">
-                    <p className="font-bold mb-1 text-white">{m.team1.name}</p>
+                    <p className="mb-1 font-bold text-black dark:text-white">{m.team1.name}</p>
                     <p className={`text-3xl font-black ${
-                      m.status === 'completed' && m.team1.score > m.team2.score ? 'text-green-400' :
-                      m.status === 'completed' && m.team1.score < m.team2.score ? 'text-red-400' :
-                      'text-neon-blue'
+                      m.status === 'completed' && m.team1.score > m.team2.score ? 'text-success' :
+                      m.status === 'completed' && m.team1.score < m.team2.score ? 'text-danger' :
+                      'text-primary'
                     }`}>
                       {m.team1.score}
                     </p>
                   </div>
 
                   <div className="flex flex-col items-center">
-                    <div className="px-4 py-2 rounded-xl text-xs font-black bg-gaming-surface text-gray-300">
+                    <div className="rounded-sm bg-gray-2 px-4 py-2 text-xs font-black text-body dark:bg-meta-4 dark:text-bodydark">
                       VS
                     </div>
                     {m.duration && (
-                      <span className="text-xs text-gray-400 mt-1">{m.duration}</span>
+                      <span className="mt-1 text-xs text-body dark:text-bodydark">{m.duration}</span>
                     )}
                   </div>
 
                   <div className="flex-1 text-center">
-                    <p className="font-bold mb-1 text-white">{m.team2.name}</p>
+                    <p className="mb-1 font-bold text-black dark:text-white">{m.team2.name}</p>
                     <p className={`text-3xl font-black ${
-                      m.status === 'completed' && m.team2.score > m.team1.score ? 'text-green-400' :
-                      m.status === 'completed' && m.team2.score < m.team1.score ? 'text-red-400' :
-                      'text-neon-purple'
+                      m.status === 'completed' && m.team2.score > m.team1.score ? 'text-success' :
+                      m.status === 'completed' && m.team2.score < m.team1.score ? 'text-danger' :
+                      'text-meta-5'
                     }`}>
                       {m.team2.score}
                     </p>
@@ -160,9 +153,9 @@ export default function Matches() {
                 </div>
 
                 {m.mvp && (
-                  <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-gaming-border">
-                    <Star size={14} className="text-amber-400" />
-                    <span className="text-xs text-gray-400">MVP: <span className="text-amber-400 font-medium">{m.mvp}</span></span>
+                  <div className="mt-4 flex items-center justify-center gap-2 border-t border-stroke pt-4 dark:border-strokedark">
+                    <Star size={14} className="text-warning" />
+                    <span className="text-xs text-body dark:text-bodydark">MVP: <span className="font-medium text-warning">{m.mvp}</span></span>
                   </div>
                 )}
 
@@ -185,17 +178,17 @@ export default function Matches() {
         <div>
           {match ? (
             <Card>
-              <h3 className="font-bold text-lg mb-4 text-white">
+              <h3 className="mb-4 text-lg font-bold text-black dark:text-white">
                 Détails du match
               </h3>
 
               {match.games.length > 0 && (
                 <div className="mb-6">
-                  <p className="text-xs text-gray-400 mb-3">Games ({match.format})</p>
+                  <p className="mb-3 text-xs text-body dark:text-bodydark">Games ({match.format})</p>
                   <div className="space-y-2">
                     {match.games.map((game: any) => (
-                      <div key={game.number} className="flex items-center justify-between p-2 rounded-lg bg-gaming-surface/50">
-                        <span className="text-sm text-gray-300">Game {game.number}</span>
+                      <div key={game.number} className="flex items-center justify-between rounded-sm bg-gray-2 p-2 dark:bg-meta-4">
+                        <span className="text-sm text-body dark:text-bodydark">Game {game.number}</span>
                         <div className="flex items-center gap-2">
                           <Badge
                             variant={game.winner === match.team1.id ? 'green' : 'red'}
@@ -203,7 +196,7 @@ export default function Matches() {
                           >
                             {game.winner === match.team1.id ? match.team1.name : match.team2.name}
                           </Badge>
-                          <span className="text-xs text-gray-400">{game.duration}</span>
+                          <span className="text-xs text-body dark:text-bodydark">{game.duration}</span>
                         </div>
                       </div>
                     ))}
@@ -212,15 +205,15 @@ export default function Matches() {
               )}
 
               <div className="mb-6">
-                <p className="text-xs text-gray-400 mb-2">MVP</p>
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                  <Star size={20} className="text-amber-400" />
-                  <span className="font-bold text-white">{match.mvp}</span>
+                <p className="mb-2 text-xs text-body dark:text-bodydark">MVP</p>
+                <div className="flex items-center gap-3 rounded-sm border border-warning/20 bg-warning/10 p-3">
+                  <Star size={20} className="text-warning" />
+                  <span className="font-bold text-black dark:text-white">{match.mvp}</span>
                 </div>
               </div>
 
               <div>
-                <p className="text-xs text-gray-400 mb-3">Performance</p>
+                <p className="mb-3 text-xs text-body dark:text-bodydark">Performance</p>
                 <div className="h-48">
                   <Line data={performanceChart} options={chartOptions} />
                 </div>
@@ -228,9 +221,9 @@ export default function Matches() {
             </Card>
           ) : (
             <Card>
-              <div className="text-center py-8">
-                <BarChart3 className="w-10 h-10 mx-auto mb-3 text-gray-500" />
-                <p className="text-sm text-gray-400">
+              <div className="py-8 text-center">
+                <BarChart3 className="mx-auto mb-3 h-10 w-10 text-bodydark2" />
+                <p className="text-sm text-body dark:text-bodydark">
                   Sélectionnez un match pour voir les détails
                 </p>
               </div>

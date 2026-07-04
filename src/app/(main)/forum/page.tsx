@@ -73,7 +73,7 @@ export default function Forum() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
 
       <PageHeader
         icon={<MessagesSquare size={28} />}
@@ -92,14 +92,14 @@ export default function Forum() {
 
         <div className="lg:w-64 flex-shrink-0">
           <SectionCard>
-            <h3 className="font-bold text-sm mb-3 text-white">{t('forum.categories')}</h3>
+            <h3 className="mb-3 text-sm font-bold text-black dark:text-white">{t('forum.categories')}</h3>
             <div className="space-y-1">
               <button
                 onClick={() => setActiveCategory('all')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                className={`w-full rounded-sm px-3 py-2 text-left text-sm transition-colors ${
                   activeCategory === 'all'
-                    ? 'bg-neon-blue/10 text-neon-blue'
-                    : 'text-gray-400 hover:bg-gaming-surface'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4'
                 }`}
               >
                 📋 {t('forum.allCategories')}
@@ -108,10 +108,10 @@ export default function Forum() {
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                  className={`w-full rounded-sm px-3 py-2 text-left text-sm transition-colors ${
                     activeCategory === cat.id
-                      ? 'bg-neon-blue/10 text-neon-blue'
-                      : 'text-gray-400 hover:bg-gaming-surface'
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4'
                   }`}
                 >
                   {cat.icon} {cat.name}
@@ -125,14 +125,14 @@ export default function Forum() {
 
           <SectionCard className="!p-4 mb-6">
             <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bodydark2" />
                 <input
                   type="text"
                   placeholder={t('forum.searchPlaceholder')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg text-sm transition-all focus:outline-none bg-gaming-surface border border-gaming-border text-white placeholder-gray-500 focus:border-neon-blue/50"
+                  className="w-full rounded-sm border border-stroke bg-gray-2 py-2.5 pl-10 pr-4 text-sm text-black outline-none transition-all placeholder:text-bodydark2 focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
                 />
               </div>
               <div className="flex gap-2">
@@ -144,10 +144,10 @@ export default function Forum() {
                   <button
                     key={sort.id}
                     onClick={() => setActiveSort(sort.id)}
-                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                    className={`flex items-center gap-1.5 rounded-sm px-3 py-2 text-xs font-medium transition-colors ${
                       activeSort === sort.id
-                        ? 'bg-neon-blue/10 text-neon-blue'
-                        : 'text-gray-400 hover:bg-gaming-surface'
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4'
                     }`}
                   >
                     <sort.icon size={14} />
@@ -174,23 +174,23 @@ export default function Forum() {
                       <Avatar name={post.authorName} size="md" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
-                          {post.isPinned && <Pin size={14} className="text-amber-400" />}
+                          {post.isPinned && <Pin size={14} className="text-warning" />}
                           <Badge variant="purple" size="sm">{category?.icon} {category?.name}</Badge>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-bodydark2">
                             {timeAgo(post.createdAt)}
                           </span>
                         </div>
-                        <h3 className="font-bold text-base mb-1 text-white">
+                        <h3 className="mb-1 text-base font-bold text-black dark:text-white">
                           {post.title}
                         </h3>
-                        <p className="text-sm line-clamp-2 mb-3 text-gray-400">
+                        <p className="mb-3 line-clamp-2 text-sm text-body dark:text-bodydark">
                           {post.content}
                         </p>
 
-                        <div className="flex items-center gap-4 text-xs text-gray-400">
+                        <div className="flex items-center gap-4 text-xs text-body dark:text-bodydark">
                           <div className="flex items-center gap-1.5">
                             <Avatar name={post.authorName} size="sm" />
-                            <span className="font-medium text-gray-300">
+                            <span className="font-medium text-body dark:text-bodydark">
                               {post.authorName}
                             </span>
                             <Badge variant="neon" size="sm">{getRankName(post.authorRank)}</Badge>
@@ -218,31 +218,31 @@ export default function Forum() {
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
-                            className="mt-4 pt-4 border-t border-gaming-border"
+                            className="mt-4 border-t border-stroke pt-4 dark:border-strokedark"
                           >
-                            <p className="text-xs text-gray-400 mb-3">{t('forum.comments')} ({post.comments.length})</p>
+                            <p className="mb-3 text-xs text-body dark:text-bodydark">{t('forum.comments')} ({post.comments.length})</p>
                             {post.comments.map((comment: any) => (
-                              <div key={comment.id} className="flex gap-3 mb-3">
+                              <div key={comment.id} className="mb-3 flex gap-3">
                                 <Avatar name={comment.authorName} size="sm" />
                                 <div>
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-white">
+                                    <span className="text-sm font-medium text-black dark:text-white">
                                       {comment.authorName}
                                     </span>
-                                    <span className="text-xs text-gray-500">{timeAgo(comment.createdAt)}</span>
+                                    <span className="text-xs text-bodydark2">{timeAgo(comment.createdAt)}</span>
                                   </div>
-                                  <p className="text-sm mt-0.5 text-gray-400">
+                                  <p className="mt-0.5 text-sm text-body dark:text-bodydark">
                                     {comment.content}
                                   </p>
                                 </div>
                               </div>
                             ))}
-                            <div className="flex gap-2 mt-3">
+                            <div className="mt-3 flex gap-2">
                               <input
                                 type="text"
                                 placeholder={t('forum.addComment')}
                                 onClick={(e) => e.stopPropagation()}
-                                className="flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none bg-gaming-surface border border-gaming-border text-white placeholder-gray-500 focus:border-neon-blue/50"
+                                className="flex-1 rounded-sm border border-stroke bg-gray-2 px-3 py-2 text-sm text-black outline-none placeholder:text-bodydark2 focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
                               />
                               <Button size="sm">{t('forum.send')}</Button>
                             </div>

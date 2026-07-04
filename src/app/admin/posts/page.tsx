@@ -47,7 +47,7 @@ export default function AdminPosts() {
   const catLabels: Record<string, string> = { all: 'Toutes', strategies: 'Stratégies', recruitment: 'Recrutement', tournaments: 'Tournois', general: 'Général', guides: 'Guides' };
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader
         icon={<Newspaper size={28} />}
         title="Gestion des Posts"
@@ -59,8 +59,8 @@ export default function AdminPosts() {
       <SectionCard className="!p-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher un post..." className="w-full pl-10 pr-4 py-2.5 bg-gaming-surface border border-gaming-border rounded-lg text-gray-100 placeholder-gray-500 focus:border-neon-blue focus:outline-none focus:ring-2 focus:ring-neon-blue/50" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-bodydark2 z-10" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher un post..." className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-stroke bg-gray-2 text-black placeholder-bodydark2 focus:border-primary focus:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white" />
           </div>
           <Select value={categoryFilter} onChange={(e: any) => setCategoryFilter(e.target.value)} className="sm:w-56">
             {categories.map((c) => <option key={c} value={c}>{catLabels[c]}</option>)}
@@ -71,15 +71,15 @@ export default function AdminPosts() {
       {/* Posts list */}
       <div className="space-y-3">
         {filtered.map((post: any, i: number) => (
-          <motion.div key={post.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-gaming-card border border-gaming-border rounded-xl p-5 hover:border-emerald-400/30 transition-all">
+          <motion.div key={post.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-white dark:bg-boxdark border border-stroke dark:border-strokedark rounded-sm shadow-default p-5 transition-colors hover:border-primary">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  {post.isPinned && <Pin size={14} className="text-yellow-400" />}
-                  <h3 className="text-white font-medium">{post.title}</h3>
+                  {post.isPinned && <Pin size={14} className="text-warning" />}
+                  <h3 className="text-black dark:text-white font-medium">{post.title}</h3>
                 </div>
-                <p className="text-gray-400 text-sm mb-2">Par {post.authorName} • {(post.createdAt || '').split('T')[0]}</p>
-                <div className="flex items-center gap-4 text-sm text-gray-400">
+                <p className="text-body dark:text-bodydark text-sm mb-2">Par {post.authorName} • {(post.createdAt || '').split('T')[0]}</p>
+                <div className="flex items-center gap-4 text-sm text-body dark:text-bodydark">
                   <span className="flex items-center gap-1"><Heart size={12} /> {post.likes}</span>
                   <span className="flex items-center gap-1"><MessageSquare size={12} /> {post.comments?.length || 0}</span>
                   <span className="flex items-center gap-1"><Eye size={12} /> {post.views}</span>

@@ -2,6 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Satoshi font (TailAdmin dashboard) */
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/Satoshi-Light.woff2') format('woff2'), url('/fonts/Satoshi-Light.woff') format('woff');
+  font-weight: 300;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/Satoshi-Regular.woff2') format('woff2'), url('/fonts/Satoshi-Regular.woff') format('woff');
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/Satoshi-Medium.woff2') format('woff2'), url('/fonts/Satoshi-Medium.woff') format('woff');
+  font-weight: 500;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/Satoshi-Bold.woff2') format('woff2'), url('/fonts/Satoshi-Bold.woff') format('woff');
+  font-weight: 700;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/Satoshi-Black.woff2') format('woff2'), url('/fonts/Satoshi-Black.woff') format('woff');
+  font-weight: 900;
+  font-display: swap;
+  font-style: normal;
+}
+
 @layer base {
   :root {
     --color-neon-blue: #00d4ff;
@@ -357,34 +394,6 @@ html:not(.dark) .skeleton { background: rgb(226 232 240); }
 html:not(.dark) *::-webkit-scrollbar-track { background: #e2e8f0; }
 html:not(.dark) *::-webkit-scrollbar-thumb { background: #94a3b8; }
 
-/* Text: switch hardcoded whites/grays */
-html:not(.dark) .text-white { color: #0f172a; }
-html:not(.dark) .text-gray-200 { color: #1e293b; }
-html:not(.dark) .text-gray-300 { color: #475569; }
-html:not(.dark) .text-gray-400 { color: #64748b; }
-html:not(.dark) .text-gray-500 { color: #64748b; }
-html:not(.dark) .text-gray-600 { color: #475569; }
-
-/* Keep WHITE text on colored / gradient elements */
-html:not(.dark) .btn-primary,
-html:not(.dark) .text-white.bg-gradient-to-br,
-html:not(.dark) .text-white.bg-gradient-to-r,
-html:not(.dark) .text-white.bg-gradient-to-l,
-html:not(.dark) .text-white.bg-gradient-to-t,
-html:not(.dark) .text-white.bg-gradient-to-b,
-html:not(.dark) .text-white[class*="bg-neon"],
-html:not(.dark) .text-white[class*="bg-red-5"],
-html:not(.dark) .text-white[class*="bg-red-6"],
-html:not(.dark) .text-white[class*="bg-green-5"],
-html:not(.dark) .text-white[class*="bg-green-6"],
-html:not(.dark) .text-white[class*="bg-blue-5"],
-html:not(.dark) .text-white[class*="bg-blue-6"],
-html:not(.dark) .text-white[class*="bg-purple-5"],
-html:not(.dark) .text-white[class*="bg-purple-6"],
-html:not(.dark) .text-white[class*="bg-pink-5"],
-html:not(.dark) .text-white[class*="bg-pink-6"],
-html:not(.dark) .text-white[class*="bg-yellow-5"],
-html:not(.dark) .text-white[class*="bg-orange-5"],
-html:not(.dark) .text-white[class*="bg-indigo-5"] {
-  color: #ffffff !important;
-}
+/* Note: the old light-mode text-white/text-gray overrides were removed. Public
+   routes are forced dark, and the dashboard uses proper text-black/dark:text-white
+   semantics (TailAdmin), so forcing whites to dark broke the dark sidebar. */

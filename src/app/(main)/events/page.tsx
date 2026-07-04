@@ -24,9 +24,9 @@ const MONTH_KEYS = [
 
 // Border/background styles per event type
 const eventTypeCard: Record<string, string> = {
-  scrim: 'bg-neon-blue/10 border-neon-blue/30',
-  coaching: 'bg-neon-purple/10 border-neon-purple/30',
-  tournament: 'bg-amber-500/10 border-amber-500/30',
+  scrim: 'bg-primary/10 border-primary/30',
+  coaching: 'bg-meta-5/10 border-meta-5/30',
+  tournament: 'bg-warning/10 border-warning/30',
 };
 
 const eventTypeIcons: Record<string, any> = {
@@ -78,7 +78,7 @@ export default function Events() {
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
 
       <PageHeader
         icon={<CalendarIcon size={28} />}
@@ -108,21 +108,21 @@ export default function Events() {
         <div className="lg:col-span-2">
           <Card>
 
-            <div className="flex items-center justify-between mb-6">
-              <button onClick={prevMonth} className="p-2 rounded-lg transition-colors hover:bg-gaming-surface">
-                <ChevronLeft size={20} className="text-gray-400" />
+            <div className="mb-6 flex items-center justify-between">
+              <button onClick={prevMonth} className="rounded-sm p-2 transition-colors hover:bg-gray-2 dark:hover:bg-meta-4">
+                <ChevronLeft size={20} className="text-body dark:text-bodydark" />
               </button>
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-xl font-bold text-black dark:text-white">
                 {t(MONTH_KEYS[month])} {year}
               </h2>
-              <button onClick={nextMonth} className="p-2 rounded-lg transition-colors hover:bg-gaming-surface">
-                <ChevronRight size={20} className="text-gray-400" />
+              <button onClick={nextMonth} className="rounded-sm p-2 transition-colors hover:bg-gray-2 dark:hover:bg-meta-4">
+                <ChevronRight size={20} className="text-body dark:text-bodydark" />
               </button>
             </div>
 
-            <div className="grid grid-cols-7 gap-1 mb-2">
+            <div className="mb-2 grid grid-cols-7 gap-1">
               {DAY_KEYS.map((dayKey) => (
-                <div key={dayKey} className="text-center text-xs font-medium text-gray-400 py-2">
+                <div key={dayKey} className="py-2 text-center text-xs font-medium text-body dark:text-bodydark">
                   {t(dayKey)}
                 </div>
               ))}
@@ -141,33 +141,33 @@ export default function Events() {
                     whileTap={day ? { scale: 0.95 } : {}}
                     onClick={() => day && setSelectedDate(isSelected ? null : day)}
                     disabled={!day}
-                    className={`aspect-square rounded-lg p-1 flex flex-col items-center justify-start transition-all relative ${
+                    className={`relative flex aspect-square flex-col items-center justify-start rounded-sm p-1 transition-all ${
                       !day
                         ? ''
                         : isSelected
-                          ? 'bg-neon-blue/20 border border-neon-blue/40'
+                          ? 'border border-primary/40 bg-primary/10'
                           : isToday
-                            ? 'bg-gaming-surface border border-neon-blue/20'
-                            : 'hover:bg-gaming-surface border border-transparent'
+                            ? 'border border-primary/20 bg-gray-2 dark:bg-meta-4'
+                            : 'border border-transparent hover:bg-gray-2 dark:hover:bg-meta-4'
                     }`}
                   >
                     {day && (
                       <>
                         <span className={`text-sm font-medium ${
                           isSelected
-                            ? 'text-neon-blue'
+                            ? 'text-primary'
                             : isToday
-                              ? 'text-neon-blue font-bold'
-                              : 'text-gray-300'
+                              ? 'font-bold text-primary'
+                              : 'text-body dark:text-bodydark'
                         }`}>
                           {day}
                         </span>
                         {dayEvents.length > 0 && (
-                          <div className="flex gap-0.5 mt-1">
+                          <div className="mt-1 flex gap-0.5">
                             {dayEvents.slice(0, 3).map((evt: any, i: number) => (
-                              <div key={i} className={`w-1.5 h-1.5 rounded-full ${
-                                evt.type === 'scrim' ? 'bg-neon-blue' :
-                                evt.type === 'tournament' ? 'bg-amber-400' : 'bg-neon-purple'
+                              <div key={i} className={`h-1.5 w-1.5 rounded-full ${
+                                evt.type === 'scrim' ? 'bg-primary' :
+                                evt.type === 'tournament' ? 'bg-warning' : 'bg-meta-5'
                               }`} />
                             ))}
                           </div>
@@ -183,35 +183,35 @@ export default function Events() {
 
         <div>
           <Card>
-            <h3 className="font-bold mb-4 text-white">
+            <h3 className="mb-4 font-bold text-black dark:text-white">
               {selectedDate ? `${t('events.eventsOfDayPrefix')} ${selectedDate} ${t(MONTH_KEYS[month])}` : t('events.allEvents')}
             </h3>
             <div className="space-y-3">
               {selectedEvents.map((event: any) => {
                 const cardStyle = eventTypeCard[event.type] || eventTypeCard.scrim;
                 const Icon = eventTypeIcons[event.type] || Swords;
-                const iconColor = event.type === 'tournament' ? 'text-amber-400' : event.type === 'coaching' ? 'text-neon-purple' : 'text-neon-blue';
+                const iconColor = event.type === 'tournament' ? 'text-warning' : event.type === 'coaching' ? 'text-meta-5' : 'text-primary';
 
                 return (
                   <motion.div
                     key={event.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`p-3 rounded-lg border ${cardStyle}`}
+                    className={`rounded-sm border p-3 ${cardStyle}`}
                   >
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="mb-2 flex items-center gap-2">
                       <Icon size={14} className={iconColor} />
                       <Badge variant={event.type === 'tournament' ? 'gold' : event.type === 'scrim' ? 'neon' : 'purple'} size="sm">
                         {event.type}
                       </Badge>
                     </div>
-                    <h4 className="font-semibold text-sm mb-1 text-white">
+                    <h4 className="mb-1 text-sm font-semibold text-black dark:text-white">
                       {event.title}
                     </h4>
-                    <p className="text-xs mb-2 text-gray-400">
+                    <p className="mb-2 text-xs text-body dark:text-bodydark">
                       {event.description}
                     </p>
-                    <div className="flex items-center gap-3 text-xs text-gray-400">
+                    <div className="flex items-center gap-3 text-xs text-body dark:text-bodydark">
                       <span className="flex items-center gap-1">
                         <CalendarIcon size={12} />
                         {event.date}

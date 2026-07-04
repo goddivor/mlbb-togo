@@ -1,29 +1,35 @@
 'use client';
 
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Toaster } from 'react-hot-toast';
 import { useThemeStore } from '@/store/useStore';
 import ParticlesBackground from './ParticlesBackground';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const theme = useThemeStore((s: any) => s.theme);
+  const pathname = usePathname();
+  // Public/landing routes stay dark (gaming look); the dashboard defaults to
+  // light and follows the user's theme choice.
+  const isPublic = pathname === '/' || pathname.startsWith('/admin-login');
+  const dark = isPublic ? true : theme === 'dark';
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
+    document.documentElement.classList.toggle('dark', dark);
+  }, [dark]);
 
   return (
     <>
-      <ParticlesBackground />
+      {isPublic && <ParticlesBackground />}
       <Toaster
         position="top-right"
         gutter={12}
         toastOptions={{
           duration: 3500,
           style: {
-            background: theme === 'dark' ? 'rgba(18,18,42,0.92)' : 'rgba(255,255,255,0.95)',
-            color: theme === 'dark' ? '#e2e8f0' : '#1a1a2e',
-            border: `1px solid ${theme === 'dark' ? '#1e1e3f' : '#e2e8f0'}`,
+            background: dark ? 'rgba(18,18,42,0.92)' : 'rgba(255,255,255,0.95)',
+            color: dark ? '#e2e8f0' : '#1a1a2e',
+            border: `1px solid ${dark ? '#1e1e3f' : '#e2e8f0'}`,
             borderRadius: '14px',
             padding: '12px 16px',
             fontSize: '14px',

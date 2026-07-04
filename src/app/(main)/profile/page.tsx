@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Gamepad2, Check, Link2, Unlink, RefreshCw, ShieldCheck, Trophy, Star, Target, Flame, User,
+  Gamepad2, Check, Link2, Unlink, RefreshCw, ShieldCheck, User,
 } from 'lucide-react';
 import { Card, Badge, Button, PageHeader, Avatar } from '@/components/ui';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -34,8 +34,8 @@ export default function ProfilePage() {
 
   if (!userProfile) {
     return (
-      <div className="p-6 max-w-4xl mx-auto flex items-center justify-center min-h-[50vh]">
-        <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="w-10 h-10 rounded-full border-2 border-stroke border-t-primary animate-spin dark:border-strokedark dark:border-t-primary" />
       </div>
     );
   }
@@ -116,12 +116,11 @@ export default function ProfilePage() {
     }
   };
 
-  const stats = userProfile.gameStats || {};
   const heroes: any[] = userProfile.gameFrequentHeroes || [];
   const name = userProfile.displayName || userProfile.username;
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6">
 
       <PageHeader
         icon={<User size={28} />}
@@ -135,10 +134,10 @@ export default function ProfilePage() {
         <div className="flex items-center gap-4">
           <Avatar name={name} src={userProfile.avatar ? avatarSrc(userProfile.avatar, 160) : undefined} size="xl" />
           <div>
-            <h2 className="text-xl font-bold text-white">{name}</h2>
-            <p className="text-sm text-gray-400">
+            <h2 className="text-xl font-bold text-black dark:text-white">{name}</h2>
+            <p className="text-sm text-body dark:text-bodydark">
               {t('profile.displayedProfile')}{' '}
-              <span className="text-neon-blue font-medium">
+              <span className="text-primary font-medium">
                 {userProfile.profileSource === 'google' ? t('profile.googleProfile') : t('profile.gameProfile')}
               </span>
             </p>
@@ -147,59 +146,59 @@ export default function ProfilePage() {
       </Card>
 
       <Card>
-        <h3 className="font-bold text-white mb-1">{t('profile.shownProfile')}</h3>
-        <p className="text-sm text-gray-400 mb-4">
+        <h3 className="font-bold text-black dark:text-white mb-1">{t('profile.shownProfile')}</h3>
+        <p className="text-sm text-body dark:text-bodydark mb-4">
           {t('profile.subtitle')}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             onClick={() => chooseSource('game')}
             disabled={!userProfile.hasGame || busy === 'source-game'}
-            className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+            className={`flex items-center gap-3 p-3 rounded-sm border text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               userProfile.profileSource === 'game'
-                ? 'border-neon-blue bg-neon-blue/10'
-                : 'border-gaming-border hover:bg-gaming-surface'
+                ? 'border-primary bg-primary/10'
+                : 'border-stroke hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4'
             }`}
           >
-            <Gamepad2 size={20} className="text-neon-blue shrink-0" />
+            <Gamepad2 size={20} className="text-primary shrink-0" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white">{t('profile.gameProfile')}</p>
-              <p className="text-xs text-gray-400 truncate">
+              <p className="text-sm font-semibold text-black dark:text-white">{t('profile.gameProfile')}</p>
+              <p className="text-xs text-body dark:text-bodydark truncate">
                 {userProfile.gameNickname || (userProfile.hasGame ? `${t('dashboard.gameId')} ${userProfile.mlbbRoleId} · ${t('dashboard.gameServer')} ${userProfile.mlbbZoneId}` : t('profile.profileSource.nonLinked'))}
               </p>
             </div>
-            {userProfile.profileSource === 'game' && <Check size={16} className="text-neon-blue" />}
+            {userProfile.profileSource === 'game' && <Check size={16} className="text-primary" />}
           </button>
 
           <button
             onClick={() => chooseSource('google')}
             disabled={!userProfile.hasGoogle || busy === 'source-google'}
-            className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+            className={`flex items-center gap-3 p-3 rounded-sm border text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               userProfile.profileSource === 'google'
-                ? 'border-neon-blue bg-neon-blue/10'
-                : 'border-gaming-border hover:bg-gaming-surface'
+                ? 'border-primary bg-primary/10'
+                : 'border-stroke hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4'
             }`}
           >
             <GoogleGlyph />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white">{t('profile.googleProfile')}</p>
-              <p className="text-xs text-gray-400 truncate">
+              <p className="text-sm font-semibold text-black dark:text-white">{t('profile.googleProfile')}</p>
+              <p className="text-xs text-body dark:text-bodydark truncate">
                 {userProfile.googleName || (userProfile.hasGoogle ? userProfile.googleEmail || t('profile.googleLinked') : t('profile.googleDescUnlinked'))}
               </p>
             </div>
-            {userProfile.profileSource === 'google' && <Check size={16} className="text-neon-blue" />}
+            {userProfile.profileSource === 'google' && <Check size={16} className="text-primary" />}
           </button>
         </div>
       </Card>
 
       <Card>
-        <h3 className="font-bold text-white mb-4">{t('profile.linkedAccounts')}</h3>
+        <h3 className="font-bold text-black dark:text-white mb-4">{t('profile.linkedAccounts')}</h3>
         <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3 rounded-xl border border-gaming-border">
+          <div className="flex items-center gap-3 p-3 rounded-sm border border-stroke dark:border-strokedark">
             <GoogleGlyph />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white">{t('profile.google')}</p>
-              <p className="text-xs text-gray-400 truncate">
+              <p className="text-sm font-semibold text-black dark:text-white">{t('profile.google')}</p>
+              <p className="text-xs text-body dark:text-bodydark truncate">
                 {userProfile.hasGoogle
                   ? userProfile.googleEmail || userProfile.googleName || t('profile.googleLinked')
                   : t('profile.googleDescUnlinked')}
@@ -214,11 +213,11 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <div className="flex items-center gap-3 p-3 rounded-xl border border-gaming-border">
-            <Gamepad2 size={22} className="text-neon-blue shrink-0" />
+          <div className="flex items-center gap-3 p-3 rounded-sm border border-stroke dark:border-strokedark">
+            <Gamepad2 size={22} className="text-primary shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white">{t('profile.gameAccount')}</p>
-              <p className="text-xs text-gray-400 truncate">
+              <p className="text-sm font-semibold text-black dark:text-white">{t('profile.gameAccount')}</p>
+              <p className="text-xs text-body dark:text-bodydark truncate">
                 {userProfile.hasGame
                   ? `${t('dashboard.gameId')} ${userProfile.mlbbRoleId} · ${t('dashboard.gameServer')} ${userProfile.mlbbZoneId}`
                   : t('profile.gameDescUnlinked')}
@@ -250,7 +249,7 @@ export default function ProfilePage() {
         <Card>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-white">{t('profile.gameData')}</h3>
+              <h3 className="font-bold text-black dark:text-white">{t('profile.gameData')}</h3>
               <Badge variant="neon" size="sm">{t('dashboard.stats.allModes')}</Badge>
             </div>
             <Button variant="ghost" size="sm" onClick={sync} disabled={busy === 'sync'}>
@@ -259,16 +258,9 @@ export default function ProfilePage() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-            <MiniStat icon={<Trophy size={14} />} label={t('profile.wins')} value={stats.wins ?? 0} color="text-green-400" />
-            <MiniStat icon={<Target size={14} />} label={t('profile.winrate')} value={`${stats.winRate ?? 0}%`} color="text-neon-blue" />
-            <MiniStat icon={<Star size={14} />} label={t('profile.mvp')} value={stats.mvpCount ?? 0} color="text-amber-400" />
-            <MiniStat icon={<Flame size={14} />} label={t('profile.streak')} value={stats.winStreak ?? 0} color="text-red-400" />
-          </div>
-
           {heroes.length > 0 && (
             <>
-              <p className="text-sm font-medium text-gray-300 mb-2">{t('profile.favoriteHeroes')}</p>
+              <p className="text-sm font-medium text-body dark:text-bodydark mb-2">{t('profile.favoriteHeroes')}</p>
               <div className="flex flex-wrap gap-2">
                 {heroes.slice(0, 8).map((h, i) => (
                   <motion.div
@@ -276,7 +268,7 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.03 }}
-                    className="flex items-center gap-2 rounded-lg border border-gaming-border bg-gaming-surface/30 pr-3"
+                    className="flex items-center gap-2 rounded-sm border border-stroke bg-gray-2 pr-3 dark:border-strokedark dark:bg-meta-4"
                     title={`${h.name} — ${h.winRate}% sur ${h.matches} parties`}
                   >
                     {h.image && (
@@ -284,10 +276,10 @@ export default function ProfilePage() {
                         src={mlbbImg(h.image, 64)}
                         alt={h.name}
                         referrerPolicy="no-referrer"
-                        className="w-9 h-9 rounded-l-lg object-cover bg-gaming-dark"
+                        className="w-9 h-9 rounded-l-sm object-cover bg-gray dark:bg-boxdark"
                       />
                     )}
-                    <span className="text-xs text-gray-200">{h.name}</span>
+                    <span className="text-xs text-black dark:text-white">{h.name}</span>
                   </motion.div>
                 ))}
               </div>
@@ -309,17 +301,6 @@ export default function ProfilePage() {
         confirmLabel={t('profile.gameUnlink')}
         loading={busy === 'unlink'}
       />
-    </div>
-  );
-}
-
-function MiniStat({ icon, label, value, color }: any) {
-  return (
-    <div className="rounded-lg border border-gaming-border bg-gaming-surface/30 p-3 text-center">
-      <div className={`flex items-center justify-center gap-1 ${color} mb-1`}>
-        {icon} <span className="text-lg font-bold">{value}</span>
-      </div>
-      <p className="text-xs text-gray-400">{label}</p>
     </div>
   );
 }

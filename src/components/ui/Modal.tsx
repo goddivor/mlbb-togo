@@ -63,7 +63,7 @@ export default function Modal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto"
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 overflow-y-auto"
           >
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
@@ -72,17 +72,17 @@ export default function Modal({
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              'relative w-full max-h-[90vh] flex flex-col rounded-2xl border border-gaming-border bg-gaming-card shadow-2xl overflow-hidden',
+              'relative w-full max-h-[90vh] flex flex-col rounded-sm bg-white shadow-default overflow-hidden dark:bg-boxdark',
               width
             )}
           >
             {(title || icon) && (
               <div
                 className={cn(
-                  'flex items-center justify-between gap-4 px-5 py-4',
+                  'flex items-center justify-between gap-4 px-6 py-4',
                   gradient
-                    ? cn('bg-gradient-to-r text-white', headerGradient)
-                    : 'border-b border-gaming-border'
+                    ? 'bg-primary text-white'
+                    : 'border-b border-stroke dark:border-strokedark'
                 )}
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -90,21 +90,26 @@ export default function Modal({
                     <div
                       className={cn(
                         'shrink-0 rounded-lg p-2 flex items-center justify-center',
-                        gradient ? 'bg-white/20' : 'bg-gaming-surface text-neon-blue'
+                        gradient ? 'bg-white/20 text-white' : 'bg-gray text-primary dark:bg-meta-4'
                       )}
                     >
                       {icon}
                     </div>
                   )}
                   <div className="min-w-0">
-                    <h3 className={cn('font-bold truncate', gradient ? 'text-white' : 'text-white')}>
+                    <h3
+                      className={cn(
+                        'font-semibold truncate',
+                        gradient ? 'text-white' : 'text-black dark:text-white'
+                      )}
+                    >
                       {title}
                     </h3>
                     {subtitle && (
                       <p
                         className={cn(
                           'text-xs truncate mt-0.5',
-                          gradient ? 'text-white/80' : 'text-gray-400'
+                          gradient ? 'text-white/80' : 'text-body dark:text-bodydark'
                         )}
                       >
                         {subtitle}
@@ -120,14 +125,14 @@ export default function Modal({
                     'w-8 h-8 shrink-0 flex items-center justify-center rounded-lg transition-colors',
                     gradient
                       ? 'text-white/90 hover:bg-white/20'
-                      : 'text-gray-400 hover:text-white hover:bg-gaming-surface'
+                      : 'text-body hover:text-black hover:bg-gray dark:text-bodydark dark:hover:text-white dark:hover:bg-meta-4'
                   )}
                 >
                   <X size={18} />
                 </button>
               </div>
             )}
-            <div className="p-5 overflow-y-auto">{children}</div>
+            <div className="p-6 overflow-y-auto">{children}</div>
           </motion.div>
         </motion.div>
         )}

@@ -18,7 +18,7 @@ import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 
 const inputCls =
-  'w-full px-3 py-2 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue';
+  'w-full px-3 py-2 text-sm rounded-lg border border-stroke bg-gray-2 text-black placeholder-bodydark2 focus:outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white';
 
 const STATUSES = ['pending', 'in_review', 'approved', 'rejected'] as const;
 
@@ -153,7 +153,7 @@ export default function AdminRequestsPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader
         icon={<Inbox size={28} />}
         title={t('requests.title')}
@@ -165,8 +165,8 @@ export default function AdminRequestsPage() {
           onClick={() => setFilter('')}
           className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
             filter === ''
-              ? 'bg-neon-blue/20 text-neon-blue border-neon-blue/30'
-              : 'bg-gaming-surface text-gray-400 border-gaming-border hover:text-gray-200'
+              ? 'bg-primary/10 text-primary border-primary/30'
+              : 'bg-gray-2 text-body border-stroke hover:text-black dark:bg-meta-4 dark:text-bodydark dark:border-strokedark dark:hover:text-white'
           }`}
         >
           {t('requests.filterAll')}
@@ -177,8 +177,8 @@ export default function AdminRequestsPage() {
             onClick={() => setFilter(s)}
             className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
               filter === s
-                ? 'bg-neon-blue/20 text-neon-blue border-neon-blue/30'
-                : 'bg-gaming-surface text-gray-400 border-gaming-border hover:text-gray-200'
+                ? 'bg-primary/10 text-primary border-primary/30'
+                : 'bg-gray-2 text-body border-stroke hover:text-black dark:bg-meta-4 dark:text-bodydark dark:border-strokedark dark:hover:text-white'
             }`}
           >
             {t('requests.status.' + s)}
@@ -205,31 +205,31 @@ export default function AdminRequestsPage() {
                         src={avatarSrc(requester.avatar, 64)}
                         alt={name}
                         referrerPolicy="no-referrer"
-                        className="w-12 h-12 rounded-full object-cover bg-gaming-surface border border-gaming-border shrink-0"
+                        className="w-12 h-12 rounded-full object-cover bg-gray-2 border border-stroke shrink-0 dark:bg-meta-4 dark:border-strokedark"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-gaming-surface border border-gaming-border shrink-0 flex items-center justify-center text-sm font-bold text-gray-300">
+                      <div className="w-12 h-12 rounded-full bg-gray-2 border border-stroke shrink-0 flex items-center justify-center text-sm font-bold text-body dark:bg-meta-4 dark:border-strokedark dark:text-bodydark">
                         {initial}
                       </div>
                     )}
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm text-gray-400 truncate">{name}</p>
+                        <p className="text-sm text-body dark:text-bodydark truncate">{name}</p>
                         <Badge variant={statusVariant[r.status] || 'default'} size="sm">
                           {t('requests.status.' + r.status)}
                         </Badge>
                       </div>
 
-                      <p className="text-base font-semibold text-white mt-0.5">
+                      <p className="text-base font-semibold text-black dark:text-white mt-0.5">
                         {r.proposedName}
                       </p>
 
                       {r.message && (
-                        <p className="text-sm text-gray-400 mt-1 whitespace-pre-line break-words">{r.message}</p>
+                        <p className="text-sm text-body dark:text-bodydark mt-1 whitespace-pre-line break-words">{r.message}</p>
                       )}
 
-                      <p className="text-xs text-gray-600 mt-1">
+                      <p className="text-xs text-bodydark2 mt-1">
                         {new Date(r.createdAt).toLocaleString()}
                       </p>
 
@@ -300,7 +300,7 @@ export default function AdminRequestsPage() {
       >
         <form onSubmit={sendMessage} className="space-y-3">
           <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('messages.subject')}</label>
+            <label className="block text-xs text-body dark:text-bodydark mb-1">{t('messages.subject')}</label>
             <input
               className={inputCls}
               value={subject}
@@ -308,7 +308,7 @@ export default function AdminRequestsPage() {
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('messages.body')}</label>
+            <label className="block text-xs text-body dark:text-bodydark mb-1">{t('messages.body')}</label>
             <textarea
               className={inputCls}
               rows={5}
@@ -337,16 +337,16 @@ export default function AdminRequestsPage() {
         headerVariant="gradient"
       >
         {createReq?.requester && (
-          <p className="text-sm text-gray-400 mb-4">
+          <p className="text-sm text-body dark:text-bodydark mb-4">
             {t('admin.teams.fromRequest')}{' '}
-            <span className="text-gray-200 font-medium">
+            <span className="text-black dark:text-white font-medium">
               {createReq.requester.displayName || createReq.requester.username}
             </span>
           </p>
         )}
         <form onSubmit={submitCreate} className="space-y-3">
           <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('admin.esport.teamName')}</label>
+            <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.esport.teamName')}</label>
             <input
               className={inputCls}
               value={createForm.name}
@@ -355,7 +355,7 @@ export default function AdminRequestsPage() {
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('admin.esport.teamImage')}</label>
+            <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.esport.teamImage')}</label>
             <input
               className={inputCls}
               value={createForm.image}
@@ -363,7 +363,7 @@ export default function AdminRequestsPage() {
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('admin.esport.teamDesc')}</label>
+            <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.esport.teamDesc')}</label>
             <textarea
               className={`${inputCls} min-h-[80px] resize-y`}
               value={createForm.description}

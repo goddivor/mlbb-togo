@@ -34,7 +34,7 @@ export default function Tournaments() {
     : null;
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
 
       <PageHeader
         icon={<Trophy size={28} />}
@@ -67,32 +67,32 @@ export default function Tournaments() {
               transition={{ delay: index * 0.1 }}
             >
               <Card
-                className={`cursor-pointer ${selectedTournament === tour.id ? 'border-neon-blue/50 shadow-neon' : ''}`}
+                className={`cursor-pointer ${selectedTournament === tour.id ? 'border-primary shadow-lg' : ''}`}
                 onClick={() => setSelectedTournament(tour.id)}
               >
-                <div className="flex items-start justify-between mb-3">
+                <div className="mb-3 flex items-start justify-between">
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="mb-1 flex items-center gap-2">
                       <Badge variant={tour.status === 'ongoing' ? 'green' : tour.status === 'upcoming' ? 'neon' : 'default'} size="sm">
                         {tour.status === 'ongoing' ? '🔴 En cours' : tour.status === 'upcoming' ? '📅 À venir' : '✅ Terminé'}
                       </Badge>
                       <Badge variant="purple" size="sm">{tour.format}</Badge>
                     </div>
-                    <h3 className="text-xl font-bold text-white">
+                    <h3 className="text-xl font-bold text-black dark:text-white">
                       {tour.name}
                     </h3>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-amber-400">{tour.prizePool}</p>
-                    <p className="text-xs text-gray-400">Prize Pool</p>
+                    <p className="text-lg font-bold text-warning">{tour.prizePool}</p>
+                    <p className="text-xs text-body dark:text-bodydark">Prize Pool</p>
                   </div>
                 </div>
 
-                <p className="text-sm mb-4 text-gray-400">
+                <p className="mb-4 text-sm text-body dark:text-bodydark">
                   {tour.description}
                 </p>
 
-                <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400 mb-4">
+                <div className="mb-4 flex flex-wrap items-center gap-4 text-xs text-body dark:text-bodydark">
                   <span className="flex items-center gap-1">
                     <Calendar size={14} />
                     {tour.startDate} - {tour.endDate}
@@ -109,7 +109,7 @@ export default function Tournaments() {
 
                 <div className="mb-4">
                   <ProgressBar value={tour.registeredTeams.length} max={tour.maxTeams} />
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="mt-1 text-xs text-body dark:text-bodydark">
                     {tour.registeredTeams.length}/{tour.maxTeams} inscrits
                   </p>
                 </div>
@@ -121,7 +121,7 @@ export default function Tournaments() {
                       return (
                         <div
                           key={teamId}
-                          className="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center text-xs font-bold text-white border-2 border-gaming-dark"
+                          className="flex h-8 w-8 items-center justify-center rounded-sm border-2 border-white bg-primary text-xs font-bold text-white dark:border-boxdark"
                           title={team?.name}
                         >
                           {team?.tag || '?'}
@@ -129,7 +129,7 @@ export default function Tournaments() {
                       );
                     })}
                     {tour.registeredTeams.length > 4 && (
-                      <div className="w-8 h-8 rounded-lg bg-gaming-surface flex items-center justify-center text-xs text-gray-400 border-2 border-gaming-dark">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-sm border-2 border-white bg-gray-2 text-xs text-body dark:border-boxdark dark:bg-meta-4 dark:text-bodydark">
                         +{tour.registeredTeams.length - 4}
                       </div>
                     )}
@@ -162,44 +162,44 @@ export default function Tournaments() {
         <div>
           {tournament ? (
             <Card>
-              <h3 className="font-bold text-lg mb-4 text-white">
+              <h3 className="mb-4 text-lg font-bold text-black dark:text-white">
                 {tournament.name}
               </h3>
 
               <div className="space-y-4">
                 <div>
-                  <p className="text-xs text-gray-400 mb-2">Format</p>
+                  <p className="mb-2 text-xs text-body dark:text-bodydark">Format</p>
                   <Badge variant="neon">{tournament.format}</Badge>
                 </div>
 
                 <div>
-                  <p className="text-xs text-gray-400 mb-2">Organisateur</p>
-                  <p className="text-sm font-medium text-white">{tournament.organizer}</p>
+                  <p className="mb-2 text-xs text-body dark:text-bodydark">Organisateur</p>
+                  <p className="text-sm font-medium text-black dark:text-white">{tournament.organizer}</p>
                 </div>
 
                 <div>
-                  <p className="text-xs text-gray-400 mb-2">Dates</p>
-                  <p className="text-sm text-gray-300">
+                  <p className="mb-2 text-xs text-body dark:text-bodydark">Dates</p>
+                  <p className="text-sm text-body dark:text-bodydark">
                     {formatDate(tournament.startDate)} → {formatDate(tournament.endDate)}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-xs text-gray-400 mb-2">Prize Pool</p>
-                  <p className="text-2xl font-bold text-amber-400">{tournament.prizePool}</p>
+                  <p className="mb-2 text-xs text-body dark:text-bodydark">Prize Pool</p>
+                  <p className="text-2xl font-bold text-warning">{tournament.prizePool}</p>
                 </div>
 
                 <div>
-                  <p className="text-xs text-gray-400 mb-2">Équipes inscrites ({tournament.registeredTeams.length})</p>
+                  <p className="mb-2 text-xs text-body dark:text-bodydark">Équipes inscrites ({tournament.registeredTeams.length})</p>
                   <div className="space-y-2">
                     {tournament.registeredTeams.map((teamId: string) => {
                       const team = teams.find((t: any) => t.id === teamId);
                       return (
-                        <div key={teamId} className="flex items-center gap-2 p-2 rounded-lg bg-gaming-surface/50">
-                          <div className="w-6 h-6 rounded bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center text-[10px] font-bold text-white">
+                        <div key={teamId} className="flex items-center gap-2 rounded-sm bg-gray-2 p-2 dark:bg-meta-4">
+                          <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-[10px] font-bold text-white">
                             {team?.tag}
                           </div>
-                          <span className="text-sm text-white">{team?.name}</span>
+                          <span className="text-sm text-black dark:text-white">{team?.name}</span>
                         </div>
                       );
                     })}
@@ -223,9 +223,9 @@ export default function Tournaments() {
             </Card>
           ) : (
             <Card>
-              <div className="text-center py-8">
-                <Medal className="w-10 h-10 mx-auto mb-3 text-gray-500" />
-                <p className="text-sm text-gray-400">
+              <div className="py-8 text-center">
+                <Medal className="mx-auto mb-3 h-10 w-10 text-bodydark2" />
+                <p className="text-sm text-body dark:text-bodydark">
                   Sélectionnez un tournoi pour voir les détails
                 </p>
               </div>
