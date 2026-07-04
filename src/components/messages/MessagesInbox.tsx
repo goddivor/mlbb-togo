@@ -224,7 +224,7 @@ export default function MessagesInbox() {
                         active ? 'bg-gray-2 dark:bg-strokedark' : ''
                       }`}
                     >
-                      <div className="relative mr-3.5 h-11 w-11 shrink-0 overflow-hidden rounded-full">
+                      <div className="relative mr-3.5 h-11 w-11 shrink-0 rounded-full">
                         {o?.avatar ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -292,7 +292,7 @@ export default function MessagesInbox() {
                   >
                     <ArrowLeft size={18} />
                   </button>
-                  <div className="relative mr-4.5 h-13 w-13 shrink-0 overflow-hidden rounded-full">
+                  <div className="relative mr-4.5 h-13 w-13 shrink-0 rounded-full">
                     {other?.avatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
