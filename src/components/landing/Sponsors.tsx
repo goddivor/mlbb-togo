@@ -16,9 +16,12 @@ export default function Sponsors() {
   const t = useT();
 
   useEffect(() => {
-    api.esport.sponsors().then((list: any) => {
-      if (Array.isArray(list)) setSponsors(list);
-    });
+    api.catalog
+      .sponsors()
+      .then((list: any) => {
+        if (Array.isArray(list)) setSponsors(list);
+      })
+      .catch(() => {}); // repli silencieux
   }, []);
 
   if (!sponsors.length) return null;

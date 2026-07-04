@@ -10,6 +10,7 @@ import {
   mockFormTemplates,
   mockFormResponses,
 } from './mockData';
+import { gql } from './gql';
 
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3006/api';
@@ -189,6 +190,42 @@ export const api = {
     list: (role?: string) =>
       request(`/heroes${role ? `?role=${role}` : ''}`, { fallback: [], auth: false }),
     get: (id: string) => request(`/heroes/${id}`, { auth: false }),
+    // Admin : resynchronise les héros depuis MLBB, renvoie { updated }.
+    refresh: (): Promise<{ updated: number }> =>
+      request('/heroes/refresh', { method: 'POST' }),
+  },
+
+  lanes: {
+    list: () => request('/lanes', { fallback: [], auth: false }),
+    // Admin : met à jour une lane par sa clé.
+    update: (key: string, payload: any) =>
+      request(`/lanes/${key}`, { method: 'PATCH', body: payload }),
+  },
+
+  // Couche lecture via GraphQL (/graphql) — mêmes formes que le REST.
+  catalog: {
+    esportOrg: () =>
+      gql<{ esportOrg: any }>(
+        `{ esportOrg { id name logo color description teams { id name image description type sort } } }`,
+      ).then((d) => d.esportOrg),
+    sponsors: () =>
+      gql<{ sponsors: any[] }>(
+        `{ sponsors { id name logo url sort } }`,
+      ).then((d) => d.sponsors),
+    lanes: () =>
+      gql<{ lanes: any[] }>(
+        `{ lanes { id key name shortName description icon color compatibleClasses sort } }`,
+      ).then((d) => d.lanes),
+    heroes: (role?: string) =>
+      gql<{ heroes: any[] }>(
+        `query($role: String) { heroes(role: $role) { id name role } }`,
+        { role },
+      ).then((d) => d.heroes),
+    showcaseHeroes: (count?: number) =>
+      gql<{ showcaseHeroes: any[] }>(
+        `query($count: Int) { showcaseHeroes(count: $count) { name art thumb image roles laneKeys } }`,
+        { count },
+      ).then((d) => d.showcaseHeroes),
   },
 
   admin: {

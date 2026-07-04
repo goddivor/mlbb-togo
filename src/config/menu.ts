@@ -10,6 +10,7 @@ import {
   Inbox,
   MessageSquare,
   Handshake,
+  LayoutGrid,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -41,6 +42,13 @@ export const playerMenuGroups: MenuGroupConfig[] = [
 
 /** Menu de l'interface admin (groupé par section). */
 export const adminMenuGroups: MenuGroupConfig[] = [
+  {
+    id: 'catalog',
+    titleKey: 'nav.section.catalog',
+    items: [
+      { href: '/admin/catalog', labelKey: 'admin.catalog.title', icon: LayoutGrid },
+    ],
+  },
   {
     id: 'esport',
     titleKey: 'nav.section.esport',

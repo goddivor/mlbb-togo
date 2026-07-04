@@ -25,9 +25,12 @@ export default function HeroSection() {
   const t = useT();
 
   useEffect(() => {
-    api.esport.org().then((o: any) => {
-      if (o && Array.isArray(o.teams) && o.teams.length) setOrg(o);
-    });
+    api.catalog
+      .esportOrg()
+      .then((o: any) => {
+        if (o && Array.isArray(o.teams) && o.teams.length) setOrg(o);
+      })
+      .catch(() => {}); // repli silencieux
   }, []);
 
   const teams = org?.teams ?? [];
