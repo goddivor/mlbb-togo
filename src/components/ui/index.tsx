@@ -251,7 +251,7 @@ export function Avatar({ name, src, size = 'md', online, className }: any) {
     <div className={cn('relative', className)}>
       <div
         className={cn(
-          'rounded-full bg-primary flex items-center justify-center font-bold text-white overflow-hidden',
+          'shrink-0 rounded-full bg-primary flex items-center justify-center font-bold text-white overflow-hidden',
           sizes[size]
         )}
       >
@@ -389,7 +389,12 @@ export function PageHeader({
 
 export function EmptyState({ icon, title, description, action, className }: any) {
   return (
-    <div className={cn('flex flex-col items-center justify-center py-16 text-center', className)}>
+    <div
+      className={cn(
+        'flex min-h-[60vh] w-full flex-col items-center justify-center py-16 text-center',
+        className
+      )}
+    >
       {icon && (
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray text-body dark:bg-meta-4">
           {icon}

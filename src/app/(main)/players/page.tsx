@@ -44,7 +44,7 @@ export default function PlayersPage() {
 
       {/* Recherche */}
       <SectionCard className="!p-4">
-        <div className="relative w-full sm:max-w-xs">
+        <div className="relative w-full">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-bodydark2" />
           <input
             value={query}

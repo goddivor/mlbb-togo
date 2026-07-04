@@ -26,7 +26,7 @@ export default function LanguageSwitcher() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-sm font-medium px-2.5 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+        className="flex items-center gap-1.5 text-sm font-medium px-2.5 py-1.5 rounded-md text-body hover:text-primary hover:bg-gray dark:text-bodydark dark:hover:bg-meta-4 transition-colors"
       >
         <Globe size={14} />
         <span>{lang === 'fr' ? 'FR' : 'EN'}</span>
@@ -39,7 +39,7 @@ export default function LanguageSwitcher() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.96 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-1 w-36 rounded-xl border border-gaming-border bg-gaming-card shadow-gaming overflow-hidden z-50"
+            className="absolute right-0 top-full mt-1 w-36 rounded-sm border border-stroke bg-white shadow-default overflow-hidden z-50 dark:border-strokedark dark:bg-boxdark"
           >
             {[
               { code: 'fr', label: t('lang.fr') },
@@ -50,8 +50,8 @@ export default function LanguageSwitcher() {
                 onClick={() => { setLang(l.code); setOpen(false); }}
                 className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors ${
                   lang === l.code
-                    ? 'text-neon-blue bg-neon-blue/10'
-                    : 'text-gray-300 hover:bg-gaming-surface hover:text-white'
+                    ? 'text-primary bg-primary/10'
+                    : 'text-body hover:bg-gray hover:text-black dark:text-bodydark dark:hover:bg-meta-4 dark:hover:text-white'
                 }`}
               >
                 {l.label}

@@ -15,7 +15,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr">
+    // suppressHydrationWarning: the inline theme script sets the `class` on
+    // <html> before hydration, which would otherwise trip a mismatch warning.
+    <html lang="fr" suppressHydrationWarning>
       <head>
         {/* Set the theme class before paint to avoid a flash: public routes are
             dark; the dashboard follows the stored preference (light by default). */}
