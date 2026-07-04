@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/useStore';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
+import Portal from '@/components/ui/Portal';
 
 export default function LinkGameModal({
   open,
@@ -33,6 +34,15 @@ export default function LinkGameModal({
     const id = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(id);
   }, [cooldown]);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
 
   const handle = (k: string) => (e: any) =>
     setForm((f) => ({ ...f, [k]: e.target.value.replace(/[^0-9]/g, '') }));
@@ -79,22 +89,23 @@ export default function LinkGameModal({
   };
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-        >
+    <Portal>
+      <AnimatePresence>
+        {open && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.94, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 12 }}
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-md rounded-2xl border border-[#1e3f66] bg-gradient-to-b from-[#0c2038] to-[#0a1626] p-7 sm:p-8 shadow-2xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto"
           >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 12 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-[#1e3f66] bg-gradient-to-b from-[#0c2038] to-[#0a1626] p-7 sm:p-8 shadow-2xl"
+            >
             <button
               onClick={onClose}
                aria-label={t('linkGame.close')}
@@ -159,7 +170,8 @@ export default function LinkGameModal({
             </form>
           </motion.div>
         </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </Portal>
   );
 }
