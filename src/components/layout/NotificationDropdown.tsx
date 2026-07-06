@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { useT } from '@/lib/i18n';
+import { useT, notifContent } from '@/lib/i18n';
 import { timeAgo } from '@/lib/helpers';
 import { getSocket, usePresence } from '@/lib/realtime';
 
@@ -157,6 +157,7 @@ export default function NotificationDropdown() {
             <ul className="flex h-auto flex-col overflow-y-auto">
               {items.map((n) => {
                 const time = timeAgo(n.createdAt);
+                const { title, message } = notifContent(n, t);
                 return (
                   <li key={n.id}>
                     <button
@@ -167,8 +168,8 @@ export default function NotificationDropdown() {
                       }`}
                     >
                       <p className="text-sm text-body dark:text-bodydark">
-                        <span className="text-black dark:text-white">{n.title}</span>
-                        {n.message ? ` ${n.message}` : ''}
+                        <span className="text-black dark:text-white">{title}</span>
+                        {message ? ` ${message}` : ''}
                       </p>
                       {time && <p className="text-xs">{time}</p>}
                     </button>

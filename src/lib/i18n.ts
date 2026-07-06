@@ -85,6 +85,7 @@ export const translations: Record<string, Dict> = {
     'friends.sent': 'Demande d’ami envoyée.',
     'friends.added': 'Ami ajouté.',
     'friends.removed': 'Retiré.',
+    'friends.chat': 'Discuter',
     'teams.manageRoster': 'Gérer l’effectif',
     'teams.planMatch': 'Planifier un match',
     'teams.opponent': 'Adversaire',
@@ -122,6 +123,24 @@ export const translations: Record<string, Dict> = {
     'notif.none': 'Aucune notification.',
     'notif.markAllRead': 'Tout marquer comme lu',
     'notif.viewAll': 'Voir toutes les notifications',
+    'notif.friend_request.title': 'Nouvelle demande d’ami',
+    'notif.friend_request.message': '{who} veut vous ajouter en ami.',
+    'notif.friend_accept.title': 'Demande acceptée',
+    'notif.friend_accept.message': '{who} a accepté votre demande d’ami.',
+    'notif.recruitment_application.title': 'Nouvelle candidature',
+    'notif.recruitment_application.message': '{who} a postulé à votre recrutement.',
+    'notif.recruitment_decision.accepted.title': 'Candidature acceptée',
+    'notif.recruitment_decision.rejected.title': 'Candidature refusée',
+    'notif.recruitment_decision.message': 'Équipe « {team} ».',
+    'notif.team_request.title': 'Nouvelle demande d’équipe',
+    'notif.team_request.message': '{who} propose l’équipe « {team} ».',
+    'notif.request_decision.in_review.title': 'Votre demande est en cours d’examen',
+    'notif.request_decision.approved.title': 'Votre demande a été acceptée',
+    'notif.request_decision.rejected.title': 'Votre demande a été refusée',
+    'notif.request_decision.pending.title': 'Votre demande est en attente',
+    'notif.request_decision.default.title': 'Mise à jour de votre demande',
+    'notif.request_decision.message': 'Équipe « {team} ».',
+    'notif.message.title': 'Nouveau message',
     'header.messages': 'Messages',
     'header.viewAllMessages': 'Voir tous les messages',
     'requests.title': 'Demandes d’équipe',
@@ -153,6 +172,10 @@ export const translations: Record<string, Dict> = {
     'messages.subject': 'Sujet (optionnel)',
     'messages.body': 'Message',
     'messages.sent': 'Message envoyé.',
+    'messages.conversations': 'Conversations',
+    'messages.search': 'Rechercher…',
+    'messages.replyTo': 'Répondre au message',
+    'messages.startWith': 'Écris ton premier message à {name}.',
     'common.error': 'Une erreur est survenue.',
     'admin.seasons.title': 'Saisons',
     'admin.matches.title': 'Matchs',
@@ -704,6 +727,7 @@ export const translations: Record<string, Dict> = {
     'friends.sent': 'Friend request sent.',
     'friends.added': 'Friend added.',
     'friends.removed': 'Removed.',
+    'friends.chat': 'Chat',
     'teams.manageRoster': 'Manage roster',
     'teams.planMatch': 'Plan a match',
     'teams.opponent': 'Opponent',
@@ -741,6 +765,24 @@ export const translations: Record<string, Dict> = {
     'notif.none': 'No notification.',
     'notif.markAllRead': 'Mark all as read',
     'notif.viewAll': 'View all notifications',
+    'notif.friend_request.title': 'New friend request',
+    'notif.friend_request.message': '{who} wants to add you as a friend.',
+    'notif.friend_accept.title': 'Request accepted',
+    'notif.friend_accept.message': '{who} accepted your friend request.',
+    'notif.recruitment_application.title': 'New application',
+    'notif.recruitment_application.message': '{who} applied to your recruitment.',
+    'notif.recruitment_decision.accepted.title': 'Application accepted',
+    'notif.recruitment_decision.rejected.title': 'Application declined',
+    'notif.recruitment_decision.message': 'Team “{team}”.',
+    'notif.team_request.title': 'New team request',
+    'notif.team_request.message': '{who} proposes the team “{team}”.',
+    'notif.request_decision.in_review.title': 'Your request is under review',
+    'notif.request_decision.approved.title': 'Your request was approved',
+    'notif.request_decision.rejected.title': 'Your request was declined',
+    'notif.request_decision.pending.title': 'Your request is pending',
+    'notif.request_decision.default.title': 'Update on your request',
+    'notif.request_decision.message': 'Team “{team}”.',
+    'notif.message.title': 'New message',
     'header.messages': 'Messages',
     'header.viewAllMessages': 'View all messages',
     'requests.title': 'Team requests',
@@ -772,6 +814,10 @@ export const translations: Record<string, Dict> = {
     'messages.subject': 'Subject (optional)',
     'messages.body': 'Message',
     'messages.sent': 'Message sent.',
+    'messages.conversations': 'Conversations',
+    'messages.search': 'Search…',
+    'messages.replyTo': 'Reply to the message',
+    'messages.startWith': 'Write your first message to {name}.',
     'common.error': 'Something went wrong.',
     'admin.seasons.title': 'Seasons',
     'admin.matches.title': 'Matches',
@@ -1295,7 +1341,70 @@ export const translations: Record<string, Dict> = {
 export function useT() {
   const lang = useLangStore((s: any) => s.lang);
   return useCallback(
-    (key: string): string => translations[lang]?.[key] ?? translations.fr[key] ?? key,
+    (key: string, params?: Record<string, string | number>): string => {
+      const raw = translations[lang]?.[key] ?? translations.fr[key] ?? key;
+      if (!params) return raw;
+      return raw.replace(/\{(\w+)\}/g, (_, k) =>
+        params[k] != null ? String(params[k]) : `{${k}}`,
+      );
+    },
     [lang],
   );
+}
+
+type TFn = (key: string, params?: Record<string, string | number>) => string;
+
+/**
+ * Build a localized title/message for a notification from its `type` + `data`.
+ * The server stores French title/message as a fallback: legacy notifications
+ * (no `data`) and unknown types render that stored text verbatim.
+ */
+export function notifContent(n: any, t: TFn): { title: string; message: string } {
+  const type = n?.type;
+  const d = n?.data || {};
+
+  // Title is enough to localize a "new message" notification; the body stays
+  // as-is since it is user content.
+  if (type === 'message') {
+    return { title: t('notif.message.title'), message: n?.message ?? '' };
+  }
+
+  // Without structured params we cannot rebuild the sentence — keep the stored
+  // (already French) text.
+  if (!n?.data) return { title: n?.title ?? '', message: n?.message ?? '' };
+
+  switch (type) {
+    case 'friend_request':
+    case 'friend_accept':
+    case 'recruitment_application':
+      return {
+        title: t(`notif.${type}.title`),
+        message: t(`notif.${type}.message`, { who: d.who ?? '' }),
+      };
+    case 'team_request':
+      return {
+        title: t('notif.team_request.title'),
+        message: t('notif.team_request.message', {
+          who: d.who ?? '',
+          team: d.teamName ?? '',
+        }),
+      };
+    case 'recruitment_decision':
+      return {
+        title: t(
+          `notif.recruitment_decision.${d.status === 'accepted' ? 'accepted' : 'rejected'}.title`,
+        ),
+        message: t('notif.recruitment_decision.message', { team: d.teamName ?? '' }),
+      };
+    case 'request_decision': {
+      const known = ['in_review', 'approved', 'rejected', 'pending'];
+      const status = known.includes(d.status) ? d.status : 'default';
+      return {
+        title: t(`notif.request_decision.${status}.title`),
+        message: t('notif.request_decision.message', { team: d.teamName ?? '' }),
+      };
+    }
+    default:
+      return { title: n?.title ?? '', message: n?.message ?? '' };
+  }
 }

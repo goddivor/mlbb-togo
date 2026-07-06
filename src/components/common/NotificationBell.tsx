@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell } from 'lucide-react';
 import { api } from '@/lib/api';
-import { useT } from '@/lib/i18n';
+import { useT, notifContent } from '@/lib/i18n';
 import { getSocket, usePresence } from '@/lib/realtime';
 
 export default function NotificationBell() {
@@ -112,25 +112,28 @@ export default function NotificationBell() {
             <div className="px-4 py-8 text-center text-sm text-gray-500">{t('notif.none')}</div>
           ) : (
             <ul>
-              {items.map((n) => (
-                <li key={n.id}>
-                  <button
-                    type="button"
-                    onClick={() => openItem(n)}
-                    className={`w-full text-left px-4 py-3 border-b border-gaming-border/50 hover:bg-gaming-surface transition-colors ${
-                      !n.read ? 'bg-neon-blue/5' : ''
-                    }`}
-                  >
-                    <div className="flex items-start gap-2">
-                      {!n.read && <span className="mt-1.5 w-2 h-2 rounded-full bg-neon-blue shrink-0" />}
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-white">{n.title}</p>
-                        {n.message && <p className="text-xs text-gray-400 mt-0.5">{n.message}</p>}
+              {items.map((n) => {
+                const { title, message } = notifContent(n, t);
+                return (
+                  <li key={n.id}>
+                    <button
+                      type="button"
+                      onClick={() => openItem(n)}
+                      className={`w-full text-left px-4 py-3 border-b border-gaming-border/50 hover:bg-gaming-surface transition-colors ${
+                        !n.read ? 'bg-neon-blue/5' : ''
+                      }`}
+                    >
+                      <div className="flex items-start gap-2">
+                        {!n.read && <span className="mt-1.5 w-2 h-2 rounded-full bg-neon-blue shrink-0" />}
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-white">{title}</p>
+                          {message && <p className="text-xs text-gray-400 mt-0.5">{message}</p>}
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                </li>
-              ))}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

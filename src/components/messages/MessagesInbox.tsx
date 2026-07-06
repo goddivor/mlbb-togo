@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Send, MessageSquare, Shield, Search } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
@@ -18,13 +19,18 @@ const isStaff = (role?: string): boolean =>
 
 export default function MessagesInbox() {
   const t = useT();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [threads, setThreads] = useState<any[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [thread, setThread] = useState<any | null>(null);
+  // Draft conversation opened from a deep link (?to=) with no existing thread.
+  const [draftPeer, setDraftPeer] = useState<{ id: string; name: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [text, setText] = useState('');
   const [search, setSearch] = useState('');
+  const handledToRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const myId = useAuthStore((s: any) => s.user?.id);
   const online = usePresence((s) => s.online);
@@ -73,9 +79,47 @@ export default function MessagesInbox() {
     [scrollToBottom, t],
   );
 
+  // Deep link: /messages?to=<userId>&name=<name>. Open the existing thread with
+  // that user, or start a draft conversation when none exists yet.
+  useEffect(() => {
+    const to = searchParams.get('to');
+    if (!to || loading || handledToRef.current) return;
+    handledToRef.current = true;
+    const existing = threads.find((th) => th.other?.id === to);
+    if (existing) {
+      openThread(existing.id);
+    } else {
+      setDraftPeer({ id: to, name: searchParams.get('name') || '' });
+      setActiveId(null);
+      setThread(null);
+    }
+    router.replace('/messages');
+  }, [searchParams, loading, threads, openThread, router]);
+
   const send = useCallback(async () => {
     const body = text.trim();
-    if (!body || !activeId || sending) return;
+    if (!body || sending) return;
+
+    // First message of a draft conversation: create the thread.
+    if (!activeId && draftPeer) {
+      setSending(true);
+      try {
+        const created: any = await api.messages.startThread({ userId: draftPeer.id, body });
+        setThread(created);
+        setActiveId(created?.id ?? null);
+        setDraftPeer(null);
+        setText('');
+        scrollToBottom();
+        loadThreads();
+      } catch (e: any) {
+        toast.error(e?.message || t('common.error'));
+      } finally {
+        setSending(false);
+      }
+      return;
+    }
+
+    if (!activeId) return;
     setSending(true);
     try {
       const updated: any = await api.messages.reply(activeId, body);
@@ -88,7 +132,7 @@ export default function MessagesInbox() {
     } finally {
       setSending(false);
     }
-  }, [text, activeId, sending, scrollToBottom, loadThreads, t]);
+  }, [text, activeId, draftPeer, sending, scrollToBottom, loadThreads, t]);
 
   // Live message reception (WebSocket).
   useEffect(() => {
@@ -137,6 +181,10 @@ export default function MessagesInbox() {
   }, [connected, myId, scrollToBottom, loadThreads]);
 
   const other = thread?.other;
+  // Peer shown in the conversation header: the thread's peer, or the draft target.
+  const headerPeer = other ?? (draftPeer ? { id: draftPeer.id, displayName: draftPeer.name } : null);
+  // Right panel is open for an active thread or a draft conversation.
+  const panelOpen = !!activeId || !!draftPeer;
 
   // Client-side filter of the thread list (search box).
   const q = search.trim().toLowerCase();
@@ -164,12 +212,12 @@ export default function MessagesInbox() {
         {/* Left column: conversation list */}
         <div
           className={`${
-            activeId ? 'hidden' : 'flex'
+            panelOpen ? 'hidden' : 'flex'
           } h-full flex-col xl:flex xl:w-1/4`}
         >
           <div className="sticky border-b border-stroke px-6 py-7.5 dark:border-strokedark">
             <h3 className="text-lg font-medium text-black dark:text-white 2xl:text-xl">
-              Conversations
+              {t('messages.conversations')}
               <span className="rounded-md border-[.5px] border-stroke bg-gray-2 px-2 py-0.5 text-base font-medium text-black dark:border-strokedark dark:bg-boxdark-2 dark:text-white 2xl:ml-4">
                 {threads.length}
               </span>
@@ -185,7 +233,7 @@ export default function MessagesInbox() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full rounded border border-stroke bg-gray-2 py-2.5 pl-5 pr-10 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark-2 dark:text-white"
-                  placeholder="Rechercher..."
+                  placeholder={t('messages.search')}
                 />
                 <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-bodydark2">
                   <Search size={18} />
@@ -268,10 +316,10 @@ export default function MessagesInbox() {
         {/* Right column: active conversation */}
         <div
           className={`${
-            activeId ? 'flex' : 'hidden'
+            panelOpen ? 'flex' : 'hidden'
           } h-full flex-col border-l border-stroke dark:border-strokedark xl:flex xl:w-3/4`}
         >
-          {!activeId ? (
+          {!panelOpen ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 text-sm text-bodydark2">
               <MessageSquare size={32} className="opacity-50" />
               {t('messages.empty')}
@@ -286,6 +334,7 @@ export default function MessagesInbox() {
                     onClick={() => {
                       setActiveId(null);
                       setThread(null);
+                      setDraftPeer(null);
                     }}
                     className="mr-3 rounded-md p-1.5 text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4 xl:hidden"
                     aria-label={t('messages.title')}
@@ -293,29 +342,29 @@ export default function MessagesInbox() {
                     <ArrowLeft size={18} />
                   </button>
                   <div className="relative mr-4.5 h-13 w-13 shrink-0 rounded-full">
-                    {other?.avatar ? (
+                    {headerPeer?.avatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={avatarSrc(other.avatar, 64)}
-                        alt={nameOf(other)}
+                        src={avatarSrc(headerPeer.avatar, 64)}
+                        alt={nameOf(headerPeer)}
                         referrerPolicy="no-referrer"
                         className="h-full w-full rounded-full object-cover"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center rounded-full bg-primary text-base font-bold text-white">
-                        {initialOf(other)}
+                        {initialOf(headerPeer)}
                       </div>
                     )}
-                    {other?.id && online.has(other.id) && (
+                    {headerPeer?.id && online.has(headerPeer.id) && (
                       <span className="absolute bottom-0 right-0 block h-3.5 w-3.5 rounded-full border-2 border-white bg-success dark:border-boxdark" />
                     )}
                   </div>
                   <div className="min-w-0">
                     <h5 className="truncate font-medium text-black dark:text-white">
-                      {nameOf(other) || thread?.subject || ''}
+                      {nameOf(headerPeer) || thread?.subject || ''}
                     </h5>
                     <p className="text-sm font-medium text-body dark:text-bodydark">
-                      Répondre au message
+                      {t('messages.replyTo')}
                     </p>
                   </div>
                 </div>
@@ -327,9 +376,16 @@ export default function MessagesInbox() {
                 className="no-scrollbar max-h-full flex-1 space-y-3.5 overflow-auto px-6 py-7.5"
               >
                 {!thread ? (
-                  <div className="flex items-center justify-center py-10">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-stroke border-t-primary dark:border-strokedark dark:border-t-primary" />
-                  </div>
+                  draftPeer ? (
+                    <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-bodydark2">
+                      <MessageSquare size={28} className="opacity-50" />
+                      {t('messages.startWith', { name: draftPeer.name })}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center py-10">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-stroke border-t-primary dark:border-strokedark dark:border-t-primary" />
+                    </div>
+                  )
                 ) : (
                   (thread.messages || []).map((m: any) =>
                     m.mine ? (

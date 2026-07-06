@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { MessageSquare } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { PageHeader } from '@/components/ui';
@@ -10,7 +11,9 @@ export default function MessagesPage() {
   return (
     <div className="space-y-6">
       <PageHeader icon={<MessageSquare size={28} />} title={t('messages.title')} variant="cyan" />
-      <MessagesInbox />
+      <Suspense fallback={null}>
+        <MessagesInbox />
+      </Suspense>
     </div>
   );
 }

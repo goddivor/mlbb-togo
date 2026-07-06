@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Users2, Check, X, UserMinus } from 'lucide-react';
+import { Users2, Check, X, UserMinus, MessageSquare } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { Button, PageHeader, EmptyState, LoadingSpinner, Tabs, Avatar } from '@/components/ui';
@@ -14,6 +15,7 @@ import toast from 'react-hot-toast';
 
 export default function FriendsPage() {
   const t = useT();
+  const router = useRouter();
   const [tab, setTab] = useState<'friends' | 'requests'>('friends');
   const [friends, setFriends] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
@@ -120,14 +122,27 @@ export default function FriendsPage() {
                     {u.gameRank || u.country}
                   </div>
                 </Link>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={busy === u.id}
-                  onClick={() => setConfirm({ kind: 'remove', user: u })}
-                >
-                  <UserMinus size={14} /> {t('friends.remove')}
-                </Button>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      router.push(
+                        `/messages?to=${u.id}&name=${encodeURIComponent(u.displayName || u.username)}`,
+                      )
+                    }
+                  >
+                    <MessageSquare size={14} /> {t('friends.chat')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={busy === u.id}
+                    onClick={() => setConfirm({ kind: 'remove', user: u })}
+                  >
+                    <UserMinus size={14} /> {t('friends.remove')}
+                  </Button>
+                </div>
               </motion.div>
             ))}
           </div>
