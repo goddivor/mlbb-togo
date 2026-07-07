@@ -8,28 +8,34 @@ import {
 } from 'lucide-react';
 import { Card, SectionCard, Badge, Avatar, Button, PageHeader, EmptyState, Input, Select, Textarea } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
-import { useForumStore, useAuthStore } from '@/store/useStore';
+import { useForumStore } from '@/store/useStore';
 import { api } from '@/lib/api';
 import { timeAgo, getRankName } from '@/lib/helpers';
 import { useT } from '@/lib/i18n';
+import toast from 'react-hot-toast';
 
 export default function Forum() {
   const t = useT();
-  const { posts, categories, setPosts, addPost, likePost } = useForumStore();
-  const { userProfile } = useAuthStore();
+  const { posts, categories, setPosts, likePost } = useForumStore();
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeSort, setActiveSort] = useState('recent');
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [selectedPost, setSelectedPost] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
+  const [commentText, setCommentText] = useState<Record<string, string>>({});
+  const [commenting, setCommenting] = useState<string | null>(null);
 
   const [newCategory, setNewCategory] = useState('strategies');
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
 
+  const reload = () => api.posts.list().then((l: any) => setPosts(Array.isArray(l) ? l : []));
+
   useEffect(() => {
-    api.posts.list().then(setPosts);
-  }, [setPosts]);
+    reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filteredPosts = posts
     .filter((p: any) => {
@@ -46,30 +52,46 @@ export default function Forum() {
 
   const handleLike = (id: string) => {
     likePost(id);
-    api.posts.like(id).catch(() => {});
+    api.posts.like(id).then(reload).catch(() => {});
   };
 
-  const handleCreate = () => {
-    if (!newTitle.trim()) return;
-    const post = {
-      id: 'post_' + Date.now(),
-      category: newCategory,
-      title: newTitle,
-      content: newContent,
-      authorId: userProfile?.id || 'me',
-      authorName: userProfile?.username || t('forum.you'),
-      authorRank: userProfile?.rank || 'warrior',
-      likes: 0,
-      views: 0,
-      comments: [],
-      isPinned: false,
-      createdAt: new Date().toISOString(),
-    };
-    addPost(post);
-    api.posts.create(post).catch(() => {});
-    setShowCreate(false);
-    setNewTitle('');
-    setNewContent('');
+  const handleCreate = async () => {
+    if (!newTitle.trim()) {
+      toast.error(t('forum.titleRequired'));
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.posts.create({
+        category: newCategory,
+        title: newTitle.trim(),
+        content: newContent.trim(),
+      });
+      await reload();
+      setShowCreate(false);
+      setNewTitle('');
+      setNewContent('');
+      toast.success(t('forum.published'));
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleComment = async (postId: string) => {
+    const content = (commentText[postId] || '').trim();
+    if (!content) return;
+    setCommenting(postId);
+    try {
+      await api.posts.comment(postId, { content });
+      setCommentText((s) => ({ ...s, [postId]: '' }));
+      await reload();
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error'));
+    } finally {
+      setCommenting(null);
+    }
   };
 
   return (
@@ -214,13 +236,16 @@ export default function Forum() {
                           </div>
                         </div>
 
-                        {selectedPost === post.id && post.comments.length > 0 && (
+                        {selectedPost === post.id && (
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             className="mt-4 border-t border-stroke pt-4 dark:border-strokedark"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <p className="mb-3 text-xs text-body dark:text-bodydark">{t('forum.comments')} ({post.comments.length})</p>
+                            {post.comments.length > 0 && (
+                              <p className="mb-3 text-xs text-body dark:text-bodydark">{t('forum.comments')} ({post.comments.length})</p>
+                            )}
                             {post.comments.map((comment: any) => (
                               <div key={comment.id} className="mb-3 flex gap-3">
                                 <Avatar name={comment.authorName} size="sm" />
@@ -241,10 +266,24 @@ export default function Forum() {
                               <input
                                 type="text"
                                 placeholder={t('forum.addComment')}
-                                onClick={(e) => e.stopPropagation()}
+                                value={commentText[post.id] || ''}
+                                onChange={(e) => setCommentText((s) => ({ ...s, [post.id]: e.target.value }))}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleComment(post.id);
+                                  }
+                                }}
                                 className="flex-1 rounded-sm border border-stroke bg-gray-2 px-3 py-2 text-sm text-black outline-none placeholder:text-bodydark2 focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
                               />
-                              <Button size="sm">{t('forum.send')}</Button>
+                              <Button
+                                size="sm"
+                                loading={commenting === post.id}
+                                disabled={!(commentText[post.id] || '').trim()}
+                                onClick={() => handleComment(post.id)}
+                              >
+                                {t('forum.send')}
+                              </Button>
                             </div>
                           </motion.div>
                         )}
@@ -300,7 +339,7 @@ export default function Forum() {
           />
           <div className="flex gap-3 pt-2">
             <Button variant="ghost" onClick={() => setShowCreate(false)} className="flex-1">{t('forum.cancel')}</Button>
-            <Button onClick={handleCreate} className="flex-1">{t('forum.publish')}</Button>
+            <Button onClick={handleCreate} loading={saving} className="flex-1">{t('forum.publish')}</Button>
           </div>
         </div>
       </Modal>

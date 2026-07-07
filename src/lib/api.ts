@@ -191,10 +191,10 @@ export const api = {
   posts: {
     list: (category?: string) =>
       request(`/posts${category ? `?category=${category}` : ''}`, {
-        fallback: mockPosts,
+        fallback: [],
         auth: false,
       }),
-    get: (id: string) => request(`/posts/${id}`, { fallback: findMock(mockPosts, id), auth: false }),
+    get: (id: string) => request(`/posts/${id}`, { fallback: null, auth: false }),
     create: (data: any) => request('/posts', { method: 'POST', body: data }),
     remove: (id: string) => request(`/posts/${id}`, { method: 'DELETE' }),
     like: (id: string) => request(`/posts/${id}/like`, { method: 'POST', auth: false }),
