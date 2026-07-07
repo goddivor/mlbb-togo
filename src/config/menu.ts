@@ -62,6 +62,7 @@ export const adminMenuGroups: MenuGroupConfig[] = [
     id: 'community',
     titleKey: 'nav.section.community',
     items: [
+      { href: '/admin/users', labelKey: 'admin.users.title', icon: Users },
       { href: '/admin/requests', labelKey: 'requests.title', icon: Inbox },
       { href: '/admin/messages', labelKey: 'header.messages', icon: MessageSquare },
     ],

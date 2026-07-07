@@ -152,6 +152,7 @@ export const api = {
 
   users: {
     list: () => request('/users', { fallback: [], auth: false }),
+    adminList: () => request('/users/admin', { fallback: [] }),
     leaderboard: () => request('/users/leaderboard', { fallback: [], auth: false }),
     get: (id: string) => request(`/users/${id}`, { fallback: null, auth: false }),
     update: (id: string, data: any) => request(`/users/${id}`, { method: 'PATCH', body: data }),
