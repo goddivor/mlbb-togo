@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   Settings as SettingsIcon, User, Bell, Shield, Palette,
@@ -8,45 +9,113 @@ import {
 } from 'lucide-react';
 import { Card, Button, Input, Textarea, Select, Badge, Tabs, PageHeader, SectionCard } from '@/components/ui';
 import ConfirmModal from '@/components/ui/ConfirmModal';
-import { useThemeStore } from '@/store/useStore';
+import { useThemeStore, useAuthStore } from '@/store/useStore';
+import { api, setToken } from '@/lib/api';
 import { MLBB_RANKS, MLBB_ROLES } from '@/lib/constants';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
 
+const DEFAULT_NOTIFS = { matches: true, tournaments: true, teams: true, forum: true, email: false };
+const DEFAULT_PRIVACY = { profilePublic: true, showStats: true, showOnline: true, allowInvites: true };
+
 export default function Settings() {
   const { theme, toggleTheme } = useThemeStore();
+  const userProfile = useAuthStore((s: any) => s.userProfile);
+  const setUserProfile = useAuthStore((s: any) => s.setUserProfile);
+  const setUser = useAuthStore((s: any) => s.setUser);
+  const logout = useAuthStore((s: any) => s.logout);
+  const router = useRouter();
+  const t = useT();
+
   const [activeTab, setActiveTab] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
-  const t = useT();
+  const [saving, setSaving] = useState<string | null>(null);
 
   const [profile, setProfile] = useState({
-    username: 'TogoKing',
-    email: 'togoking@mlbb.tg',
-    bio: 'Meilleur assassin du Togo 🇹🇬 | Mythic 800+',
-    rank: 'mythic',
-    role: 'assassin',
-    country: 'Togo',
-    city: 'Lomé',
+    username: '', email: '', bio: '', rank: 'warrior', role: 'fighter', country: '', city: '',
   });
+  const [notifications, setNotifications] = useState<any>(DEFAULT_NOTIFS);
+  const [privacy, setPrivacy] = useState<any>(DEFAULT_PRIVACY);
+  const [pwd, setPwd] = useState({ current: '', next: '', confirm: '' });
 
-  const [notifications, setNotifications] = useState<any>({
-    matches: true,
-    tournaments: true,
-    teams: true,
-    forum: true,
-    email: false,
-  });
+  // Hydrate the form from the real profile.
+  useEffect(() => {
+    if (!userProfile) return;
+    setProfile({
+      username: userProfile.username || '',
+      email: userProfile.email || '',
+      bio: userProfile.bio || '',
+      rank: userProfile.rank || 'warrior',
+      role: userProfile.role || 'fighter',
+      country: userProfile.country || '',
+      city: userProfile.city || '',
+    });
+    setNotifications({ ...DEFAULT_NOTIFS, ...(userProfile.notifPrefs || {}) });
+    setPrivacy({ ...DEFAULT_PRIVACY, ...(userProfile.privacy || {}) });
+  }, [userProfile?.id]);
 
-  const [privacy, setPrivacy] = useState<any>({
-    profilePublic: true,
-    showStats: true,
-    showOnline: true,
-    allowInvites: true,
-  });
+  const myId = userProfile?.id;
 
-  const handleSave = () => {
-    toast.success(t('settings.saved'));
+  const persist = async (key: string, patch: any) => {
+    if (!myId) return;
+    setSaving(key);
+    try {
+      const updated: any = await api.users.update(myId, patch);
+      setUser(updated);
+      setUserProfile(updated);
+      toast.success(t('settings.saved'));
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error'));
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const saveProfile = () =>
+    persist('profile', {
+      username: profile.username,
+      bio: profile.bio,
+      city: profile.city,
+      rank: profile.rank,
+      role: profile.role,
+      country: profile.country,
+    });
+  const saveNotifications = () => persist('notifications', { notifPrefs: notifications });
+  const savePrivacy = () => persist('privacy', { privacy });
+
+  const changePassword = async () => {
+    if (!pwd.current || !pwd.next) return toast.error(t('settings.pwdRequired'));
+    if (pwd.next !== pwd.confirm) return toast.error(t('settings.pwdMismatch'));
+    setSaving('password');
+    try {
+      await api.auth.changePassword({
+        email: profile.email,
+        currentPassword: pwd.current,
+        newPassword: pwd.next,
+      });
+      setPwd({ current: '', next: '', confirm: '' });
+      toast.success(t('settings.pwdChanged'));
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error'));
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const deleteAccount = async () => {
+    setSaving('delete');
+    try {
+      await api.users.deleteSelf();
+      setShowDelete(false);
+      logout();
+      setToken(null);
+      toast.success(t('settings.accountDeleted'));
+      router.push('/');
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error'));
+      setSaving(null);
+    }
   };
 
   return (
@@ -89,7 +158,8 @@ export default function Settings() {
                   label={t('settings.email')}
                   type="email"
                   value={profile.email}
-                  onChange={(e: any) => setProfile({ ...profile, email: e.target.value })}
+                  disabled
+                  readOnly
                 />
               </div>
               <Textarea
@@ -127,7 +197,13 @@ export default function Settings() {
             </h3>
             <div className="space-y-4">
               <div className="relative">
-                <Input label={t('settings.currentPassword')} type={showPassword ? 'text' : 'password'} placeholder="••••••••" />
+                <Input
+                  label={t('settings.currentPassword')}
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={pwd.current}
+                  onChange={(e: any) => setPwd({ ...pwd, current: e.target.value })}
+                />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -137,14 +213,31 @@ export default function Settings() {
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input label={t('settings.newPassword')} type="password" placeholder="••••••••" />
-                <Input label={t('settings.confirmPassword')} type="password" placeholder="••••••••" />
+                <Input
+                  label={t('settings.newPassword')}
+                  type="password"
+                  placeholder="••••••••"
+                  value={pwd.next}
+                  onChange={(e: any) => setPwd({ ...pwd, next: e.target.value })}
+                />
+                <Input
+                  label={t('settings.confirmPassword')}
+                  type="password"
+                  placeholder="••••••••"
+                  value={pwd.confirm}
+                  onChange={(e: any) => setPwd({ ...pwd, confirm: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={changePassword} loading={saving === 'password'}>
+                  {t('settings.changePassword')}
+                </Button>
               </div>
             </div>
           </Card>
 
           <div className="flex justify-end">
-            <Button onClick={handleSave}>
+            <Button onClick={saveProfile} loading={saving === 'profile'}>
               <Save size={16} />
               {t('settings.save')}
             </Button>
@@ -185,7 +278,7 @@ export default function Settings() {
             ))}
           </div>
           <div className="flex justify-end mt-6">
-            <Button onClick={handleSave}>
+            <Button onClick={saveNotifications} loading={saving === 'notifications'}>
               <Save size={16} />
               {t('settings.save')}
             </Button>
@@ -234,7 +327,7 @@ export default function Settings() {
           </div>
 
           <div className="flex justify-end mt-6">
-            <Button onClick={handleSave}>
+            <Button onClick={savePrivacy} loading={saving === 'privacy'}>
               <Save size={16} />
               {t('settings.save')}
             </Button>
@@ -304,10 +397,11 @@ export default function Settings() {
       <ConfirmModal
         open={showDelete}
         onClose={() => setShowDelete(false)}
-        onConfirm={() => setShowDelete(false)}
+        onConfirm={deleteAccount}
+        loading={saving === 'delete'}
         variant="danger"
         title={t('settings.privacy.deleteAccount')}
-        message={t('settings.privacy.dangerZone')}
+        message={t('settings.deleteConfirm')}
         confirmLabel={t('settings.privacy.deleteAccount')}
       />
     </div>

@@ -134,6 +134,9 @@ export const api = {
   auth: {
     me: () => request('/auth/me'),
 
+    changePassword: (data: { email: string; currentPassword: string; newPassword: string }) =>
+      request('/auth/change-password', { method: 'POST', body: data, auth: false }),
+
     adminLogin: (data: { username: string; password: string }) =>
       request('/auth/admin/login', { method: 'POST', body: data, auth: false }),
 
@@ -170,6 +173,7 @@ export const api = {
     get: (id: string) => request(`/users/${id}`, { fallback: null, auth: false }),
     update: (id: string, data: any) => request(`/users/${id}`, { method: 'PATCH', body: data }),
     remove: (id: string) => request(`/users/${id}`, { method: 'DELETE' }),
+    deleteSelf: () => request('/users/me', { method: 'DELETE' }),
     setBan: (id: string, isBanned: boolean) =>
       request(`/users/${id}/ban`, { method: 'PATCH', body: { isBanned } }),
     setRole: (id: string, roleUser: string) =>
