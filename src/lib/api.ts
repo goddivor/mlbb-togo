@@ -441,6 +441,13 @@ export const api = {
     markRead: (id: string) =>
       request(`/messages/threads/${id}/read`, { method: 'POST' }),
   },
+
+  push: {
+    publicKey: () => request('/push/public-key', { auth: false }),
+    subscribe: (sub: any) => request('/push/subscribe', { method: 'POST', body: sub }),
+    unsubscribe: (endpoint: string) =>
+      request('/push/unsubscribe', { method: 'POST', body: { endpoint } }),
+  },
 };
 
 export default api;

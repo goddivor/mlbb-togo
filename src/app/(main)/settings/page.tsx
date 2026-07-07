@@ -11,6 +11,7 @@ import { Card, Button, Input, Textarea, Select, Badge, Tabs, PageHeader, Section
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useThemeStore, useAuthStore } from '@/store/useStore';
 import { api, setToken } from '@/lib/api';
+import { isPushSupported, isPushEnabled, enablePush, disablePush } from '@/lib/push';
 import { MLBB_RANKS, MLBB_ROLES } from '@/lib/constants';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
@@ -38,6 +39,40 @@ export default function Settings() {
   const [notifications, setNotifications] = useState<any>(DEFAULT_NOTIFS);
   const [privacy, setPrivacy] = useState<any>(DEFAULT_PRIVACY);
   const [pwd, setPwd] = useState({ current: '', next: '', confirm: '' });
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    setPushSupported(isPushSupported());
+    isPushEnabled().then(setPushOn);
+  }, []);
+
+  const togglePush = async () => {
+    setPushBusy(true);
+    try {
+      if (pushOn) {
+        await disablePush();
+        setPushOn(false);
+        toast.success(t('settings.push.disabled'));
+      } else {
+        await enablePush();
+        setPushOn(true);
+        toast.success(t('settings.push.enabled'));
+      }
+    } catch (e: any) {
+      const code = e?.message;
+      toast.error(
+        code === 'push-denied'
+          ? t('settings.push.denied')
+          : code === 'push-unconfigured'
+            ? t('settings.push.unavailable')
+            : t('common.error'),
+      );
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   // Hydrate the form from the real profile.
   useEffect(() => {
@@ -247,9 +282,28 @@ export default function Settings() {
 
       {activeTab === 'notifications' && (
         <Card>
-          <h3 className="font-bold text-lg mb-4 text-white">
+          <h3 className="font-bold text-lg mb-4 text-black dark:text-white">
             {t('settings.notifications.title')}
           </h3>
+
+          {pushSupported && (
+            <div className="mb-4 flex items-center justify-between rounded-sm border border-primary/30 bg-primary/5 p-3">
+              <div>
+                <p className="font-medium text-sm text-black dark:text-white">{t('settings.push.title')}</p>
+                <p className="text-xs text-body dark:text-bodydark">{t('settings.push.desc')}</p>
+              </div>
+              <button
+                onClick={togglePush}
+                disabled={pushBusy}
+                className={`relative w-12 h-6 rounded-full transition-colors disabled:opacity-60 ${
+                  pushOn ? 'bg-primary' : 'bg-stroke dark:bg-strokedark'
+                }`}
+              >
+                <motion.div animate={{ x: pushOn ? 24 : 2 }} className="absolute top-1 w-4 h-4 rounded-full bg-white" />
+              </button>
+            </div>
+          )}
+
           <div className="space-y-4">
             {[
               { key: 'friends', label: t('settings.notifications.friends'), desc: t('settings.notifications.friendsDesc') },
