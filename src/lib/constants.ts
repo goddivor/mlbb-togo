@@ -86,16 +86,6 @@ export const NAV_ITEMS = [
   { path: '/heroes', label: 'Héros', icon: 'Sparkles' },
 ];
 
-export const ADMIN_NAV_ITEMS = [
-  { path: '/admin', label: 'Dashboard', icon: 'BarChart3' },
-  { path: '/admin/users', label: 'Utilisateurs', icon: 'Users' },
-  { path: '/admin/teams', label: 'Équipes', icon: 'Shield' },
-  { path: '/admin/tournaments', label: 'Tournois', icon: 'Trophy' },
-  { path: '/admin/posts', label: 'Posts', icon: 'FileText' },
-  { path: '/admin/forms', label: 'Formulaires', icon: 'FileInput' },
-  { path: '/admin/logs', label: 'Logs', icon: 'ScrollText' },
-];
-
 export const FORM_FIELD_TYPES = [
   { id: 'text', label: 'Texte', icon: 'Type' },
   { id: 'email', label: 'Email', icon: 'Mail' },
