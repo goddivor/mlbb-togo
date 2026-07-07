@@ -11,6 +11,7 @@ import Modal from '@/components/ui/Modal';
 import { useEventStore } from '@/store/useStore';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import toast from 'react-hot-toast';
 
 const DAY_KEYS = [
   'events.day.sun', 'events.day.mon', 'events.day.tue', 'events.day.wed',
@@ -38,14 +39,44 @@ const eventTypeIcons: Record<string, any> = {
 export default function Events() {
   const t = useT();
   const { events, setEvents } = useEventStore();
-  const [currentDate, setCurrentDate] = useState(new Date(2024, 2, 1));
+  const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState('calendar');
   const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState({ type: 'scrim', title: '', date: '', time: '', description: '' });
+  const [saving, setSaving] = useState(false);
+
+  const loadEvents = () => api.events.list().then((l: any) => setEvents(Array.isArray(l) ? l : []));
 
   useEffect(() => {
-    api.events.list().then(setEvents);
-  }, [setEvents]);
+    loadEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const createEvent = async () => {
+    if (!form.title.trim() || !form.date) {
+      toast.error(t('events.form.required'));
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.events.create({
+        title: form.title.trim(),
+        type: form.type,
+        date: form.date,
+        time: form.time || null,
+        description: form.description.trim() || null,
+      });
+      await loadEvents();
+      setForm({ type: 'scrim', title: '', date: '', time: '', description: '' });
+      setShowCreate(false);
+      toast.success(t('events.created'));
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error'));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -245,20 +276,46 @@ export default function Events() {
         size="md"
       >
         <div className="space-y-4">
-          <Select label={t('events.form.type')}>
+          <Select
+            label={t('events.form.type')}
+            value={form.type}
+            onChange={(e: any) => setForm({ ...form, type: e.target.value })}
+          >
             <option value="scrim">⚔️ {t('events.form.typeScrim')}</option>
             <option value="tournament">🏆 {t('events.form.typeTournament')}</option>
             <option value="coaching">📚 {t('events.form.typeCoaching')}</option>
           </Select>
-          <Input label={t('events.form.title')} type="text" placeholder={t('events.form.namePlaceholder')} />
+          <Input
+            label={t('events.form.title')}
+            type="text"
+            placeholder={t('events.form.namePlaceholder')}
+            value={form.title}
+            onChange={(e: any) => setForm({ ...form, title: e.target.value })}
+          />
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t('events.form.date')} type="date" />
-            <Input label={t('events.form.time')} type="time" />
+            <Input
+              label={t('events.form.date')}
+              type="date"
+              value={form.date}
+              onChange={(e: any) => setForm({ ...form, date: e.target.value })}
+            />
+            <Input
+              label={t('events.form.time')}
+              type="time"
+              value={form.time}
+              onChange={(e: any) => setForm({ ...form, time: e.target.value })}
+            />
           </div>
-          <Textarea label={t('events.form.description')} rows={3} placeholder={t('events.form.descriptionPlaceholder')} />
+          <Textarea
+            label={t('events.form.description')}
+            rows={3}
+            placeholder={t('events.form.descriptionPlaceholder')}
+            value={form.description}
+            onChange={(e: any) => setForm({ ...form, description: e.target.value })}
+          />
           <div className="flex gap-3 pt-2">
             <Button variant="ghost" onClick={() => setShowCreate(false)} className="flex-1">{t('events.cancel')}</Button>
-            <Button onClick={() => setShowCreate(false)} className="flex-1">{t('events.create')}</Button>
+            <Button onClick={createEvent} loading={saving} className="flex-1">{t('events.create')}</Button>
           </div>
         </div>
       </Modal>

@@ -203,25 +203,28 @@ export const api = {
   },
 
   tournaments: {
-    list: () => request('/tournaments', { fallback: mockTournaments, auth: false }),
-    get: (id: string) =>
-      request(`/tournaments/${id}`, { fallback: findMock(mockTournaments, id), auth: false }),
+    list: () => request('/tournaments', { fallback: [], auth: false }),
+    get: (id: string) => request(`/tournaments/${id}`, { fallback: null, auth: false }),
     create: (data: any) => request('/tournaments', { method: 'POST', body: data }),
     update: (id: string, data: any) =>
       request(`/tournaments/${id}`, { method: 'PATCH', body: data }),
     remove: (id: string) => request(`/tournaments/${id}`, { method: 'DELETE' }),
+    register: (id: string, teamId: string) =>
+      request(`/tournaments/${id}/register`, { method: 'POST', body: { teamId } }),
+    unregister: (id: string, teamId: string) =>
+      request(`/tournaments/${id}/register/${teamId}`, { method: 'DELETE' }),
   },
 
   events: {
-    list: () => request('/events', { fallback: mockEvents, auth: false }),
-    get: (id: string) => request(`/events/${id}`, { fallback: findMock(mockEvents, id), auth: false }),
+    list: () => request('/events', { fallback: [], auth: false }),
+    get: (id: string) => request(`/events/${id}`, { fallback: null, auth: false }),
     create: (data: any) => request('/events', { method: 'POST', body: data }),
     remove: (id: string) => request(`/events/${id}`, { method: 'DELETE' }),
   },
 
   matches: {
-    list: () => request('/matches', { fallback: mockMatches, auth: false }),
-    get: (id: string) => request(`/matches/${id}`, { fallback: findMock(mockMatches, id), auth: false }),
+    list: () => request('/matches', { fallback: [], auth: false }),
+    get: (id: string) => request(`/matches/${id}`, { fallback: null, auth: false }),
     create: (data: any) => request('/matches', { method: 'POST', body: data }),
   },
 
