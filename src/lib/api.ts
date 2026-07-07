@@ -1,5 +1,4 @@
 
-import { mockPlayers, mockTeams } from './mockData';
 import { gql } from './gql';
 
 export const API_URL =
@@ -117,8 +116,6 @@ export class ApiError extends Error {
   }
 }
 
-const findMock = (list: any[], id: string) => list.find((x) => x.id === id);
-
 export const api = {
 
   auth: {
@@ -155,11 +152,7 @@ export const api = {
 
   users: {
     list: () => request('/users', { fallback: [], auth: false }),
-    leaderboard: () =>
-      request('/users/leaderboard', {
-        fallback: [...mockPlayers].sort((a, b) => b.winRate - a.winRate),
-        auth: false,
-      }),
+    leaderboard: () => request('/users/leaderboard', { fallback: [], auth: false }),
     get: (id: string) => request(`/users/${id}`, { fallback: null, auth: false }),
     update: (id: string, data: any) => request(`/users/${id}`, { method: 'PATCH', body: data }),
     remove: (id: string) => request(`/users/${id}`, { method: 'DELETE' }),
@@ -171,8 +164,8 @@ export const api = {
   },
 
   teams: {
-    list: () => request('/teams', { fallback: mockTeams, auth: false }),
-    get: (id: string) => request(`/teams/${id}`, { fallback: findMock(mockTeams, id), auth: false }),
+    list: () => request('/teams', { fallback: [], auth: false }),
+    get: (id: string) => request(`/teams/${id}`, { fallback: null, auth: false }),
     create: (data: any) => request('/teams', { method: 'POST', body: data }),
     update: (id: string, data: any) => request(`/teams/${id}`, { method: 'PATCH', body: data }),
     remove: (id: string) => request(`/teams/${id}`, { method: 'DELETE' }),
