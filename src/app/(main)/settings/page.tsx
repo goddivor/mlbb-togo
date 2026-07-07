@@ -15,7 +15,7 @@ import { MLBB_RANKS, MLBB_ROLES } from '@/lib/constants';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
 
-const DEFAULT_NOTIFS = { matches: true, tournaments: true, teams: true, forum: true, email: false };
+const DEFAULT_NOTIFS = { friends: true, messages: true, teams: true };
 const DEFAULT_PRIVACY = { profilePublic: true, showStats: true, showOnline: true, allowInvites: true };
 
 export default function Settings() {
@@ -252,11 +252,9 @@ export default function Settings() {
           </h3>
           <div className="space-y-4">
             {[
-              { key: 'matches', label: t('settings.notifications.matches'), desc: t('settings.notifications.matchesDesc') },
-              { key: 'tournaments', label: t('settings.notifications.tournaments'), desc: t('settings.notifications.tournamentsDesc') },
+              { key: 'friends', label: t('settings.notifications.friends'), desc: t('settings.notifications.friendsDesc') },
+              { key: 'messages', label: t('settings.notifications.messages'), desc: t('settings.notifications.messagesDesc') },
               { key: 'teams', label: t('settings.notifications.teams'), desc: t('settings.notifications.teamsDesc') },
-              { key: 'forum', label: t('settings.notifications.forum'), desc: t('settings.notifications.forumDesc') },
-              { key: 'email', label: t('settings.notifications.email'), desc: t('settings.notifications.emailDesc') },
             ].map((item) => (
               <div key={item.key} className="flex items-center justify-between p-3 rounded-sm bg-gray-2 dark:bg-meta-4">
                 <div>
