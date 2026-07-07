@@ -266,21 +266,6 @@ export const api = {
       }),
     logs: () => request('/admin/logs', { fallback: [] }),
     addLog: (data: any) => request('/admin/logs', { method: 'POST', body: data }),
-    forms: {
-      list: () => request('/admin/forms', { fallback: [] }),
-      // Public route: the form definition is needed to render a fillable form.
-      get: (id: string) =>
-        request(`/admin/forms/${id}`, { fallback: null, auth: false }),
-      create: (data: any) => request('/admin/forms', { method: 'POST', body: data }),
-      update: (id: string, data: any) =>
-        request(`/admin/forms/${id}`, { method: 'PATCH', body: data }),
-      remove: (id: string) => request(`/admin/forms/${id}`, { method: 'DELETE' }),
-      responses: (id: string) =>
-        request(`/admin/forms/${id}/responses`, { fallback: [] }),
-      // Public: anyone can submit a filled form.
-      submit: (id: string, data: any) =>
-        request(`/admin/forms/${id}/responses`, { method: 'POST', body: { data }, auth: false }),
-    },
   },
 
   mlbb: {
