@@ -1,0 +1,40 @@
+import type { Squad } from './types';
+
+export const squadsStats: Squad[] = [
+  {
+    id: 's2',
+    name: 'ONIC',
+    logo: '',
+    coach: 'CoachOnic',
+    manager: 'ManagerOnic',
+    region: 'ID',
+    createdAt: '2019-05-01',
+    wins: 145,
+    losses: 28,
+    winRate: 84,
+  },
+  {
+    id: 's1',
+    name: 'FURIA',
+    logo: '',
+    coach: 'CoachFuria',
+    manager: 'ManagerFuria',
+    region: 'BR',
+    createdAt: '2018-08-15',
+    wins: 120,
+    losses: 34,
+    winRate: 78,
+  },
+  {
+    id: 's3',
+    name: 'Buriram',
+    logo: '',
+    coach: 'CoachBuriram',
+    manager: 'ManagerBuriram',
+    region: 'TH',
+    createdAt: '2020-01-20',
+    wins: 110,
+    losses: 40,
+    winRate: 73,
+  },
+];

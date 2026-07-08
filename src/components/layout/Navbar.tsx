@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Menu, X, Sun, Moon, Bell, Search, User, LogOut, Settings,
+  Menu, X, Sun, Moon, Bell, User, LogOut, Settings,
   ChevronDown, Swords, BarChart3, Globe,
 } from 'lucide-react';
 import { useAppStore, useThemeStore, useAuthStore } from '@/store/useStore';
 import { setToken } from '@/lib/api';
 import { timeAgo } from '@/lib/helpers';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
+import GlobalSearch from '@/components/search/GlobalSearch';
 
 export default function Navbar() {
   const router = useRouter();
@@ -20,7 +21,6 @@ export default function Navbar() {
   const { userProfile, logout } = useAuthStore();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const isAdmin = userProfile?.roleUser === 'admin' || userProfile?.roleUser === 'moderator';
   const notifs = notifications;
@@ -67,20 +67,15 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:flex flex-1 max-w-md mx-8">
-          <div className="relative w-full">
-            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
-            <input
-              type="text"
-              placeholder="Rechercher joueurs, équipes, posts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2 rounded-lg text-sm transition-all duration-300 focus:outline-none ${
-                theme === 'dark'
-                  ? 'bg-gaming-card border border-gaming-border text-white placeholder-gray-500 focus:border-neon-blue/50'
-                  : 'bg-gray-100 border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-primary-500'
-              }`}
-            />
-          </div>
+          <GlobalSearch />
+        </div>
+
+        <div className="hidden lg:flex items-center gap-1">
+          <Link href="/feed" className="p-2 rounded-lg text-xs font-medium transition-colors" style={{ color: 'var(--sidebar-text)' }}>Feed</Link>
+          <Link href="/calendar" className="p-2 rounded-lg text-xs font-medium transition-colors" style={{ color: 'var(--sidebar-text)' }}>Calendar</Link>
+          <Link href="/rankings" className="p-2 rounded-lg text-xs font-medium transition-colors" style={{ color: 'var(--sidebar-text)' }}>Rankings</Link>
+          <Link href="/streams" className="p-2 rounded-lg text-xs font-medium transition-colors" style={{ color: 'var(--sidebar-text)' }}>Streams</Link>
+          <Link href="/awards" className="p-2 rounded-lg text-xs font-medium transition-colors" style={{ color: 'var(--sidebar-text)' }}>Awards</Link>
         </div>
 
         <div className="flex items-center gap-2">

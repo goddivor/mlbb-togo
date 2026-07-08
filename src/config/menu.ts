@@ -11,6 +11,11 @@ import {
   MessageSquare,
   Handshake,
   LayoutGrid,
+  Play,
+  BarChart3,
+  Award,
+  Flame,
+  Newspaper,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -21,8 +26,25 @@ export const playerMenuGroups: MenuGroupConfig[] = [
     titleKey: 'nav.section.menu',
     items: [
       { href: '/dashboard', labelKey: 'header.dashboard', icon: LayoutDashboard },
-      { href: '/heroes', labelKey: 'header.heroes', icon: Swords },
-      { href: '/players', labelKey: 'header.players', icon: Users },
+      { href: '/feed', labelKey: 'header.feed', icon: Newspaper },
+      { href: '/calendar', labelKey: 'header.calendar', icon: CalendarDays },
+    ],
+  },
+  {
+    id: 'rankings',
+    titleKey: 'nav.section.rankings',
+    items: [
+      { href: '/rankings', labelKey: 'header.rankings', icon: BarChart3 },
+      { href: '/awards', labelKey: 'header.awards', icon: Award },
+      { href: '/hall-of-fame', labelKey: 'header.hallOfFame', icon: Flame },
+    ],
+  },
+  {
+    id: 'media',
+    titleKey: 'nav.section.media',
+    items: [
+      { href: '/streams', labelKey: 'header.streams', icon: Play },
+      { href: '/statistics', labelKey: 'header.statistics', icon: BarChart3 },
     ],
   },
   {
@@ -36,7 +58,10 @@ export const playerMenuGroups: MenuGroupConfig[] = [
   {
     id: 'social',
     titleKey: 'nav.section.social',
-    items: [{ href: '/friends', labelKey: 'header.friends', icon: Users2 }],
+    items: [
+      { href: '/friends', labelKey: 'header.friends', icon: Users2 },
+      { href: '/messages', labelKey: 'header.messages', icon: MessageSquare },
+    ],
   },
 ];
 
