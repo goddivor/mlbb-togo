@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Palette, Check } from 'lucide-react';
+import { Palette, Check, Sparkles, Zap, Crown, Moon } from 'lucide-react';
 import { useThemeStore } from '@/store/useStore';
 
-const PALETTES: { id: string; label: string; swatch: string }[] = [
-  { id: 'default', label: 'Défaut', swatch: '#3C50E0' },
-  { id: 'neon', label: 'Néon', swatch: '#00d4ff' },
-  { id: 'gold', label: 'Gold', swatch: '#d4a843' },
-  { id: 'night', label: 'Night', swatch: '#c4a868' },
+const PALETTES: { id: string; label: string; icon: any; color: string }[] = [
+  { id: 'default', label: 'Défaut', icon: Sparkles, color: '#3C50E0' },
+  { id: 'neon', label: 'Néon', icon: Zap, color: '#00d4ff' },
+  { id: 'gold', label: 'Gold', icon: Crown, color: '#d4a843' },
+  { id: 'night', label: 'Night', icon: Moon, color: '#c4a868' },
 ];
 
 export default function ThemeSwitcher() {
@@ -46,22 +46,30 @@ export default function ThemeSwitcher() {
         <div className="absolute right-0 mt-2.5 w-52 rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
           <p className="px-4 py-2.5 text-xs font-medium text-bodydark2">Thème d’affichage</p>
           <ul className="pb-1.5">
-            {PALETTES.map((p) => (
-              <li key={p.id}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPalette(p.id);
-                    setOpen(false);
-                  }}
-                  className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4"
-                >
-                  <span className="h-4 w-4 shrink-0 rounded-full ring-1 ring-black/10" style={{ background: p.swatch }} />
-                  <span className="flex-1 text-black dark:text-white">{p.label}</span>
-                  {palette === p.id && <Check size={15} className="text-primary" />}
-                </button>
-              </li>
-            ))}
+            {PALETTES.map((p) => {
+              const Icon = p.icon;
+              return (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPalette(p.id);
+                      setOpen(false);
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4"
+                  >
+                    <span
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm"
+                      style={{ background: `${p.color}1f`, color: p.color }}
+                    >
+                      <Icon size={14} />
+                    </span>
+                    <span className="flex-1 text-black dark:text-white">{p.label}</span>
+                    {(palette || 'default') === p.id && <Check size={15} className="text-primary" />}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

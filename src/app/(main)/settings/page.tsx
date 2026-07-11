@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   Settings as SettingsIcon, User, Bell, Shield, Palette,
-  Trash2, Save, Moon, Sun,
+  Trash2, Save, Moon, Sun, Sparkles, Zap, Crown,
 } from 'lucide-react';
 import { Card, Button, Input, Textarea, Tabs, PageHeader, SectionCard } from '@/components/ui';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -18,11 +18,11 @@ import { useT } from '@/lib/i18n';
 const DEFAULT_NOTIFS = { friends: true, messages: true, teams: true };
 const DEFAULT_PRIVACY = { profilePublic: true, showStats: true, showOnline: true, allowInvites: true };
 
-const PALETTES: { id: string; label: string; swatch: string }[] = [
-  { id: 'default', label: 'Défaut', swatch: '#3C50E0' },
-  { id: 'neon', label: 'Néon', swatch: '#00d4ff' },
-  { id: 'gold', label: 'Gold', swatch: '#d4a843' },
-  { id: 'night', label: 'Night', swatch: '#c4a868' },
+const PALETTES: { id: string; label: string; icon: any; color: string }[] = [
+  { id: 'default', label: 'Défaut', icon: Sparkles, color: '#3C50E0' },
+  { id: 'neon', label: 'Néon', icon: Zap, color: '#00d4ff' },
+  { id: 'gold', label: 'Gold', icon: Crown, color: '#d4a843' },
+  { id: 'night', label: 'Night', icon: Moon, color: '#c4a868' },
 ];
 
 export default function Settings() {
@@ -342,6 +342,7 @@ export default function Settings() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {PALETTES.map((p) => {
                   const active = (palette || 'default') === p.id;
+                  const Icon = p.icon;
                   return (
                     <button
                       key={p.id}
@@ -353,7 +354,12 @@ export default function Settings() {
                           : 'border-stroke bg-gray-2 hover:border-primary/50 dark:border-strokedark dark:bg-meta-4'
                       }`}
                     >
-                      <span className="h-6 w-6 shrink-0 rounded-full ring-1 ring-black/10" style={{ background: p.swatch }} />
+                      <span
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm"
+                        style={{ background: `${p.color}1f`, color: p.color }}
+                      >
+                        <Icon size={18} />
+                      </span>
                       <span className="text-sm font-medium text-black dark:text-white">
                         {p.id === 'default' ? t('settings.appearance.paletteDefault') : p.label}
                       </span>
