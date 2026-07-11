@@ -10,6 +10,7 @@ import LanguageSwitcher from '@/components/common/LanguageSwitcher';
 import { disconnectSocket } from '@/lib/realtime';
 import { useT } from '@/lib/i18n';
 import DarkModeToggle from './DarkModeToggle';
+import ThemeSwitcher from './ThemeSwitcher';
 import NotificationDropdown from './NotificationDropdown';
 import MessageDropdown from './MessageDropdown';
 import ProfileDropdown from './ProfileDropdown';
@@ -85,6 +86,9 @@ export default function DashboardHeader({ sidebarOpen, setSidebarOpen }: HeaderP
           <ul className="flex items-center gap-2 sm:gap-4">
             <li>
               <DarkModeToggle />
+            </li>
+            <li>
+              <ThemeSwitcher />
             </li>
             <li>
               <NotificationDropdown />

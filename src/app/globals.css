@@ -397,3 +397,54 @@ html:not(.dark) *::-webkit-scrollbar-thumb { background: #94a3b8; }
 /* Note: the old light-mode text-white/text-gray overrides were removed. Public
    routes are forced dark, and the dashboard uses proper text-black/dark:text-white
    semantics (TailAdmin), so forcing whites to dark broke the dark sidebar. */
+
+/* ============================================================
+   ADDITIVE COLOR THEMES (opt-in)
+   Default (no theme-* class) keeps the current TailAdmin look.
+   Neon / Gold / Night re-skin the app only when selected.
+   ============================================================ */
+@layer base {
+  html.theme-neon.dark {
+    --t-page-bg: #060612; --t-page-text: #e2e8f0; --t-card-bg: rgba(15,15,42,0.85);
+    --t-card-border: rgba(0,212,255,0.14); --t-surface-bg: rgba(26,26,62,0.6);
+    --t-muted-text: #94a3b8; --t-accent: #00d4ff;
+  }
+  html.theme-gold.dark {
+    --t-page-bg: #0a0a0a; --t-page-text: #f5f0e8; --t-card-bg: rgba(20,18,15,0.92);
+    --t-card-border: rgba(212,168,67,0.16); --t-surface-bg: rgba(30,28,22,0.6);
+    --t-muted-text: #a0998c; --t-accent: #d4a843;
+  }
+  html.theme-night.dark {
+    --t-page-bg: #0f0d0a; --t-page-text: #d4cfc7; --t-card-bg: rgba(20,18,15,0.92);
+    --t-card-border: rgba(180,140,100,0.14); --t-surface-bg: rgba(26,24,20,0.6);
+    --t-muted-text: #a0988c; --t-accent: #c4a868;
+  }
+}
+
+/* Remaps active ONLY when a theme-* class is present (default is untouched). */
+html[class*="theme-"].dark body { background: var(--t-page-bg) !important; }
+html[class*="theme-"].dark .bg-gaming-dark,
+html[class*="theme-"].dark .bg-gaming-darker { background: var(--t-page-bg) !important; }
+html[class*="theme-"].dark .bg-boxdark,
+html[class*="theme-"].dark .dark\:bg-boxdark,
+html[class*="theme-"].dark .bg-white.dark\:bg-boxdark,
+html[class*="theme-"].dark .bg-gaming-card { background: var(--t-card-bg) !important; }
+html[class*="theme-"].dark .bg-boxdark-2,
+html[class*="theme-"].dark .dark\:bg-boxdark-2,
+html[class*="theme-"].dark .bg-gray-2,
+html[class*="theme-"].dark .bg-gray,
+html[class*="theme-"].dark .bg-meta-4,
+html[class*="theme-"].dark .dark\:bg-meta-4,
+html[class*="theme-"].dark .bg-gaming-surface { background: var(--t-surface-bg) !important; }
+html[class*="theme-"].dark .border-stroke,
+html[class*="theme-"].dark .dark\:border-strokedark,
+html[class*="theme-"].dark .border-gaming-border { border-color: var(--t-card-border) !important; }
+html[class*="theme-"].dark .text-black.dark\:text-white,
+html[class*="theme-"].dark .dark\:text-white { color: var(--t-page-text) !important; }
+html[class*="theme-"].dark .text-body,
+html[class*="theme-"].dark .dark\:text-bodydark,
+html[class*="theme-"].dark .text-bodydark2 { color: var(--t-muted-text) !important; }
+html[class*="theme-"].dark .text-primary,
+html[class*="theme-"].dark .text-neon-blue { color: var(--t-accent) !important; }
+html[class*="theme-"].dark .dark\:hover\:bg-meta-4:hover { background: var(--t-surface-bg) !important; }
+html[class*="theme-"].dark .dark\:hover\:text-white:hover { color: var(--t-page-text) !important; }

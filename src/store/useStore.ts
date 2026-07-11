@@ -26,19 +26,56 @@ export const useThemeStore = create<any>((set) => ({
   toggleTheme: () =>
     set((state: any) => {
       const newTheme = state.theme === 'dark' ? 'light' : 'dark';
+      const patch: any = { theme: newTheme };
       if (typeof window !== 'undefined') {
         localStorage.setItem('mlbb-theme', newTheme);
         document.documentElement.classList.toggle('dark', newTheme === 'dark');
+        // Alternate palettes are dark-only: switching to light resets to default.
+        if (newTheme === 'light') {
+          localStorage.setItem('mlbb-palette', 'default');
+          document.documentElement.classList.remove('theme-neon', 'theme-gold', 'theme-night');
+          patch.palette = 'default';
+        }
       }
-      return { theme: newTheme };
+      return patch;
     }),
-  setTheme: (theme: string) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('mlbb-theme', theme);
-      document.documentElement.classList.toggle('dark', theme === 'dark');
-    }
-    set({ theme });
-  },
+  setTheme: (theme: string) =>
+    set(() => {
+      const patch: any = { theme };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mlbb-theme', theme);
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+        if (theme === 'light') {
+          localStorage.setItem('mlbb-palette', 'default');
+          document.documentElement.classList.remove('theme-neon', 'theme-gold', 'theme-night');
+          patch.palette = 'default';
+        }
+      }
+      return patch;
+    }),
+
+  // Additive color palette: 'default' keeps the current theme untouched;
+  // 'neon' | 'gold' | 'night' re-skin the app (dark aesthetics).
+  palette:
+    typeof window !== 'undefined'
+      ? localStorage.getItem('mlbb-palette') || 'default'
+      : 'default',
+  setPalette: (palette: string) =>
+    set((state: any) => {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mlbb-palette', palette);
+        const el = document.documentElement;
+        el.classList.remove('theme-neon', 'theme-gold', 'theme-night');
+        if (palette !== 'default') {
+          el.classList.add('theme-' + palette);
+          el.classList.add('dark');
+          localStorage.setItem('mlbb-theme', 'dark');
+        }
+      }
+      return palette !== 'default' && state.theme !== 'dark'
+        ? { palette, theme: 'dark' }
+        : { palette };
+    }),
 }));
 
 export const useAppStore = create<any>((set) => ({

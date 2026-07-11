@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   Settings as SettingsIcon, User, Bell, Shield, Palette,
-  Trash2, Save, Moon, Sun,
+  Trash2, Save, Moon, Sun, Sparkles, Zap, Crown,
 } from 'lucide-react';
-import { Card, Button, Input, Textarea, Badge, Tabs, PageHeader, SectionCard } from '@/components/ui';
+import { Card, Button, Input, Textarea, Tabs, PageHeader, SectionCard } from '@/components/ui';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useThemeStore, useAuthStore } from '@/store/useStore';
 import { api, setToken } from '@/lib/api';
@@ -18,8 +18,15 @@ import { useT } from '@/lib/i18n';
 const DEFAULT_NOTIFS = { friends: true, messages: true, teams: true };
 const DEFAULT_PRIVACY = { profilePublic: true, showStats: true, showOnline: true, allowInvites: true };
 
+const PALETTES: { id: string; label: string; icon: any; color: string }[] = [
+  { id: 'default', label: 'Défaut', icon: Sparkles, color: '#3C50E0' },
+  { id: 'neon', label: 'Néon', icon: Zap, color: '#00d4ff' },
+  { id: 'gold', label: 'Gold', icon: Crown, color: '#d4a843' },
+  { id: 'night', label: 'Night', icon: Moon, color: '#c4a868' },
+];
+
 export default function Settings() {
-  const { theme, toggleTheme } = useThemeStore();
+  const { theme, toggleTheme, palette, setPalette } = useThemeStore();
   const userProfile = useAuthStore((s: any) => s.userProfile);
   const setUserProfile = useAuthStore((s: any) => s.setUserProfile);
   const setUser = useAuthStore((s: any) => s.setUser);
@@ -331,25 +338,37 @@ export default function Settings() {
             </div>
 
             <div>
-              <p className="text-sm text-body dark:text-bodydark mb-3">{t('settings.appearance.preview')}</p>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-sm border bg-white border-stroke shadow-default dark:bg-boxdark dark:border-strokedark">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-sm bg-primary" />
-                    <div>
-                      <p className="text-sm font-bold text-black dark:text-white">{t('settings.appearance.previewCard')}</p>
-                      <p className="text-xs text-body dark:text-bodydark">{t('settings.appearance.previewStyle')}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 rounded-sm bg-primary/10 border border-primary/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="neon" size="sm">{t('settings.appearance.previewGlow')}</Badge>
-                  </div>
-                  <p className="text-sm text-black dark:text-white font-bold">{t('settings.appearance.previewEffect')}</p>
-                </div>
+              <p className="text-sm text-body dark:text-bodydark mb-3">{t('settings.appearance.colorTheme')}</p>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {PALETTES.map((p) => {
+                  const active = (palette || 'default') === p.id;
+                  const Icon = p.icon;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setPalette(p.id)}
+                      className={`flex items-center gap-2.5 rounded-sm border p-3 transition-colors ${
+                        active
+                          ? 'border-primary bg-primary/10'
+                          : 'border-stroke bg-gray-2 hover:border-primary/50 dark:border-strokedark dark:bg-meta-4'
+                      }`}
+                    >
+                      <span
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm"
+                        style={{ background: `${p.color}1f`, color: p.color }}
+                      >
+                        <Icon size={18} />
+                      </span>
+                      <span className="text-sm font-medium text-black dark:text-white">
+                        {p.id === 'default' ? t('settings.appearance.paletteDefault') : p.label}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
+
           </div>
         </Card>
       )}

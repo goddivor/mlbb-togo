@@ -8,15 +8,27 @@ import ParticlesBackground from './ParticlesBackground';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const theme = useThemeStore((s: any) => s.theme);
+  const palette = useThemeStore((s: any) => s.palette);
   const pathname = usePathname();
   // Public/landing routes stay dark (gaming look); the dashboard defaults to
   // light and follows the user's theme choice.
   const isPublic = pathname === '/' || pathname.startsWith('/admin-login');
   const dark = isPublic ? true : theme === 'dark';
+  // Alternate color palettes (Néon/Gold/Night) never apply to the admin panel:
+  // the admin always keeps the default theme.
+  const isAdmin = pathname === '/admin' || pathname.startsWith('/admin/');
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
   }, [dark]);
+
+  useEffect(() => {
+    const el = document.documentElement;
+    el.classList.remove('theme-neon', 'theme-gold', 'theme-night');
+    if (!isAdmin && palette && palette !== 'default') {
+      el.classList.add('theme-' + palette);
+    }
+  }, [isAdmin, palette]);
 
   return (
     <>
