@@ -7,7 +7,7 @@ import {
   Settings as SettingsIcon, User, Bell, Shield, Palette,
   Trash2, Save, Moon, Sun,
 } from 'lucide-react';
-import { Card, Button, Input, Textarea, Badge, Tabs, PageHeader, SectionCard } from '@/components/ui';
+import { Card, Button, Input, Textarea, Tabs, PageHeader, SectionCard } from '@/components/ui';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useThemeStore, useAuthStore } from '@/store/useStore';
 import { api, setToken } from '@/lib/api';
@@ -363,26 +363,6 @@ export default function Settings() {
               </div>
             </div>
 
-            <div>
-              <p className="text-sm text-body dark:text-bodydark mb-3">{t('settings.appearance.preview')}</p>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-sm border bg-white border-stroke shadow-default dark:bg-boxdark dark:border-strokedark">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-sm bg-primary" />
-                    <div>
-                      <p className="text-sm font-bold text-black dark:text-white">{t('settings.appearance.previewCard')}</p>
-                      <p className="text-xs text-body dark:text-bodydark">{t('settings.appearance.previewStyle')}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 rounded-sm bg-primary/10 border border-primary/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="neon" size="sm">{t('settings.appearance.previewGlow')}</Badge>
-                  </div>
-                  <p className="text-sm text-black dark:text-white font-bold">{t('settings.appearance.previewEffect')}</p>
-                </div>
-              </div>
-            </div>
           </div>
         </Card>
       )}
