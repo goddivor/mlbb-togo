@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play,
   Radio,
-  ExternalLink,
   Youtube,
   Eye,
   Calendar,
@@ -152,6 +151,7 @@ export default function StreamPage() {
   const mainVideo = activeSeason
     ? selectedVideo || activeSeason.videos[0] || null
     : null;
+  const hasSidebar = !!(activeSeason && activeSeason.videos.length > 0);
 
   return (
     <div className="relative min-h-screen">
@@ -172,48 +172,42 @@ export default function StreamPage() {
           </>
         )}
 
-        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="text-center"
+        <div className="relative mx-auto flex max-w-7xl justify-center px-4 py-10 sm:px-6 lg:px-8">
+          <motion.a
+            href={channelUrl(channel)}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={config?.channelTitle || 'YouTube'}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="group relative block h-32 w-32 sm:h-36 sm:w-36"
           >
             {avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={avatar}
                 alt={config?.channelTitle || 'Channel'}
-                className="mx-auto mb-6 h-24 w-24 rounded-full border-2 border-white/20 object-cover shadow-neon"
+                className="h-full w-full rounded-full border-2 border-white/30 object-cover shadow-neon"
               />
             ) : (
-              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500/20 to-red-600/10 shadow-neon">
-                <Radio size={36} className="text-red-500" />
+              <div className="flex h-full w-full items-center justify-center rounded-full border-2 border-white/20 bg-gradient-to-br from-red-500/20 to-red-600/10 shadow-neon">
+                <Radio size={44} className="text-red-500" />
               </div>
             )}
-            <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
-              <span className="bg-gradient-to-r from-white via-white to-gray-300 bg-clip-text text-transparent">
-                {t('stream.title')}
-              </span>
-            </h1>
-            <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-300 sm:text-xl">
-              {t('stream.subtitle')}
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-              <Badge variant="red" size="lg" className="animate-pulse shadow-neon">
-                <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-red-500" />
-                {t('stream.live')}
-              </Badge>
-              <a href={channelUrl(channel)} target="_blank" rel="noreferrer">
-                <Button variant="secondary" size="lg" className="shadow-neon">
-                  <ExternalLink size={18} />
-                  {t('stream.openChannel')}
-                </Button>
-              </a>
-            </div>
-          </motion.div>
+            {/* Live status dot in a corner */}
+            <span
+              className={`absolute right-2 top-2 h-5 w-5 rounded-full border-2 border-gaming-dark bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.9)] ${
+                live?.live ? 'animate-pulse' : ''
+              }`}
+            />
+            {/* Hover: open on YouTube */}
+            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <Youtube size={34} className="text-white" />
+            </span>
+          </motion.a>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-gaming-dark to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gaming-dark to-transparent" />
       </section>
 
       {/* Main content */}
@@ -224,8 +218,8 @@ export default function StreamPage() {
           </SectionCard>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-6">
+        <div className={hasSidebar ? 'mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3' : 'mt-8'}>
+          <div className={hasSidebar ? 'lg:col-span-2 space-y-6' : 'space-y-6'}>
             <AnimatePresence mode="wait">
               {/* LIVE */}
               {activeTab === 'live' && (
@@ -237,7 +231,31 @@ export default function StreamPage() {
                   transition={{ duration: 0.3 }}
                   className="space-y-6"
                 >
-                  <Card className="overflow-hidden !p-0 shadow-2xl">
+                  <Card className="relative overflow-hidden !p-0 shadow-2xl">
+                    {/* Overlay: live badge + title (left) and watch button (right) */}
+                    <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-3 bg-gradient-to-b from-black/75 to-transparent p-4">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Badge variant="red" size="sm" className={live?.live ? 'animate-pulse' : ''}>
+                          <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
+                          {t('stream.live')}
+                        </Badge>
+                        <span className="truncate font-semibold text-white">
+                          {config?.liveTitle || t('stream.liveTitle')}
+                        </span>
+                      </div>
+                      <a
+                        href={live?.live && live.videoId ? watchUrl(live.videoId) : channelUrl(channel)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="shrink-0"
+                      >
+                        <Button variant="primary" size="sm" className="shadow-neon">
+                          <Youtube size={16} />
+                          <span className="hidden sm:inline">{t('stream.watchOnYoutube')}</span>
+                        </Button>
+                      </a>
+                    </div>
+
                     {live?.live && live.videoId ? (
                       <div className="relative aspect-video w-full overflow-hidden bg-black">
                         <iframe
@@ -261,35 +279,6 @@ export default function StreamPage() {
                         )}
                       </div>
                     )}
-                  </Card>
-
-                  <Card className="border border-white/10 bg-white/5 backdrop-blur-xl">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-3">
-                          <Badge variant="red" size="sm" className="animate-pulse">
-                            <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
-                            {t('stream.live')}
-                          </Badge>
-                          <h3 className="text-xl font-bold text-white">
-                            {config?.liveTitle || t('stream.liveTitle')}
-                          </h3>
-                        </div>
-                        <p className="mt-2 text-gray-300">{config?.liveDesc || t('stream.liveDesc')}</p>
-                        <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-400">
-                          <span className="flex items-center gap-1.5">
-                            <Calendar size={16} />
-                            {new Date().toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                      <a href={channelUrl(channel)} target="_blank" rel="noreferrer">
-                        <Button variant="primary" size="sm" className="shadow-neon">
-                          <Youtube size={16} />
-                          {t('stream.watchOnYoutube')}
-                        </Button>
-                      </a>
-                    </div>
                   </Card>
                 </motion.div>
               )}
@@ -359,15 +348,14 @@ export default function StreamPage() {
                             {mainVideo.duration}
                           </span>
                         )}
-                      </div>
-                    )}
-                    {mainVideo && (
-                      <div className="mt-4">
-                        <a href={watchUrl(mainVideo.id)} target="_blank" rel="noreferrer">
-                          <Button variant="primary" size="sm" className="shadow-neon">
-                            <Youtube size={16} />
-                            {t('stream.watchOnYoutube')}
-                          </Button>
+                        <a
+                          href={watchUrl(mainVideo.id)}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={t('stream.watchOnYoutube')}
+                          className="ml-auto inline-flex items-center text-primary transition-colors hover:text-primary/80"
+                        >
+                          <Youtube size={20} />
                         </a>
                       </div>
                     )}
