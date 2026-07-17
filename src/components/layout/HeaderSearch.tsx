@@ -15,7 +15,9 @@ import {
 import Modal from '@/components/ui/Modal';
 import { useT } from '@/lib/i18n';
 
-const LINKS = [
+export type QuickLink = { href: string; key: string; icon: any };
+
+const PLAYER_LINKS: QuickLink[] = [
   { href: '/dashboard', key: 'header.dashboard', icon: LayoutDashboard },
   { href: '/heroes', key: 'header.heroes', icon: Swords },
   { href: '/players', key: 'header.players', icon: Users },
@@ -26,7 +28,7 @@ const LINKS = [
 ];
 
 /** Mobile search: a round icon button that opens a quick-navigation modal. */
-export default function HeaderSearch() {
+export default function HeaderSearch({ links = PLAYER_LINKS }: { links?: QuickLink[] }) {
   const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -42,10 +44,10 @@ export default function HeaderSearch() {
   }, [open]);
 
   const results = useMemo(() => {
-    const items = LINKS.map((l) => ({ ...l, label: t(l.key) }));
+    const items = links.map((l) => ({ ...l, label: t(l.key) }));
     const s = q.trim().toLowerCase();
     return s ? items.filter((l) => l.label.toLowerCase().includes(s)) : items;
-  }, [q, t]);
+  }, [q, t, links]);
 
   const go = (href: string) => {
     setOpen(false);

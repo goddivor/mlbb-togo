@@ -14,21 +14,20 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   // light and follows the user's theme choice.
   const isPublic = pathname === '/' || pathname.startsWith('/admin-login');
   const dark = isPublic ? true : theme === 'dark';
-  // Alternate color palettes (Néon/Gold/Night) never apply to the admin panel:
-  // the admin always keeps the default theme.
-  const isAdmin = pathname === '/admin' || pathname.startsWith('/admin/');
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
   }, [dark]);
 
+  // Alternate color palettes (Néon/Gold/Night) apply everywhere the user is
+  // logged in, including the admin panel.
   useEffect(() => {
     const el = document.documentElement;
     el.classList.remove('theme-neon', 'theme-gold', 'theme-night');
-    if (!isAdmin && palette && palette !== 'default') {
+    if (palette && palette !== 'default') {
       el.classList.add('theme-' + palette);
     }
-  }, [isAdmin, palette]);
+  }, [palette]);
 
   return (
     <>
