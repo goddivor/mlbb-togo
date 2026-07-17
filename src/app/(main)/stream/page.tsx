@@ -365,10 +365,10 @@ export default function StreamPage() {
             </AnimatePresence>
           </div>
 
-          {/* Sidebar: the active season's videos */}
+          {/* Sidebar: the active season's videos (stacks below the player on mobile) */}
           {activeSeason && activeSeason.videos.length > 0 && (
-            <div className="hidden lg:block">
-              <div className="sticky top-6">
+            <div>
+              <div className="lg:sticky lg:top-6">
                 <Card className="border border-white/10 bg-white/5 backdrop-blur-xl !p-0">
                   <div className="flex items-center gap-3 p-5">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-neon-blue/20 to-neon-purple/20">
