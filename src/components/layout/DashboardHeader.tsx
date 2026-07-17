@@ -11,6 +11,7 @@ import { disconnectSocket } from '@/lib/realtime';
 import { useT } from '@/lib/i18n';
 import DarkModeToggle from './DarkModeToggle';
 import ThemeSwitcher from './ThemeSwitcher';
+import HeaderSearch from './HeaderSearch';
 import NotificationDropdown from './NotificationDropdown';
 import MessageDropdown from './MessageDropdown';
 import ProfileDropdown from './ProfileDropdown';
@@ -68,8 +69,8 @@ export default function DashboardHeader({ sidebarOpen, setSidebarOpen }: HeaderP
           </Link>
         </div>
 
-        {/* Search (optional) */}
-        <div className="hidden sm:block">
+        {/* Desktop search bar (mobile uses the icon button below) */}
+        <div className="hidden lg:block">
           <div className="relative">
             <span className="absolute left-0 top-1/2 -translate-y-1/2 text-body dark:text-bodydark">
               <Search size={20} />
@@ -84,6 +85,9 @@ export default function DashboardHeader({ sidebarOpen, setSidebarOpen }: HeaderP
 
         <div className="flex items-center gap-3 sm:gap-7">
           <ul className="flex items-center gap-2 sm:gap-4">
+            <li className="lg:hidden">
+              <HeaderSearch />
+            </li>
             <li>
               <DarkModeToggle />
             </li>

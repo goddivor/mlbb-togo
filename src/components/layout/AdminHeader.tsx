@@ -61,8 +61,8 @@ export default function AdminHeader({ sidebarOpen, setSidebarOpen }: HeaderProps
           </Link>
         </div>
 
-        {/* Search (optional) */}
-        <div className="hidden sm:block">
+        {/* Search (optional) — desktop only to avoid mobile overflow */}
+        <div className="hidden lg:block">
           <div className="relative">
             <span className="absolute left-0 top-1/2 -translate-y-1/2 text-body dark:text-bodydark">
               <Search size={20} />
