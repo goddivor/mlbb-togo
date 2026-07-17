@@ -11,6 +11,7 @@ import {
   MessageSquare,
   Handshake,
   LayoutGrid,
+  Play,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -31,6 +32,7 @@ export const playerMenuGroups: MenuGroupConfig[] = [
     items: [
       { href: '/teams', labelKey: 'header.teams', icon: Shield },
       { href: '/recruitment', labelKey: 'header.recruitment', icon: Megaphone },
+      { href: '/stream', labelKey: 'header.stream', icon: Play },
     ],
   },
   {
