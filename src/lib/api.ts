@@ -419,6 +419,23 @@ export const api = {
     unsubscribe: (endpoint: string) =>
       request('/push/unsubscribe', { method: 'POST', body: { endpoint } }),
   },
+
+  stream: {
+    // Public: the YouTube channel + Season 1 video list, set by the admin.
+    config: () =>
+      request('/stream/config', {
+        fallback: {
+          youtubeChannel: 'eternumesports',
+          liveTitle: '',
+          liveDesc: '',
+          s1MainVideoId: '',
+          videos: [],
+        },
+        auth: false,
+      }),
+    updateConfig: (data: any) =>
+      request('/stream/config', { method: 'PATCH', body: data }),
+  },
 };
 
 export default api;
