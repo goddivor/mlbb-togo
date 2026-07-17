@@ -160,13 +160,9 @@ export default function StreamPage() {
         {banner ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={banner}
-              alt=""
-              className="absolute inset-0 h-full w-full scale-110 object-cover blur-md"
-            />
-            <div className="absolute inset-0 bg-gaming-dark/70" />
-            <div className="absolute inset-0 bg-gradient-to-t from-gaming-dark via-gaming-dark/40 to-transparent" />
+            <img src={banner} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gaming-dark/40" />
+            <div className="absolute inset-0 bg-gradient-to-t from-gaming-dark via-gaming-dark/30 to-transparent" />
           </>
         ) : (
           <>
