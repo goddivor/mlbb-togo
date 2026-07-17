@@ -320,18 +320,18 @@ export default function StreamPage() {
                     </div>
                   </Card>
 
-                  <Card className="border border-white/10 bg-white/5 backdrop-blur-xl">
+                  <Card>
                     <div className="flex flex-wrap items-center gap-3">
                       <Badge variant="gold" size="sm">
                         <Flame size={14} />
                         {activeSeason.name}
                       </Badge>
-                      <h3 className="text-xl font-bold text-white">
+                      <h3 className="text-xl font-bold text-black dark:text-white">
                         {mainVideo?.title || activeSeason.name}
                       </h3>
                     </div>
                     {mainVideo && (
-                      <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-400">
+                      <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                         <span className="flex items-center gap-1.5">
                           <Eye size={16} />
                           {t('stream.viewsCount', { count: viewsMap[mainVideo.id] || '—' })}
@@ -369,19 +369,19 @@ export default function StreamPage() {
           {activeSeason && activeSeason.videos.length > 0 && (
             <div>
               <div className="lg:sticky lg:top-6">
-                <Card className="border border-white/10 bg-white/5 backdrop-blur-xl !p-0">
+                <Card className="!p-0">
                   <div className="flex items-center gap-3 p-5">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-neon-blue/20 to-neon-purple/20">
                       <Flame size={20} className="text-neon-blue" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-white">{activeSeason.name}</h3>
-                      <p className="text-xs text-gray-400">
+                      <h3 className="font-semibold text-black dark:text-white">{activeSeason.name}</h3>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
                         {t('stream.videosCount', { count: activeSeason.videos.length })}
                       </p>
                     </div>
                   </div>
-                  <div className="border-t border-white/10" />
+                  <div className="border-t border-stroke dark:border-strokedark" />
                   <div className="p-3">
                     <div className="space-y-2">
                       {activeSeason.videos.map((video) => {
@@ -394,10 +394,10 @@ export default function StreamPage() {
                             className={`flex w-full items-center gap-3 rounded-xl p-2 text-left transition-all duration-300 ${
                               isActive
                                 ? 'bg-neon-blue/10 text-neon-blue'
-                                : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                                : 'text-body hover:bg-gray-2 hover:text-black dark:text-bodydark dark:hover:bg-meta-4 dark:hover:text-white'
                             }`}
                           >
-                            <div className="relative h-10 w-16 shrink-0 overflow-hidden rounded bg-white/5">
+                            <div className="relative h-10 w-16 shrink-0 overflow-hidden rounded bg-gray-2 dark:bg-meta-4">
                               {video.thumbnail ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={video.thumbnail} alt="" className="h-full w-full object-cover" />
