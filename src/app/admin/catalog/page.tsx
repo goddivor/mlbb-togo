@@ -66,7 +66,7 @@ export default function AdminCatalogPage() {
       setHeroCount(Array.isArray(hs) ? hs.length : 0);
       setRoles(Array.isArray(rs) ? rs : []);
     } catch (e: any) {
-      toast.error(e?.message || 'Erreur de chargement du catalogue');
+      toast.error(e?.message || t('admin.catalog.loadError'));
     }
   };
 
@@ -115,11 +115,11 @@ export default function AdminCatalogPage() {
         sort: Number(form.sort) || 0,
       };
       await api.lanes.update(editKey, payload);
-      toast.success('Lane mise à jour');
+      toast.success(t('admin.catalog.laneUpdated'));
       closeEdit();
       await load();
     } catch (err: any) {
-      toast.error(err?.message || 'Échec de la mise à jour');
+      toast.error(err?.message || t('admin.catalog.updateFailed'));
     } finally {
       setSaving(false);
     }
@@ -129,10 +129,10 @@ export default function AdminCatalogPage() {
     setRefreshing(true);
     try {
       const res = await api.heroes.refresh();
-      toast.success(`${res?.updated ?? 0} héros mis à jour`);
+      toast.success(t('admin.catalog.heroesUpdated', { count: res?.updated ?? 0 }));
       await load();
     } catch (err: any) {
-      toast.error(err?.message || 'Échec du rafraîchissement');
+      toast.error(err?.message || t('admin.catalog.refreshFailed'));
     } finally {
       setRefreshing(false);
     }
@@ -143,7 +143,7 @@ export default function AdminCatalogPage() {
       <PageHeader
         icon={<LayoutGrid size={28} />}
         title={t('admin.catalog.title')}
-        subtitle="Lanes et synchronisation des héros"
+        subtitle={t('admin.catalog.subtitle')}
         variant="purple"
       />
 
@@ -154,7 +154,7 @@ export default function AdminCatalogPage() {
           {/* Hero roles section (read-only reference) */}
           <SectionCard>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-black dark:text-white">Rôles</h2>
+              <h2 className="text-lg font-semibold text-black dark:text-white">{t('admin.catalog.roles')}</h2>
               <Badge variant="purple" size="sm">{roles.length}</Badge>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -174,7 +174,7 @@ export default function AdminCatalogPage() {
           {/* Lanes section */}
           <SectionCard>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-black dark:text-white">Lanes</h2>
+              <h2 className="text-lg font-semibold text-black dark:text-white">{t('admin.catalog.lanes')}</h2>
               <Badge variant="purple" size="sm">
                 {lanes.length}
               </Badge>
@@ -210,7 +210,7 @@ export default function AdminCatalogPage() {
                     )}
                   </div>
                   <Button size="sm" variant="ghost" onClick={() => openEdit(lane)}>
-                    <Pencil size={14} /> Modifier
+                    <Pencil size={14} /> {t('admin.catalog.edit')}
                   </Button>
                 </Card>
               ))}
@@ -221,13 +221,13 @@ export default function AdminCatalogPage() {
           <SectionCard>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold text-black dark:text-white">Héros</h2>
+                <h2 className="text-lg font-semibold text-black dark:text-white">{t('admin.catalog.heroes')}</h2>
                 <p className="text-sm text-body dark:text-bodydark mt-0.5">
-                  {heroCount ?? 0} héros en base. Resynchronise depuis les serveurs MLBB.
+                  {t('admin.catalog.heroesCount', { count: heroCount ?? 0 })}
                 </p>
               </div>
               <Button onClick={refreshHeroes} loading={refreshing} disabled={refreshing}>
-                <RefreshCw size={16} /> Rafraîchir depuis MLBB
+                <RefreshCw size={16} /> {t('admin.catalog.refreshFromMlbb')}
               </Button>
             </div>
           </SectionCard>
@@ -239,7 +239,7 @@ export default function AdminCatalogPage() {
         open={!!editKey}
         onClose={closeEdit}
         closeLabel={t('common.close')}
-        title="Modifier la lane"
+        title={t('admin.catalog.editLane')}
         subtitle={editKey || undefined}
         icon={<LayoutGrid size={20} />}
       >
@@ -247,52 +247,52 @@ export default function AdminCatalogPage() {
           <form onSubmit={submit} className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
-                label="Nom"
+                label={t('admin.catalog.name')}
                 value={form.name}
                 onChange={(e: any) => setForm({ ...form, name: e.target.value })}
               />
               <Input
-                label="Nom court"
+                label={t('admin.catalog.shortName')}
                 value={form.shortName}
                 onChange={(e: any) => setForm({ ...form, shortName: e.target.value })}
               />
             </div>
             <Textarea
-              label="Description"
+              label={t('admin.catalog.description')}
               value={form.description}
               onChange={(e: any) => setForm({ ...form, description: e.target.value })}
             />
             <Input
-              label="Icône (URL)"
+              label={t('admin.catalog.iconUrl')}
               value={form.icon}
               onChange={(e: any) => setForm({ ...form, icon: e.target.value })}
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
-                label="Couleur"
+                label={t('admin.catalog.color')}
                 value={form.color}
                 onChange={(e: any) => setForm({ ...form, color: e.target.value })}
                 placeholder="#3b82f6"
               />
               <Input
-                label="Ordre (sort)"
+                label={t('admin.catalog.sortOrder')}
                 type="number"
                 value={form.sort}
                 onChange={(e: any) => setForm({ ...form, sort: e.target.value })}
               />
             </div>
             <Input
-              label="Classes compatibles (séparées par des virgules)"
+              label={t('admin.catalog.compatibleClasses')}
               value={form.compatibleClasses}
               onChange={(e: any) => setForm({ ...form, compatibleClasses: e.target.value })}
               placeholder="Fighter, Tank"
             />
             <div className="flex gap-2 pt-2">
               <Button type="submit" size="sm" loading={saving} disabled={saving}>
-                <Check size={16} /> Enregistrer
+                <Check size={16} /> {t('common.save')}
               </Button>
               <Button type="button" size="sm" variant="ghost" onClick={closeEdit}>
-                Annuler
+                {t('common.cancel')}
               </Button>
             </div>
           </form>

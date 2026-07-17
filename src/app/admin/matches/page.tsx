@@ -521,7 +521,7 @@ function ResultModal({
         <form onSubmit={submit} className="space-y-3">
           <div className="flex items-center justify-center gap-2 text-sm font-semibold text-black dark:text-white">
             <span className="truncate">{match.teamA?.name}</span>
-            <span className="text-bodydark2">vs</span>
+            <span className="text-bodydark2">{t('admin.matches.vs')}</span>
             <span className="truncate">{match.teamB?.name}</span>
           </div>
 
