@@ -16,6 +16,7 @@ import {
   Square,
   ExternalLink,
   RefreshCw,
+  CalendarDays,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
@@ -71,7 +72,9 @@ function AdminStreamInner() {
   const [stopping, setStopping] = useState(false);
   const [showKey, setShowKey] = useState(false);
 
-  // Video selection
+  // Seasons (admin-created) + per-season video selection
+  const [seasons, setSeasons] = useState<any[]>([]);
+  const [seasonId, setSeasonId] = useState('');
   const [videos, setVideos] = useState<ChannelVideo[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
@@ -82,27 +85,14 @@ function AdminStreamInner() {
   const connected = !!status?.connected;
 
   const loadAll = useCallback(async () => {
-    const [st, cfg, panel] = await Promise.all([
+    const [st, panel, seasonList] = await Promise.all([
       api.stream.youtube.status(),
-      api.stream.config(),
       api.stream.livePanel().catch(() => ({ active: false })),
+      api.esport.seasons().catch(() => []),
     ]);
     setStatus(st);
     setLivePanel(panel);
-    // Pre-select the videos already saved as Season 1.
-    const savedSel = new Set<string>();
-    const savedMeta: Record<string, VideoMeta> = {};
-    for (const v of cfg.videos || []) {
-      savedSel.add(v.id);
-      savedMeta[v.id] = {
-        title: v.title,
-        thumbnail: v.thumbnail,
-        duration: v.duration,
-        date: v.date,
-      };
-    }
-    setSelected(savedSel);
-    setMeta(savedMeta);
+    setSeasons(Array.isArray(seasonList) ? seasonList : []);
   }, []);
 
   useEffect(() => {
@@ -111,6 +101,30 @@ function AdminStreamInner() {
       setLoading(false);
     })();
   }, [loadAll]);
+
+  // When a season is picked, pre-check the videos already attached to it.
+  useEffect(() => {
+    if (!seasonId) {
+      setSelected(new Set());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const assigned = await api.stream.seasonVideos(seasonId).catch(() => []);
+      if (cancelled) return;
+      const sel = new Set<string>();
+      const m: Record<string, VideoMeta> = {};
+      for (const v of assigned || []) {
+        sel.add(v.id);
+        m[v.id] = { title: v.title, thumbnail: v.thumbnail, duration: v.duration, date: v.date };
+      }
+      setSelected(sel);
+      setMeta((prev) => ({ ...prev, ...m }));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [seasonId]);
 
   // Toast on OAuth return.
   useEffect(() => {
@@ -176,6 +190,7 @@ function AdminStreamInner() {
   };
 
   const saveSelection = async () => {
+    if (!seasonId) return;
     setSavingSel(true);
     try {
       // Preserve channel order when available, else keep insertion order.
@@ -192,10 +207,7 @@ function AdminStreamInner() {
           thumbnail: m.thumbnail || '',
         };
       });
-      await api.stream.updateConfig({
-        videos: payloadVideos,
-        s1MainVideoId: order[0] || '',
-      });
+      await api.stream.setSeasonVideos(seasonId, payloadVideos);
       toast.success(t('admin.stream.saved'));
     } catch (e: any) {
       toast.error(e?.message || t('admin.stream.error'));
@@ -386,29 +398,65 @@ function AdminStreamInner() {
             )}
           </Card>
 
-          {/* 3. Season 1 video selection */}
+          {/* 3. Per-season video selection */}
           <Card>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h3 className="flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-                <Play size={20} className="text-primary" /> {t('admin.stream.videosSection')}
-              </h3>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-bodydark2">
-                  {t('admin.stream.selectedCount', { count: selectedCount })}
-                </span>
-                <Button variant="secondary" size="sm" onClick={() => loadVideos(false)} disabled={loadingVideos}>
-                  <RefreshCw size={16} className={loadingVideos ? 'animate-spin' : ''} />
-                  {t('admin.stream.loadVideos')}
-                </Button>
-                <Button size="sm" onClick={saveSelection} disabled={savingSel}>
-                  <Check size={16} /> {t('admin.stream.saveSelection')}
-                </Button>
-              </div>
-            </div>
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
+              <Play size={20} className="text-primary" /> {t('admin.stream.videosSection')}
+            </h3>
 
-            {videos.length === 0 ? (
-              <p className="py-8 text-center text-sm text-bodydark2">{t('admin.stream.loadHint')}</p>
+            {seasons.length === 0 ? (
+              <div className="py-8 text-center">
+                <CalendarDays size={28} className="mx-auto mb-3 text-bodydark2" />
+                <p className="text-sm text-body dark:text-bodydark">{t('admin.stream.noSeasons')}</p>
+                <a href="/admin/seasons" className="mt-3 inline-block">
+                  <Button variant="secondary" size="sm">
+                    <CalendarDays size={16} /> {t('admin.stream.goSeasons')}
+                  </Button>
+                </a>
+              </div>
             ) : (
+              <>
+                <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                  <div>
+                    <label className={labelCls}>{t('admin.stream.seasonLabel')}</label>
+                    <select
+                      className={inputCls}
+                      value={seasonId}
+                      onChange={(e) => {
+                        setSeasonId(e.target.value);
+                        setVideos([]);
+                        setNextPageToken(null);
+                      }}
+                    >
+                      <option value="">{t('admin.stream.seasonPlaceholder')}</option>
+                      {seasons.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {seasonId && (
+                    <div className="flex items-center gap-2">
+                      <span className="whitespace-nowrap text-sm text-bodydark2">
+                        {t('admin.stream.selectedCount', { count: selectedCount })}
+                      </span>
+                      <Button variant="secondary" size="sm" onClick={() => loadVideos(false)} disabled={loadingVideos}>
+                        <RefreshCw size={16} className={loadingVideos ? 'animate-spin' : ''} />
+                        {t('admin.stream.loadVideos')}
+                      </Button>
+                      <Button size="sm" onClick={saveSelection} disabled={savingSel}>
+                        <Check size={16} /> {t('admin.stream.saveSelection')}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {!seasonId ? (
+                  <p className="py-8 text-center text-sm text-bodydark2">{t('admin.stream.pickSeason')}</p>
+                ) : videos.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-bodydark2">{t('admin.stream.loadHint')}</p>
+                ) : (
               <>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                   {videos.map((v) => {
@@ -452,6 +500,8 @@ function AdminStreamInner() {
                       {t('admin.stream.loadMore')}
                     </Button>
                   </div>
+                )}
+              </>
                 )}
               </>
             )}

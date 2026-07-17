@@ -450,6 +450,12 @@ export const api = {
     updateConfig: (data: any) =>
       request('/stream/config', { method: 'PATCH', body: data }),
     refresh: () => request('/stream/refresh', { method: 'POST' }),
+    // Seasons (created in the esport module) with their attached videos.
+    seasons: () => request('/stream/seasons', { fallback: [], auth: false }),
+    seasonVideos: (seasonId: string) =>
+      request(`/stream/seasons/${seasonId}/videos`, { fallback: [] }),
+    setSeasonVideos: (seasonId: string, videos: any[]) =>
+      request(`/stream/seasons/${seasonId}/videos`, { method: 'PUT', body: { videos } }),
     // YouTube channel connection (OAuth) + live control (admin).
     youtube: {
       connect: () => request('/stream/youtube/connect'),

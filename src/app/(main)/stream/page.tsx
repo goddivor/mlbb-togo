@@ -6,7 +6,6 @@ import {
   Play,
   Radio,
   ExternalLink,
-  History,
   Youtube,
   Eye,
   Calendar,
@@ -21,11 +20,13 @@ import { useT } from '@/lib/i18n';
 type StreamVideo = {
   id: string;
   title: string;
-  day?: string;
+  thumbnail?: string;
   duration?: string;
   date?: string;
   views?: string;
 };
+
+type Season = { seasonId: string; name: string; videos: StreamVideo[] };
 
 type StreamConfig = {
   youtubeChannel: string;
@@ -35,8 +36,6 @@ type StreamConfig = {
   channelBanner: string;
   liveTitle: string;
   liveDesc: string;
-  s1MainVideoId: string;
-  videos: StreamVideo[];
 };
 
 function channelUrl(channel: string) {
@@ -62,24 +61,27 @@ function formatViews(count: string | undefined): string {
 
 export default function StreamPage() {
   const t = useT();
-  const [activeTab, setActiveTab] = useState<'live' | 'replay' | 's1'>('live');
   const [config, setConfig] = useState<StreamConfig | null>(null);
+  const [seasons, setSeasons] = useState<Season[]>([]);
   const [loading, setLoading] = useState(true);
-  const [videos, setVideos] = useState<StreamVideo[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('live');
   const [selectedVideo, setSelectedVideo] = useState<StreamVideo | null>(null);
-  const [loadingViews, setLoadingViews] = useState(false);
+  const [viewsMap, setViewsMap] = useState<Record<string, string>>({});
   const [live, setLive] = useState<{ live: boolean; videoId: string | null } | null>(null);
   const [loadingLive, setLoadingLive] = useState(true);
 
-  // Load the admin-managed configuration (channel + Season 1 videos).
+  // Load the connected channel + admin-defined seasons.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const data = (await api.stream.config()) as StreamConfig;
+        const [cfg, seasonList] = await Promise.all([
+          api.stream.config() as Promise<StreamConfig>,
+          api.stream.seasons() as Promise<Season[]>,
+        ]);
         if (cancelled) return;
-        setConfig(data);
-        setVideos(data.videos || []);
+        setConfig(cfg);
+        setSeasons(Array.isArray(seasonList) ? seasonList : []);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -89,35 +91,7 @@ export default function StreamPage() {
     };
   }, []);
 
-  // Enrich the Season 1 videos with real view counts when that tab is opened.
-  useEffect(() => {
-    if (activeTab !== 's1' || videos.length === 0) return;
-    let cancelled = false;
-    setLoadingViews(true);
-    (async () => {
-      try {
-        const ids = videos.map((v) => v.id).join(',');
-        const data = (await api.stream.views(ids)) as { views?: Record<string, string> };
-        if (cancelled) return;
-        setVideos((prev) =>
-          prev.map((v) => ({
-            ...v,
-            views: data.views?.[v.id] ? formatViews(data.views[v.id]) : v.views,
-          })),
-        );
-      } catch {
-        /* keep the videos as-is on failure */
-      } finally {
-        if (!cancelled) setLoadingViews(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, videos.length]);
-
-  // Check whether the channel is currently streaming live.
+  // Live status.
   useEffect(() => {
     if (!config) return;
     let cancelled = false;
@@ -137,6 +111,31 @@ export default function StreamPage() {
     };
   }, [config]);
 
+  const activeSeason = seasons.find((s) => s.seasonId === activeTab) || null;
+
+  // Reset the selected video + fetch view counts when switching season tab.
+  useEffect(() => {
+    setSelectedVideo(null);
+    if (!activeSeason || activeSeason.videos.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const ids = activeSeason.videos.map((v) => v.id).join(',');
+        const data = (await api.stream.views(ids)) as { views?: Record<string, string> };
+        if (cancelled || !data.views) return;
+        const mapped: Record<string, string> = {};
+        for (const [id, count] of Object.entries(data.views)) mapped[id] = formatViews(count);
+        setViewsMap((prev) => ({ ...prev, ...mapped }));
+      } catch {
+        /* keep counts empty on failure */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
   if (loading) {
     return <LoadingSpinner size="lg" className="py-32" />;
   }
@@ -144,22 +143,24 @@ export default function StreamPage() {
   const channel = config?.youtubeChannel || 'eternumesports';
   const banner = config?.channelBanner || '';
   const avatar = config?.channelAvatar || '';
-  const mainVideoId = config?.s1MainVideoId || videos[0]?.id || '';
-  const s1Src = selectedVideo ? videoEmbedUrl(selectedVideo.id) : videoEmbedUrl(mainVideoId);
+
+  const tabs = [
+    { id: 'live', label: t('stream.tabLive'), icon: Radio },
+    ...seasons.map((s) => ({ id: s.seasonId, label: s.name, icon: Play })),
+  ];
+
+  const mainVideo = activeSeason
+    ? selectedVideo || activeSeason.videos[0] || null
+    : null;
 
   return (
     <div className="relative min-h-screen">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-b-3xl">
-        {/* Channel banner as background (falls back to the gaming gradient) */}
         {banner ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={banner}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover"
-            />
+            <img src={banner} alt="" className="absolute inset-0 h-full w-full object-cover" />
             <div className="absolute inset-0 bg-gaming-dark/80 backdrop-blur-sm" />
             <div className="absolute inset-0 bg-gradient-to-t from-gaming-dark via-gaming-dark/40 to-transparent" />
           </>
@@ -219,15 +220,7 @@ export default function StreamPage() {
       <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
         <div className="mt-8">
           <SectionCard className="!p-1.5">
-            <Tabs
-              tabs={[
-                { id: 'live', label: t('stream.tabLive'), icon: Radio },
-                { id: 'replay', label: t('stream.tabReplay'), icon: History },
-                { id: 's1', label: t('stream.tabS1'), icon: Play },
-              ]}
-              active={activeTab}
-              onChange={(id: string) => setActiveTab(id as 'live' | 'replay' | 's1')}
-            />
+            <Tabs tabs={tabs} active={activeTab} onChange={(id: string) => setActiveTab(id)} />
           </SectionCard>
         </div>
 
@@ -282,9 +275,7 @@ export default function StreamPage() {
                             {config?.liveTitle || t('stream.liveTitle')}
                           </h3>
                         </div>
-                        <p className="mt-2 text-gray-300">
-                          {config?.liveDesc || t('stream.liveDesc')}
-                        </p>
+                        <p className="mt-2 text-gray-300">{config?.liveDesc || t('stream.liveDesc')}</p>
                         <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-400">
                           <span className="flex items-center gap-1.5">
                             <Calendar size={16} />
@@ -303,51 +294,10 @@ export default function StreamPage() {
                 </motion.div>
               )}
 
-              {/* REPLAY */}
-              {activeTab === 'replay' && (
+              {/* SEASON */}
+              {activeSeason && (
                 <motion.div
-                  key="replay"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.3 }}
-                  className="space-y-6"
-                >
-                  <Card className="overflow-hidden !p-0 shadow-2xl">
-                    <div className="flex aspect-video w-full items-center justify-center bg-gaming-darker">
-                      <div className="text-center">
-                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neon-blue/10">
-                          <History size={32} className="text-neon-blue" />
-                        </div>
-                        <p className="text-lg font-semibold text-white">{t('stream.replayAvailable')}</p>
-                        <p className="mt-2 text-sm text-gray-400">{t('stream.replayHint')}</p>
-                        <a href={channelUrl(channel)} target="_blank" rel="noreferrer" className="mt-4 inline-block">
-                          <Button variant="primary" size="sm" className="shadow-neon">
-                            <Youtube size={16} />
-                            {t('stream.watchOnYoutube')}
-                          </Button>
-                        </a>
-                      </div>
-                    </div>
-                  </Card>
-
-                  <Card className="border border-white/10 bg-white/5 backdrop-blur-xl">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <Badge variant="neon" size="sm">
-                        <History size={14} />
-                        {t('stream.replayTitle')}
-                      </Badge>
-                      <h3 className="text-xl font-bold text-white">{t('stream.replayTitle')}</h3>
-                    </div>
-                    <p className="mt-2 text-gray-300">{t('stream.replayDesc')}</p>
-                  </Card>
-                </motion.div>
-              )}
-
-              {/* SEASON 1 */}
-              {activeTab === 's1' && (
-                <motion.div
-                  key="s1"
+                  key={activeSeason.seasonId}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
@@ -356,10 +306,10 @@ export default function StreamPage() {
                 >
                   <Card className="overflow-hidden !p-0 shadow-2xl">
                     <div className="relative aspect-video w-full overflow-hidden bg-black">
-                      {mainVideoId ? (
+                      {mainVideo ? (
                         <iframe
-                          src={s1Src}
-                          title={selectedVideo ? selectedVideo.title : t('stream.s1LiveTitle')}
+                          src={videoEmbedUrl(mainVideo.id)}
+                          title={mainVideo.title}
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                           referrerPolicy="strict-origin-when-cross-origin"
                           allowFullScreen
@@ -370,11 +320,11 @@ export default function StreamPage() {
                           <Play size={48} className="text-gray-600" />
                         </div>
                       )}
-                      {selectedVideo && (
+                      {mainVideo && (
                         <div className="absolute bottom-4 left-4">
                           <Badge variant="default" size="sm" className="bg-black/60 backdrop-blur-sm">
                             <Play size={12} className="mr-1" />
-                            {selectedVideo.title}
+                            {mainVideo.title}
                           </Badge>
                         </div>
                       )}
@@ -385,36 +335,35 @@ export default function StreamPage() {
                     <div className="flex flex-wrap items-center gap-3">
                       <Badge variant="gold" size="sm">
                         <Flame size={14} />
-                        {t('stream.s1Title')}
+                        {activeSeason.name}
                       </Badge>
-                      <h3 className="text-xl font-bold text-white">{t('stream.s1LiveTitle')}</h3>
+                      <h3 className="text-xl font-bold text-white">
+                        {mainVideo?.title || activeSeason.name}
+                      </h3>
                     </div>
-                    <p className="mt-2 text-gray-300">{t('stream.s1LiveDesc')}</p>
-                    <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-400">
-                      <span className="flex items-center gap-1.5">
-                        <Eye size={16} />
-                        {selectedVideo
-                          ? t('stream.viewsCount', { count: selectedVideo.views || '—' })
-                          : loadingViews
-                            ? t('stream.loadingViews')
-                            : t('stream.selectVideo')}
-                      </span>
-                      {selectedVideo?.date && (
+                    {mainVideo && (
+                      <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-400">
                         <span className="flex items-center gap-1.5">
-                          <Calendar size={16} />
-                          {selectedVideo.date}
+                          <Eye size={16} />
+                          {t('stream.viewsCount', { count: viewsMap[mainVideo.id] || '—' })}
                         </span>
-                      )}
-                      {selectedVideo?.duration && (
-                        <span className="flex items-center gap-1.5">
-                          <Clock size={16} />
-                          {selectedVideo.duration}
-                        </span>
-                      )}
-                    </div>
-                    {selectedVideo && (
+                        {mainVideo.date && (
+                          <span className="flex items-center gap-1.5">
+                            <Calendar size={16} />
+                            {mainVideo.date}
+                          </span>
+                        )}
+                        {mainVideo.duration && (
+                          <span className="flex items-center gap-1.5">
+                            <Clock size={16} />
+                            {mainVideo.duration}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {mainVideo && (
                       <div className="mt-4">
-                        <a href={watchUrl(selectedVideo.id)} target="_blank" rel="noreferrer">
+                        <a href={watchUrl(mainVideo.id)} target="_blank" rel="noreferrer">
                           <Button variant="primary" size="sm" className="shadow-neon">
                             <Youtube size={16} />
                             {t('stream.watchOnYoutube')}
@@ -428,50 +377,53 @@ export default function StreamPage() {
             </AnimatePresence>
           </div>
 
-          {/* Sidebar */}
-          <div className="hidden lg:block">
-            <div className="sticky top-6">
-              <Card className="border border-white/10 bg-white/5 backdrop-blur-xl !p-0">
-                <div className="flex items-center gap-3 p-5">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-neon-blue/20 to-neon-purple/20">
-                    <Flame size={20} className="text-neon-blue" />
+          {/* Sidebar: the active season's videos */}
+          {activeSeason && activeSeason.videos.length > 0 && (
+            <div className="hidden lg:block">
+              <div className="sticky top-6">
+                <Card className="border border-white/10 bg-white/5 backdrop-blur-xl !p-0">
+                  <div className="flex items-center gap-3 p-5">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-neon-blue/20 to-neon-purple/20">
+                      <Flame size={20} className="text-neon-blue" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white">{activeSeason.name}</h3>
+                      <p className="text-xs text-gray-400">
+                        {t('stream.videosCount', { count: activeSeason.videos.length })}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-white">
-                      {activeTab === 's1' ? t('stream.s1Title') : t('stream.title')}
-                    </h3>
-                    <p className="text-xs text-gray-400">
-                      {activeTab === 's1'
-                        ? t('stream.videosCount', { count: videos.length })
-                        : t('stream.live')}
-                    </p>
-                  </div>
-                </div>
-                <div className="border-t border-white/10" />
-                <div className="p-3">
-                  {activeTab === 's1' && videos.length > 0 ? (
+                  <div className="border-t border-white/10" />
+                  <div className="p-3">
                     <div className="space-y-2">
-                      {videos.map((video) => {
-                        const isActive = selectedVideo?.id === video.id;
+                      {activeSeason.videos.map((video) => {
+                        const isActive = (mainVideo?.id || '') === video.id;
                         return (
                           <button
                             key={video.id}
                             type="button"
                             onClick={() => setSelectedVideo(video)}
-                            className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all duration-300 ${
+                            className={`flex w-full items-center gap-3 rounded-xl p-2 text-left transition-all duration-300 ${
                               isActive
                                 ? 'bg-neon-blue/10 text-neon-blue'
                                 : 'text-gray-300 hover:bg-white/5 hover:text-white'
                             }`}
                           >
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/5">
-                              <Play size={16} />
+                            <div className="relative h-10 w-16 shrink-0 overflow-hidden rounded bg-white/5">
+                              {video.thumbnail ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={video.thumbnail} alt="" className="h-full w-full object-cover" />
+                              ) : (
+                                <span className="flex h-full w-full items-center justify-center">
+                                  <Play size={14} />
+                                </span>
+                              )}
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-medium">{video.title}</p>
                               <p className="text-xs text-gray-500">
-                                {video.day}
-                                {video.views ? ` • ${t('stream.viewsCount', { count: video.views })}` : ''}
+                                {video.duration}
+                                {viewsMap[video.id] ? ` • ${t('stream.viewsCount', { count: viewsMap[video.id] })}` : ''}
                               </p>
                             </div>
                             {isActive && <div className="h-2 w-2 rounded-full bg-neon-blue shadow-neon" />}
@@ -479,16 +431,11 @@ export default function StreamPage() {
                         );
                       })}
                     </div>
-                  ) : (
-                    <div className="py-8 text-center text-sm text-gray-500">
-                      <Radio size={32} className="mx-auto mb-2 opacity-50" />
-                      {activeTab === 'live' ? t('stream.liveOngoing') : t('stream.replayAvailable')}
-                    </div>
-                  )}
-                </div>
-              </Card>
+                  </div>
+                </Card>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
