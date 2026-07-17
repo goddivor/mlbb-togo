@@ -83,12 +83,13 @@ export default function DashboardHeader({ sidebarOpen, setSidebarOpen }: HeaderP
           </div>
         </div>
 
-        <div className="flex items-center gap-3 sm:gap-7">
-          <ul className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-7">
+          <ul className="flex items-center gap-1.5 sm:gap-4">
             <li className="lg:hidden">
               <HeaderSearch />
             </li>
-            <li>
+            {/* Dark toggle hidden on phone (the palette menu handles light/dark there) */}
+            <li className="hidden sm:block">
               <DarkModeToggle />
             </li>
             <li>
@@ -100,7 +101,8 @@ export default function DashboardHeader({ sidebarOpen, setSidebarOpen }: HeaderP
             <li>
               <MessageDropdown href="/messages" />
             </li>
-            <li>
+            {/* Language hidden on phone to keep the bar from overflowing */}
+            <li className="hidden sm:block">
               <LanguageSwitcher />
             </li>
           </ul>
