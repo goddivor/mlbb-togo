@@ -29,6 +29,10 @@ type StreamVideo = {
 
 type StreamConfig = {
   youtubeChannel: string;
+  channelId: string;
+  channelTitle: string;
+  channelAvatar: string;
+  channelBanner: string;
   liveTitle: string;
   liveDesc: string;
   s1MainVideoId: string;
@@ -37,10 +41,6 @@ type StreamConfig = {
 
 function channelUrl(channel: string) {
   return `https://www.youtube.com/@${channel}/videos`;
-}
-
-function liveEmbedUrl(channel: string) {
-  return `https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(channel)}`;
 }
 
 function videoEmbedUrl(id: string) {
@@ -68,7 +68,8 @@ export default function StreamPage() {
   const [videos, setVideos] = useState<StreamVideo[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<StreamVideo | null>(null);
   const [loadingViews, setLoadingViews] = useState(false);
-  const [liveError, setLiveError] = useState(false);
+  const [live, setLive] = useState<{ live: boolean; videoId: string | null } | null>(null);
+  const [loadingLive, setLoadingLive] = useState(true);
 
   // Load the admin-managed configuration (channel + Season 1 videos).
   useEffect(() => {
@@ -96,8 +97,7 @@ export default function StreamPage() {
     (async () => {
       try {
         const ids = videos.map((v) => v.id).join(',');
-        const res = await fetch(`/api/youtube/views?videoIds=${encodeURIComponent(ids)}`);
-        const data = (await res.json()) as { views?: Record<string, string> };
+        const data = (await api.stream.views(ids)) as { views?: Record<string, string> };
         if (cancelled) return;
         setVideos((prev) =>
           prev.map((v) => ({
@@ -117,11 +117,33 @@ export default function StreamPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, videos.length]);
 
+  // Check whether the channel is currently streaming live.
+  useEffect(() => {
+    if (!config) return;
+    let cancelled = false;
+    setLoadingLive(true);
+    (async () => {
+      try {
+        const data = (await api.stream.live()) as { live: boolean; videoId: string | null };
+        if (!cancelled) setLive(data);
+      } catch {
+        if (!cancelled) setLive({ live: false, videoId: null });
+      } finally {
+        if (!cancelled) setLoadingLive(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [config]);
+
   if (loading) {
     return <LoadingSpinner size="lg" className="py-32" />;
   }
 
   const channel = config?.youtubeChannel || 'eternumesports';
+  const banner = config?.channelBanner || '';
+  const avatar = config?.channelAvatar || '';
   const mainVideoId = config?.s1MainVideoId || videos[0]?.id || '';
   const s1Src = selectedVideo ? videoEmbedUrl(selectedVideo.id) : videoEmbedUrl(mainVideoId);
 
@@ -129,9 +151,25 @@ export default function StreamPage() {
     <div className="relative min-h-screen">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-b-3xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-gaming-darker via-gaming-dark to-gaming-darker" />
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px] pointer-events-none" />
-        <div className="absolute top-20 right-20 h-[300px] w-[400px] rounded-full bg-neon-purple/15 blur-[100px] pointer-events-none" />
+        {/* Channel banner as background (falls back to the gaming gradient) */}
+        {banner ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={banner}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gaming-dark/80 backdrop-blur-sm" />
+            <div className="absolute inset-0 bg-gradient-to-t from-gaming-dark via-gaming-dark/40 to-transparent" />
+          </>
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-br from-gaming-darker via-gaming-dark to-gaming-darker" />
+            <div className="absolute -top-40 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px] pointer-events-none" />
+            <div className="absolute top-20 right-20 h-[300px] w-[400px] rounded-full bg-neon-purple/15 blur-[100px] pointer-events-none" />
+          </>
+        )}
 
         <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <motion.div
@@ -140,9 +178,18 @@ export default function StreamPage() {
             transition={{ duration: 0.6, ease: 'easeOut' }}
             className="text-center"
           >
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500/20 to-red-600/10 shadow-neon">
-              <Radio size={36} className="text-red-500" />
-            </div>
+            {avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatar}
+                alt={config?.channelTitle || 'Channel'}
+                className="mx-auto mb-6 h-24 w-24 rounded-full border-2 border-white/20 object-cover shadow-neon"
+              />
+            ) : (
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500/20 to-red-600/10 shadow-neon">
+                <Radio size={36} className="text-red-500" />
+              </div>
+            )}
             <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
               <span className="bg-gradient-to-r from-white via-white to-gray-300 bg-clip-text text-transparent">
                 {t('stream.title')}
@@ -198,24 +245,27 @@ export default function StreamPage() {
                   className="space-y-6"
                 >
                   <Card className="overflow-hidden !p-0 shadow-2xl">
-                    {liveError ? (
-                      <div className="flex aspect-video w-full items-center justify-center bg-gaming-darker">
-                        <div className="text-center">
-                          <WifiOff size={48} className="mx-auto mb-4 text-gray-500" />
-                          <p className="text-lg font-semibold text-gray-300">{t('stream.noLive')}</p>
-                          <p className="mt-2 text-sm text-gray-400">{t('stream.noLiveDesc')}</p>
-                        </div>
-                      </div>
-                    ) : (
+                    {live?.live && live.videoId ? (
                       <div className="relative aspect-video w-full overflow-hidden bg-black">
                         <iframe
-                          src={liveEmbedUrl(channel)}
+                          src={videoEmbedUrl(live.videoId)}
                           title={config?.liveTitle || t('stream.liveTitle')}
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
                           className="h-full w-full"
-                          onError={() => setLiveError(true)}
                         />
+                      </div>
+                    ) : (
+                      <div className="flex aspect-video w-full items-center justify-center bg-gaming-darker">
+                        {loadingLive ? (
+                          <LoadingSpinner size="lg" />
+                        ) : (
+                          <div className="text-center">
+                            <WifiOff size={48} className="mx-auto mb-4 text-gray-500" />
+                            <p className="text-lg font-semibold text-gray-300">{t('stream.noLive')}</p>
+                            <p className="mt-2 text-sm text-gray-400">{t('stream.noLiveDesc')}</p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </Card>
