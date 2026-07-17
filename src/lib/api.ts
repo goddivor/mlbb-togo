@@ -419,6 +419,61 @@ export const api = {
     unsubscribe: (endpoint: string) =>
       request('/push/unsubscribe', { method: 'POST', body: { endpoint } }),
   },
+
+  stream: {
+    // Public: the YouTube channel + Season 1 video list, set by the admin.
+    config: () =>
+      request('/stream/config', {
+        fallback: {
+          youtubeChannel: 'eternumesports',
+          channelId: '',
+          channelTitle: '',
+          channelAvatar: '',
+          channelBanner: '',
+          liveTitle: '',
+          liveDesc: '',
+          s1MainVideoId: '',
+          videos: [],
+        },
+        auth: false,
+      }),
+    live: () =>
+      request('/stream/live', {
+        fallback: { live: false, videoId: null, title: null },
+        auth: false,
+      }),
+    views: (videoIds: string) =>
+      request(`/stream/views?videoIds=${encodeURIComponent(videoIds)}`, {
+        fallback: { views: {} },
+        auth: false,
+      }),
+    updateConfig: (data: any) =>
+      request('/stream/config', { method: 'PATCH', body: data }),
+    refresh: () => request('/stream/refresh', { method: 'POST' }),
+    // Seasons (created in the esport module) with their attached videos.
+    seasons: () => request('/stream/seasons', { fallback: [], auth: false }),
+    seasonVideos: (seasonId: string) =>
+      request(`/stream/seasons/${seasonId}/videos`, { fallback: [] }),
+    setSeasonVideos: (seasonId: string, videos: any[]) =>
+      request(`/stream/seasons/${seasonId}/videos`, { method: 'PUT', body: { videos } }),
+    // YouTube channel connection (OAuth) + live control (admin).
+    youtube: {
+      connect: () => request('/stream/youtube/connect'),
+      status: () =>
+        request('/stream/youtube/status', { fallback: { connected: false } }),
+      disconnect: () => request('/stream/youtube/disconnect', { method: 'POST' }),
+      videos: (pageToken?: string) =>
+        request(
+          `/stream/youtube/videos${pageToken ? `?pageToken=${encodeURIComponent(pageToken)}` : ''}`,
+          { fallback: { videos: [], nextPageToken: null, total: 0 } },
+        ),
+    },
+    livePanel: () =>
+      request('/stream/live/panel', { fallback: { active: false } }),
+    startLive: (data: any) =>
+      request('/stream/live/start', { method: 'POST', body: data }),
+    stopLive: () => request('/stream/live/stop', { method: 'POST' }),
+  },
 };
 
 export default api;

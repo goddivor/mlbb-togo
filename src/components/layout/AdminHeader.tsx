@@ -2,16 +2,42 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, Search } from 'lucide-react';
+import {
+  Menu,
+  Search,
+  Shield,
+  CalendarDays,
+  Swords,
+  Radio,
+  Users,
+  Inbox,
+  MessageSquare,
+  Handshake,
+  LayoutGrid,
+} from 'lucide-react';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
 import { disconnectSocket } from '@/lib/realtime';
 import { useT } from '@/lib/i18n';
 import { setToken, avatarSrc } from '@/lib/api';
 import { useAuthStore, useLangStore } from '@/store/useStore';
 import DarkModeToggle from './DarkModeToggle';
+import ThemeSwitcher from './ThemeSwitcher';
+import HeaderSearch, { type QuickLink } from './HeaderSearch';
 import NotificationDropdown from './NotificationDropdown';
 import MessageDropdown from './MessageDropdown';
 import ProfileDropdown from './ProfileDropdown';
+
+const ADMIN_LINKS: QuickLink[] = [
+  { href: '/admin/catalog', key: 'admin.catalog.title', icon: LayoutGrid },
+  { href: '/admin/esport', key: 'admin.esport.title', icon: Shield },
+  { href: '/admin/seasons', key: 'admin.seasons.title', icon: CalendarDays },
+  { href: '/admin/matches', key: 'admin.matches.title', icon: Swords },
+  { href: '/admin/stream', key: 'admin.stream.title', icon: Radio },
+  { href: '/admin/users', key: 'admin.users.title', icon: Users },
+  { href: '/admin/requests', key: 'requests.title', icon: Inbox },
+  { href: '/admin/messages', key: 'header.messages', icon: MessageSquare },
+  { href: '/admin/sponsors', key: 'admin.sponsors.title', icon: Handshake },
+];
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -61,8 +87,8 @@ export default function AdminHeader({ sidebarOpen, setSidebarOpen }: HeaderProps
           </Link>
         </div>
 
-        {/* Search (optional) */}
-        <div className="hidden sm:block">
+        {/* Search (optional) — desktop only to avoid mobile overflow */}
+        <div className="hidden lg:block">
           <div className="relative">
             <span className="absolute left-0 top-1/2 -translate-y-1/2 text-body dark:text-bodydark">
               <Search size={20} />
@@ -75,10 +101,17 @@ export default function AdminHeader({ sidebarOpen, setSidebarOpen }: HeaderProps
           </div>
         </div>
 
-        <div className="flex items-center gap-3 sm:gap-7">
-          <ul className="flex items-center gap-2 sm:gap-4">
-            <li>
+        <div className="flex items-center gap-2 sm:gap-7">
+          <ul className="flex items-center gap-1.5 sm:gap-4">
+            <li className="lg:hidden">
+              <HeaderSearch links={ADMIN_LINKS} />
+            </li>
+            {/* Dark toggle hidden on phone (the palette menu handles light/dark there) */}
+            <li className="hidden sm:block">
               <DarkModeToggle />
+            </li>
+            <li>
+              <ThemeSwitcher />
             </li>
             <li>
               <NotificationDropdown />
@@ -86,7 +119,8 @@ export default function AdminHeader({ sidebarOpen, setSidebarOpen }: HeaderProps
             <li>
               <MessageDropdown href="/admin/messages" />
             </li>
-            <li>
+            {/* Language hidden on phone to keep the bar from overflowing */}
+            <li className="hidden sm:block">
               <LanguageSwitcher />
             </li>
           </ul>

@@ -10,9 +10,9 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import toast from 'react-hot-toast';
 
 const ROLE_BADGE: Record<string, { label: string; variant: any }> = {
-  admin: { label: 'Admin', variant: 'danger' },
-  moderator: { label: 'Modérateur', variant: 'gold' },
-  user: { label: 'Joueur', variant: 'neon' },
+  admin: { label: 'admin.users.role.admin', variant: 'danger' },
+  moderator: { label: 'admin.users.role.moderator', variant: 'gold' },
+  user: { label: 'admin.users.role.user', variant: 'neon' },
 };
 
 const ROLE_CYCLE: Record<string, string> = {
@@ -156,7 +156,7 @@ export default function AdminUsers() {
                         </div>
                       </td>
                       <td className="py-3 pr-4">
-                        <Badge variant={rb.variant} size="sm">{rb.label}</Badge>
+                        <Badge variant={rb.variant} size="sm">{t(rb.label)}</Badge>
                       </td>
                       <td className="py-3 pr-4">
                         {u.isBanned ? (
