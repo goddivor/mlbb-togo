@@ -371,8 +371,8 @@ function AdminStreamInner() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:items-end">
-                <div className="md:col-span-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_200px_auto] md:items-end">
+                <div>
                   <label className={labelCls}>{t('admin.stream.liveTitleLabel')}</label>
                   <input
                     className={inputCls}
@@ -389,8 +389,8 @@ function AdminStreamInner() {
                     <option value="private">{t('admin.stream.privacyPrivate')}</option>
                   </select>
                 </div>
-                <div className="md:col-span-3">
-                  <Button onClick={startLive} disabled={starting}>
+                <div>
+                  <Button onClick={startLive} disabled={starting} className="w-full md:w-auto">
                     <Zap size={16} /> {t('admin.stream.startLive')}
                   </Button>
                 </div>
