@@ -11,6 +11,7 @@ import {
   Megaphone,
   Radio,
   Users2,
+  Trophy,
 } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import { useT } from '@/lib/i18n';
@@ -21,6 +22,7 @@ const PLAYER_LINKS: QuickLink[] = [
   { href: '/dashboard', key: 'header.dashboard', icon: LayoutDashboard },
   { href: '/heroes', key: 'header.heroes', icon: Swords },
   { href: '/players', key: 'header.players', icon: Users },
+  { href: '/leaderboard', key: 'header.leaderboard', icon: Trophy },
   { href: '/teams', key: 'header.teams', icon: Shield },
   { href: '/recruitment', key: 'header.recruitment', icon: Megaphone },
   { href: '/stream', key: 'header.stream', icon: Radio },

@@ -25,6 +25,7 @@ export const playerMenuGroups: MenuGroupConfig[] = [
       { href: '/dashboard', labelKey: 'header.dashboard', icon: LayoutDashboard },
       { href: '/heroes', labelKey: 'header.heroes', icon: Swords },
       { href: '/players', labelKey: 'header.players', icon: Users },
+      { href: '/leaderboard', labelKey: 'header.leaderboard', icon: Trophy },
     ],
   },
   {
