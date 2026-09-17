@@ -16,7 +16,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     pathname === '/' ||
     pathname.startsWith('/admin-login') ||
     pathname === '/about' ||
-    pathname.startsWith('/legal');
+    pathname.startsWith('/legal') ||
+    pathname.startsWith('/seasons');
   const dark = isPublic ? true : theme === 'dark';
 
   useEffect(() => {
