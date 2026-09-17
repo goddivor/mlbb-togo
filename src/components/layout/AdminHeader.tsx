@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Menu,
-  Search,
   Shield,
   CalendarDays,
   Swords,
@@ -87,18 +86,9 @@ export default function AdminHeader({ sidebarOpen, setSidebarOpen }: HeaderProps
           </Link>
         </div>
 
-        {/* Search (optional) — desktop only to avoid mobile overflow */}
+        {/* Desktop trigger of the global search (mobile uses the icon in the list below) */}
         <div className="hidden lg:block">
-          <div className="relative">
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 text-body dark:text-bodydark">
-              <Search size={20} />
-            </span>
-            <input
-              type="text"
-              placeholder={lang === 'fr' ? 'Rechercher...' : 'Search...'}
-              className="w-full bg-transparent pl-9 pr-4 text-black focus:outline-none dark:text-white xl:w-125"
-            />
-          </div>
+          <HeaderSearch links={ADMIN_LINKS} variant="bar" shortcut={false} />
         </div>
 
         <div className="flex items-center gap-2 sm:gap-7">

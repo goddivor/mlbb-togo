@@ -49,7 +49,17 @@ interface ResultItem {
 }
 
 /** Global search: quick navigation + API search across all entities. */
-export default function HeaderSearch({ links = PLAYER_LINKS }: { links?: QuickLink[] }) {
+export default function HeaderSearch({
+  links = PLAYER_LINKS,
+  variant = 'icon',
+  shortcut = true,
+}: {
+  links?: QuickLink[];
+  /** `icon`: round button (mobile); `bar`: search-bar lookalike (desktop). */
+  variant?: 'icon' | 'bar';
+  /** Only one instance per page should own the Ctrl+K shortcut. */
+  shortcut?: boolean;
+}) {
   const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -67,6 +77,7 @@ export default function HeaderSearch({ links = PLAYER_LINKS }: { links?: QuickLi
 
   // Setup Ctrl+K / Cmd+K shortcut to open search
   useEffect(() => {
+    if (!shortcut) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
@@ -219,15 +230,30 @@ export default function HeaderSearch({ links = PLAYER_LINKS }: { links?: QuickLi
 
   return (
     <>
+      {variant === 'icon' ? (
+        <button
+          type="button"
+          aria-label={t('search.title')}
+          onClick={() => setOpen(true)}
+          className="flex h-12 w-12 items-center justify-center rounded-full border-[0.5px] border-stroke bg-gray text-black hover:text-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+          title={t('search.shortcut')}
+        >
+          <Search size={18} />
+        </button>
+      ) : (
       <button
         type="button"
-        aria-label={t('search.title')}
         onClick={() => setOpen(true)}
-        className="flex h-12 w-12 items-center justify-center rounded-full border-[0.5px] border-stroke bg-gray text-black hover:text-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+        className="flex w-full items-center gap-3 text-left text-body hover:text-primary dark:text-bodydark xl:w-125"
         title={t('search.shortcut')}
       >
-        <Search size={18} />
+        <Search size={20} />
+        <span className="flex-1 truncate">{t('search.placeholder')}</span>
+        <kbd className="hidden rounded border border-stroke px-1.5 py-0.5 text-xs dark:border-strokedark xl:inline">
+          Ctrl K
+        </kbd>
       </button>
+      )}
 
       <Modal open={open} onClose={() => setOpen(false)} title={t('search.title')} size="md">
         <div className="p-2">

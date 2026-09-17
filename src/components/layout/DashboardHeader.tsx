@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, Search } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { useAuthStore, useLangStore } from '@/store/useStore';
 import { setToken, avatarSrc } from '@/lib/api';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
@@ -69,18 +69,9 @@ export default function DashboardHeader({ sidebarOpen, setSidebarOpen }: HeaderP
           </Link>
         </div>
 
-        {/* Desktop search bar (mobile uses the icon button below) */}
+        {/* Desktop trigger of the global search (mobile uses the icon in the list below) */}
         <div className="hidden lg:block">
-          <div className="relative">
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 text-body dark:text-bodydark">
-              <Search size={20} />
-            </span>
-            <input
-              type="text"
-              placeholder={lang === 'fr' ? 'Rechercher...' : 'Search...'}
-              className="w-full bg-transparent pl-9 pr-4 text-black focus:outline-none dark:text-white xl:w-125"
-            />
-          </div>
+          <HeaderSearch variant="bar" shortcut={false} />
         </div>
 
         <div className="flex items-center gap-2 sm:gap-7">
