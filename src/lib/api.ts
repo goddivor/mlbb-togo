@@ -732,6 +732,21 @@ export const api = {
         }),
     },
   },
+
+  pickban: {
+    heroes: () => request('/pickban/heroes', { fallback: [], auth: false }),
+    suggest: (state: any) => request('/pickban/suggest', { method: 'POST', body: state, auth: false }),
+    getByCode: (code: string) => request(`/pickban/share/${code}`, { auth: false }),
+    list: () => request('/pickban', { fallback: [] }),
+    get: (id: string) => request(`/pickban/${id}`),
+    create: (data: { name?: string; mode?: 'ranked' | 'tournament' }) =>
+      request('/pickban', { method: 'POST', body: data }),
+    step: (id: string, data: { action: string; team: string; heroId: string; lane?: string }) =>
+      request(`/pickban/${id}/step`, { method: 'PATCH', body: data }),
+    undo: (id: string) => request(`/pickban/${id}/undo`, { method: 'PATCH' }),
+    reset: (id: string) => request(`/pickban/${id}/reset`, { method: 'PATCH' }),
+    remove: (id: string) => request(`/pickban/${id}`, { method: 'DELETE' }),
+  },
 };
 
 export default api;
