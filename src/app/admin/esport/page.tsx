@@ -13,6 +13,8 @@ import {
   Star,
   Rocket,
   Trophy,
+  UserCog,
+  Medal,
 } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
@@ -31,6 +33,7 @@ import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import RoleIcon from '@/components/game/RoleIcon';
 import RoleSelect from '@/components/game/RoleSelect';
 import toast from 'react-hot-toast';
+import { StaffPanel, HonoursPanel } from './TeamExtrasPanels';
 
 const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
 
@@ -86,6 +89,8 @@ export default function AdminEsportPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editTeam, setEditTeam] = useState<any>(null);
   const [membersId, setMembersId] = useState<string | null>(null);
+  const [staffId, setStaffId] = useState<string | null>(null);
+  const [honoursId, setHonoursId] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending>(null);
   const [confirming, setConfirming] = useState(false);
 
@@ -98,6 +103,8 @@ export default function AdminEsportPage() {
     () => teams.find((tm) => tm.id === membersId) || null,
     [teams, membersId],
   );
+  const staffTeam = useMemo(() => teams.find((tm) => tm.id === staffId) || null, [teams, staffId]);
+  const honoursTeam = useMemo(() => teams.find((tm) => tm.id === honoursId) || null, [teams, honoursId]);
 
   const runConfirm = async () => {
     if (!pending) return;
@@ -211,6 +218,14 @@ export default function AdminEsportPage() {
                     </Button>
                   )}
                   <div className="flex items-center gap-2">
+                    <Button size="sm" variant="secondary" className="flex-1" onClick={() => setStaffId(team.id)}>
+                      <UserCog size={14} /> {t('admin.esport.staff')}
+                    </Button>
+                    <Button size="sm" variant="secondary" className="flex-1" onClick={() => setHonoursId(team.id)}>
+                      <Medal size={14} /> {t('admin.esport.honours')}
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <Button size="sm" variant="secondary" className="flex-1" onClick={() => setMembersId(team.id)}>
                       <Users size={14} /> {t('admin.esport.members')}
                     </Button>
@@ -256,6 +271,28 @@ export default function AdminEsportPage() {
         {membersTeam && (
           <MembersPanel team={membersTeam} reload={load} t={t} errMsg={errMsg} onAsk={setPending} />
         )}
+      </Modal>
+
+      <Modal
+        open={!!staffTeam}
+        onClose={() => setStaffId(null)}
+        maxWidth="max-w-2xl"
+        closeLabel={t('common.close')}
+        icon={<UserCog size={20} />}
+        title={staffTeam ? `${t('admin.esport.staffTitle')} · ${staffTeam.name}` : ''}
+      >
+        {staffTeam && <StaffPanel team={staffTeam} t={t} errMsg={errMsg} onAsk={setPending} />}
+      </Modal>
+
+      <Modal
+        open={!!honoursTeam}
+        onClose={() => setHonoursId(null)}
+        maxWidth="max-w-2xl"
+        closeLabel={t('common.close')}
+        icon={<Medal size={20} />}
+        title={honoursTeam ? `${t('admin.esport.honoursTitle')} · ${honoursTeam.name}` : ''}
+      >
+        {honoursTeam && <HonoursPanel team={honoursTeam} t={t} errMsg={errMsg} onSaved={() => setHonoursId(null)} />}
       </Modal>
 
       <ConfirmModal

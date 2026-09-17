@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import {
   ArrowLeft, Crown, Users, Calendar, Check, X,
   Swords, MessageSquare, Plus, Trash2, Send, Megaphone,
+  LayoutDashboard, UserCog, History, Trophy, CalendarDays,
 } from 'lucide-react';
 import {
   Badge, Button, Card, SectionCard, EmptyState, LoadingSpinner, Tabs, Input, Textarea, Select,
@@ -19,6 +20,11 @@ import RoleSelect from '@/components/game/RoleSelect';
 import { useAuthStore } from '@/store/useStore';
 import { useT } from '@/lib/i18n';
 import toast from 'react-hot-toast';
+import TeamOverview from '@/components/teams/TeamOverview';
+import TeamStaff from '@/components/teams/TeamStaff';
+import TeamHistory from '@/components/teams/TeamHistory';
+import TeamHonours from '@/components/teams/TeamHonours';
+import TeamSchedule from '@/components/teams/TeamSchedule';
 
 const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
 // Compact field (slot quantity): Input doesn't fit inline
@@ -108,14 +114,25 @@ export default function TeamDetailPage() {
   const [loading, setLoading] = useState(true);
   const myId = useAuthStore((s: any) => s.user?.id);
   const isAdmin = useAuthStore((s: any) => ['admin', 'moderator'].includes(s.user?.roleUser));
-  const [tab, setTab] = useState<'roster' | 'recruitment' | 'matches'>('roster');
+  const [tab, setTab] = useState<'overview' | 'roster' | 'staff' | 'schedule' | 'history' | 'honours' | 'recruitment' | 'matches'>('overview');
+  const [teamStats, setTeamStats] = useState<any>(null);
+  const [schedule, setSchedule] = useState<any[]>([]);
 
-  const refresh = () => api.esport.team(id).then(setTeam).catch(() => setTeam(null));
+  const loadExtras = () => {
+    api.esport.teamStats(id).then(setTeamStats).catch(() => setTeamStats(null));
+    api.esport.teamSchedule(id).then((r: any) => setSchedule(Array.isArray(r) ? r : [])).catch(() => setSchedule([]));
+  };
+  const refresh = () => {
+    loadExtras();
+    return api.esport.team(id).then(setTeam).catch(() => setTeam(null));
+  };
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
     api.esport.team(id).then(setTeam).catch(() => setTeam(null)).finally(() => setLoading(false));
+    api.esport.teamStats(id).then(setTeamStats).catch(() => setTeamStats(null));
+    api.esport.teamSchedule(id).then((r: any) => setSchedule(Array.isArray(r) ? r : [])).catch(() => setSchedule([]));
   }, [id]);
 
   const members: any[] = Array.isArray(team?.members) ? team.members : [];
@@ -292,8 +309,16 @@ export default function TeamDetailPage() {
   let foundedLabel = '';
   if (team.foundedAt) { const d = new Date(team.foundedAt); if (!isNaN(d.getTime())) foundedLabel = d.toLocaleDateString(); }
 
+  const staffList: any[] = Array.isArray(team?.staff) ? team.staff : [];
+  const honours: any[] = Array.isArray(team?.honours) ? team.honours : [];
+
   const TABS = [
+    { id: 'overview', icon: LayoutDashboard, label: t('teams.tab.overview') },
     { id: 'roster', icon: Users, label: t('teams.tab.roster') },
+    { id: 'staff', icon: UserCog, label: t('teams.tab.staff') },
+    { id: 'schedule', icon: CalendarDays, label: t('teams.tab.schedule') },
+    { id: 'history', icon: History, label: t('teams.tab.history') },
+    { id: 'honours', icon: Trophy, label: t('teams.tab.honours') },
     {
       id: 'recruitment',
       icon: Megaphone,
@@ -331,6 +356,19 @@ export default function TeamDetailPage() {
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-body dark:text-bodydark">
             <span className="inline-flex items-center gap-1.5"><Users size={14} className="text-primary" />{team.memberCount ?? members.length} {t('teams.members')}</span>
             {foundedLabel && <span className="inline-flex items-center gap-1.5"><Calendar size={14} className="text-primary" />{t('teams.detail.founded')} {foundedLabel}</span>}
+            {stats.played > 0 && (
+              <span className="inline-flex items-center gap-1.5">
+                <Swords size={14} className="text-primary" />
+                <span className="font-semibold text-success">{stats.wins}</span>
+                <span className="text-bodydark2">/</span>
+                <span className="font-semibold text-danger">{stats.losses}</span>
+                <span className="text-bodydark2">·</span>
+                {stats.winRate}%
+              </span>
+            )}
+            {honours.some((h) => h.placement === 1) && (
+              <span className="inline-flex items-center gap-1.5 text-warning"><Trophy size={14} />{honours.filter((h) => h.placement === 1).length}</span>
+            )}
           </div>
           {team.description && <p className="mt-2 whitespace-pre-line text-sm text-body dark:text-bodydark">{team.description}</p>}
         </div>
@@ -338,6 +376,21 @@ export default function TeamDetailPage() {
 
       {/* Tabs */}
       <Tabs tabs={TABS} active={tab} onChange={(v: string) => setTab(v as typeof tab)} className="flex-wrap" />
+
+      {/* Overview tab */}
+      {tab === 'overview' && <TeamOverview stats={teamStats} t={t} />}
+
+      {/* Staff tab */}
+      {tab === 'staff' && <TeamStaff staff={staffList} t={t} />}
+
+      {/* Schedule tab */}
+      {tab === 'schedule' && <TeamSchedule schedule={schedule} t={t} />}
+
+      {/* History tab */}
+      {tab === 'history' && <TeamHistory teamId={id} t={t} />}
+
+      {/* Honours tab */}
+      {tab === 'honours' && <TeamHonours honours={honours} t={t} />}
 
       {/* Roster tab */}
       {tab === 'roster' && (
