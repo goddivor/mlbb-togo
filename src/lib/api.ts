@@ -170,6 +170,14 @@ export const api = {
       });
     },
     get: (id: string) => request(`/users/${id}`, { fallback: null, auth: false }),
+    // Public esport stats (win rate, KDA, heroes, progression, badges).
+    stats: (id: string) => request(`/users/${id}/stats`, { fallback: null, auth: false }),
+    // Public paginated esport match history.
+    matches: (id: string, page = 1, limit = 10) =>
+      request(`/users/${id}/matches?page=${page}&limit=${limit}`, {
+        fallback: { items: [], total: 0, page, limit, hasMore: false },
+        auth: false,
+      }),
     update: (id: string, data: any) => request(`/users/${id}`, { method: 'PATCH', body: data }),
     remove: (id: string) => request(`/users/${id}`, { method: 'DELETE' }),
     deleteSelf: () => request('/users/me', { method: 'DELETE' }),
@@ -391,6 +399,14 @@ export const api = {
       request(`/esport/matches/${id}/result`, { method: 'PATCH', body: data }),
     deleteMatch: (id: string) =>
       request(`/esport/matches/${id}`, { method: 'DELETE' }),
+    // Per-player stats of a match
+    matchPlayers: (id: string) =>
+      request(`/esport/matches/${id}/players`, {
+        fallback: { matchId: id, teamA: [], teamB: [], players: [] },
+        auth: false,
+      }),
+    setMatchPlayers: (id: string, players: any[]) =>
+      request(`/esport/matches/${id}/players`, { method: 'PUT', body: { players } }),
   },
 
   recruitment: {

@@ -8,6 +8,8 @@ import { Card, Badge, Button, Avatar, EmptyState, LoadingSpinner } from '@/compo
 import { api, avatarSrc, mlbbImg } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import RoleIcon from '@/components/game/RoleIcon';
+import PlayerStatsSection from '@/components/profile/PlayerStatsSection';
+import MatchHistory from '@/components/profile/MatchHistory';
 import { useAuthStore } from '@/store/useStore';
 import { useT } from '@/lib/i18n';
 import toast from 'react-hot-toast';
@@ -229,6 +231,10 @@ export default function PublicProfilePage() {
           </Card>
         )
       )}
+
+      {/* Esport stats computed from the platform's matches */}
+      <PlayerStatsSection userId={id} />
+      <MatchHistory userId={id} />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, Check, Trophy, Swords } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, Trophy, Swords, Users, Star } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import {
@@ -16,6 +16,7 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import toast from 'react-hot-toast';
 
 const TYPES = ['friendly', 'training', 'official'];
+const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
 
 const inputCls =
   'w-full px-3 py-2 text-sm rounded-lg border border-stroke bg-gray-2 text-black focus:outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white';
@@ -108,6 +109,7 @@ export default function AdminMatchesPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editMatch, setEditMatch] = useState<any>(null);
   const [resultMatch, setResultMatch] = useState<any>(null);
+  const [playersMatch, setPlayersMatch] = useState<any>(null);
   const [pending, setPending] = useState<Pending>(null);
   const [confirming, setConfirming] = useState(false);
 
@@ -217,6 +219,9 @@ export default function AdminMatchesPage() {
                 <Button size="sm" variant="secondary" onClick={() => setResultMatch(m)}>
                   <Trophy size={14} /> {t('admin.matches.setResult')}
                 </Button>
+                <Button size="sm" variant="secondary" onClick={() => setPlayersMatch(m)}>
+                  <Users size={14} /> {t('admin.matches.players')}
+                </Button>
                 <Button
                   size="sm"
                   variant="ghost"
@@ -257,6 +262,13 @@ export default function AdminMatchesPage() {
         match={resultMatch}
         onClose={() => setResultMatch(null)}
         onSaved={loadMatches}
+        t={t}
+        errMsg={errMsg}
+      />
+
+      <MatchPlayersModal
+        match={playersMatch}
+        onClose={() => setPlayersMatch(null)}
         t={t}
         errMsg={errMsg}
       />
@@ -563,6 +575,353 @@ function ResultModal({
 
           <div className="flex gap-2 pt-2">
             <Button size="sm" type="submit" disabled={saving}>
+              <Check size={16} /> {t('admin.esport.save')}
+            </Button>
+            <Button size="sm" variant="ghost" type="button" onClick={onClose}>
+              {t('admin.esport.cancel')}
+            </Button>
+          </div>
+        </form>
+      )}
+    </Modal>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Per-player stats modal                                              */
+/* ------------------------------------------------------------------ */
+
+type PlayerRow = {
+  userId: string;
+  teamId: string;
+  name: string;
+  avatar?: string | null;
+  included: boolean;
+  hero: string;
+  role: string;
+  kills: string;
+  deaths: string;
+  assists: string;
+  isMvp: boolean;
+};
+
+const smallInput =
+  'w-full px-2 py-1.5 text-sm rounded-lg border border-stroke bg-gray-2 text-black focus:outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white';
+
+function buildRows(teamId: string, members: any[], existing: any[]): PlayerRow[] {
+  const byUser = new Map(existing.map((p) => [p.userId, p]));
+  const rows: PlayerRow[] = members.map((m) => {
+    const p = byUser.get(m.userId);
+    return {
+      userId: m.userId,
+      teamId,
+      name: m.user?.displayName || m.user?.username || m.userId,
+      avatar: m.user?.avatar || null,
+      included: !!p,
+      hero: p?.hero || '',
+      role: p?.role || m.role || '',
+      kills: String(p?.kills ?? 0),
+      deaths: String(p?.deaths ?? 0),
+      assists: String(p?.assists ?? 0),
+      isMvp: !!p?.isMvp,
+    };
+  });
+  // Players recorded on the match but no longer in the roster stay editable.
+  const known = new Set(rows.map((r) => r.userId));
+  for (const p of existing) {
+    if (known.has(p.userId)) continue;
+    rows.push({
+      userId: p.userId,
+      teamId,
+      name: p.user?.displayName || p.user?.username || p.userId,
+      avatar: p.user?.avatar || null,
+      included: true,
+      hero: p.hero || '',
+      role: p.role || '',
+      kills: String(p.kills ?? 0),
+      deaths: String(p.deaths ?? 0),
+      assists: String(p.assists ?? 0),
+      isMvp: !!p.isMvp,
+    });
+  }
+  return rows;
+}
+
+function MatchPlayersModal({
+  match,
+  onClose,
+  t,
+  errMsg,
+}: {
+  match: any;
+  onClose: () => void;
+  t: (k: string, p?: Record<string, string | number>) => string;
+  errMsg: (e: any) => string;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [heroes, setHeroes] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [rowsA, setRowsA] = useState<PlayerRow[]>([]);
+  const [rowsB, setRowsB] = useState<PlayerRow[]>([]);
+
+  useEffect(() => {
+    if (!match) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const [teamA, teamB, players, hs, us] = await Promise.all([
+          api.esport.team(match.teamA?.id),
+          api.esport.team(match.teamB?.id),
+          api.esport.matchPlayers(match.id),
+          api.heroes.list(),
+          api.users.list(),
+        ]);
+        if (cancelled) return;
+        setHeroes(Array.isArray(hs) ? hs : []);
+        setUsers(Array.isArray(us) ? us : []);
+        setRowsA(buildRows(match.teamA?.id, teamA?.members || [], players?.teamA || []));
+        setRowsB(buildRows(match.teamB?.id, teamB?.members || [], players?.teamB || []));
+      } catch (e: any) {
+        toast.error(errMsg(e));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [match]);
+
+  const heroNames = heroes.map((h) => h.name);
+
+  const update = (side: 'A' | 'B', userId: string, patch: Partial<PlayerRow>) => {
+    const setter = side === 'A' ? setRowsA : setRowsB;
+    setter((rows) => rows.map((r) => (r.userId === userId ? { ...r, ...patch } : r)));
+  };
+
+  // Only one MVP for the whole match: setting one clears the others.
+  const setMvp = (side: 'A' | 'B', userId: string, value: boolean) => {
+    const clear = (rows: PlayerRow[]) =>
+      rows.map((r) => ({ ...r, isMvp: r.userId === userId ? value : false }));
+    setRowsA(clear);
+    setRowsB(clear);
+    if (value) update(side, userId, { included: true });
+  };
+
+  const included = [...rowsA, ...rowsB].filter((r) => r.included);
+  const usedIds = new Set([...rowsA, ...rowsB].map((r) => r.userId));
+
+  // Players outside the roster (substitutes, guests) can still be recorded.
+  const addPlayer = (side: 'A' | 'B', teamId: string, userId: string) => {
+    const u = users.find((x) => x.id === userId);
+    if (!u || usedIds.has(userId)) return;
+    const row: PlayerRow = {
+      userId,
+      teamId,
+      name: u.displayName || u.username,
+      avatar: u.avatar || null,
+      included: true,
+      hero: '',
+      role: '',
+      kills: '0',
+      deaths: '0',
+      assists: '0',
+      isMvp: false,
+    };
+    (side === 'A' ? setRowsA : setRowsB)((rows) => [...rows, row]);
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!match) return;
+    if (included.filter((r) => r.isMvp).length > 1) {
+      toast.error(t('admin.matches.oneMvp'));
+      return;
+    }
+    setSaving(true);
+    try {
+      const heroIds = new Map(heroes.map((h) => [h.name, h.id]));
+      await api.esport.setMatchPlayers(
+        match.id,
+        included.map((r) => ({
+          userId: r.userId,
+          teamId: r.teamId,
+          hero: r.hero || undefined,
+          heroId: r.hero ? heroIds.get(r.hero) : undefined,
+          role: r.role || undefined,
+          kills: Number(r.kills) || 0,
+          deaths: Number(r.deaths) || 0,
+          assists: Number(r.assists) || 0,
+          isMvp: r.isMvp,
+        })),
+      );
+      toast.success(t('admin.matches.playersSaved'));
+      onClose();
+    } catch (err: any) {
+      toast.error(errMsg(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const renderTeam = (side: 'A' | 'B', team: any, rows: PlayerRow[]) => (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <TeamBadge team={team} />
+        <span className="text-xs text-body dark:text-bodydark">
+          {t('admin.matches.playersCount', { n: rows.filter((r) => r.included).length })}
+        </span>
+      </div>
+      <select
+        className={`${smallInput} mb-2`}
+        value=""
+        onChange={(e) => addPlayer(side, team?.id, e.target.value)}
+      >
+        <option value="">{t('admin.matches.addPlayer')}</option>
+        {users
+          .filter((u) => !usedIds.has(u.id))
+          .map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.displayName || u.username}
+            </option>
+          ))}
+      </select>
+      {rows.length === 0 ? (
+        <p className="text-xs text-bodydark2 py-2">{t('admin.matches.noRoster')}</p>
+      ) : (
+        <div className="overflow-x-auto -mx-1">
+          <table className="w-full text-sm min-w-[560px]">
+            <thead>
+              <tr className="text-[11px] uppercase tracking-wide text-body dark:text-bodydark">
+                <th className="text-left font-medium px-1 py-1">{t('admin.matches.played')}</th>
+                <th className="text-left font-medium px-1 py-1">{t('admin.matches.hero')}</th>
+                <th className="text-left font-medium px-1 py-1">{t('admin.matches.role')}</th>
+                <th className="text-center font-medium px-1 py-1 w-16">{t('admin.matches.kills')}</th>
+                <th className="text-center font-medium px-1 py-1 w-16">{t('admin.matches.deaths')}</th>
+                <th className="text-center font-medium px-1 py-1 w-16">{t('admin.matches.assists')}</th>
+                <th className="text-center font-medium px-1 py-1 w-14">{t('admin.matches.mvp')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr
+                  key={r.userId}
+                  className={`border-t border-stroke dark:border-strokedark ${r.included ? '' : 'opacity-60'}`}
+                >
+                  <td className="px-1 py-1.5">
+                    <label className="flex items-center gap-2 cursor-pointer min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={r.included}
+                        onChange={(e) =>
+                          update(side, r.userId, {
+                            included: e.target.checked,
+                            isMvp: e.target.checked ? r.isMvp : false,
+                          })
+                        }
+                      />
+                      <span className="truncate max-w-[140px] font-medium text-black dark:text-white">{r.name}</span>
+                    </label>
+                  </td>
+                  <td className="px-1 py-1.5">
+                    <select
+                      className={smallInput}
+                      value={r.hero}
+                      disabled={!r.included}
+                      onChange={(e) => update(side, r.userId, { hero: e.target.value })}
+                    >
+                      <option value="">{t('admin.matches.noHero')}</option>
+                      {r.hero && !heroNames.includes(r.hero) && <option value={r.hero}>{r.hero}</option>}
+                      {heroes.map((h) => (
+                        <option key={h.id} value={h.name}>
+                          {h.name}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-1 py-1.5">
+                    <select
+                      className={smallInput}
+                      value={r.role}
+                      disabled={!r.included}
+                      onChange={(e) => update(side, r.userId, { role: e.target.value })}
+                    >
+                      <option value="">{t('admin.matches.noRole')}</option>
+                      {LANES.map((l) => (
+                        <option key={l} value={l}>
+                          {t('lane.' + l)}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  {(['kills', 'deaths', 'assists'] as const).map((f) => (
+                    <td key={f} className="px-1 py-1.5">
+                      <input
+                        type="number"
+                        min="0"
+                        className={`${smallInput} text-center`}
+                        value={r[f]}
+                        disabled={!r.included}
+                        onChange={(e) => update(side, r.userId, { [f]: e.target.value } as any)}
+                      />
+                    </td>
+                  ))}
+                  <td className="px-1 py-1.5 text-center">
+                    <button
+                      type="button"
+                      title={t('admin.matches.mvp')}
+                      disabled={!r.included}
+                      onClick={() => setMvp(side, r.userId, !r.isMvp)}
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+                        r.isMvp
+                          ? 'bg-warning/15 text-warning'
+                          : 'text-bodydark2 hover:text-warning disabled:hover:text-bodydark2'
+                      }`}
+                    >
+                      <Star size={16} fill={r.isMvp ? 'currentColor' : 'none'} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <Modal
+      open={!!match}
+      onClose={onClose}
+      closeLabel={t('common.close')}
+      title={t('admin.matches.playersTitle')}
+      icon={<Users size={20} />}
+      size="xl"
+    >
+      {match && (
+        <form onSubmit={submit} className="space-y-4">
+          <p className="text-xs text-body dark:text-bodydark">{t('admin.matches.playersHint')}</p>
+          {match.status !== 'completed' && (
+            <p className="text-xs rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-warning">
+              {t('admin.matches.playersPending')}
+            </p>
+          )}
+
+          {loading ? (
+            <LoadingSpinner size="md" className="py-10" />
+          ) : (
+            <div className="space-y-5">
+              {renderTeam('A', match.teamA, rowsA)}
+              {renderTeam('B', match.teamB, rowsB)}
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-2">
+            <Button size="sm" type="submit" disabled={saving || loading}>
               <Check size={16} /> {t('admin.esport.save')}
             </Button>
             <Button size="sm" variant="ghost" type="button" onClick={onClose}>
