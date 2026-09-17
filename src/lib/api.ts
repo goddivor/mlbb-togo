@@ -747,6 +747,19 @@ export const api = {
     reset: (id: string) => request(`/pickban/${id}/reset`, { method: 'PATCH' }),
     remove: (id: string) => request(`/pickban/${id}`, { method: 'DELETE' }),
   },
+
+  ai: {
+    status: (): Promise<{ enabled: boolean; model: string; mode: 'llm' | 'heuristic' }> =>
+      request('/ai/status', { fallback: { enabled: false, model: 'unknown', mode: 'heuristic' }, auth: false }),
+    coach: (lang: string) => request(`/ai/coach?lang=${lang}`, { method: 'POST' }),
+    recommendHeroes: (params: { role?: string; lane?: string }, lang: string) =>
+      request(`/ai/recommend/heroes?lang=${lang}`, { method: 'POST', body: params }),
+    recommendBuild: (heroId: string, lang: string) =>
+      request(`/ai/recommend/build?lang=${lang}`, { method: 'POST', body: { heroId } }),
+    counterPicks: (heroIds: string[], lang: string) =>
+      request(`/ai/counter?lang=${lang}`, { method: 'POST', body: { heroIds } }),
+    analyze: (lang: string) => request(`/ai/analyze?lang=${lang}`, { method: 'POST' }),
+  },
 };
 
 export default api;

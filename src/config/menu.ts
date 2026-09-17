@@ -16,6 +16,7 @@ import {
   Medal,
   Sparkles,
   Bell,
+  Bot,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -30,6 +31,7 @@ export const playerMenuGroups: MenuGroupConfig[] = [
       { href: '/players', labelKey: 'header.players', icon: Users },
       { href: '/leaderboard', labelKey: 'header.leaderboard', icon: Trophy },
       { href: '/progress', labelKey: 'header.progress', icon: Sparkles },
+      { href: '/ai', labelKey: 'header.ai', icon: Bot },
     ],
   },
   {
