@@ -19,7 +19,7 @@ import {
   UserPlus,
   Users2,
 } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, clearApiCache } from '@/lib/api';
 import type { AppNotification, NotificationPage } from '@/lib/api';
 import {
   PageHeader,
@@ -124,7 +124,11 @@ export default function NotificationsPage() {
   useEffect(() => {
     const s = getSocket();
     if (!s) return;
-    const onNotif = () => setStale(true);
+    const onNotif = () => {
+      // Drop the 20s GET cache so the refresh button really hits the server.
+      clearApiCache();
+      setStale(true);
+    };
     s.on('notification:new', onNotif);
     return () => {
       s.off('notification:new', onNotif);
@@ -208,7 +212,7 @@ export default function NotificationsPage() {
         }
       />
 
-      {/* Filtres */}
+      {/* Filters */}
       <SectionCard className="!p-4">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -284,7 +288,7 @@ export default function NotificationsPage() {
         </div>
       </SectionCard>
 
-      {/* Liste */}
+      {/* List */}
       {loading ? (
         <div className="flex items-center justify-center py-24">
           <LoadingSpinner size="lg" />
