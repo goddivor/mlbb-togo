@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Trophy, Crown, Flame, Medal, Swords } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
+import { useSelectedSeason } from '@/store/useSeasonStore';
 import { MLBB_ROLES } from '@/lib/constants';
 import {
   PageHeader,
@@ -69,22 +70,18 @@ export default function LeaderboardPage() {
 
   const [metric, setMetric] = useState<Metric>('winRate');
   const [role, setRole] = useState('');
-  const [seasonId, setSeasonId] = useState('');
   const [rankedOnly, setRankedOnly] = useState(true);
 
-  const [seasons, setSeasons] = useState<any[]>([]);
+  // Season filter follows the global season switcher (persisted).
+  const { selection, setSelection, seasonId: selectedSeasonId, seasons, ready: seasonsReady } = useSelectedSeason();
+  const seasonId = selectedSeasonId ?? '';
+
   const [entries, setEntries] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    api.esport
-      .seasons()
-      .then((s: any) => setSeasons(Array.isArray(s) ? s : []))
-      .catch(() => setSeasons([]));
-  }, []);
-
   const load = useCallback(() => {
+    if (!seasonsReady) return;
     setLoading(true);
     api.users
       .leaderboard({
@@ -104,7 +101,7 @@ export default function LeaderboardPage() {
         setTotal(0);
       })
       .finally(() => setLoading(false));
-  }, [metric, role, seasonId, rankedOnly]);
+  }, [metric, role, seasonId, rankedOnly, seasonsReady]);
 
   useEffect(() => {
     load();
@@ -161,11 +158,12 @@ export default function LeaderboardPage() {
             </select>
 
             <select
-              value={seasonId}
-              onChange={(e) => setSeasonId(e.target.value)}
+              value={selection === 'current' ? 'current' : seasonId ? seasonId : 'all'}
+              onChange={(e) => setSelection(e.target.value)}
               className={selectClass}
             >
-              <option value="">{t('leaderboard.allSeasons')}</option>
+              <option value="current">{t('seasons.switcher.current')}</option>
+              <option value="all">{t('leaderboard.allSeasons')}</option>
               {seasons.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}

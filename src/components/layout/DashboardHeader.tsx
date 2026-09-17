@@ -7,6 +7,7 @@ import { Menu } from 'lucide-react';
 import { useAuthStore, useLangStore } from '@/store/useStore';
 import { setToken, avatarSrc } from '@/lib/api';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
+import SeasonSwitcher from '@/components/seasons/SeasonSwitcher';
 import { disconnectSocket } from '@/lib/realtime';
 import { useT } from '@/lib/i18n';
 import DarkModeToggle from './DarkModeToggle';
@@ -91,6 +92,10 @@ export default function DashboardHeader({ sidebarOpen, setSidebarOpen }: HeaderP
             </li>
             <li>
               <MessageDropdown href="/messages" />
+            </li>
+            {/* Global season selector (pages filter on it); hidden on phone */}
+            <li className="hidden sm:block">
+              <SeasonSwitcher />
             </li>
             {/* Language hidden on phone to keep the bar from overflowing */}
             <li className="hidden sm:block">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Button, SectionCard, Badge, Tabs, Card, LoadingSpinner } from '@/components/ui';
 import { api } from '@/lib/api';
+import { useSelectedSeason } from '@/store/useSeasonStore';
 import { useT } from '@/lib/i18n';
 
 type StreamVideo = {
@@ -109,6 +110,17 @@ export default function StreamPage() {
       cancelled = true;
     };
   }, [config]);
+
+  // Default to the globally selected season when it has videos (once).
+  const { seasonId: selectedSeasonId, ready: seasonsReady } = useSelectedSeason();
+  const appliedRef = useRef(false);
+  useEffect(() => {
+    if (appliedRef.current || loading || !seasonsReady) return;
+    appliedRef.current = true;
+    if (selectedSeasonId && seasons.some((s) => s.seasonId === selectedSeasonId)) {
+      setActiveTab(selectedSeasonId);
+    }
+  }, [loading, seasonsReady, selectedSeasonId, seasons]);
 
   const activeSeason = seasons.find((s) => s.seasonId === activeTab) || null;
 
