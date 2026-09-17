@@ -38,6 +38,21 @@ const APP_STATUS_VARIANT: Record<string, string> = {
 };
 // A terminal application is history: no button left to press on it.
 const APP_TERMINAL = ['accepted', 'rejected', 'withdrawn'];
+// Lowest in-game level of each tier (decodeRank on the API): a campaign that
+// requires "Mythic" must accept every Mythic player, hence the lower bound.
+const RANK_TIERS: { level: number; label: string }[] = [
+  { level: 1, label: 'Warrior' },
+  { level: 11, label: 'Elite' },
+  { level: 26, label: 'Master' },
+  { level: 46, label: 'Grandmaster' },
+  { level: 76, label: 'Epic' },
+  { level: 106, label: 'Legend' },
+  { level: 136, label: 'Mythic' },
+  { level: 161, label: 'Mythic Honor' },
+  { level: 186, label: 'Mythic Glory' },
+  { level: 236, label: 'Mythic Immortal' },
+];
+const AVAILABILITY = ['casual', 'regular', 'competitive'];
 // Compact field (slot quantity): Input doesn't fit inline
 const numCls =
   'w-20 px-2 py-1 text-sm rounded-md bg-gray-2 border border-stroke text-black focus:outline-none focus:border-primary dark:bg-meta-4 dark:border-strokedark dark:text-white';
@@ -186,6 +201,7 @@ export default function TeamDetailPage() {
   const [newOpen, setNewOpen] = useState(false);
   const [newMsg, setNewMsg] = useState('');
   const [newSlots, setNewSlots] = useState<Record<string, number>>({});
+  const [newReq, setNewReq] = useState({ minRankLevel: '', availability: '' });
   const [creating, setCreating] = useState(false);
   const [applyCampaign, setApplyCampaign] = useState<any | null>(null);
   const [applyForm, setApplyForm] = useState({ role: '', message: '' });
@@ -210,9 +226,15 @@ export default function TeamDetailPage() {
     if (slots.length === 0) { toast.error(t('recruitment.needRole')); return; }
     setCreating(true);
     try {
-      await api.recruitment.create({ teamId: id, message: newMsg.trim() || undefined, slots });
+      await api.recruitment.create({
+        teamId: id,
+        message: newMsg.trim() || undefined,
+        slots,
+        minRankLevel: newReq.minRankLevel ? Number(newReq.minRankLevel) : undefined,
+        availability: newReq.availability || undefined,
+      });
       toast.success(t('admin.esport.saved'));
-      setNewOpen(false); setNewMsg(''); setNewSlots({});
+      setNewOpen(false); setNewMsg(''); setNewSlots({}); setNewReq({ minRankLevel: '', availability: '' });
       await loadCampaigns();
     } catch (e2: any) { err(e2); } finally { setCreating(false); }
   };
@@ -493,21 +515,22 @@ export default function TeamDetailPage() {
         <div className="space-y-4">
           {canManage && (
             <div className="flex flex-wrap items-end justify-end gap-3">
-              <Select
-                label={t('recruitment.filterStatus')}
-                value={appStatus}
-                onChange={(e: any) => setAppStatus(e.target.value)}
-                className="!w-auto"
-                options={[
-                  { value: 'active', label: t('recruitment.statusActive') },
-                  { value: 'pending', label: t('recruitment.status.pending') },
-                  { value: 'shortlisted', label: t('recruitment.status.shortlisted') },
-                  { value: 'accepted', label: t('recruitment.status.accepted') },
-                  { value: 'rejected', label: t('recruitment.status.rejected') },
-                  { value: 'withdrawn', label: t('recruitment.status.withdrawn') },
-                  { value: 'all', label: t('recruitment.statusAll') },
-                ]}
-              />
+              <div className="w-full sm:w-56">
+                <Select
+                  label={t('recruitment.filterStatus')}
+                  value={appStatus}
+                  onChange={(e: any) => setAppStatus(e.target.value)}
+                  options={[
+                    { value: 'active', label: t('recruitment.statusActive') },
+                    { value: 'pending', label: t('recruitment.status.pending') },
+                    { value: 'shortlisted', label: t('recruitment.status.shortlisted') },
+                    { value: 'accepted', label: t('recruitment.status.accepted') },
+                    { value: 'rejected', label: t('recruitment.status.rejected') },
+                    { value: 'withdrawn', label: t('recruitment.status.withdrawn') },
+                    { value: 'all', label: t('recruitment.statusAll') },
+                  ]}
+                />
+              </div>
               <Button size="sm" onClick={() => setNewOpen(true)}><Plus size={15} /> {t('recruitment.new')}</Button>
             </div>
           )}
@@ -528,6 +551,15 @@ export default function TeamDetailPage() {
                         </Badge>
                       ))}
                       <Badge variant={c.status === 'open' ? 'green' : 'default'} size="sm">{c.status === 'open' ? t('recruitment.statusOpen') : t('recruitment.statusClosed')}</Badge>
+                      {c.minRankLabel && (
+                        <Badge variant="gold" size="sm" className="gap-1">
+                          {hasRankBadge(c.minRankLabel) && <RankBadge rank={c.minRankLabel} size={13} />}
+                          {t('recruitment.minRank')} : {c.minRankLabel}
+                        </Badge>
+                      )}
+                      {c.availability && (
+                        <Badge variant="blue" size="sm" className="gap-1"><CalendarClock size={12} /> {t('recruitment.availability.' + c.availability)}</Badge>
+                      )}
                     </div>
                     {canManage ? (
                       <div className="flex items-center gap-1.5">
@@ -586,6 +618,26 @@ export default function TeamDetailPage() {
                 </div>
               ))}
             </div>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Select
+              label={t('recruitment.minRank')}
+              value={newReq.minRankLevel}
+              onChange={(e: any) => setNewReq({ ...newReq, minRankLevel: e.target.value })}
+              options={[
+                { value: '', label: t('recruitment.minRankAny') },
+                ...RANK_TIERS.map((r) => ({ value: String(r.level), label: r.label })),
+              ]}
+            />
+            <Select
+              label={t('recruitment.filterAvailability')}
+              value={newReq.availability}
+              onChange={(e: any) => setNewReq({ ...newReq, availability: e.target.value })}
+              options={[
+                { value: '', label: t('recruitment.availabilityNone') },
+                ...AVAILABILITY.map((a) => ({ value: a, label: t('recruitment.availability.' + a) })),
+              ]}
+            />
           </div>
           <Textarea label={t('recruitment.message')} value={newMsg} onChange={(e: any) => setNewMsg(e.target.value)} className="min-h-[70px]" />
           <div className="flex gap-2 pt-1">
