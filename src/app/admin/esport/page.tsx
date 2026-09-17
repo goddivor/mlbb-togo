@@ -15,6 +15,7 @@ import {
   Trophy,
   UserCog,
   Medal,
+  Target,
 } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
@@ -162,6 +163,8 @@ export default function AdminEsportPage() {
         }
       />
 
+      <FiguresPanel t={t} errMsg={errMsg} />
+
       <SectionCard className="!p-4">
         <Tabs
           active={tab}
@@ -308,6 +311,99 @@ export default function AdminEsportPage() {
         closeLabel={t('common.close')}
       />
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Public target figures (About page)                                  */
+/* ------------------------------------------------------------------ */
+
+const FIGURE_KEYS = ['streamAudience', 'socialReach', 'teams', 'offlineEvents'] as const;
+type FigureKey = (typeof FIGURE_KEYS)[number];
+type FiguresForm = Record<FigureKey, string>;
+
+const emptyFigures: FiguresForm = { streamAudience: '', socialReach: '', teams: '', offlineEvents: '' };
+
+function FiguresPanel({ t, errMsg }: { t: (k: string) => string; errMsg: (e: any) => string }) {
+  const [form, setForm] = useState<FiguresForm>(emptyFigures);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    api.esport
+      .figures()
+      .then((f: any) => {
+        if (f && typeof f === 'object') {
+          const next = { ...emptyFigures };
+          for (const k of FIGURE_KEYS) next[k] = f[k] != null ? String(f[k]) : '';
+          setForm(next);
+        }
+      })
+      .finally(() => setLoaded(true));
+  }, []);
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload: Record<string, number> = {};
+      for (const k of FIGURE_KEYS) if (form[k] !== '') payload[k] = Number(form[k]);
+      const saved = await api.esport.updateFigures(payload);
+      const next = { ...emptyFigures };
+      for (const k of FIGURE_KEYS) next[k] = saved?.[k] != null ? String(saved[k]) : '';
+      setForm(next);
+      toast.success(t('admin.esport.figures.saved'));
+    } catch (err: any) {
+      toast.error(errMsg(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <SectionCard className="!p-4">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center justify-between gap-3 text-left"
+      >
+        <span className="flex items-center gap-2 text-sm font-semibold text-black dark:text-white">
+          <Target size={16} className="text-primary" /> {t('admin.esport.figures.title')}
+        </span>
+        <span className="text-xs text-body dark:text-bodydark">{open ? '−' : '+'}</span>
+      </button>
+      {open && (
+        <form onSubmit={save} className="mt-4 space-y-4">
+          <p className="text-xs text-body dark:text-bodydark">{t('admin.esport.figures.desc')}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            {FIGURE_KEYS.map((k) => (
+              <label key={k} className="block">
+                <span className="mb-1.5 block text-xs font-medium text-black dark:text-white">
+                  {t(`admin.esport.figures.${k}`)}
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  inputMode="numeric"
+                  className={inputCls}
+                  value={form[k]}
+                  disabled={!loaded}
+                  onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))}
+                />
+              </label>
+            ))}
+          </div>
+          <div className="flex justify-end">
+            <Button type="submit" size="sm" loading={saving} disabled={!loaded}>
+              <Check size={14} /> {t('common.save')}
+            </Button>
+          </div>
+        </form>
+      )}
+    </SectionCard>
   );
 }
 

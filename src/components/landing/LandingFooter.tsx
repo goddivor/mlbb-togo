@@ -23,6 +23,16 @@ const columns = [
       { key: 'footer.link.matches', href: '/matches' },
     ],
   },
+  {
+    titleKey: 'footer.col.legal',
+    links: [
+      { key: 'footer.link.about', href: '/about' },
+      { key: 'footer.link.legalNotice', href: '/legal/mentions-legales' },
+      { key: 'footer.link.security', href: '/legal/securite' },
+      { key: 'footer.link.cookies', href: '/legal/cookies' },
+      { key: 'footer.link.privacy', href: '/legal/donnees-personnelles' },
+    ],
+  },
 ];
 
 const socials = [
@@ -40,9 +50,9 @@ export default function LandingFooter() {
   return (
     <footer className="relative z-10 border-t border-gaming-border bg-gaming-darker/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
 
-          <div className="col-span-2">
+          <div className="col-span-2 md:col-span-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/mlbb-togo-logo.png" alt="MLBB Togo" className="h-9 w-auto mb-4" />
             <p className="text-sm text-gray-400 max-w-xs">{t('footer.desc')}</p>
