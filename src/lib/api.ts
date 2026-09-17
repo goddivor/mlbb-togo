@@ -271,9 +271,32 @@ export const api = {
     get: (id: string) => request(`/posts/${id}`, { fallback: null, auth: false }),
     create: (data: any) => request('/posts', { method: 'POST', body: data }),
     remove: (id: string) => request(`/posts/${id}`, { method: 'DELETE' }),
-    like: (id: string) => request(`/posts/${id}/like`, { method: 'POST', auth: false }),
+    // Per-user toggle: returns `{ liked, likes }` (auth required).
+    like: (id: string) => request(`/posts/${id}/like`, { method: 'POST' }),
     comment: (id: string, data: any) =>
       request(`/posts/${id}/comments`, { method: 'POST', body: data }),
+    // Communication feed (issue #49).
+    feed: (params: { category?: string; sort?: string; page?: number; limit?: number } = {}) => {
+      const qs = new URLSearchParams();
+      if (params.category && params.category !== 'all') qs.set('category', params.category);
+      if (params.sort) qs.set('sort', params.sort);
+      if (params.page) qs.set('page', String(params.page));
+      if (params.limit) qs.set('limit', String(params.limit));
+      const q = qs.toString();
+      return request(`/posts/feed${q ? `?${q}` : ''}`, {
+        fallback: { items: [], total: 0, page: 1, limit: 10, hasMore: false },
+        auth: false,
+      });
+    },
+    categories: () =>
+      request('/posts/categories', {
+        fallback: { categories: [], counts: {} },
+        auth: false,
+      }),
+    liked: () => request('/posts/liked', { fallback: [] }),
+    share: (id: string) => request(`/posts/${id}/share`, { method: 'POST', auth: false }),
+    update: (id: string, data: any) =>
+      request(`/posts/${id}`, { method: 'PATCH', body: data }),
   },
 
   tournaments: {
