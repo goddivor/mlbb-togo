@@ -212,6 +212,27 @@ export const api = {
       request(`/tournaments/${id}/register`, { method: 'POST', body: { teamId } }),
     unregister: (id: string, teamId: string) =>
       request(`/tournaments/${id}/register/${teamId}`, { method: 'DELETE' }),
+    // Detail view: participants, bracket, results, MVP, schedule, live match.
+    details: (id: string) =>
+      request(`/tournaments/${id}/details`, { fallback: null, auth: false }),
+    // Admin: bracket management.
+    generateBracket: (id: string, seeding: 'random' | 'order' = 'random') =>
+      request(`/tournaments/${id}/bracket/generate`, { method: 'POST', body: { seeding } }),
+    resetBracket: (id: string) => request(`/tournaments/${id}/bracket`, { method: 'DELETE' }),
+    setMatchResult: (
+      id: string,
+      matchId: string,
+      data: { scoreA: number; scoreB: number; winnerTeamId?: string },
+    ) => request(`/tournaments/${id}/matches/${matchId}/result`, { method: 'PATCH', body: data }),
+    scheduleMatch: (
+      id: string,
+      matchId: string,
+      data: { scheduledAt?: string | null; streamUrl?: string | null },
+    ) => request(`/tournaments/${id}/matches/${matchId}/schedule`, { method: 'PATCH', body: data }),
+    setMatchStatus: (id: string, matchId: string, status: string) =>
+      request(`/tournaments/${id}/matches/${matchId}/status`, { method: 'PATCH', body: { status } }),
+    setMvp: (id: string, userId: string | null) =>
+      request(`/tournaments/${id}/mvp`, { method: 'PATCH', body: { userId } }),
   },
 
   events: {
