@@ -10,6 +10,7 @@ import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import RoleIcon from '@/components/game/RoleIcon';
 import PlayerStatsSection from '@/components/profile/PlayerStatsSection';
 import MatchHistory from '@/components/profile/MatchHistory';
+import LevelBadge from '@/components/gamification/LevelBadge';
 import { useAuthStore } from '@/store/useStore';
 import { useT } from '@/lib/i18n';
 import toast from 'react-hot-toast';
@@ -24,6 +25,7 @@ export default function PublicProfilePage() {
   const myId = useAuthStore((s: any) => s.user?.id);
   const [fstatus, setFstatus] = useState<string>('none');
   const [fbusy, setFbusy] = useState(false);
+  const [level, setLevel] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -33,6 +35,10 @@ export default function PublicProfilePage() {
       .then(setUser)
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
+    api.gamification
+      .user(id)
+      .then((g: any) => setLevel(g?.level ?? null))
+      .catch(() => setLevel(null));
   }, [id]);
 
   useEffect(() => {
@@ -90,6 +96,7 @@ export default function PublicProfilePage() {
           <div className="flex-1 text-center sm:text-left">
             <div className="flex items-center justify-center sm:justify-start gap-2">
               <h1 className="text-2xl md:text-3xl font-bold text-black dark:text-white">{name}</h1>
+              <LevelBadge level={level} />
               {user.roleUser && user.roleUser !== 'user' && (
                 <Badge variant="purple" size="sm">{user.roleUser}</Badge>
               )}

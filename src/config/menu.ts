@@ -14,6 +14,7 @@ import {
   Radio,
   Gamepad2,
   Medal,
+  Sparkles,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -27,6 +28,7 @@ export const playerMenuGroups: MenuGroupConfig[] = [
       { href: '/heroes', labelKey: 'header.heroes', icon: Swords },
       { href: '/players', labelKey: 'header.players', icon: Users },
       { href: '/leaderboard', labelKey: 'header.leaderboard', icon: Trophy },
+      { href: '/progress', labelKey: 'header.progress', icon: Sparkles },
     ],
   },
   {
