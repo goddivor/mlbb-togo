@@ -14,6 +14,7 @@ import {
   Trophy,
   Calendar,
   Bell,
+  Bot,
 } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import { useT } from '@/lib/i18n';
@@ -31,6 +32,7 @@ const PLAYER_LINKS: QuickLink[] = [
   { href: '/stream', key: 'header.stream', icon: Radio },
   { href: '/friends', key: 'header.friends', icon: Users2 },
   { href: '/notifications', key: 'notif.title', icon: Bell },
+  { href: '/ai', key: 'header.ai', icon: Bot },
 ];
 
 type SearchResult = {

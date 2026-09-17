@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronsRight } from 'lucide-react';
+import Link from 'next/link';
+import { X, ChevronsRight, Sparkles } from 'lucide-react';
 import { api, mlbbImg } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import Portal from '@/components/ui/Portal';
@@ -364,6 +365,16 @@ export default function HeroDetailModal({
 
                   {tab === 'counters' && (
                     <div className="p-6 md:p-8">
+                      {hero?.name && (
+                        <Link
+                          href={`/ai?tab=counter&enemy=${encodeURIComponent(hero.name)}`}
+                          onClick={onClose}
+                          className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20"
+                        >
+                          <Sparkles size={14} />
+                          {t('ai.counter.fromHero')}
+                        </Link>
+                      )}
                       {(() => {
                         const sections = [
                           { key: 'heroes.strongAgainst', color: 'text-success', list: meta?.counters?.strong },
