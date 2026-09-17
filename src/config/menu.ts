@@ -18,6 +18,7 @@ import {
   Bell,
   Bot,
   BarChart3,
+  ListOrdered,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -41,6 +42,7 @@ export const playerMenuGroups: MenuGroupConfig[] = [
     items: [
       { href: '/teams', labelKey: 'header.teams', icon: Shield },
       { href: '/stats', labelKey: 'header.stats', icon: BarChart3 },
+      { href: '/standings', labelKey: 'header.standings', icon: ListOrdered },
       { href: '/recruitment', labelKey: 'header.recruitment', icon: Megaphone },
       { href: '/draft', labelKey: 'header.draft', icon: Gamepad2 },
       { href: '/pick-ban', labelKey: 'header.pickban', icon: Swords },
