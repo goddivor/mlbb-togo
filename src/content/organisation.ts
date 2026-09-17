@@ -14,11 +14,11 @@ export const ORGANISATION = {
   /** Legal form (TODO: association loi 1901 equivalent, SARL, etc.). */
   legalForm: 'Association',
   /** Registration or record number (TODO). */
-  registration: 'N° de récépissé : à compléter',
+  registration: 'N° de récépissé : à compléter',
   /** Registered office (TODO). */
   address: 'Lomé, Togo (adresse à compléter)',
   /** Publication director (TODO). */
-  publisher: 'Responsable de la publication : à compléter',
+  publisher: 'Responsable de la publication : à compléter',
   /** Contact e-mail addresses (TODO). */
   contactEmail: 'contact@mlbbtogo.com',
   privacyEmail: 'privacy@mlbbtogo.com',
@@ -32,6 +32,6 @@ export const ORGANISATION = {
   hostAddress: '440 N Barranca Ave #4133, Covina, CA 91723, USA / 548 Market St, San Francisco, CA 94104, USA',
   /** Last review date of the legal pages (ISO). */
   legalUpdatedAt: '2026-09-17',
-  /** Founding year used in the About page. */
+  /** Founding year used in the About page (TODO: confirm with the owner). */
   foundedYear: 2023,
 } as const;
