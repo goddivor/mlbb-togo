@@ -1,57 +1,123 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Megaphone, Send } from 'lucide-react';
-import { api } from '@/lib/api';
+import { CalendarClock, ClipboardList, Megaphone, RotateCcw, Send, Trophy } from 'lucide-react';
+import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Badge, Button, PageHeader, SectionCard, EmptyState, LoadingSpinner, Textarea } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  PageHeader,
+  SectionCard,
+  Select,
+  EmptyState,
+  LoadingSpinner,
+  Tabs,
+  Textarea,
+} from '@/components/ui';
 import Modal from '@/components/ui/Modal';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import RoleIcon from '@/components/game/RoleIcon';
 import RoleSelect from '@/components/game/RoleSelect';
+import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import toast from 'react-hot-toast';
 
 const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
 
+/**
+ * Rank ladder, mirrored from decodeRank() on the API: each entry is the highest
+ * in-game level of that tier, which is exactly what the `rankLevel` filter
+ * expects ("campaigns a player of that tier qualifies for").
+ */
+const RANK_TIERS: { level: number; label: string }[] = [
+  { level: 10, label: 'Warrior' },
+  { level: 25, label: 'Elite' },
+  { level: 45, label: 'Master' },
+  { level: 75, label: 'Grandmaster' },
+  { level: 105, label: 'Epic' },
+  { level: 135, label: 'Legend' },
+  { level: 160, label: 'Mythic' },
+  { level: 185, label: 'Mythic Honor' },
+  { level: 235, label: 'Mythic Glory' },
+  { level: 300, label: 'Mythic Immortal' },
+];
+
+const AVAILABILITY = ['casual', 'regular', 'competitive'];
+
+/** Status pill colours, aligned with the life cycle served by /recruitment/meta. */
+const STATUS_VARIANT: Record<string, string> = {
+  pending: 'gold',
+  shortlisted: 'blue',
+  accepted: 'green',
+  rejected: 'red',
+  withdrawn: 'default',
+};
+
+/** Statuses that still have an answer coming: the campaign is "already applied to". */
+const ACTIVE_STATUSES = ['pending', 'shortlisted'];
+
+type Filters = { role: string; rankLevel: string; availability: string };
+
+const EMPTY_FILTERS: Filters = { role: '', rankLevel: '', availability: '' };
+
 export default function RecruitmentPage() {
   const t = useT();
-  const [role, setRole] = useState('');
+  const [tab, setTab] = useState<'campaigns' | 'mine'>('campaigns');
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [campaigns, setCampaigns] = useState<any[]>([]);
-  const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set());
+  const [myApps, setMyApps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [apply, setApply] = useState<any | null>(null);
-  const [applyForm, setApplyForm] = useState({ role: '', message: '' });
+  const [applyForm, setApplyForm] = useState({ role: '', message: '', availability: '' });
   const [sending, setSending] = useState(false);
+  const [toWithdraw, setToWithdraw] = useState<any | null>(null);
+  const [withdrawing, setWithdrawing] = useState(false);
 
-  const load = async (r: string) => {
+  const fmtDate = useCallback(
+    (value?: string | null) =>
+      value ? new Date(value).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : '',
+    [],
+  );
+
+  const load = useCallback(async (f: Filters) => {
     try {
-      const [list, mine] = await Promise.all([api.recruitment.listOpen(r || undefined), api.recruitment.mine()]);
+      const [list, mine] = await Promise.all([
+        api.recruitment.listOpen({
+          role: f.role || undefined,
+          rankLevel: f.rankLevel ? Number(f.rankLevel) : undefined,
+          availability: f.availability || undefined,
+        }),
+        // status=all: the tracking tab shows the whole history, not only the
+        // applications still waiting for an answer.
+        api.recruitment.mine({ status: 'all' }),
+      ]);
       setCampaigns(Array.isArray(list) ? list : []);
-      setAppliedIds(
-        new Set(
-          (Array.isArray(mine) ? mine : [])
-            .filter((a: any) => a.status === 'pending')
-            .map((a: any) => a.recruitmentId),
-        ),
-      );
+      setMyApps(Array.isArray(mine) ? mine : []);
     } catch {
       /* ignore */
     }
-  };
+  }, []);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      await load(role);
+      await load(filters);
       setLoading(false);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role]);
+  }, [filters, load]);
+
+  const appliedIds = useMemo(
+    () => new Set(myApps.filter((a) => ACTIVE_STATUSES.includes(a.status)).map((a) => a.recruitmentId)),
+    [myApps],
+  );
+
+  const hasFilters = filters.role !== '' || filters.rankLevel !== '' || filters.availability !== '';
 
   const openApply = (c: any) => {
     setApply(c);
-    setApplyForm({ role: c.slots?.[0]?.role || '', message: '' });
+    setApplyForm({ role: c.slots?.[0]?.role || '', message: '', availability: c.availability || '' });
   };
 
   const submitApply = async (e: React.FormEvent) => {
@@ -59,10 +125,14 @@ export default function RecruitmentPage() {
     if (!apply) return;
     setSending(true);
     try {
-      await api.recruitment.apply(apply.id, { role: applyForm.role || undefined, message: applyForm.message.trim() || undefined });
+      await api.recruitment.apply(apply.id, {
+        role: applyForm.role || undefined,
+        message: applyForm.message.trim() || undefined,
+        availability: applyForm.availability || undefined,
+      });
       toast.success(t('recruitment.applySent'));
-      setAppliedIds((prev) => new Set(prev).add(apply.id));
       setApply(null);
+      await load(filters);
     } catch (err: any) {
       toast.error(err?.message || t('common.error'));
     } finally {
@@ -70,7 +140,44 @@ export default function RecruitmentPage() {
     }
   };
 
+  const confirmWithdraw = async () => {
+    if (!toWithdraw) return;
+    setWithdrawing(true);
+    try {
+      await api.recruitment.withdraw(toWithdraw.id);
+      toast.success(t('recruitment.withdrawDone'));
+      setToWithdraw(null);
+      await load(filters);
+    } catch (err: any) {
+      toast.error(err?.message || t('common.error'));
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+
   const slotRoles = useMemo(() => (apply?.slots || []).map((s: any) => s.role), [apply]);
+
+  const statusBadge = (status: string) => (
+    <Badge variant={STATUS_VARIANT[status] ?? 'default'} size="sm">
+      {t('recruitment.status.' + status)}
+    </Badge>
+  );
+
+  const requirementBadges = (c: any) => (
+    <>
+      {c.minRankLabel && (
+        <Badge variant="gold" size="sm" className="gap-1">
+          {hasRankBadge(c.minRankLabel) && <RankBadge rank={c.minRankLabel} size={14} />}
+          {t('recruitment.minRank')} : {c.minRankLabel}
+        </Badge>
+      )}
+      {c.availability && (
+        <Badge variant="blue" size="sm" className="gap-1">
+          <CalendarClock size={12} /> {t('recruitment.availability.' + c.availability)}
+        </Badge>
+      )}
+    </>
+  );
 
   return (
     <div className="space-y-6">
@@ -81,83 +188,219 @@ export default function RecruitmentPage() {
         variant="purple"
       />
 
-      {/* Role filter */}
-      <SectionCard className="!p-4">
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setRole('')}
-            className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${role === '' ? 'border-primary bg-primary/10 text-primary' : 'border-stroke bg-gray-2 text-body hover:text-black dark:border-strokedark dark:bg-meta-4 dark:text-bodydark dark:hover:text-white'}`}
-          >
-            {t('recruitment.filterAll')}
-          </button>
-          {LANES.map((l) => (
-            <button
-              key={l}
-              onClick={() => setRole(l)}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors ${role === l ? 'border-primary bg-primary/10 text-primary' : 'border-stroke bg-gray-2 text-body hover:text-black dark:border-strokedark dark:bg-meta-4 dark:text-bodydark dark:hover:text-white'}`}
-            >
-              <RoleIcon role={l} size={14} /> {t('lane.' + l)}
-            </button>
-          ))}
-        </div>
-      </SectionCard>
+      <div className="flex flex-wrap items-center gap-3">
+        <Tabs
+          tabs={[
+            { id: 'campaigns', label: t('recruitment.tab.campaigns'), icon: Megaphone },
+            { id: 'mine', label: t('recruitment.tab.mine'), icon: ClipboardList },
+          ]}
+          active={tab}
+          onChange={(id: any) => setTab(id)}
+        />
+        {tab === 'mine' && myApps.length > 0 && (
+          <span className="text-sm text-body dark:text-bodydark">{t('recruitment.mineHint')}</span>
+        )}
+      </div>
 
-      {loading ? (
-        <LoadingSpinner size="lg" className="py-24" />
-      ) : campaigns.length === 0 ? (
-        <EmptyState icon={<Megaphone size={28} />} title={t('recruitment.none')} />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {campaigns.map((c, i) => {
-            const team = c.team || {};
-            const applied = appliedIds.has(c.id);
-            return (
-              <motion.div
-                key={c.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.03, 0.3) }}
-                className="flex flex-col rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark"
+      {tab === 'campaigns' && (
+        <>
+          {/* Advanced filters: lane, rank, availability */}
+          <SectionCard className="!p-4">
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setFilters((f) => ({ ...f, role: '' }))}
+                className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${filters.role === '' ? 'border-primary bg-primary/10 text-primary' : 'border-stroke bg-gray-2 text-body hover:text-black dark:border-strokedark dark:bg-meta-4 dark:text-bodydark dark:hover:text-white'}`}
               >
-                <Link href={`/teams/${c.teamId}`} className="mb-3 flex items-center gap-3">
-                  {team.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={team.image} alt={team.name} referrerPolicy="no-referrer" className="h-11 w-11 rounded-full border border-stroke object-cover dark:border-strokedark" />
-                  ) : (
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary font-bold text-white">
-                      {team.name?.[0]?.toUpperCase() || 'T'}
+                {t('recruitment.filterAll')}
+              </button>
+              {LANES.map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setFilters((f) => ({ ...f, role: l }))}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors ${filters.role === l ? 'border-primary bg-primary/10 text-primary' : 'border-stroke bg-gray-2 text-body hover:text-black dark:border-strokedark dark:bg-meta-4 dark:text-bodydark dark:hover:text-white'}`}
+                >
+                  <RoleIcon role={l} size={14} /> {t('lane.' + l)}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <Select
+                label={t('recruitment.filterRank')}
+                value={filters.rankLevel}
+                onChange={(e: any) => setFilters((f) => ({ ...f, rankLevel: e.target.value }))}
+                options={[
+                  { value: '', label: t('recruitment.filterAnyRank') },
+                  ...RANK_TIERS.map((r) => ({ value: String(r.level), label: r.label })),
+                ]}
+              />
+              <Select
+                label={t('recruitment.filterAvailability')}
+                value={filters.availability}
+                onChange={(e: any) => setFilters((f) => ({ ...f, availability: e.target.value }))}
+                options={[
+                  { value: '', label: t('recruitment.filterAnyAvailability') },
+                  ...AVAILABILITY.map((a) => ({ value: a, label: t('recruitment.availability.' + a) })),
+                ]}
+              />
+              <div className="flex items-end justify-between gap-3">
+                <span className="pb-3 text-sm text-body dark:text-bodydark">
+                  {t('recruitment.resultCount', { count: campaigns.length })}
+                </span>
+                {hasFilters && (
+                  <Button size="sm" variant="ghost" onClick={() => setFilters(EMPTY_FILTERS)}>
+                    <RotateCcw size={14} /> {t('recruitment.filtersReset')}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </SectionCard>
+
+          {loading ? (
+            <LoadingSpinner size="lg" className="py-24" />
+          ) : campaigns.length === 0 ? (
+            <EmptyState icon={<Megaphone size={28} />} title={t('recruitment.none')} />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {campaigns.map((c, i) => {
+                const team = c.team || {};
+                const applied = appliedIds.has(c.id);
+                return (
+                  <motion.div
+                    key={c.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(i * 0.03, 0.3) }}
+                    className="flex flex-col rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark"
+                  >
+                    <Link href={`/teams/${c.teamId}`} className="mb-3 flex items-center gap-3">
+                      {team.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={team.image} alt={team.name} referrerPolicy="no-referrer" className="h-11 w-11 rounded-full border border-stroke object-cover dark:border-strokedark" />
+                      ) : (
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary font-bold text-white">
+                          {team.name?.[0]?.toUpperCase() || 'T'}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-black dark:text-white">{team.name}</p>
+                        <p className="text-xs text-bodydark2">{t('recruitment.recruits')}</p>
+                      </div>
+                    </Link>
+
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {(c.slots || []).map((s: any) => (
+                        <Badge key={s.role} variant="purple" size="md" className="gap-1">
+                          <RoleIcon role={s.role} size={14} /> {t('lane.' + s.role)}
+                          {s.quantity > 1 && <span className="ml-0.5 opacity-80">×{s.quantity}</span>}
+                        </Badge>
+                      ))}
                     </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-black dark:text-white">{team.name}</p>
-                    <p className="text-xs text-bodydark2">{t('recruitment.recruits')}</p>
+
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {c.minRankLabel || c.availability ? (
+                        requirementBadges(c)
+                      ) : (
+                        <Badge size="sm">{t('recruitment.minRankAny')}</Badge>
+                      )}
+                    </div>
+
+                    {c.message && <p className="mb-3 whitespace-pre-line text-sm text-body dark:text-bodydark">{c.message}</p>}
+
+                    <div className="mt-auto">
+                      {applied ? (
+                        <Badge variant="green" size="md">{t('recruitment.applied')}</Badge>
+                      ) : (
+                        <Button size="sm" onClick={() => openApply(c)}>
+                          <Send size={14} /> {t('recruitment.apply')}
+                        </Button>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Application tracking, candidate side */}
+      {tab === 'mine' && (
+        loading ? (
+          <LoadingSpinner size="lg" className="py-24" />
+        ) : myApps.length === 0 ? (
+          <EmptyState icon={<ClipboardList size={28} />} title={t('recruitment.mineNone')} description={t('recruitment.mineHint')} />
+        ) : (
+          <div className="space-y-3">
+            {myApps.map((a, i) => {
+              const team = a.team || {};
+              const closed = a.recruitment && a.recruitment.status !== 'open';
+              return (
+                <motion.div
+                  key={a.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(i * 0.03, 0.3) }}
+                  className="rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark"
+                >
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Link href={`/teams/${a.teamId}`} className="flex min-w-0 items-center gap-3">
+                      {team.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={avatarSrc(team.image)} alt={team.name} referrerPolicy="no-referrer" className="h-10 w-10 rounded-full border border-stroke object-cover dark:border-strokedark" />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary font-bold text-white">
+                          {team.name?.[0]?.toUpperCase() || 'T'}
+                        </div>
+                      )}
+                      <span className="truncate text-sm font-medium text-black dark:text-white">{team.name}</span>
+                    </Link>
+
+                    {a.role ? (
+                      <Badge variant="purple" size="sm" className="gap-1">
+                        <RoleIcon role={a.role} size={12} /> {t('lane.' + a.role)}
+                      </Badge>
+                    ) : (
+                      <Badge size="sm">{t('recruitment.noRole')}</Badge>
+                    )}
+
+                    {a.availability && (
+                      <Badge variant="blue" size="sm" className="gap-1">
+                        <CalendarClock size={12} /> {t('recruitment.availability.' + a.availability)}
+                      </Badge>
+                    )}
+
+                    <div className="ml-auto flex items-center gap-2">
+                      {closed && <Badge size="sm">{t('recruitment.campaignClosed')}</Badge>}
+                      {statusBadge(a.status)}
+                      {a.canWithdraw && (
+                        <Button size="sm" variant="ghost" onClick={() => setToWithdraw(a)}>
+                          {t('recruitment.withdraw')}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </Link>
 
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {(c.slots || []).map((s: any) => (
-                    <Badge key={s.role} variant="purple" size="md" className="gap-1">
-                      <RoleIcon role={s.role} size={14} /> {t('lane.' + s.role)}
-                      {s.quantity > 1 && <span className="ml-0.5 opacity-80">×{s.quantity}</span>}
-                    </Badge>
-                  ))}
-                </div>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-bodydark2">
+                    <span>{t('recruitment.sentOn', { date: fmtDate(a.createdAt) })}</span>
+                    {a.decidedAt && <span>{t('recruitment.updatedOn', { date: fmtDate(a.decidedAt) })}</span>}
+                  </div>
 
-                {c.message && <p className="mb-3 whitespace-pre-line text-sm text-body dark:text-bodydark">{c.message}</p>}
-
-                <div className="mt-auto">
-                  {applied ? (
-                    <Badge variant="green" size="md">{t('recruitment.applied')}</Badge>
-                  ) : (
-                    <Button size="sm" onClick={() => openApply(c)}>
-                      <Send size={14} /> {t('recruitment.apply')}
-                    </Button>
+                  {a.message && (
+                    <p className="mt-2 whitespace-pre-line text-sm text-body dark:text-bodydark">{a.message}</p>
                   )}
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+
+                  {a.decisionNote && (
+                    <p className="mt-2 rounded-sm bg-gray-2 p-3 text-sm text-body dark:bg-meta-4 dark:text-bodydark">
+                      <span className="font-medium text-black dark:text-white">{t('recruitment.decisionNote')} : </span>
+                      {a.decisionNote}
+                    </p>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        )
       )}
 
       {/* Application modal */}
@@ -170,6 +413,12 @@ export default function RecruitmentPage() {
         subtitle={apply?.team?.name || ''}
       >
         <form onSubmit={submitApply} className="space-y-4">
+          {apply && (apply.minRankLabel || apply.availability) && (
+            <div className="flex flex-wrap items-center gap-2 rounded-sm bg-gray-2 p-3 dark:bg-meta-4">
+              <Trophy size={14} className="text-warning" />
+              {requirementBadges(apply)}
+            </div>
+          )}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">{t('recruitment.applyRole')}</label>
             <RoleSelect
@@ -180,6 +429,15 @@ export default function RecruitmentPage() {
               labelFor={(l) => t('lane.' + l)}
             />
           </div>
+          <Select
+            label={t('recruitment.applyAvailability')}
+            value={applyForm.availability}
+            onChange={(e: any) => setApplyForm({ ...applyForm, availability: e.target.value })}
+            options={[
+              { value: '', label: t('recruitment.availabilityNone') },
+              ...AVAILABILITY.map((a) => ({ value: a, label: t('recruitment.availability.' + a) })),
+            ]}
+          />
           <Textarea
             label={t('recruitment.applyMessage')}
             value={applyForm.message}
@@ -195,6 +453,19 @@ export default function RecruitmentPage() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        open={!!toWithdraw}
+        onClose={() => setToWithdraw(null)}
+        onConfirm={confirmWithdraw}
+        variant="danger"
+        title={t('recruitment.withdrawTitle')}
+        message={t('recruitment.withdrawConfirm')}
+        confirmLabel={t('recruitment.withdraw')}
+        cancelLabel={t('admin.esport.cancel')}
+        closeLabel={t('common.close')}
+        loading={withdrawing}
+      />
     </div>
   );
 }

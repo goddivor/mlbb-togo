@@ -7,6 +7,7 @@ import {
   ArrowLeft, Crown, Users, Calendar, Check, X,
   Swords, MessageSquare, Plus, Trash2, Send, Megaphone,
   LayoutDashboard, UserCog, History, Trophy, CalendarDays,
+  Star, CalendarClock,
 } from 'lucide-react';
 import {
   Badge, Button, Card, SectionCard, EmptyState, LoadingSpinner, Tabs, Input, Textarea, Select,
@@ -27,6 +28,16 @@ import TeamHonours from '@/components/teams/TeamHonours';
 import TeamSchedule from '@/components/teams/TeamSchedule';
 
 const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
+// Application life cycle, mirrored from the API (GET /recruitment/meta).
+const APP_STATUS_VARIANT: Record<string, string> = {
+  pending: 'gold',
+  shortlisted: 'blue',
+  accepted: 'green',
+  rejected: 'red',
+  withdrawn: 'default',
+};
+// A terminal application is history: no button left to press on it.
+const APP_TERMINAL = ['accepted', 'rejected', 'withdrawn'];
 // Compact field (slot quantity): Input doesn't fit inline
 const numCls =
   'w-20 px-2 py-1 text-sm rounded-md bg-gray-2 border border-stroke text-black focus:outline-none focus:border-primary dark:bg-meta-4 dark:border-strokedark dark:text-white';
@@ -82,8 +93,13 @@ function MatchRow({ m, t, onResult }: any) {
 function ApplicationRow({ a, t, onDecide, onContact, acting }: any) {
   const u = a.user || {};
   const name = u.displayName || u.username || '—';
+  // The API serves the public profile of the candidate (rank, win rate...), so
+  // the recruiter can judge an application without opening another page.
+  const games = (u.wins ?? 0) + (u.losses ?? 0);
+  const rank = u.gameRank || a.rankLabel;
+  const done = APP_TERMINAL.includes(a.status);
   return (
-    <div className="flex items-center gap-3 rounded-sm border border-stroke bg-white p-2.5 shadow-default dark:border-strokedark dark:bg-boxdark">
+    <div className="flex flex-wrap items-center gap-3 rounded-sm border border-stroke bg-white p-2.5 shadow-default dark:border-strokedark dark:bg-boxdark">
       {u.avatar ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={avatarSrc(u.avatar, 64)} alt={name} referrerPolicy="no-referrer" className="h-8 w-8 shrink-0 rounded-full object-cover" />
@@ -91,15 +107,35 @@ function ApplicationRow({ a, t, onDecide, onContact, acting }: any) {
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">{name[0]?.toUpperCase() || 'J'}</div>
       )}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link href={`/players/${a.userId}`} className="truncate text-sm font-medium text-black hover:text-primary dark:text-white">{name}</Link>
           {a.role && <Badge variant="purple" size="sm" className="gap-1"><RoleIcon role={a.role} size={13} /> {t('lane.' + a.role)}</Badge>}
+          {a.availability && (
+            <Badge variant="blue" size="sm" className="gap-1"><CalendarClock size={12} /> {t('recruitment.availability.' + a.availability)}</Badge>
+          )}
+          <Badge variant={APP_STATUS_VARIANT[a.status] ?? 'default'} size="sm">{t('recruitment.status.' + a.status)}</Badge>
+        </div>
+        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-bodydark2">
+          {rank && (
+            <span className="inline-flex items-center gap-1">
+              {hasRankBadge(rank) && <RankBadge rank={rank} size={13} />}
+              {rank}
+            </span>
+          )}
+          {games > 0 && <span>{t('recruitment.candidateStats', { winRate: u.winRate ?? 0, games })}</span>}
         </div>
         {a.message && <p className="truncate text-xs text-body dark:text-bodydark">{a.message}</p>}
       </div>
-      <div className="flex items-center gap-1.5 shrink-0">
-        <Button size="sm" variant="success" disabled={acting === a.id + 'accepted'} onClick={() => onDecide(a, 'accepted')}><Check size={14} /></Button>
-        <Button size="sm" variant="danger" disabled={acting === a.id + 'rejected'} onClick={() => onDecide(a, 'rejected')}><X size={14} /></Button>
+      <div className="flex shrink-0 items-center gap-1.5">
+        {!done && a.status !== 'shortlisted' && (
+          <Button size="sm" variant="secondary" title={t('recruitment.shortlist')} disabled={acting === a.id + 'shortlisted'} onClick={() => onDecide(a, 'shortlisted')}><Star size={14} /></Button>
+        )}
+        {!done && (
+          <>
+            <Button size="sm" variant="success" disabled={acting === a.id + 'accepted'} onClick={() => onDecide(a, 'accepted')}><Check size={14} /></Button>
+            <Button size="sm" variant="danger" disabled={acting === a.id + 'rejected'} onClick={() => onDecide(a, 'rejected')}><X size={14} /></Button>
+          </>
+        )}
         <Button size="sm" variant="ghost" title={t('teams.contact')} onClick={() => onContact(u)}><MessageSquare size={14} /></Button>
       </div>
     </div>
@@ -155,16 +191,18 @@ export default function TeamDetailPage() {
   const [applyForm, setApplyForm] = useState({ role: '', message: '' });
   const [applying, setApplying] = useState(false);
   const [pendingDel, setPendingDel] = useState<any | null>(null);
+  // Recruiter inbox filter: the applications still waiting for an answer by default.
+  const [appStatus, setAppStatus] = useState<'active' | 'all' | 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'withdrawn'>('active');
 
-  const loadCampaigns = () =>
-    api.recruitment.byTeam(id).then((r: any) => setCampaigns(Array.isArray(r) ? r : [])).catch(() => {});
+  const loadCampaigns = (status = appStatus) =>
+    api.recruitment.byTeam(id, { status }).then((r: any) => setCampaigns(Array.isArray(r) ? r : [])).catch(() => {});
 
   useEffect(() => {
     if (!id) return;
     loadCampaigns();
-    if (myId) api.recruitment.mine().then((m: any) => setMyAppliedIds(new Set((Array.isArray(m) ? m : []).filter((a: any) => a.status === 'pending').map((a: any) => a.recruitmentId)))).catch(() => {});
+    if (myId) api.recruitment.mine({ status: 'active' }).then((m: any) => setMyAppliedIds(new Set((Array.isArray(m) ? m : []).map((a: any) => a.recruitmentId)))).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, myId, canManage]);
+  }, [id, myId, canManage, appStatus]);
 
   const createCampaign = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,11 +234,17 @@ export default function TeamDetailPage() {
     } catch (e2: any) { err(e2); }
   };
 
-  const decideApp = async (a: any, status: 'accepted' | 'rejected') => {
+  const decideApp = async (a: any, status: 'accepted' | 'rejected' | 'shortlisted') => {
     setActingApp(a.id + status);
     try {
       await api.recruitment.decide(a.id, status);
-      toast.success(status === 'accepted' ? t('teams.accepted') : t('teams.refused'));
+      toast.success(
+        status === 'accepted'
+          ? t('teams.accepted')
+          : status === 'shortlisted'
+            ? t('recruitment.status.shortlisted')
+            : t('teams.refused'),
+      );
       await loadCampaigns();
       if (status === 'accepted') await refresh();
     } catch (e2: any) { err(e2); } finally { setActingApp(null); }
@@ -448,7 +492,22 @@ export default function TeamDetailPage() {
       {tab === 'recruitment' && (
         <div className="space-y-4">
           {canManage && (
-            <div className="flex justify-end">
+            <div className="flex flex-wrap items-end justify-end gap-3">
+              <Select
+                label={t('recruitment.filterStatus')}
+                value={appStatus}
+                onChange={(e: any) => setAppStatus(e.target.value)}
+                className="!w-auto"
+                options={[
+                  { value: 'active', label: t('recruitment.statusActive') },
+                  { value: 'pending', label: t('recruitment.status.pending') },
+                  { value: 'shortlisted', label: t('recruitment.status.shortlisted') },
+                  { value: 'accepted', label: t('recruitment.status.accepted') },
+                  { value: 'rejected', label: t('recruitment.status.rejected') },
+                  { value: 'withdrawn', label: t('recruitment.status.withdrawn') },
+                  { value: 'all', label: t('recruitment.statusAll') },
+                ]}
+              />
               <Button size="sm" onClick={() => setNewOpen(true)}><Plus size={15} /> {t('recruitment.new')}</Button>
             </div>
           )}
