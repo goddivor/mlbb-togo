@@ -26,7 +26,7 @@ export default function NotificationBell() {
   const loadList = () =>
     api.notifications
       .list()
-      .then((l: any) => setItems(Array.isArray(l) ? l : []))
+      .then((l: any) => setItems(Array.isArray(l) ? l : l?.items ?? []))
       .catch(() => {});
 
   useEffect(() => {

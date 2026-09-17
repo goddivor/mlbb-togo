@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useT, notifContent } from '@/lib/i18n';
@@ -15,6 +16,8 @@ import { getSocket, usePresence } from '@/lib/realtime';
  * REST for the initial count/list, `notification:new` socket events to stay
  * live, mark-as-read on open, and navigation to the item link on click.
  */
+const DROPDOWN_SIZE = 10;
+
 export default function NotificationDropdown() {
   const t = useT();
   const router = useRouter();
@@ -31,10 +34,12 @@ export default function NotificationDropdown() {
       .then((r: any) => setCount(r?.count || 0))
       .catch(() => {});
 
+  // The dropdown is a preview: ask for the first page only, the full history
+  // lives on /notifications.
   const loadList = () =>
     api.notifications
-      .list()
-      .then((l: any) => setItems(Array.isArray(l) ? l : []))
+      .list({ limit: DROPDOWN_SIZE })
+      .then((r) => setItems(r?.items ?? []))
       .catch(() => {});
 
   // Initial unread count + periodic refresh.
@@ -178,6 +183,14 @@ export default function NotificationDropdown() {
               })}
             </ul>
           )}
+
+          <Link
+            href="/notifications"
+            onClick={() => setOpen(false)}
+            className="mt-auto border-t border-stroke px-4.5 py-3 text-center text-sm font-medium text-primary hover:underline dark:border-strokedark"
+          >
+            {t('notif.viewAll')}
+          </Link>
         </div>
       )}
     </div>

@@ -15,6 +15,7 @@ import {
   Gamepad2,
   Medal,
   Sparkles,
+  Bell,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -44,7 +45,10 @@ export const playerMenuGroups: MenuGroupConfig[] = [
   {
     id: 'social',
     titleKey: 'nav.section.social',
-    items: [{ href: '/friends', labelKey: 'header.friends', icon: Users2 }],
+    items: [
+      { href: '/friends', labelKey: 'header.friends', icon: Users2 },
+      { href: '/notifications', labelKey: 'notif.title', icon: Bell },
+    ],
   },
 ];
 
