@@ -256,6 +256,18 @@ export const api = {
     create: (data: any) => request('/matches', { method: 'POST', body: data }),
   },
 
+  search: {
+    all: (q?: string, limit?: number) => {
+      const params = new URLSearchParams();
+      if (q) params.set('q', q);
+      if (limit) params.set('limit', String(limit));
+      return request(`/search${params.toString() ? `?${params}` : ''}`, {
+        fallback: { users: [], heroes: [], teams: [], tournaments: [], events: [] },
+        auth: false,
+      });
+    },
+  },
+
   heroes: {
     list: (role?: string) =>
       request(`/heroes${role ? `?role=${role}` : ''}`, { fallback: [], auth: false }),
