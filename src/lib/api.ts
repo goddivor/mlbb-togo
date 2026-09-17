@@ -392,6 +392,29 @@ export const api = {
     },
     teamMatches: (teamId: string) =>
       request(`/esport/teams/${teamId}/matches`, { fallback: [], auth: false }),
+
+    // Team details (stats / history / schedule / staff / honours)
+    teamStats: (teamId: string) =>
+      request(`/esport/teams/${teamId}/stats`, { fallback: null, auth: false }),
+    teamHistory: (teamId: string, page = 1, limit = 10) =>
+      request(`/esport/teams/${teamId}/history?page=${page}&limit=${limit}`, {
+        fallback: null,
+        auth: false,
+      }),
+    teamSchedule: (teamId: string) =>
+      request(`/esport/teams/${teamId}/schedule`, { fallback: [], auth: false }),
+    teamStaff: (teamId: string) =>
+      request(`/esport/teams/${teamId}/staff`, { fallback: [], auth: false }),
+    teamHonours: (teamId: string) =>
+      request(`/esport/teams/${teamId}/honours`, { fallback: [], auth: false }),
+    addStaff: (teamId: string, data: any) =>
+      request(`/esport/teams/${teamId}/staff`, { method: 'POST', body: data }),
+    updateStaff: (teamId: string, staffId: string, data: any) =>
+      request(`/esport/teams/${teamId}/staff/${staffId}`, { method: 'PATCH', body: data }),
+    removeStaff: (teamId: string, staffId: string) =>
+      request(`/esport/teams/${teamId}/staff/${staffId}`, { method: 'DELETE' }),
+    setHonours: (teamId: string, honours: any[]) =>
+      request(`/esport/teams/${teamId}/honours`, { method: 'PUT', body: { honours } }),
     createMatch: (data: any) => request('/esport/matches', { method: 'POST', body: data }),
     updateMatch: (id: string, data: any) =>
       request(`/esport/matches/${id}`, { method: 'PATCH', body: data }),
