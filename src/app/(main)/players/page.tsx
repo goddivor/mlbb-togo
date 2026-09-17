@@ -7,6 +7,7 @@ import { Search, MapPin, Users } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { PageHeader, SectionCard, Badge, EmptyState, LoadingSpinner } from '@/components/ui';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
+import LevelBadge from '@/components/gamification/LevelBadge';
 import { useT } from '@/lib/i18n';
 
 export default function PlayersPage() {
@@ -107,6 +108,7 @@ export default function PlayersPage() {
                   </div>
                 </div>
 
+                <LevelBadge level={u.level} size="xs" />
                 {u.roleUser && u.roleUser !== 'user' && (
                   <Badge variant="purple" size="sm" className="uppercase">{u.roleUser}</Badge>
                 )}

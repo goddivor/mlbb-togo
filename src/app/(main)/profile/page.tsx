@@ -10,6 +10,7 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useAuthStore } from '@/store/useStore';
 import { api, avatarSrc, mlbbImg } from '@/lib/api';
 import LinkGameModal from '@/components/profile/LinkGameModal';
+import LevelBadge from '@/components/gamification/LevelBadge';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
 
@@ -20,7 +21,15 @@ export default function ProfilePage() {
   const [linkGameOpen, setLinkGameOpen] = useState(false);
   const [unlinkOpen, setUnlinkOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [level, setLevel] = useState<number | null>(null);
   const t = useT();
+
+  useEffect(() => {
+    api.gamification
+      .me()
+      .then((g: any) => setLevel(g?.level ?? null))
+      .catch(() => setLevel(null));
+  }, []);
 
   useEffect(() => {
     if (document.getElementById('gis-script')) return;
@@ -134,7 +143,10 @@ export default function ProfilePage() {
         <div className="flex items-center gap-4">
           <Avatar name={name} src={userProfile.avatar ? avatarSrc(userProfile.avatar, 160) : undefined} size="xl" />
           <div>
-            <h2 className="text-xl font-bold text-black dark:text-white">{name}</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold text-black dark:text-white">{name}</h2>
+              <LevelBadge level={level} />
+            </div>
             <p className="text-sm text-body dark:text-bodydark">
               {t('profile.displayedProfile')}{' '}
               <span className="text-primary font-medium">
