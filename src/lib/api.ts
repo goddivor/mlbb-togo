@@ -469,6 +469,16 @@ export const api = {
     remove: (userId: string) => request(`/friends/${userId}`, { method: 'DELETE' }),
   },
 
+  gamification: {
+    me: () => request('/gamification/me', { fallback: null }),
+    user: (id: string) => request(`/gamification/users/${id}`, { fallback: null, auth: false }),
+    leaderboard: (limit = 10) =>
+      request(`/gamification/leaderboard?limit=${limit}`, {
+        fallback: { entries: [], total: 0 },
+        auth: false,
+      }),
+  },
+
   contact: {
     send: (data: { name: string; email: string; subject?: string; message: string }) =>
       request('/contact', { method: 'POST', body: data, auth: false }),
