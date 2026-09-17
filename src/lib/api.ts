@@ -116,6 +116,42 @@ export class ApiError extends Error {
   }
 }
 
+/** Application life cycle shared with the recruitment API. */
+export type RecruitmentApplicationStatus =
+  | 'pending'
+  | 'shortlisted'
+  | 'accepted'
+  | 'rejected'
+  | 'withdrawn';
+
+export interface RecruitmentFilters {
+  role?: string;
+  /** The browsing player's own rank level: keeps the campaigns they qualify for. */
+  rankLevel?: number;
+  availability?: string;
+  status?: 'open' | 'closed' | 'all';
+  limit?: number;
+}
+
+export interface ApplicationFilters {
+  status?: RecruitmentApplicationStatus | 'active' | 'all';
+  role?: string;
+  minRankLevel?: number;
+  availability?: string;
+  limit?: number;
+}
+
+/** Drops empty values so an untouched filter never reaches the API. */
+function qs(params?: Record<string, any>): string {
+  if (!params) return '';
+  const search = new URLSearchParams(
+    Object.entries(params)
+      .filter(([, v]) => v !== undefined && v !== null && v !== '')
+      .map(([k, v]) => [k, String(v)]),
+  ).toString();
+  return search ? `?${search}` : '';
+}
+
 export const api = {
 
   auth: {
@@ -445,18 +481,35 @@ export const api = {
   },
 
   recruitment: {
-    listOpen: (role?: string) =>
-      request(`/recruitment${role ? `?role=${role}` : ''}`, { fallback: [], auth: false }),
-    mine: () => request('/recruitment/mine', { fallback: [] }),
-    byTeam: (teamId: string) => request(`/recruitment/team/${teamId}`, { fallback: [] }),
+    listOpen: (filters?: RecruitmentFilters) =>
+      request(`/recruitment${qs(filters)}`, { fallback: [], auth: false }),
+    meta: () =>
+      request('/recruitment/meta', {
+        fallback: { availability: [], statuses: [], transitions: {} },
+        auth: false,
+      }),
+    mine: (filters?: ApplicationFilters) =>
+      request(`/recruitment/mine${qs(filters)}`, { fallback: [] }),
+    byTeam: (teamId: string, filters?: ApplicationFilters) =>
+      request(`/recruitment/team/${teamId}${qs(filters)}`, { fallback: [] }),
+    teamApplications: (teamId: string, filters?: ApplicationFilters) =>
+      request(`/recruitment/team/${teamId}/applications${qs(filters)}`, { fallback: [] }),
     create: (data: any) => request('/recruitment', { method: 'POST', body: data }),
     update: (id: string, data: any) =>
       request(`/recruitment/${id}`, { method: 'PATCH', body: data }),
     remove: (id: string) => request(`/recruitment/${id}`, { method: 'DELETE' }),
-    apply: (id: string, data: { role?: string; message?: string }) =>
+    apply: (id: string, data: { role?: string; message?: string; availability?: string }) =>
       request(`/recruitment/${id}/apply`, { method: 'POST', body: data }),
-    decide: (appId: string, status: 'accepted' | 'rejected') =>
-      request(`/recruitment/applications/${appId}`, { method: 'PATCH', body: { status } }),
+    decide: (appId: string, status: RecruitmentApplicationStatus, note?: string) =>
+      request(`/recruitment/applications/${appId}`, {
+        method: 'PATCH',
+        body: note ? { status, note } : { status },
+      }),
+    withdraw: (appId: string) =>
+      request(`/recruitment/applications/${appId}`, {
+        method: 'PATCH',
+        body: { status: 'withdrawn' },
+      }),
   },
 
   friends: {

@@ -7,6 +7,7 @@ import {
   ArrowLeft, Crown, Users, Calendar, Check, X,
   Swords, MessageSquare, Plus, Trash2, Send, Megaphone,
   LayoutDashboard, UserCog, History, Trophy, CalendarDays,
+  Star, CalendarClock,
 } from 'lucide-react';
 import {
   Badge, Button, Card, SectionCard, EmptyState, LoadingSpinner, Tabs, Input, Textarea, Select,
@@ -27,6 +28,31 @@ import TeamHonours from '@/components/teams/TeamHonours';
 import TeamSchedule from '@/components/teams/TeamSchedule';
 
 const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
+// Application life cycle, mirrored from the API (GET /recruitment/meta).
+const APP_STATUS_VARIANT: Record<string, string> = {
+  pending: 'gold',
+  shortlisted: 'blue',
+  accepted: 'green',
+  rejected: 'red',
+  withdrawn: 'default',
+};
+// A terminal application is history: no button left to press on it.
+const APP_TERMINAL = ['accepted', 'rejected', 'withdrawn'];
+// Lowest in-game level of each tier (decodeRank on the API): a campaign that
+// requires "Mythic" must accept every Mythic player, hence the lower bound.
+const RANK_TIERS: { level: number; label: string }[] = [
+  { level: 1, label: 'Warrior' },
+  { level: 11, label: 'Elite' },
+  { level: 26, label: 'Master' },
+  { level: 46, label: 'Grandmaster' },
+  { level: 76, label: 'Epic' },
+  { level: 106, label: 'Legend' },
+  { level: 136, label: 'Mythic' },
+  { level: 161, label: 'Mythic Honor' },
+  { level: 186, label: 'Mythic Glory' },
+  { level: 236, label: 'Mythic Immortal' },
+];
+const AVAILABILITY = ['casual', 'regular', 'competitive'];
 // Compact field (slot quantity): Input doesn't fit inline
 const numCls =
   'w-20 px-2 py-1 text-sm rounded-md bg-gray-2 border border-stroke text-black focus:outline-none focus:border-primary dark:bg-meta-4 dark:border-strokedark dark:text-white';
@@ -82,8 +108,13 @@ function MatchRow({ m, t, onResult }: any) {
 function ApplicationRow({ a, t, onDecide, onContact, acting }: any) {
   const u = a.user || {};
   const name = u.displayName || u.username || '—';
+  // The API serves the public profile of the candidate (rank, win rate...), so
+  // the recruiter can judge an application without opening another page.
+  const games = (u.wins ?? 0) + (u.losses ?? 0);
+  const rank = u.gameRank || a.rankLabel;
+  const done = APP_TERMINAL.includes(a.status);
   return (
-    <div className="flex items-center gap-3 rounded-sm border border-stroke bg-white p-2.5 shadow-default dark:border-strokedark dark:bg-boxdark">
+    <div className="flex flex-wrap items-center gap-3 rounded-sm border border-stroke bg-white p-2.5 shadow-default dark:border-strokedark dark:bg-boxdark">
       {u.avatar ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={avatarSrc(u.avatar, 64)} alt={name} referrerPolicy="no-referrer" className="h-8 w-8 shrink-0 rounded-full object-cover" />
@@ -91,15 +122,35 @@ function ApplicationRow({ a, t, onDecide, onContact, acting }: any) {
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">{name[0]?.toUpperCase() || 'J'}</div>
       )}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link href={`/players/${a.userId}`} className="truncate text-sm font-medium text-black hover:text-primary dark:text-white">{name}</Link>
           {a.role && <Badge variant="purple" size="sm" className="gap-1"><RoleIcon role={a.role} size={13} /> {t('lane.' + a.role)}</Badge>}
+          {a.availability && (
+            <Badge variant="blue" size="sm" className="gap-1"><CalendarClock size={12} /> {t('recruitment.availability.' + a.availability)}</Badge>
+          )}
+          <Badge variant={APP_STATUS_VARIANT[a.status] ?? 'default'} size="sm">{t('recruitment.status.' + a.status)}</Badge>
+        </div>
+        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-bodydark2">
+          {rank && (
+            <span className="inline-flex items-center gap-1">
+              {hasRankBadge(rank) && <RankBadge rank={rank} size={13} />}
+              {rank}
+            </span>
+          )}
+          {games > 0 && <span>{t('recruitment.candidateStats', { winRate: u.winRate ?? 0, games })}</span>}
         </div>
         {a.message && <p className="truncate text-xs text-body dark:text-bodydark">{a.message}</p>}
       </div>
-      <div className="flex items-center gap-1.5 shrink-0">
-        <Button size="sm" variant="success" disabled={acting === a.id + 'accepted'} onClick={() => onDecide(a, 'accepted')}><Check size={14} /></Button>
-        <Button size="sm" variant="danger" disabled={acting === a.id + 'rejected'} onClick={() => onDecide(a, 'rejected')}><X size={14} /></Button>
+      <div className="flex shrink-0 items-center gap-1.5">
+        {!done && a.status !== 'shortlisted' && (
+          <Button size="sm" variant="secondary" title={t('recruitment.shortlist')} disabled={acting === a.id + 'shortlisted'} onClick={() => onDecide(a, 'shortlisted')}><Star size={14} /></Button>
+        )}
+        {!done && (
+          <>
+            <Button size="sm" variant="success" disabled={acting === a.id + 'accepted'} onClick={() => onDecide(a, 'accepted')}><Check size={14} /></Button>
+            <Button size="sm" variant="danger" disabled={acting === a.id + 'rejected'} onClick={() => onDecide(a, 'rejected')}><X size={14} /></Button>
+          </>
+        )}
         <Button size="sm" variant="ghost" title={t('teams.contact')} onClick={() => onContact(u)}><MessageSquare size={14} /></Button>
       </div>
     </div>
@@ -150,21 +201,24 @@ export default function TeamDetailPage() {
   const [newOpen, setNewOpen] = useState(false);
   const [newMsg, setNewMsg] = useState('');
   const [newSlots, setNewSlots] = useState<Record<string, number>>({});
+  const [newReq, setNewReq] = useState({ minRankLevel: '', availability: '' });
   const [creating, setCreating] = useState(false);
   const [applyCampaign, setApplyCampaign] = useState<any | null>(null);
   const [applyForm, setApplyForm] = useState({ role: '', message: '' });
   const [applying, setApplying] = useState(false);
   const [pendingDel, setPendingDel] = useState<any | null>(null);
+  // Recruiter inbox filter: the applications still waiting for an answer by default.
+  const [appStatus, setAppStatus] = useState<'active' | 'all' | 'pending' | 'shortlisted' | 'accepted' | 'rejected' | 'withdrawn'>('active');
 
-  const loadCampaigns = () =>
-    api.recruitment.byTeam(id).then((r: any) => setCampaigns(Array.isArray(r) ? r : [])).catch(() => {});
+  const loadCampaigns = (status = appStatus) =>
+    api.recruitment.byTeam(id, { status }).then((r: any) => setCampaigns(Array.isArray(r) ? r : [])).catch(() => {});
 
   useEffect(() => {
     if (!id) return;
     loadCampaigns();
-    if (myId) api.recruitment.mine().then((m: any) => setMyAppliedIds(new Set((Array.isArray(m) ? m : []).filter((a: any) => a.status === 'pending').map((a: any) => a.recruitmentId)))).catch(() => {});
+    if (myId) api.recruitment.mine({ status: 'active' }).then((m: any) => setMyAppliedIds(new Set((Array.isArray(m) ? m : []).map((a: any) => a.recruitmentId)))).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, myId, canManage]);
+  }, [id, myId, canManage, appStatus]);
 
   const createCampaign = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,9 +226,15 @@ export default function TeamDetailPage() {
     if (slots.length === 0) { toast.error(t('recruitment.needRole')); return; }
     setCreating(true);
     try {
-      await api.recruitment.create({ teamId: id, message: newMsg.trim() || undefined, slots });
+      await api.recruitment.create({
+        teamId: id,
+        message: newMsg.trim() || undefined,
+        slots,
+        minRankLevel: newReq.minRankLevel ? Number(newReq.minRankLevel) : undefined,
+        availability: newReq.availability || undefined,
+      });
       toast.success(t('admin.esport.saved'));
-      setNewOpen(false); setNewMsg(''); setNewSlots({});
+      setNewOpen(false); setNewMsg(''); setNewSlots({}); setNewReq({ minRankLevel: '', availability: '' });
       await loadCampaigns();
     } catch (e2: any) { err(e2); } finally { setCreating(false); }
   };
@@ -196,11 +256,17 @@ export default function TeamDetailPage() {
     } catch (e2: any) { err(e2); }
   };
 
-  const decideApp = async (a: any, status: 'accepted' | 'rejected') => {
+  const decideApp = async (a: any, status: 'accepted' | 'rejected' | 'shortlisted') => {
     setActingApp(a.id + status);
     try {
       await api.recruitment.decide(a.id, status);
-      toast.success(status === 'accepted' ? t('teams.accepted') : t('teams.refused'));
+      toast.success(
+        status === 'accepted'
+          ? t('teams.accepted')
+          : status === 'shortlisted'
+            ? t('recruitment.status.shortlisted')
+            : t('teams.refused'),
+      );
       await loadCampaigns();
       if (status === 'accepted') await refresh();
     } catch (e2: any) { err(e2); } finally { setActingApp(null); }
@@ -448,7 +514,23 @@ export default function TeamDetailPage() {
       {tab === 'recruitment' && (
         <div className="space-y-4">
           {canManage && (
-            <div className="flex justify-end">
+            <div className="flex flex-wrap items-end justify-end gap-3">
+              <div className="w-full sm:w-56">
+                <Select
+                  label={t('recruitment.filterStatus')}
+                  value={appStatus}
+                  onChange={(e: any) => setAppStatus(e.target.value)}
+                  options={[
+                    { value: 'active', label: t('recruitment.statusActive') },
+                    { value: 'pending', label: t('recruitment.status.pending') },
+                    { value: 'shortlisted', label: t('recruitment.status.shortlisted') },
+                    { value: 'accepted', label: t('recruitment.status.accepted') },
+                    { value: 'rejected', label: t('recruitment.status.rejected') },
+                    { value: 'withdrawn', label: t('recruitment.status.withdrawn') },
+                    { value: 'all', label: t('recruitment.statusAll') },
+                  ]}
+                />
+              </div>
               <Button size="sm" onClick={() => setNewOpen(true)}><Plus size={15} /> {t('recruitment.new')}</Button>
             </div>
           )}
@@ -469,6 +551,15 @@ export default function TeamDetailPage() {
                         </Badge>
                       ))}
                       <Badge variant={c.status === 'open' ? 'green' : 'default'} size="sm">{c.status === 'open' ? t('recruitment.statusOpen') : t('recruitment.statusClosed')}</Badge>
+                      {c.minRankLabel && (
+                        <Badge variant="gold" size="sm" className="gap-1">
+                          {hasRankBadge(c.minRankLabel) && <RankBadge rank={c.minRankLabel} size={13} />}
+                          {t('recruitment.minRank')} : {c.minRankLabel}
+                        </Badge>
+                      )}
+                      {c.availability && (
+                        <Badge variant="blue" size="sm" className="gap-1"><CalendarClock size={12} /> {t('recruitment.availability.' + c.availability)}</Badge>
+                      )}
                     </div>
                     {canManage ? (
                       <div className="flex items-center gap-1.5">
@@ -527,6 +618,26 @@ export default function TeamDetailPage() {
                 </div>
               ))}
             </div>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Select
+              label={t('recruitment.minRank')}
+              value={newReq.minRankLevel}
+              onChange={(e: any) => setNewReq({ ...newReq, minRankLevel: e.target.value })}
+              options={[
+                { value: '', label: t('recruitment.minRankAny') },
+                ...RANK_TIERS.map((r) => ({ value: String(r.level), label: r.label })),
+              ]}
+            />
+            <Select
+              label={t('recruitment.filterAvailability')}
+              value={newReq.availability}
+              onChange={(e: any) => setNewReq({ ...newReq, availability: e.target.value })}
+              options={[
+                { value: '', label: t('recruitment.availabilityNone') },
+                ...AVAILABILITY.map((a) => ({ value: a, label: t('recruitment.availability.' + a) })),
+              ]}
+            />
           </div>
           <Textarea label={t('recruitment.message')} value={newMsg} onChange={(e: any) => setNewMsg(e.target.value)} className="min-h-[70px]" />
           <div className="flex gap-2 pt-1">
