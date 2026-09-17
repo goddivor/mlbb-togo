@@ -428,10 +428,14 @@ export const api = {
     team: (id: string) => request(`/esport/teams/${id}`, { fallback: null, auth: false }),
     sponsors: () => request('/esport/sponsors', { fallback: [], auth: false }),
     mtl: () => request('/esport/mtl', { fallback: null, auth: false }),
+    // Public target figures shown on the About page.
+    figures: () => request('/esport/org/figures', { fallback: null, auth: false }),
 
     // Admin
     updateOrg: (id: string, data: any) =>
       request(`/esport/${id}`, { method: 'PATCH', body: data }),
+    updateFigures: (data: any) =>
+      request('/esport/org/figures', { method: 'PUT', body: data }),
     createTeam: (data: any) => request('/esport/teams', { method: 'POST', body: data }),
     updateTeam: (id: string, data: any) =>
       request(`/esport/teams/${id}`, { method: 'PATCH', body: data }),

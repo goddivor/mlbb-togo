@@ -12,7 +12,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   // Public/landing routes stay dark (gaming look); the dashboard defaults to
   // light and follows the user's theme choice.
-  const isPublic = pathname === '/' || pathname.startsWith('/admin-login');
+  const isPublic =
+    pathname === '/' ||
+    pathname.startsWith('/admin-login') ||
+    pathname === '/about' ||
+    pathname.startsWith('/legal');
   const dark = isPublic ? true : theme === 'dark';
 
   useEffect(() => {

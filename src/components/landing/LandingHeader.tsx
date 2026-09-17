@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Globe, ChevronDown, Menu, X, Home, Check,
   LayoutGrid, Trophy, Sparkles, Handshake, Mail,
-  LayoutDashboard, LogOut,
+  LayoutDashboard, LogOut, Info,
 } from 'lucide-react';
 import { useLangStore, useAuthStore } from '@/store/useStore';
 import { useT } from '@/lib/i18n';
@@ -19,12 +20,15 @@ const LANGS = [
   { code: 'en', label: 'EN' },
 ];
 
-const SECTIONS = [
+// Landing sections (scrolled to on `/`, otherwise navigated to as `/#id`)
+// plus standalone public pages (`href`).
+const SECTIONS: { key: string; id?: string; href?: string; icon: any }[] = [
   { key: 'nav.home', id: '', icon: Home },
   { key: 'nav.features', id: 'features', icon: LayoutGrid },
   { key: 'nav.mtl', id: 'mtl', icon: Trophy },
   { key: 'nav.heroes', id: 'heroes', icon: Sparkles },
   { key: 'nav.partners', id: 'partners', icon: Handshake },
+  { key: 'nav.about', href: '/about', icon: Info },
   { key: 'nav.contact', id: 'contact', icon: Mail },
 ];
 
@@ -43,6 +47,8 @@ export default function LandingHeader() {
   const setUser = useAuthStore((s: any) => s.setUser);
   const setUserProfile = useAuthStore((s: any) => s.setUserProfile);
   const t = useT();
+  const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -88,8 +94,18 @@ export default function LandingHeader() {
     setOpenMenu(null);
   };
 
-  const goTo = (id: string) => {
+  const goTo = (s: (typeof SECTIONS)[number]) => {
     setOpenMenu(null);
+    if (s.href) {
+      router.push(s.href);
+      return;
+    }
+    const id = s.id ?? '';
+    // Sections only exist on the landing: navigate back to it from other pages.
+    if (pathname !== '/') {
+      router.push(id ? `/#${id}` : '/');
+      return;
+    }
     if (!id) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -116,8 +132,13 @@ export default function LandingHeader() {
           {SECTIONS.map((s) => (
             <button
               key={s.key}
-              onClick={() => goTo(s.id)}
-              className="px-3 py-2 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+              onClick={() => goTo(s)}
+              aria-current={s.href && pathname === s.href ? 'page' : undefined}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                s.href && pathname === s.href
+                  ? 'text-white bg-white/10'
+                  : 'text-white/80 hover:text-white hover:bg-white/10'
+              }`}
             >
               {t(s.key)}
             </button>
@@ -249,7 +270,7 @@ export default function LandingHeader() {
                     return (
                       <button
                         key={s.key}
-                        onClick={() => goTo(s.id)}
+                        onClick={() => goTo(s)}
                         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-300 hover:bg-gaming-surface hover:text-white transition-colors text-left"
                       >
                         <Icon size={16} /> {t(s.key)}
