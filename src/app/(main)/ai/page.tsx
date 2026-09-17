@@ -50,13 +50,18 @@ function AiPageInner() {
         action={
           status &&
           (status.enabled ? (
-            <Badge variant="purple" className="whitespace-nowrap" title={status.model}>
-              <Sparkles size={14} /> {t('ai.badge.llm')}
-            </Badge>
+            // Badge has no title prop: the tooltip goes on a wrapping span.
+            <span title={status.model}>
+              <Badge variant="purple" className="whitespace-nowrap">
+                <Sparkles size={14} /> {t('ai.badge.llm')}
+              </Badge>
+            </span>
           ) : (
-            <Badge variant="gold" className="whitespace-nowrap" title={t('ai.heuristicNote')}>
-              <Cpu size={14} /> {t('ai.badge.heuristic')}
-            </Badge>
+            <span title={t('ai.heuristicNote')}>
+              <Badge variant="gold" className="whitespace-nowrap">
+                <Cpu size={14} /> {t('ai.badge.heuristic')}
+              </Badge>
+            </span>
           ))
         }
       />
