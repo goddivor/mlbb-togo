@@ -151,6 +151,37 @@ function qs(params?: Record<string, any>): string {
   ).toString();
   return search ? `?${search}` : '';
 }
+/** A row of the personal notification mailbox (Prisma `Notification`). */
+export type AppNotification = {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  data?: Record<string, any> | null;
+  read: boolean;
+  link?: string | null;
+  createdAt: string;
+};
+
+export type NotificationsQuery = {
+  type?: string;
+  status?: 'all' | 'unread' | 'read';
+  page?: number;
+  limit?: number;
+};
+
+export type NotificationPage = {
+  items: AppNotification[];
+  /** Rows matching the active filters. */
+  total: number;
+  /** Unread rows in the whole mailbox, filters excluded (drives the bell). */
+  unread: number;
+  /** Row count per type over the whole mailbox, to build the filter chips. */
+  counts: Record<string, number>;
+  page: number;
+  limit: number;
+  pages: number;
+};
 
 export const api = {
 
@@ -538,10 +569,32 @@ export const api = {
   },
 
   notifications: {
-    list: () => request('/notifications', { fallback: [] }),
+    list: (params: NotificationsQuery = {}) => {
+      const qs = new URLSearchParams();
+      if (params.type) qs.set('type', params.type);
+      if (params.status && params.status !== 'all') qs.set('status', params.status);
+      if (params.page) qs.set('page', String(params.page));
+      if (params.limit) qs.set('limit', String(params.limit));
+      const suffix = qs.toString() ? `?${qs}` : '';
+      return request<NotificationPage>(`/notifications${suffix}`, {
+        fallback: {
+          items: [],
+          total: 0,
+          unread: 0,
+          counts: {},
+          page: params.page ?? 1,
+          limit: params.limit ?? 20,
+          pages: 1,
+        },
+      });
+    },
     unreadCount: () => request('/notifications/unread-count', { fallback: { count: 0 } }),
     markRead: (id: string) => request(`/notifications/${id}/read`, { method: 'PATCH' }),
-    markAllRead: () => request('/notifications/read-all', { method: 'PATCH' }),
+    /** Without a type, clears the whole mailbox; with one, only that category. */
+    markAllRead: (type?: string) =>
+      request(`/notifications/read-all${type ? `?type=${encodeURIComponent(type)}` : ''}`, {
+        method: 'PATCH',
+      }),
   },
 
   teamRequests: {
