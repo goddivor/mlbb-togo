@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Modal from '@/components/ui/Modal';
-import { Button, Input } from '@/components/ui';
+import { Badge, Button, Input } from '@/components/ui';
 import { useT } from '@/lib/i18n';
 import ModeSwitch from './ModeSwitch';
 import type { PickBanMode } from '@/lib/pickban';
@@ -12,11 +12,16 @@ export default function CreateDraftModal({
   onClose,
   onCreate,
   defaultMode = 'ranked',
+  lockMode = false,
+  title,
 }: {
   open: boolean;
   onClose: () => void;
   onCreate: (data: { name: string; mode: PickBanMode }) => Promise<void>;
   defaultMode?: PickBanMode;
+  // When saving a local draft the mode is fixed by the moves already played.
+  lockMode?: boolean;
+  title?: string;
 }) {
   const t = useT();
   const [name, setName] = useState('');
@@ -27,7 +32,7 @@ export default function CreateDraftModal({
     e.preventDefault();
     setLoading(true);
     try {
-      await onCreate({ name: name.trim(), mode });
+      await onCreate({ name: name.trim(), mode: lockMode ? defaultMode : mode });
       setName('');
     } finally {
       setLoading(false);
@@ -35,7 +40,7 @@ export default function CreateDraftModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={t('pickban.new')} size="sm" closeLabel={t('common.cancel')}>
+    <Modal open={open} onClose={onClose} title={title ?? t('pickban.new')} size="sm" closeLabel={t('common.cancel')}>
       <form onSubmit={submit} className="space-y-5">
         <Input
           label={t('pickban.name')}
@@ -47,7 +52,11 @@ export default function CreateDraftModal({
         />
         <div>
           <p className="mb-2.5 block text-black dark:text-white">{t('pickban.mode')}</p>
-          <ModeSwitch value={mode} onChange={setMode} />
+          {lockMode ? (
+            <Badge variant={defaultMode === 'ranked' ? 'blue' : 'purple'}>{t(`pickban.${defaultMode}`)}</Badge>
+          ) : (
+            <ModeSwitch value={mode} onChange={setMode} />
+          )}
         </div>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>

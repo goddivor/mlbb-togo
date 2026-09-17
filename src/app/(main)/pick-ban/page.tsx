@@ -191,6 +191,8 @@ export default function PickBanPage() {
       <CreateDraftModal
         open={saveOpen}
         defaultMode={local.mode}
+        lockMode
+        title={t('pickban.save')}
         onClose={() => setSaveOpen(false)}
         onCreate={async (data) => {
           setSaveOpen(false);
