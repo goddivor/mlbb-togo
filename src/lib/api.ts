@@ -565,6 +565,22 @@ export const api = {
     stopLive: () => request('/stream/live/stop', { method: 'POST' }),
   },
 
+  // Player dashboard: every widget in one round trip (JWT).
+  dashboard: {
+    get: () =>
+      request('/dashboard', {
+        fallback: {
+          generatedAt: null,
+          quickStats: null,
+          rank: { metric: 'winRate', position: null, total: 0, value: null, games: 0 },
+          lastMatches: [],
+          upcoming: [],
+          notifications: { unread: 0, latest: [] },
+          activity: [],
+        },
+      }),
+  },
+
   // Draft Simulator (community tournaments 1v1 / 3v3 / 5v5).
   draft: {
     // Player
