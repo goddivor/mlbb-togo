@@ -13,6 +13,7 @@ import {
   LayoutGrid,
   Radio,
   Gamepad2,
+  Medal,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -58,6 +59,7 @@ export const adminMenuGroups: MenuGroupConfig[] = [
     titleKey: 'nav.section.esport',
     items: [
       { href: '/admin/esport', labelKey: 'admin.esport.title', icon: Trophy },
+      { href: '/admin/tournaments', labelKey: 'admin.tournaments.title', icon: Medal },
       { href: '/admin/seasons', labelKey: 'admin.seasons.title', icon: CalendarDays },
       { href: '/admin/matches', labelKey: 'admin.matches.title', icon: Swords },
       { href: '/admin/draft', labelKey: 'admin.draft.title', icon: Gamepad2 },

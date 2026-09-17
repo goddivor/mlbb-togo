@@ -1,14 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  Trophy, Calendar, Users, Play, ExternalLink, Medal, Swords, Target,
+  Trophy, Calendar, Users, Play, ExternalLink, Medal, Swords, Target, ArrowRight,
 } from 'lucide-react';
 import { Card, Badge, Button, Tabs, PageHeader, SectionCard, EmptyState, ProgressBar, LoadingSpinner } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import { api, avatarSrc } from '@/lib/api';
 import { useAuthStore } from '@/store/useStore';
+import { useT } from '@/lib/i18n';
 import { formatDate } from '@/lib/helpers';
 import toast from 'react-hot-toast';
 
@@ -19,6 +21,7 @@ const STATUS_BADGE: Record<string, { label: string; variant: any }> = {
 };
 
 export default function Tournaments() {
+  const t = useT();
   const myId = useAuthStore((s: any) => s.user?.id);
   const [tournaments, setTournaments] = useState<any[]>([]);
   const [myTeams, setMyTeams] = useState<any[]>([]);
@@ -193,13 +196,20 @@ export default function Tournaments() {
                           </div>
                         )}
                       </div>
-                      {tour.streamUrl && (
-                        <a href={tour.streamUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm">
-                            <Play size={14} /> Stream
+                      <div className="flex items-center gap-2">
+                        {tour.streamUrl && (
+                          <a href={tour.streamUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="sm">
+                              <Play size={14} /> Stream
+                            </Button>
+                          </a>
+                        )}
+                        <Link href={`/tournaments/${tour.id}`} onClick={(e) => e.stopPropagation()}>
+                          <Button variant="secondary" size="sm">
+                            {t('tournament.viewDetails')} <ArrowRight size={14} />
                           </Button>
-                        </a>
-                      )}
+                        </Link>
+                      </div>
                     </div>
                   </Card>
                 </motion.div>
@@ -273,6 +283,12 @@ export default function Tournaments() {
                       )}
                     </div>
                   </div>
+
+                  <Link href={`/tournaments/${tournament.id}`} className="block">
+                    <Button className="w-full">
+                      <Trophy size={16} /> {t('tournament.viewDetails')}
+                    </Button>
+                  </Link>
 
                   {tournament.status !== 'completed' && (
                     myRegistered(tournament) ? (
