@@ -12,6 +12,7 @@ import {
   Handshake,
   LayoutGrid,
   Radio,
+  Gamepad2,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -32,6 +33,7 @@ export const playerMenuGroups: MenuGroupConfig[] = [
     items: [
       { href: '/teams', labelKey: 'header.teams', icon: Shield },
       { href: '/recruitment', labelKey: 'header.recruitment', icon: Megaphone },
+      { href: '/draft', labelKey: 'header.draft', icon: Gamepad2 },
       { href: '/stream', labelKey: 'header.stream', icon: Radio },
     ],
   },
@@ -58,6 +60,7 @@ export const adminMenuGroups: MenuGroupConfig[] = [
       { href: '/admin/esport', labelKey: 'admin.esport.title', icon: Trophy },
       { href: '/admin/seasons', labelKey: 'admin.seasons.title', icon: CalendarDays },
       { href: '/admin/matches', labelKey: 'admin.matches.title', icon: Swords },
+      { href: '/admin/draft', labelKey: 'admin.draft.title', icon: Gamepad2 },
       { href: '/admin/stream', labelKey: 'admin.stream.title', icon: Radio },
     ],
   },

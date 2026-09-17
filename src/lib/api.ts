@@ -474,6 +474,42 @@ export const api = {
       request('/stream/live/start', { method: 'POST', body: data }),
     stopLive: () => request('/stream/live/stop', { method: 'POST' }),
   },
+
+  // Draft Simulator (community tournaments 1v1 / 3v3 / 5v5).
+  draft: {
+    // Player
+    list: () => request('/draft', { fallback: [] }),
+    get: (id: string) => request(`/draft/${id}`, { fallback: null }),
+    register: (id: string, preferredRole: string) =>
+      request(`/draft/${id}/register`, { method: 'POST', body: { preferredRole } }),
+    unregister: (id: string) => request(`/draft/${id}/register`, { method: 'DELETE' }),
+    bracket: (id: string) =>
+      request(`/draft/${id}/bracket`, { fallback: { teams: [], matches: [] } }),
+    myTeam: (id: string) => request(`/draft/${id}/my-team`, { fallback: null }),
+    // Admin
+    admin: {
+      list: () => request('/draft/admin', { fallback: [] }),
+      create: (data: any) => request('/draft/admin', { method: 'POST', body: data }),
+      update: (id: string, data: any) =>
+        request(`/draft/admin/${id}`, { method: 'PATCH', body: data }),
+      remove: (id: string) => request(`/draft/admin/${id}`, { method: 'DELETE' }),
+      open: (id: string) => request(`/draft/admin/${id}/open`, { method: 'POST' }),
+      close: (id: string) => request(`/draft/admin/${id}/close`, { method: 'POST' }),
+      registrations: (id: string) =>
+        request(`/draft/admin/${id}/registrations`, { fallback: [] }),
+      runDraft: (id: string) => request(`/draft/admin/${id}/draft`, { method: 'POST' }),
+      secondPhase: (id: string, closesAt?: string) =>
+        request(`/draft/admin/${id}/second-phase`, { method: 'POST', body: { closesAt } }),
+      publish: (id: string) => request(`/draft/admin/${id}/publish`, { method: 'POST' }),
+      eliminate: (id: string, teamId: string) =>
+        request(`/draft/admin/${id}/teams/${teamId}/eliminate`, { method: 'POST' }),
+      setWinner: (id: string, matchId: string, winnerTeamId: string) =>
+        request(`/draft/admin/${id}/matches/${matchId}/winner`, {
+          method: 'POST',
+          body: { winnerTeamId },
+        }),
+    },
+  },
 };
 
 export default api;
