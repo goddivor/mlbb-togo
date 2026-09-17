@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search,
@@ -122,12 +122,15 @@ export default function HeaderSearch({ links = PLAYER_LINKS }: { links?: QuickLi
   const allResults = useMemo(() => {
     const items: ResultItem[] = [];
 
-    // Navigation section (always first)
+    // Navigation section (always first), filtered by the query like before.
+    const s = q.trim().toLowerCase();
     links.forEach((l) => {
+      const label = t(l.key);
+      if (s && !label.toLowerCase().includes(s)) return;
       items.push({
         type: 'player',
         id: l.href,
-        label: t(l.key),
+        label,
         icon: l.icon,
         href: l.href,
         group: t('search.group.navigation'),
@@ -185,7 +188,7 @@ export default function HeaderSearch({ links = PLAYER_LINKS }: { links?: QuickLi
         id: event.id,
         label: event.title,
         icon: Calendar,
-        href: `/events/${event.id}`,
+        href: '/events',
         group: t('search.group.events'),
       });
     });
@@ -246,7 +249,7 @@ export default function HeaderSearch({ links = PLAYER_LINKS }: { links?: QuickLi
           <div className="mt-3 space-y-3">
             {isLoading && (
               <p className="py-3 text-center text-sm text-bodydark2">
-                {t('search.empty')}
+                {t('search.loading')}
               </p>
             )}
 
