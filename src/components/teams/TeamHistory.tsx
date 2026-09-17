@@ -5,6 +5,8 @@ import { History, ChevronLeft, ChevronRight, Award } from 'lucide-react';
 import { Badge, Button, EmptyState, LoadingSpinner } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useLangStore } from '@/store/useStore';
+import { useSelectedSeason } from '@/store/useSeasonStore';
+import SeasonSwitcher from '@/components/seasons/SeasonSwitcher';
 import { ResultBadge, TeamChip, RESULT_BORDER, fmtDate, type TFn } from './shared';
 
 const PAGE_SIZE = 10;
@@ -32,32 +34,56 @@ export function HistoryRow({ m, t, lang }: { m: any; t: TFn; lang: string }) {
 
 export default function TeamHistory({ teamId, t }: { teamId: string; t: TFn }) {
   const lang = useLangStore((s: any) => s.lang);
+  // Follows the global season switcher ("all" = full history).
+  const { seasonId, season, ready: seasonsReady } = useSelectedSeason();
   const [page, setPage] = useState(1);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // Back to the first page whenever the season changes.
   useEffect(() => {
-    if (!teamId) return;
+    setPage(1);
+  }, [seasonId]);
+
+  useEffect(() => {
+    if (!teamId || !seasonsReady) return;
     let alive = true;
     setLoading(true);
     api.esport
-      .teamHistory(teamId, page, PAGE_SIZE)
+      .teamHistory(teamId, page, PAGE_SIZE, seasonId ?? undefined)
       .then((d: any) => { if (alive) setData(d); })
       .catch(() => { if (alive) setData(null); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [teamId, page]);
+  }, [teamId, page, seasonId, seasonsReady]);
 
-  if (loading && !data) return <LoadingSpinner size="lg" className="py-12" />;
+  if ((loading && !data) || !seasonsReady) return <LoadingSpinner size="lg" className="py-12" />;
 
   const items: any[] = Array.isArray(data?.items) ? data.items : [];
   const total = data?.total ?? 0;
   const pages = data?.pages ?? 1;
 
-  if (total === 0) return <EmptyState icon={<History size={28} />} title={t('teams.history.empty')} />;
+  const filterBar = (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <span className="text-xs text-body dark:text-bodydark">
+        {season ? t('teams.history.seasonFilter', { season: season.name }) : t('teams.history.allSeasons')}
+      </span>
+      <SeasonSwitcher variant="inline" />
+    </div>
+  );
+
+  if (total === 0) {
+    return (
+      <div className="space-y-3">
+        {filterBar}
+        <EmptyState icon={<History size={28} />} title={t('teams.history.empty')} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
+      {filterBar}
       <div className="flex items-center justify-between text-xs text-body dark:text-bodydark">
         <span>{t('teams.history.total', { n: total })}</span>
         <span>{t('teams.history.page', { page, pages })}</span>

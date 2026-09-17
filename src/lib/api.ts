@@ -458,13 +458,28 @@ export const api = {
     deleteSponsor: (id: string) =>
       request(`/esport/sponsors/${id}`, { method: 'DELETE' }),
 
-    // Seasons
-    seasons: () => request('/esport/seasons', { fallback: [], auth: false }),
+    // Seasons (lifecycle: upcoming -> active -> playoffs -> closed)
+    seasons: (status?: string) =>
+      request(`/esport/seasons${status ? `?status=${encodeURIComponent(status)}` : ''}`, {
+        fallback: [],
+        auth: false,
+      }),
+    currentSeason: () => request('/esport/seasons/current', { fallback: null, auth: false }),
+    season: (idOrSlug: string) =>
+      request(`/esport/seasons/${encodeURIComponent(idOrSlug)}`, { fallback: null, auth: false }),
     createSeason: (data: any) => request('/esport/seasons', { method: 'POST', body: data }),
     updateSeason: (id: string, data: any) =>
       request(`/esport/seasons/${id}`, { method: 'PATCH', body: data }),
     deleteSeason: (id: string) =>
       request(`/esport/seasons/${id}`, { method: 'DELETE' }),
+    activateSeason: (id: string) => request(`/esport/seasons/${id}/activate`, { method: 'POST' }),
+    startSeasonPlayoffs: (id: string) =>
+      request(`/esport/seasons/${id}/playoffs`, { method: 'POST' }),
+    seasonSummaryPreview: (id: string) =>
+      request(`/esport/seasons/${id}/summary-preview`, { fallback: null }),
+    closeSeason: (id: string, force = false) =>
+      request(`/esport/seasons/${id}/close`, { method: 'POST', body: { force } }),
+    reopenSeason: (id: string) => request(`/esport/seasons/${id}/reopen`, { method: 'POST' }),
 
     // Matches
     matches: (params: { seasonId?: string; teamId?: string; status?: string } = {}) => {
@@ -479,11 +494,13 @@ export const api = {
     // Team details (stats / history / schedule / staff / honours)
     teamStats: (teamId: string) =>
       request(`/esport/teams/${teamId}/stats`, { fallback: null, auth: false }),
-    teamHistory: (teamId: string, page = 1, limit = 10) =>
-      request(`/esport/teams/${teamId}/history?page=${page}&limit=${limit}`, {
-        fallback: null,
-        auth: false,
-      }),
+    teamHistory: (teamId: string, page = 1, limit = 10, seasonId?: string) =>
+      request(
+        `/esport/teams/${teamId}/history?page=${page}&limit=${limit}${
+          seasonId ? `&seasonId=${encodeURIComponent(seasonId)}` : ''
+        }`,
+        { fallback: null, auth: false },
+      ),
     teamSchedule: (teamId: string) =>
       request(`/esport/teams/${teamId}/schedule`, { fallback: [], auth: false }),
     teamStaff: (teamId: string) =>
