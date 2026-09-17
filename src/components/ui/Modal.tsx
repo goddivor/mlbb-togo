@@ -63,7 +63,7 @@ export default function Modal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 overflow-y-auto"
+            className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/40 overflow-y-auto"
           >
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
