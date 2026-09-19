@@ -2,12 +2,17 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Send, MessageSquare, Shield, Search, Check, CheckCheck, Clock } from 'lucide-react';
+import { ArrowLeft, Send, MessageSquare, Shield, Search, CheckCheck, Clock, Users } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { getSocket, usePresence } from '@/lib/realtime';
+import { getSocket, refreshChatUnread, usePresence } from '@/lib/realtime';
 import { useAuthStore } from '@/store/useStore';
 import toast from 'react-hot-toast';
+import RoomView, { RoomAvatar, RoomRef } from './RoomView';
+
+const ROOM_KINDS = ['team', 'tournament', 'draft_team'];
+const isRoomPayload = (payload: any) => ROOM_KINDS.includes(payload?.kind);
+const roomKey = (r: { kind: string; scopeId: string }) => `${r.kind}:${r.scopeId}`;
 
 const initialOf = (o: any): string =>
   (o?.displayName || o?.username || '?').trim().charAt(0).toUpperCase() || '?';
@@ -22,6 +27,9 @@ export default function MessagesInbox() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [threads, setThreads] = useState<any[]>([]);
+  // Group rooms (team / tournament / draft team) the user belongs to.
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [activeRoom, setActiveRoom] = useState<RoomRef | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [thread, setThread] = useState<any | null>(null);
   // Draft conversation opened from a deep link (?to=) with no existing thread.
@@ -38,6 +46,10 @@ export default function MessagesInbox() {
   useEffect(() => {
     activeIdRef.current = activeId;
   }, [activeId]);
+  const activeRoomRef = useRef<RoomRef | null>(null);
+  useEffect(() => {
+    activeRoomRef.current = activeRoom;
+  }, [activeRoom]);
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -55,13 +67,22 @@ export default function MessagesInbox() {
     }
   }, [t]);
 
+  const loadRooms = useCallback(async () => {
+    try {
+      const list: any = await api.messages.rooms();
+      setRooms(Array.isArray(list) ? list : []);
+    } catch {
+      /* rooms are optional: keep the previous list */
+    }
+  }, []);
+
   useEffect(() => {
     (async () => {
       setLoading(true);
-      await loadThreads();
+      await Promise.all([loadThreads(), loadRooms()]);
       setLoading(false);
     })();
-  }, [loadThreads]);
+  }, [loadThreads, loadRooms]);
 
   // Tell the server the peer's messages are read (fire-and-forget); this makes
   // the other party's sent messages show blue read receipts.
@@ -69,8 +90,42 @@ export default function MessagesInbox() {
     if (id) api.messages.markRead(id).catch(() => {});
   }, []);
 
+  const openRoom = useCallback((room: RoomRef) => {
+    setActiveRoom({ kind: room.kind, scopeId: room.scopeId });
+    setActiveId(null);
+    setThread(null);
+    setDraftPeer(null);
+  }, []);
+
+  // A room's read cursor moved: clear its badge locally and refresh the header.
+  const onRoomRead = useCallback((room: RoomRef) => {
+    setRooms((prev) =>
+      prev.map((r) => (roomKey(r) === roomKey(room) ? { ...r, unread: 0 } : r)),
+    );
+    refreshChatUnread(0);
+  }, []);
+
+  // A message was posted in the open room: refresh its preview in the list.
+  const onRoomMessage = useCallback((room: RoomRef, message: any) => {
+    setRooms((prev) => {
+      const idx = prev.findIndex((r) => roomKey(r) === roomKey(room));
+      if (idx === -1) return prev;
+      const copy = [...prev];
+      const [r] = copy.splice(idx, 1);
+      const preview = {
+        body: message?.body,
+        senderId: message?.senderId,
+        createdAt: message?.createdAt,
+        sender: message?.sender ?? null,
+      };
+      return [{ ...r, lastMessage: preview, lastMessageAt: message?.createdAt, unread: 0 }, ...copy];
+    });
+  }, []);
+
   const openThread = useCallback(
     async (id: string) => {
+      setActiveRoom(null);
+      setDraftPeer(null);
       setActiveId(id);
       setThread(null);
       try {
@@ -85,12 +140,24 @@ export default function MessagesInbox() {
     [scrollToBottom, markRead, t],
   );
 
+  // Deep link: /messages?room=<kind>:<scopeId> (e.g. from a mention notification).
+  useEffect(() => {
+    const room = searchParams.get('room');
+    if (!room || loading || handledToRef.current) return;
+    const [kind, scopeId] = room.split(':');
+    if (!ROOM_KINDS.includes(kind) || !scopeId) return;
+    handledToRef.current = true;
+    openRoom({ kind, scopeId });
+    router.replace('/messages');
+  }, [searchParams, loading, openRoom, router]);
+
   // Deep link: /messages?to=<userId>&name=<name>. Open the existing thread with
   // that user, or start a draft conversation when none exists yet.
   useEffect(() => {
     const to = searchParams.get('to');
     if (!to || loading || handledToRef.current) return;
     handledToRef.current = true;
+    setActiveRoom(null);
     const existing = threads.find((th) => th.other?.id === to);
     if (existing) {
       openThread(existing.id);
@@ -171,6 +238,36 @@ export default function MessagesInbox() {
       const threadId = payload?.threadId;
       const message = payload?.message;
       if (!threadId || !message) return;
+
+      // Group room message: update the room row (preview + unread badge). The
+      // open room appends the message itself (RoomView).
+      if (isRoomPayload(payload)) {
+        const key = `${payload.kind}:${payload.scopeId}`;
+        const current = activeRoomRef.current;
+        const isOpen = !!current && roomKey(current) === key;
+        setRooms((prev) => {
+          const idx = prev.findIndex((r) => roomKey(r) === key);
+          if (idx === -1) {
+            loadRooms();
+            return prev;
+          }
+          const copy = [...prev];
+          const [r] = copy.splice(idx, 1);
+          const preview = {
+            body: message.body,
+            senderId: message.senderId,
+            createdAt: message.createdAt,
+            sender: message.sender ?? null,
+          };
+          const unread =
+            message.senderId === myId || (isOpen && document.hasFocus())
+              ? 0
+              : (r.unread || 0) + 1;
+          return [{ ...r, lastMessage: preview, lastMessageAt: message.createdAt, unread }, ...copy];
+        });
+        return;
+      }
+
       // Ignore my own echo — outgoing messages are shown optimistically.
       if (message.senderId === myId) return;
 
@@ -201,7 +298,8 @@ export default function MessagesInbox() {
         }
         const copy = [...prev];
         const [th] = copy.splice(idx, 1);
-        return [{ ...th, lastMessage: preview, lastMessageAt: message.createdAt }, ...copy];
+        const unread = threadId === activeIdRef.current ? 0 : (th.unread || 0) + 1;
+        return [{ ...th, lastMessage: preview, lastMessageAt: message.createdAt, unread }, ...copy];
       });
     };
 
@@ -227,13 +325,21 @@ export default function MessagesInbox() {
       s.off('message:new', onMsg);
       s.off('message:read', onRead);
     };
-  }, [connected, myId, scrollToBottom, loadThreads, markRead]);
+  }, [connected, myId, scrollToBottom, loadThreads, loadRooms, markRead]);
+
+  // Opening a direct thread clears its unread badge in the list.
+  useEffect(() => {
+    if (!activeId) return;
+    setThreads((prev) =>
+      prev.map((th) => (th.id === activeId && th.unread ? { ...th, unread: 0 } : th)),
+    );
+  }, [activeId]);
 
   const other = thread?.other;
   // Peer shown in the conversation header: the thread's peer, or the draft target.
   const headerPeer = other ?? (draftPeer ? { id: draftPeer.id, displayName: draftPeer.name } : null);
-  // Right panel is open for an active thread or a draft conversation.
-  const panelOpen = !!activeId || !!draftPeer;
+  // Right panel is open for an active thread, a draft conversation or a room.
+  const panelOpen = !!activeId || !!draftPeer || !!activeRoom;
 
   // Client-side filter of the thread list (search box).
   const q = search.trim().toLowerCase();
@@ -247,6 +353,22 @@ export default function MessagesInbox() {
         );
       })
     : threads;
+  const visibleRooms = q
+    ? rooms.filter(
+        (r) =>
+          (r.title || '').toLowerCase().includes(q) ||
+          (r.lastMessage?.body || '').toLowerCase().includes(q),
+      )
+    : rooms;
+  const roomsUnread = rooms.reduce((n, r) => n + (r.unread || 0), 0);
+  const threadsUnread = threads.reduce((n, th) => n + (th.unread || 0), 0);
+
+  const closePanel = () => {
+    setActiveId(null);
+    setThread(null);
+    setDraftPeer(null);
+    setActiveRoom(null);
+  };
 
   const fmtTime = (v: any) => {
     const d = new Date(v);
@@ -277,7 +399,7 @@ export default function MessagesInbox() {
             <h3 className="text-lg font-medium text-black dark:text-white 2xl:text-xl">
               {t('messages.conversations')}
               <span className="rounded-md border-[.5px] border-stroke bg-gray-2 px-2 py-0.5 text-base font-medium text-black dark:border-strokedark dark:bg-boxdark-2 dark:text-white 2xl:ml-4">
-                {threads.length}
+                {threads.length + rooms.length}
               </span>
             </h3>
           </div>
@@ -299,7 +421,82 @@ export default function MessagesInbox() {
               </div>
             </form>
 
+            {/* Rooms (team / tournament) */}
+            {!loading && (
+              <div className="mb-5">
+                <h4 className="mb-2 flex items-center gap-2 px-4 text-xs font-semibold uppercase tracking-wide text-bodydark2">
+                  <Users size={13} />
+                  {t('messages.rooms')}
+                  {roomsUnread > 0 && (
+                    <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                      {roomsUnread}
+                    </span>
+                  )}
+                </h4>
+                {visibleRooms.length === 0 ? (
+                  <p className="px-4 py-2 text-xs text-bodydark2">{t('messages.rooms.none')}</p>
+                ) : (
+                  <div className="flex flex-col">
+                    {visibleRooms.map((r) => {
+                      const active = !!activeRoom && roomKey(activeRoom) === roomKey(r);
+                      const senderName = nameOf(r.lastMessage?.sender);
+                      return (
+                        <div
+                          key={r.id || roomKey(r)}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => openRoom(r)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              openRoom(r);
+                            }
+                          }}
+                          className={`flex cursor-pointer items-center rounded px-4 py-2 hover:bg-gray-2 dark:hover:bg-strokedark ${
+                            active ? 'bg-gray-2 dark:bg-strokedark' : ''
+                          }`}
+                        >
+                          <RoomAvatar room={r} className="mr-3.5 h-11 w-11" />
+                          <div className="w-full min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <h5 className="truncate text-sm font-medium text-black dark:text-white">
+                                {r.title}
+                              </h5>
+                              <span className="shrink-0 rounded bg-meta-5/10 px-1 py-0.5 text-[9px] font-bold uppercase text-meta-5">
+                                {t(`messages.room.kind.${r.kind}`)}
+                              </span>
+                              {r.unread > 0 && (
+                                <span className="ml-auto shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                                  {r.unread}
+                                </span>
+                              )}
+                            </div>
+                            <p className="truncate text-sm font-medium text-body dark:text-bodydark">
+                              {r.lastMessage
+                                ? `${senderName ? `${senderName}: ` : ''}${r.lastMessage.body}`
+                                : t('messages.room.members', { count: r.memberCount ?? 0 })}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Thread list */}
+            {!loading && (
+              <h4 className="mb-2 flex items-center gap-2 px-4 text-xs font-semibold uppercase tracking-wide text-bodydark2">
+                <MessageSquare size={13} />
+                {t('messages.direct')}
+                {threadsUnread > 0 && (
+                  <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                    {threadsUnread}
+                  </span>
+                )}
+              </h4>
+            )}
             {loading ? (
               <div className="flex items-center justify-center py-10">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-stroke border-t-primary dark:border-strokedark dark:border-t-primary" />
@@ -358,6 +555,11 @@ export default function MessagesInbox() {
                               <Shield size={9} /> {o.roleUser}
                             </span>
                           )}
+                          {th.unread > 0 && (
+                            <span className="ml-auto shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                              {th.unread}
+                            </span>
+                          )}
                         </div>
                         <p className="truncate text-sm font-medium text-body dark:text-bodydark">
                           {th.lastMessage?.body || ''}
@@ -382,6 +584,15 @@ export default function MessagesInbox() {
               <MessageSquare size={32} className="opacity-50" />
               {t('messages.empty')}
             </div>
+          ) : activeRoom ? (
+            <RoomView
+              key={roomKey(activeRoom)}
+              room={activeRoom}
+              myId={myId}
+              onBack={closePanel}
+              onRead={onRoomRead}
+              onMessage={onRoomMessage}
+            />
           ) : (
             <>
               {/* Header */}
@@ -389,11 +600,7 @@ export default function MessagesInbox() {
                 <div className="flex items-center">
                   <button
                     type="button"
-                    onClick={() => {
-                      setActiveId(null);
-                      setThread(null);
-                      setDraftPeer(null);
-                    }}
+                    onClick={closePanel}
                     className="mr-3 rounded-md p-1.5 text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4 xl:hidden"
                     aria-label={t('messages.title')}
                   >
