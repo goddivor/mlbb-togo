@@ -41,10 +41,10 @@ export default function GamesBreakdown({
               {winner ? (
                 <>
                   <TeamLogo team={winner} size="sm" />
-                  <span className="min-w-0">
+                  <span className="min-w-0 flex-1 overflow-hidden">
                     <span className="block truncate text-sm font-semibold text-black dark:text-white">{winner.name}</span>
-                    <span className="inline-flex items-center gap-1 text-[11px] text-success">
-                      <Trophy size={11} /> {t('matches.games.won')}
+                    <span className="flex items-center gap-1 whitespace-nowrap text-[11px] text-success">
+                      <Trophy size={11} className="shrink-0" /> <span className="truncate">{t('matches.games.won')}</span>
                     </span>
                   </span>
                 </>
@@ -63,7 +63,7 @@ export default function GamesBreakdown({
             {g.mvp && (
               <span className="inline-flex items-center gap-1.5 text-xs text-body dark:text-bodydark">
                 <MvpAvatar user={g.mvp} t={t} />
-                <span className="hidden sm:inline">{userLabel(g.mvp)}</span>
+                <span className="hidden max-w-24 truncate 2xl:inline">{userLabel(g.mvp)}</span>
               </span>
             )}
             {g.screenshot && (
