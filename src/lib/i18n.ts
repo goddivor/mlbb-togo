@@ -1913,6 +1913,8 @@ export const translations: Record<string, Dict> = {
     'lstats.records.none': 'Pas encore de record',
     'lstats.records.notRecorded': 'Donnée non enregistrée sur les matchs',
     'lstats.records.with': 'avec',
+    'lstats.winShort': 'V',
+    'lstats.lossShort': 'D',
   },
 
   en: {
@@ -3823,6 +3825,8 @@ export const translations: Record<string, Dict> = {
     'lstats.records.none': 'No record yet',
     'lstats.records.notRecorded': 'Not recorded on matches',
     'lstats.records.with': 'with',
+    'lstats.winShort': 'W',
+    'lstats.lossShort': 'L',
   },
 };
 

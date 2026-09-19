@@ -264,7 +264,12 @@ export default function MetaTab({ scope, ready }: { scope: string; ready: boolea
             <p className="text-sm text-bodydark2 py-4 text-center">{t('lstats.meta.noWinRate')}</p>
           ) : (
             meta.bestWinRate.map((h) => (
-              <HeroCard key={h.hero} h={h} value={`${fmt(h.winRate)}%`} sub={`${h.wins}V / ${h.losses}D`} />
+              <HeroCard
+                key={h.hero}
+                h={h}
+                value={`${fmt(h.winRate)}%`}
+                sub={`${h.wins}${t('lstats.winShort')} / ${h.losses}${t('lstats.lossShort')}`}
+              />
             ))
           )}
         </Column3>

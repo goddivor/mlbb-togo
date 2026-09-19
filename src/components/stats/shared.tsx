@@ -28,8 +28,8 @@ export type HeroRef = { name: string; image?: string | null; role?: string | nul
 export const fmt = (n: number | null | undefined, digits = 1) =>
   n === null || n === undefined ? '–' : Number.isInteger(n) ? String(n) : n.toFixed(digits);
 
-export const fmtInt = (n: number | null | undefined) =>
-  n === null || n === undefined ? '–' : new Intl.NumberFormat('fr-FR').format(Math.round(n));
+export const fmtInt = (n: number | null | undefined, lang = 'fr') =>
+  n === null || n === undefined ? '–' : new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR').format(Math.round(n));
 
 /* ------------------------------------------------------------------ */
 /* Cells                                                               */

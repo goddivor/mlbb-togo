@@ -102,7 +102,7 @@ export default function RecordsTab({ scope, ready }: { scope: string; ready: boo
   }, [scope, ready, period]);
 
   const valueOf = (key: string, r: PlayerRecord) =>
-    key === 'topKda' ? fmt(r.value, 2) : key === 'topDamage' || key === 'topGold' ? fmtInt(r.value) : String(r.value);
+    key === 'topKda' ? fmt(r.value, 2) : key === 'topDamage' || key === 'topGold' ? fmtInt(r.value, lang) : String(r.value);
 
   const playerBody = (key: string, r: PlayerRecord | null) => {
     if (!r) return <p className="text-sm text-bodydark2">{t('lstats.records.none')}</p>;
