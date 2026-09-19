@@ -1,208 +1,203 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Swords, Star, Trophy } from 'lucide-react';
-import { Card, Badge, Tabs, PageHeader, SectionCard, EmptyState, LoadingSpinner } from '@/components/ui';
-import { api, avatarSrc } from '@/lib/api';
-import { formatDate } from '@/lib/helpers';
+import { useEffect, useMemo, useState } from 'react';
+import { CalendarDays, Flame, ListChecks, Swords, Trophy } from 'lucide-react';
+import { LoadingSpinner, PageHeader, SectionCard, Tabs } from '@/components/ui';
+import MatchCalendar, { CalendarView, monthRange } from '@/components/matches/MatchCalendar';
+import MatchResults, { ResultsFilter } from '@/components/matches/MatchResults';
+import { EsportMatch, MatchStage, displayStatus } from '@/components/matches/shared';
+import { api } from '@/lib/api';
+import { useT } from '@/lib/i18n';
+import { useLangStore } from '@/store/useStore';
+import { useSelectedSeason } from '@/store/useSeasonStore';
 
-const TYPE_LABEL: Record<string, string> = {
-  friendly: 'Amical',
-  training: 'Entraînement',
-  official: 'Officiel',
-};
+type StageTab = 'all' | MatchStage;
+type View = 'calendar' | 'results';
 
-const STATUS_LABEL: Record<string, string> = {
-  scheduled: 'À venir',
-  live: 'En direct',
-  completed: 'Terminé',
-};
+const VIEW_KEY = 'mlbb-matches-view';
+const CAL_VIEW_KEY = 'mlbb-matches-calendar-view';
 
-export default function Matches() {
-  const [matches, setMatches] = useState<any[]>([]);
+function readPref<T extends string>(key: string, allowed: T[], fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const v = localStorage.getItem(key) as T | null;
+    return v && allowed.includes(v) ? v : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function savePref(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export default function MatchesPage() {
+  const t = useT();
+  const lang = useLangStore((s: any) => s.lang) as string;
+  const { seasonId, season, ready } = useSelectedSeason();
+
+  const [stage, setStage] = useState<StageTab>('all');
+  const [view, setView] = useState<View>('calendar');
+  const [calView, setCalView] = useState<CalendarView>('grid');
+  const [filter, setFilter] = useState<ResultsFilter>({ teamId: '', status: '' });
+
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth());
+
+  const [matches, setMatches] = useState<EsportMatch[]>([]);
+  const [calendar, setCalendar] = useState<EsportMatch[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all');
-  const [selectedMatch, setSelectedMatch] = useState<string | null>(null);
+  const [calLoading, setCalLoading] = useState(false);
 
+  // Restore view preferences after mount (avoids hydration mismatch).
   useEffect(() => {
-    api.esport
-      .matches()
-      .then((l: any) => setMatches(Array.isArray(l) ? l : []))
-      .catch(() => setMatches([]))
-      .finally(() => setLoading(false));
+    setView(readPref<View>(VIEW_KEY, ['calendar', 'results'], 'calendar'));
+    setCalView(readPref<CalendarView>(CAL_VIEW_KEY, ['grid', 'list'], window.innerWidth < 640 ? 'list' : 'grid'));
   }, []);
 
-  const filtered = matches.filter((m: any) => {
-    if (activeTab === 'completed') return m.status === 'completed';
-    if (activeTab === 'upcoming') return m.status !== 'completed';
-    return true;
-  });
+  const changeView = (v: View) => {
+    setView(v);
+    savePref(VIEW_KEY, v);
+  };
+  const changeCalView = (v: CalendarView) => {
+    setCalView(v);
+    savePref(CAL_VIEW_KEY, v);
+  };
 
-  const match = selectedMatch ? matches.find((m: any) => m.id === selectedMatch) : null;
+  // Full list of the selection (results view + counters).
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    setLoading(true);
+    api.esport
+      .matches({ seasonId: seasonId || undefined, stage: stage === 'all' ? undefined : stage })
+      .then((l: any) => {
+        if (!cancelled) setMatches(Array.isArray(l) ? l : []);
+      })
+      .catch(() => {
+        if (!cancelled) setMatches([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, seasonId, stage]);
 
-  const teamName = (t: any) => t?.name || '?';
+  // Month window for the calendar view (API groups by day; we regroup by
+  // local day on the client to respect the viewer's timezone).
+  useEffect(() => {
+    if (!ready || view !== 'calendar') return;
+    let cancelled = false;
+    setCalLoading(true);
+    const { from, to } = monthRange(year, month);
+    api.esport
+      .matchesCalendar({
+        seasonId: seasonId || undefined,
+        stage: stage === 'all' ? undefined : stage,
+        from: from.toISOString(),
+        to: to.toISOString(),
+      })
+      .then((res: any) => {
+        if (cancelled) return;
+        const days = Array.isArray(res?.days) ? res.days : [];
+        setCalendar(days.flatMap((d: any) => (Array.isArray(d.matches) ? d.matches : [])));
+      })
+      .catch(() => {
+        if (!cancelled) setCalendar([]);
+      })
+      .finally(() => {
+        if (!cancelled) setCalLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, view, seasonId, stage, year, month]);
+
+  const counters = useMemo(() => {
+    const c = { total: matches.length, live: 0, upcoming: 0, completed: 0 };
+    for (const m of matches) {
+      const s = displayStatus(m);
+      if (s === 'live') c.live++;
+      else if (s === 'scheduled') c.upcoming++;
+      else if (s === 'completed') c.completed++;
+    }
+    return c;
+  }, [matches]);
+
+  const stageTabs = [
+    { id: 'all', label: t('matches.stage.all') },
+    { id: 'scrim', label: t('matches.stage.scrim') },
+    { id: 'league', label: t('matches.stage.league') },
+    { id: 'playoff', label: t('matches.stage.playoff') },
+  ];
 
   return (
     <div className="space-y-6">
       <PageHeader
         icon={<Swords size={28} />}
-        title="Matchs"
-        subtitle="Historique et suivi des matchs e-sport"
+        title={t('matches.title')}
+        subtitle={season ? t('matches.subtitleSeason', { season: season.name }) : t('matches.subtitle')}
         variant="blue"
       />
 
-      <SectionCard className="!p-4">
-        <Tabs
-          tabs={[
-            { id: 'all', label: 'Tous' },
-            { id: 'completed', label: 'Terminés' },
-            { id: 'upcoming', label: 'À venir' },
-          ]}
-          active={activeTab}
-          onChange={setActiveTab}
-        />
+      <SectionCard className="!p-3 sm:!p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="overflow-x-auto">
+            <Tabs tabs={stageTabs} active={stage} onChange={(id: string) => setStage(id as StageTab)} />
+          </div>
+          <Tabs
+            tabs={[
+              { id: 'calendar', label: t('matches.view.calendar'), icon: CalendarDays },
+              { id: 'results', label: t('matches.view.results'), icon: ListChecks },
+            ]}
+            active={view}
+            onChange={(id: string) => changeView(id as View)}
+          />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2 text-xs">
+          <span className="inline-flex items-center gap-1 rounded-full bg-gray-2 px-2.5 py-1 text-body dark:bg-meta-4 dark:text-bodydark">
+            <Swords size={12} /> {t('matches.counters.total', { n: counters.total })}
+          </span>
+          {counters.live > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2.5 py-1 font-semibold text-danger">
+              <Flame size={12} /> {t('matches.counters.live', { n: counters.live })}
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-primary">
+            <CalendarDays size={12} /> {t('matches.counters.upcoming', { n: counters.upcoming })}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-1 text-success">
+            <Trophy size={12} /> {t('matches.counters.completed', { n: counters.completed })}
+          </span>
+        </div>
       </SectionCard>
 
-      {loading ? (
+      {!ready || (loading && matches.length === 0 && view === 'results') ? (
         <LoadingSpinner size="lg" className="py-24" />
+      ) : view === 'calendar' ? (
+        <MatchCalendar
+          matches={calendar}
+          year={year}
+          month={month}
+          onMonthChange={(y, m) => {
+            setYear(y);
+            setMonth(m);
+          }}
+          view={calView}
+          onViewChange={changeCalView}
+          t={t}
+          lang={lang}
+          loading={calLoading}
+        />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-4">
-            {filtered.map((m: any, index: number) => {
-              const done = m.status === 'completed';
-              const aWon = done && m.winner?.id === m.teamA?.id;
-              const bWon = done && m.winner?.id === m.teamB?.id;
-              return (
-                <motion.div
-                  key={m.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(index * 0.06, 0.4) }}
-                >
-                  <Card
-                    className={`cursor-pointer ${selectedMatch === m.id ? 'border-primary shadow-lg' : ''}`}
-                    onClick={() => setSelectedMatch(m.id)}
-                  >
-                    <div className="mb-4 flex items-center justify-between">
-                      <Badge variant={done ? 'green' : 'neon'} size="sm">
-                        {STATUS_LABEL[m.status] || m.status}
-                      </Badge>
-                      <span className="text-xs text-body dark:text-bodydark">
-                        {m.scheduledAt ? formatDate(m.scheduledAt) : ''}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1 text-center">
-                        <p className={`mb-1 font-bold ${aWon ? 'text-success' : 'text-black dark:text-white'}`}>
-                          {teamName(m.teamA)}
-                        </p>
-                        <p className={`text-3xl font-black ${aWon ? 'text-success' : done && !aWon ? 'text-danger' : 'text-primary'}`}>
-                          {m.scoreA ?? 0}
-                        </p>
-                      </div>
-
-                      <div className="flex flex-col items-center">
-                        <div className="rounded-sm bg-gray-2 px-4 py-2 text-xs font-black text-body dark:bg-meta-4 dark:text-bodydark">
-                          VS
-                        </div>
-                      </div>
-
-                      <div className="flex-1 text-center">
-                        <p className={`mb-1 font-bold ${bWon ? 'text-success' : 'text-black dark:text-white'}`}>
-                          {teamName(m.teamB)}
-                        </p>
-                        <p className={`text-3xl font-black ${bWon ? 'text-success' : done && !bWon ? 'text-danger' : 'text-meta-5'}`}>
-                          {m.scoreB ?? 0}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="text-center mt-4">
-                      <Badge variant="purple" size="sm">{TYPE_LABEL[m.type] || m.type}</Badge>
-                    </div>
-                  </Card>
-                </motion.div>
-              );
-            })}
-
-            {filtered.length === 0 && (
-              <EmptyState
-                icon={<Swords size={28} />}
-                title="Aucun match"
-                description="Aucun match ne correspond à ce filtre pour le moment."
-              />
-            )}
-          </div>
-
-          <div>
-            {match ? (
-              <Card>
-                <h3 className="mb-4 text-lg font-bold text-black dark:text-white">Détails du match</h3>
-
-                <div className="mb-4 flex items-center justify-between rounded-sm bg-gray-2 p-3 dark:bg-meta-4">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {match.teamA?.logo && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={avatarSrc(match.teamA.logo, 48)} alt="" className="h-8 w-8 rounded-sm object-cover" />
-                    )}
-                    <span className="truncate text-sm font-medium text-black dark:text-white">{teamName(match.teamA)}</span>
-                  </div>
-                  <span className="px-3 text-lg font-black text-black dark:text-white">
-                    {match.scoreA ?? 0} – {match.scoreB ?? 0}
-                  </span>
-                  <div className="flex items-center gap-2 min-w-0 justify-end">
-                    <span className="truncate text-sm font-medium text-black dark:text-white">{teamName(match.teamB)}</span>
-                    {match.teamB?.logo && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={avatarSrc(match.teamB.logo, 48)} alt="" className="h-8 w-8 rounded-sm object-cover" />
-                    )}
-                  </div>
-                </div>
-
-                {match.winner && (
-                  <div className="mb-4 flex items-center gap-3 rounded-sm border border-warning/20 bg-warning/10 p-3">
-                    <Trophy size={20} className="text-warning" />
-                    <span className="font-bold text-black dark:text-white">{teamName(match.winner)}</span>
-                  </div>
-                )}
-
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-body dark:text-bodydark">Type</span>
-                    <span className="text-black dark:text-white">{TYPE_LABEL[match.type] || match.type}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-body dark:text-bodydark">Statut</span>
-                    <span className="text-black dark:text-white">{STATUS_LABEL[match.status] || match.status}</span>
-                  </div>
-                  {match.scheduledAt && (
-                    <div className="flex justify-between">
-                      <span className="text-body dark:text-bodydark">Date</span>
-                      <span className="text-black dark:text-white">{formatDate(match.scheduledAt)}</span>
-                    </div>
-                  )}
-                </div>
-
-                {match.notes && (
-                  <p className="mt-4 border-t border-stroke pt-4 text-sm text-body dark:border-strokedark dark:text-bodydark">
-                    {match.notes}
-                  </p>
-                )}
-              </Card>
-            ) : (
-              <Card>
-                <div className="py-8 text-center">
-                  <Star className="mx-auto mb-3 h-10 w-10 text-bodydark2" />
-                  <p className="text-sm text-body dark:text-bodydark">
-                    Sélectionnez un match pour voir les détails
-                  </p>
-                </div>
-              </Card>
-            )}
-          </div>
-        </div>
+        <MatchResults matches={matches} filter={filter} onFilterChange={setFilter} t={t} lang={lang} />
       )}
     </div>
   );

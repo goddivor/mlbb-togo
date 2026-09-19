@@ -1,8 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, Check, Trophy, Swords, Users, Star } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Check,
+  Trophy,
+  Swords,
+  Users,
+  Star,
+  Camera,
+  Video,
+  Radio,
+  ExternalLink,
+  X,
+} from 'lucide-react';
 import { api } from '@/lib/api';
+import { MATCH_FORMATS, MATCH_STAGES, MatchStage, formatDuration } from '@/components/matches/shared';
 import { useT } from '@/lib/i18n';
 import {
   Badge,
@@ -21,25 +37,49 @@ const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
 const inputCls =
   'w-full px-3 py-2 text-sm rounded-lg border border-stroke bg-gray-2 text-black focus:outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white';
 
+const smallInput =
+  'w-full px-2 py-1.5 text-sm rounded-lg border border-stroke bg-gray-2 text-black focus:outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white';
+
 type Pending = { message: string; action: () => Promise<any> } | null;
 
 type MatchForm = {
+  stage: MatchStage;
   type: string;
+  format: string;
   seasonId: string;
   teamAId: string;
   teamBId: string;
   scheduledAt: string;
+  streamUrl: string;
+  vodUrl: string;
   notes: string;
 };
 
 const emptyMatchForm: MatchForm = {
+  stage: 'scrim',
   type: 'friendly',
+  format: '',
   seasonId: '',
   teamAId: '',
   teamBId: '',
   scheduledAt: '',
+  streamUrl: '',
+  vodUrl: '',
   notes: '',
 };
+
+/** Number of games of a series format (bo3 -> 3). */
+const maxGames = (format: string) => (format ? Number(format.slice(2)) || 1 : 1);
+
+/** "mm:ss" or plain seconds -> seconds. */
+function parseDuration(v: string): number | null {
+  const s = v.trim();
+  if (!s) return null;
+  const m = s.match(/^(\d{1,3}):(\d{1,2})$/);
+  if (m) return Number(m[1]) * 60 + Number(m[2]);
+  const n = Number(s);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n) : null;
+}
 
 function statusVariant(status: string): any {
   if (status === 'completed') return 'green';
@@ -169,12 +209,31 @@ export default function AdminMatchesPage() {
               className="rounded-sm border border-stroke bg-white shadow-default p-3 sm:p-4 dark:border-strokedark dark:bg-boxdark"
             >
               <div className="flex items-center gap-2 flex-wrap mb-3">
-                <Badge variant="default" size="sm">
-                  {t('matchType.' + m.type)}
+                <Badge variant={m.stage === 'playoff' ? 'gold' : m.stage === 'league' ? 'purple' : 'default'} size="sm">
+                  {t('matches.stage.' + (m.stage || 'scrim'))}
                 </Badge>
+                {m.stage === 'scrim' && (
+                  <Badge variant="default" size="sm">
+                    {t('matchType.' + m.type)}
+                  </Badge>
+                )}
+                {m.format && (
+                  <Badge variant="neon" size="sm" className="font-bold">
+                    {String(m.format).toUpperCase()}
+                  </Badge>
+                )}
                 <Badge variant={statusVariant(m.status)} size="sm">
                   {t('matchStatus.' + m.status)}
                 </Badge>
+                <span className="inline-flex items-center gap-1.5 text-bodydark2">
+                  {m.streamUrl && <Radio size={12} aria-label={t('matches.links.stream')} />}
+                  {m.vodUrl && <Video size={12} aria-label={t('matches.links.vod')} />}
+                  {m.screenshotsCount > 0 && (
+                    <span className="inline-flex items-center gap-0.5 text-xs">
+                      <Camera size={12} /> {m.screenshotsCount}
+                    </span>
+                  )}
+                </span>
                 {m.seasonId && seasonName(m.seasonId) && (
                   <span className="inline-flex items-center gap-1 text-xs text-body dark:text-bodydark">
                     <Trophy size={12} /> {seasonName(m.seasonId)}
@@ -215,7 +274,12 @@ export default function AdminMatchesPage() {
                 </div>
               )}
 
-              <div className="mt-3 flex items-center justify-end gap-2">
+              <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+                <Link href={`/matches/${m.id}`} target="_blank" title={t('admin.matches.view')}>
+                  <Button size="sm" variant="ghost">
+                    <ExternalLink size={14} />
+                  </Button>
+                </Link>
                 <Button size="sm" variant="secondary" onClick={() => setResultMatch(m)}>
                   <Trophy size={14} /> {t('admin.matches.setResult')}
                 </Button>
@@ -320,11 +384,15 @@ function MatchFormModal({
     setForm(
       match
         ? {
+            stage: match.stage || 'scrim',
             type: match.type || 'friendly',
+            format: match.format || '',
             seasonId: match.seasonId || '',
             teamAId: match.teamA?.id || '',
             teamBId: match.teamB?.id || '',
             scheduledAt: match.scheduledAt ? match.scheduledAt.slice(0, 16) : '',
+            streamUrl: match.streamUrl || '',
+            vodUrl: match.vodUrl || '',
             notes: match.notes || '',
           }
         : emptyMatchForm,
@@ -340,11 +408,15 @@ function MatchFormModal({
     setSaving(true);
     try {
       const payload = {
-        type: form.type,
+        stage: form.stage,
+        type: form.stage === 'scrim' ? form.type : 'official',
+        format: form.format || null,
         teamAId: form.teamAId,
         teamBId: form.teamBId,
         seasonId: form.seasonId || undefined,
         scheduledAt: form.scheduledAt || undefined,
+        streamUrl: form.streamUrl.trim() || null,
+        vodUrl: form.vodUrl.trim() || null,
         notes: form.notes.trim() || undefined,
       };
       if (match) await api.esport.updateMatch(match.id, payload);
@@ -369,20 +441,62 @@ function MatchFormModal({
       headerVariant={match ? 'plain' : 'gradient'}
     >
       <form onSubmit={submit} className="space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.stage')}</label>
+            <select
+              className={inputCls}
+              value={form.stage}
+              onChange={(e) => setForm({ ...form, stage: e.target.value as MatchStage })}
+            >
+              {MATCH_STAGES.map((x) => (
+                <option key={x} value={x}>
+                  {t('matches.stage.' + x)}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.type')}</label>
             <select
               className={inputCls}
-              value={form.type}
+              value={form.stage === 'scrim' ? form.type : 'official'}
+              disabled={form.stage !== 'scrim'}
               onChange={(e) => setForm({ ...form, type: e.target.value })}
             >
-              {TYPES.map((x) => (
+              {TYPES.filter((x) => (form.stage === 'scrim' ? x !== 'official' : x === 'official')).map((x) => (
                 <option key={x} value={x}>
                   {t('matchType.' + x)}
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.format')}</label>
+            <select
+              className={inputCls}
+              value={form.format}
+              onChange={(e) => setForm({ ...form, format: e.target.value })}
+            >
+              <option value="">{t('admin.matches.noFormat')}</option>
+              {MATCH_FORMATS.map((x) => (
+                <option key={x} value={x}>
+                  {x.toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.date')}</label>
+            <input
+              type="datetime-local"
+              className={inputCls}
+              value={form.scheduledAt}
+              onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })}
+            />
           </div>
           <div>
             <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.season')}</label>
@@ -440,14 +554,27 @@ function MatchFormModal({
           <p className="text-xs text-danger">{t('admin.matches.pickTwo')}</p>
         )}
 
-        <div>
-          <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.date')}</label>
-          <input
-            type="datetime-local"
-            className={inputCls}
-            value={form.scheduledAt}
-            onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })}
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.streamUrl')}</label>
+            <input
+              type="url"
+              placeholder="https://"
+              className={inputCls}
+              value={form.streamUrl}
+              onChange={(e) => setForm({ ...form, streamUrl: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.vodUrl')}</label>
+            <input
+              type="url"
+              placeholder="https://"
+              className={inputCls}
+              value={form.vodUrl}
+              onChange={(e) => setForm({ ...form, vodUrl: e.target.value })}
+            />
+          </div>
         </div>
 
         <div>
@@ -476,6 +603,12 @@ function MatchFormModal({
 /* Result modal                                                        */
 /* ------------------------------------------------------------------ */
 
+type GameRow = { winnerTeamId: string; duration: string; mvpUserId: string; screenshot: string };
+
+const emptyGame = (): GameRow => ({ winnerTeamId: '', duration: '', mvpUserId: '', screenshot: '' });
+
+type RosterEntry = { userId: string; teamId: string; name: string };
+
 function ResultModal({
   match,
   onClose,
@@ -486,12 +619,20 @@ function ResultModal({
   match: any;
   onClose: () => void;
   onSaved: () => Promise<void>;
-  t: (k: string) => string;
+  t: (k: string, p?: Record<string, string | number>) => string;
   errMsg: (e: any) => string;
 }) {
   const [scoreA, setScoreA] = useState('0');
   const [scoreB, setScoreB] = useState('0');
   const [winner, setWinner] = useState('');
+  const [format, setFormat] = useState('');
+  const [games, setGames] = useState<GameRow[]>([]);
+  const [screenshots, setScreenshots] = useState<string[]>([]);
+  const [newShot, setNewShot] = useState('');
+  const [vodUrl, setVodUrl] = useState('');
+  const [streamUrl, setStreamUrl] = useState('');
+  const [mvpUserId, setMvpUserId] = useState('');
+  const [roster, setRoster] = useState<RosterEntry[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -499,17 +640,119 @@ function ResultModal({
     setScoreA(String(match.scoreA ?? 0));
     setScoreB(String(match.scoreB ?? 0));
     setWinner(match.winnerTeamId || '');
+    setFormat(match.format || '');
+    setGames(
+      (Array.isArray(match.games) ? match.games : []).map((g: any) => ({
+        winnerTeamId: g.winnerTeamId || '',
+        duration: g.duration != null ? formatDuration(g.duration) || '' : '',
+        mvpUserId: g.mvpUserId || '',
+        screenshot: g.screenshot || '',
+      })),
+    );
+    setScreenshots(Array.isArray(match.screenshots) ? match.screenshots : []);
+    setNewShot('');
+    setVodUrl(match.vodUrl || '');
+    setStreamUrl(match.streamUrl || '');
+    setMvpUserId(match.mvpUserId || '');
+    // MVP picker: rosters of both teams + players already recorded on the match.
+    let cancelled = false;
+    (async () => {
+      try {
+        const [ta, tb, players] = await Promise.all([
+          api.esport.team(match.teamA?.id),
+          api.esport.team(match.teamB?.id),
+          api.esport.matchPlayers(match.id),
+        ]);
+        if (cancelled) return;
+        const list: RosterEntry[] = [];
+        const seen = new Set<string>();
+        const push = (userId: string, teamId: string, name: string) => {
+          if (!userId || seen.has(userId)) return;
+          seen.add(userId);
+          list.push({ userId, teamId, name });
+        };
+        for (const [team, teamId] of [
+          [ta, match.teamA?.id],
+          [tb, match.teamB?.id],
+        ] as const)
+          for (const m of team?.members || [])
+            push(m.userId, teamId, m.user?.displayName || m.user?.username || m.userId);
+        for (const p of players?.players || [])
+          push(p.userId, p.teamId, p.user?.displayName || p.user?.username || p.userId);
+        setRoster(list);
+      } catch {
+        if (!cancelled) setRoster([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [match]);
+
+  const limit = maxGames(format);
+  const needed = Math.ceil(limit / 2);
+
+  // Series score derived from the games (drives the score inputs).
+  const derived = useMemo(() => {
+    let a = 0;
+    let b = 0;
+    for (const g of games) {
+      if (g.winnerTeamId && g.winnerTeamId === match?.teamA?.id) a++;
+      else if (g.winnerTeamId && g.winnerTeamId === match?.teamB?.id) b++;
+    }
+    return { a, b, winner: a > b ? match?.teamA?.id : b > a ? match?.teamB?.id : '' };
+  }, [games, match]);
+  const hasGames = games.length > 0;
+  const overflow = derived.a > needed || derived.b > needed;
+
+  useEffect(() => {
+    if (!hasGames) return;
+    setScoreA(String(derived.a));
+    setScoreB(String(derived.b));
+  }, [hasGames, derived.a, derived.b]);
+
+  const changeFormat = (f: string) => {
+    setFormat(f);
+    const max = maxGames(f);
+    setGames((rows) => rows.slice(0, max));
+  };
+
+  const updateGame = (i: number, patch: Partial<GameRow>) =>
+    setGames((rows) => rows.map((g, j) => (j === i ? { ...g, ...patch } : g)));
+
+  const addShot = () => {
+    const url = newShot.trim();
+    if (!url || screenshots.includes(url) || screenshots.length >= 10) return;
+    setScreenshots([...screenshots, url]);
+    setNewShot('');
+  };
+
+  const rosterOf = (teamId?: string) => roster.filter((r) => !teamId || r.teamId === teamId);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!match) return;
+    if (overflow) {
+      toast.error(t('admin.matches.gamesOverflow', { n: needed }));
+      return;
+    }
     setSaving(true);
     try {
       await api.esport.setMatchResult(match.id, {
         scoreA: Number(scoreA),
         scoreB: Number(scoreB),
         winnerTeamId: winner || undefined,
+        format: format || null,
+        games: games.map((g) => ({
+          winnerTeamId: g.winnerTeamId || null,
+          duration: parseDuration(g.duration),
+          mvpUserId: g.mvpUserId || null,
+          screenshot: g.screenshot.trim() || null,
+        })),
+        screenshots,
+        vodUrl: vodUrl.trim() || null,
+        streamUrl: streamUrl.trim() || null,
+        mvpUserId: mvpUserId || null,
       });
       toast.success(t('admin.esport.saved'));
       onClose();
@@ -521,6 +764,9 @@ function ResultModal({
     }
   };
 
+  const sectionCls = 'rounded-lg border border-stroke p-3 dark:border-strokedark space-y-3';
+  const legendCls = 'flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-body dark:text-bodydark';
+
   return (
     <Modal
       open={!!match}
@@ -528,53 +774,232 @@ function ResultModal({
       closeLabel={t('common.close')}
       title={t('admin.matches.result')}
       icon={<Trophy size={20} />}
+      size="xl"
     >
       {match && (
-        <form onSubmit={submit} className="space-y-3">
+        <form onSubmit={submit} className="space-y-4">
           <div className="flex items-center justify-center gap-2 text-sm font-semibold text-black dark:text-white">
             <span className="truncate">{match.teamA?.name}</span>
             <span className="text-bodydark2">{t('admin.matches.vs')}</span>
             <span className="truncate">{match.teamB?.name}</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.scoreA')}</label>
-              <input
-                type="number"
-                min="0"
-                className={inputCls}
-                value={scoreA}
-                onChange={(e) => setScoreA(e.target.value)}
-              />
+          {/* Score */}
+          <div className={sectionCls}>
+            <div className={legendCls}>
+              <Trophy size={13} /> {t('admin.matches.result')}
             </div>
-            <div>
-              <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.scoreB')}</label>
-              <input
-                type="number"
-                min="0"
-                className={inputCls}
-                value={scoreB}
-                onChange={(e) => setScoreB(e.target.value)}
-              />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.format')}</label>
+                <select className={inputCls} value={format} onChange={(e) => changeFormat(e.target.value)}>
+                  <option value="">{t('admin.matches.noFormat')}</option>
+                  {MATCH_FORMATS.map((x) => (
+                    <option key={x} value={x}>
+                      {x.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.scoreA')}</label>
+                <input
+                  type="number"
+                  min="0"
+                  className={inputCls}
+                  value={scoreA}
+                  disabled={hasGames}
+                  onChange={(e) => setScoreA(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.scoreB')}</label>
+                <input
+                  type="number"
+                  min="0"
+                  className={inputCls}
+                  value={scoreB}
+                  disabled={hasGames}
+                  onChange={(e) => setScoreB(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.winner')}</label>
+                <select className={inputCls} value={winner} onChange={(e) => setWinner(e.target.value)}>
+                  <option value="">{t('admin.matches.autoWinner')}</option>
+                  {match.teamA && <option value={match.teamA.id}>{match.teamA.name}</option>}
+                  {match.teamB && <option value={match.teamB.id}>{match.teamB.name}</option>}
+                </select>
+              </div>
+            </div>
+            {hasGames && <p className="text-xs text-bodydark2">{t('admin.matches.scoreFromGames')}</p>}
+            {overflow && <p className="text-xs text-danger">{t('admin.matches.gamesOverflow', { n: needed })}</p>}
+            {hasGames && winner && derived.winner && winner !== derived.winner && (
+              <p className="text-xs text-danger">{t('admin.matches.winnerMismatch')}</p>
+            )}
+          </div>
+
+          {/* Games */}
+          <div className={sectionCls}>
+            <div className="flex items-center justify-between">
+              <div className={legendCls}>
+                <Swords size={13} /> {t('admin.matches.games')}
+                <span className="font-normal normal-case text-bodydark2">
+                  {games.length}/{limit}
+                </span>
+              </div>
+              <Button
+                size="sm"
+                variant="secondary"
+                type="button"
+                disabled={games.length >= limit}
+                onClick={() => setGames([...games, emptyGame()])}
+              >
+                <Plus size={14} /> {t('admin.matches.addGame')}
+              </Button>
+            </div>
+            {games.length === 0 ? (
+              <p className="text-xs text-bodydark2">{t('admin.matches.noGames')}</p>
+            ) : (
+              <div className="space-y-2">
+                {games.map((g, i) => (
+                  <div
+                    key={i}
+                    className="grid grid-cols-2 md:grid-cols-[auto_1fr_6rem_1fr_1fr_auto] items-center gap-2 rounded-lg border border-stroke p-2 dark:border-strokedark"
+                  >
+                    <span className="text-xs font-bold text-body dark:text-bodydark md:w-8">G{i + 1}</span>
+                    <select
+                      className={smallInput}
+                      value={g.winnerTeamId}
+                      onChange={(e) => updateGame(i, { winnerTeamId: e.target.value })}
+                      aria-label={t('admin.matches.gameWinner')}
+                    >
+                      <option value="">{t('admin.matches.gameWinner')}</option>
+                      <option value={match.teamA?.id}>{match.teamA?.name}</option>
+                      <option value={match.teamB?.id}>{match.teamB?.name}</option>
+                    </select>
+                    <input
+                      className={smallInput}
+                      placeholder="mm:ss"
+                      value={g.duration}
+                      onChange={(e) => updateGame(i, { duration: e.target.value })}
+                      aria-label={t('admin.matches.gameDuration')}
+                    />
+                    <select
+                      className={smallInput}
+                      value={g.mvpUserId}
+                      onChange={(e) => updateGame(i, { mvpUserId: e.target.value })}
+                      aria-label={t('admin.matches.gameMvp')}
+                    >
+                      <option value="">{t('admin.matches.gameMvp')}</option>
+                      {rosterOf(g.winnerTeamId || undefined).map((r) => (
+                        <option key={r.userId} value={r.userId}>
+                          {r.name}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="url"
+                      className={smallInput}
+                      placeholder={t('admin.matches.gameScreenshot')}
+                      value={g.screenshot}
+                      onChange={(e) => updateGame(i, { screenshot: e.target.value })}
+                    />
+                    <button
+                      type="button"
+                      className="justify-self-end text-bodydark2 hover:text-danger"
+                      title={t('admin.esport.delete')}
+                      onClick={() => setGames(games.filter((_, j) => j !== i))}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* MVP + links */}
+          <div className={sectionCls}>
+            <div className={legendCls}>
+              <Star size={13} /> {t('admin.matches.mvp')} & {t('admin.matches.links')}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.matchMvp')}</label>
+                <select className={inputCls} value={mvpUserId} onChange={(e) => setMvpUserId(e.target.value)}>
+                  <option value="">{t('admin.matches.noMvp')}</option>
+                  {[match.teamA, match.teamB].map(
+                    (team: any) =>
+                      team && (
+                        <optgroup key={team.id} label={team.name}>
+                          {rosterOf(team.id).map((r) => (
+                            <option key={r.userId} value={r.userId}>
+                              {r.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ),
+                  )}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.vodUrl')}</label>
+                <input type="url" placeholder="https://" className={inputCls} value={vodUrl} onChange={(e) => setVodUrl(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.streamUrl')}</label>
+                <input type="url" placeholder="https://" className={inputCls} value={streamUrl} onChange={(e) => setStreamUrl(e.target.value)} />
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.matches.winner')}</label>
-            <select
-              className={inputCls}
-              value={winner}
-              onChange={(e) => setWinner(e.target.value)}
-            >
-              <option value="">{t('admin.matches.autoWinner')}</option>
-              {match.teamA && <option value={match.teamA.id}>{match.teamA.name}</option>}
-              {match.teamB && <option value={match.teamB.id}>{match.teamB.name}</option>}
-            </select>
+          {/* Screenshots */}
+          <div className={sectionCls}>
+            <div className={legendCls}>
+              <Camera size={13} /> {t('admin.matches.screenshots')}
+              <span className="font-normal normal-case text-bodydark2">{screenshots.length}/10</span>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                placeholder="https://"
+                className={inputCls}
+                value={newShot}
+                onChange={(e) => setNewShot(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addShot();
+                  }
+                }}
+              />
+              <Button size="sm" variant="secondary" type="button" onClick={addShot} disabled={screenshots.length >= 10}>
+                <Plus size={14} /> {t('admin.matches.addScreenshot')}
+              </Button>
+            </div>
+            {screenshots.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {screenshots.map((url) => (
+                  <div key={url} className="group relative aspect-video overflow-hidden rounded-lg border border-stroke dark:border-strokedark">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setScreenshots(screenshots.filter((u) => u !== url))}
+                      className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                      title={t('admin.esport.delete')}
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button size="sm" type="submit" disabled={saving}>
+            <Button size="sm" type="submit" disabled={saving || overflow}>
               <Check size={16} /> {t('admin.esport.save')}
             </Button>
             <Button size="sm" variant="ghost" type="button" onClick={onClose}>
@@ -604,9 +1029,6 @@ type PlayerRow = {
   assists: string;
   isMvp: boolean;
 };
-
-const smallInput =
-  'w-full px-2 py-1.5 text-sm rounded-lg border border-stroke bg-gray-2 text-black focus:outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white';
 
 function buildRows(teamId: string, members: any[], existing: any[]): PlayerRow[] {
   const byUser = new Map(existing.map((p) => [p.userId, p]));
