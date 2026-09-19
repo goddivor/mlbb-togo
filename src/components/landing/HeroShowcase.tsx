@@ -124,12 +124,12 @@ export default function HeroShowcase() {
             <div className="h-px bg-white/15" />
 
             <div>
-              <p className="text-neon-blue font-medium">{hero.roles.join('  ·  ')}</p>
-              <p className="text-white/60 text-sm mt-1">{hero.specialities.join('   ')}</p>
+              <p className="text-neon-blue font-medium">{(hero.roles ?? []).join('  ·  ')}</p>
+              <p className="text-white/60 text-sm mt-1">{(hero.specialities ?? []).join('   ')}</p>
             </div>
 
             <div className="flex items-center gap-3">
-              {hero.skills.slice(0, 4).map((s, i) => (
+              {(hero.skills ?? []).slice(0, 4).map((s, i) => (
                 <div
                   key={i}
                   title={s.name}
@@ -142,10 +142,10 @@ export default function HeroShowcase() {
             </div>
 
             <div className="grid grid-cols-2 gap-x-6 gap-y-3 max-w-md">
-              <StatBar label="Durability" value={hero.stats.durability} />
-              <StatBar label="Offense" value={hero.stats.offense} />
-              <StatBar label="Ability Effects" value={hero.stats.ability} />
-              <StatBar label="Difficulty" value={hero.stats.difficulty} />
+              <StatBar label="Durability" value={hero.stats?.durability ?? 0} />
+              <StatBar label="Offense" value={hero.stats?.offense ?? 0} />
+              <StatBar label="Ability Effects" value={hero.stats?.ability ?? 0} />
+              <StatBar label="Difficulty" value={hero.stats?.difficulty ?? 0} />
             </div>
           </motion.div>
         </AnimatePresence>
