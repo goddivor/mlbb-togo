@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { LayoutGrid, Pencil, Check, RefreshCw } from 'lucide-react';
+import { LayoutGrid, Pencil, Check, RefreshCw, Sword, Shield, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import {
@@ -16,6 +16,8 @@ import {
 } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import RoleIcon from '@/components/game/RoleIcon';
+import CatalogEntitySection, { type CatalogEntity } from './CatalogEntitySection';
+import BuildsSection from './BuildsSection';
 import toast from 'react-hot-toast';
 
 // Shape of a lane as returned by GraphQL / REST.
@@ -47,6 +49,9 @@ export default function AdminCatalogPage() {
   const [lanes, setLanes] = useState<Lane[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [heroCount, setHeroCount] = useState<number | null>(null);
+  const [items, setItems] = useState<CatalogEntity[]>([]);
+  const [emblems, setEmblems] = useState<CatalogEntity[]>([]);
+  const [battleSpells, setBattleSpells] = useState<CatalogEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -57,14 +62,20 @@ export default function AdminCatalogPage() {
   // Load lanes + hero count via GraphQL.
   const load = async () => {
     try {
-      const [ls, hs, rs] = await Promise.all([
+      const [ls, hs, rs, its, embs, sps] = await Promise.all([
         api.catalog.lanes(),
         api.catalog.heroes(),
         api.catalog.roles(),
+        api.game.items(),
+        api.game.emblems(),
+        api.game.battleSpells(),
       ]);
       setLanes(Array.isArray(ls) ? ls : []);
       setHeroCount(Array.isArray(hs) ? hs.length : 0);
       setRoles(Array.isArray(rs) ? rs : []);
+      setItems(Array.isArray(its) ? its : []);
+      setEmblems(Array.isArray(embs) ? embs : []);
+      setBattleSpells(Array.isArray(sps) ? sps : []);
     } catch (e: any) {
       toast.error(e?.message || t('admin.catalog.loadError'));
     }
@@ -231,6 +242,39 @@ export default function AdminCatalogPage() {
               </Button>
             </div>
           </SectionCard>
+
+          {/* Build blocks: items, emblems and battle spells feed the hero builds tab */}
+          <CatalogEntitySection
+            title={t('admin.catalog.items')}
+            icon={<Sword size={20} />}
+            rows={items}
+            extraFields={['type', 'gold']}
+            onCreate={api.game.createItem}
+            onUpdate={api.game.updateItem}
+            onDelete={api.game.deleteItem}
+            onChanged={load}
+          />
+          <CatalogEntitySection
+            title={t('admin.catalog.emblems')}
+            icon={<Shield size={20} />}
+            rows={emblems}
+            extraFields={['type']}
+            onCreate={api.game.createEmblem}
+            onUpdate={api.game.updateEmblem}
+            onDelete={api.game.deleteEmblem}
+            onChanged={load}
+          />
+          <CatalogEntitySection
+            title={t('admin.catalog.battleSpells')}
+            icon={<Sparkles size={20} />}
+            rows={battleSpells}
+            extraFields={['cooldown']}
+            onCreate={api.game.createBattleSpell}
+            onUpdate={api.game.updateBattleSpell}
+            onDelete={api.game.deleteBattleSpell}
+            onChanged={load}
+          />
+          <BuildsSection items={items} emblems={emblems} battleSpells={battleSpells} />
         </>
       )}
 

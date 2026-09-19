@@ -467,6 +467,46 @@ export const api = {
       request(`/standings/settings/${encodeURIComponent(seasonId)}`, { method: 'PATCH', body: data }),
   },
 
+  game: {
+    // Game items (equipment/builds)
+    items: () => request('/items', { fallback: [], auth: false }),
+    item: (id: string) => request(`/items/${id}`, { fallback: null, auth: false }),
+    createItem: (data: any) => request('/items', { method: 'POST', body: data }),
+    updateItem: (id: string, data: any) =>
+      request(`/items/${id}`, { method: 'PATCH', body: data }),
+    deleteItem: (id: string) => request(`/items/${id}`, { method: 'DELETE' }),
+
+    // Game emblems
+    emblems: () => request('/emblems', { fallback: [], auth: false }),
+    emblem: (id: string) => request(`/emblems/${id}`, { fallback: null, auth: false }),
+    createEmblem: (data: any) => request('/emblems', { method: 'POST', body: data }),
+    updateEmblem: (id: string, data: any) =>
+      request(`/emblems/${id}`, { method: 'PATCH', body: data }),
+    deleteEmblem: (id: string) => request(`/emblems/${id}`, { method: 'DELETE' }),
+
+    // Battle spells
+    battleSpells: () => request('/battle-spells', { fallback: [], auth: false }),
+    battleSpell: (id: string) => request(`/battle-spells/${id}`, { fallback: null, auth: false }),
+    createBattleSpell: (data: any) => request('/battle-spells', { method: 'POST', body: data }),
+    updateBattleSpell: (id: string, data: any) =>
+      request(`/battle-spells/${id}`, { method: 'PATCH', body: data }),
+    deleteBattleSpell: (id: string) => request(`/battle-spells/${id}`, { method: 'DELETE' }),
+  },
+
+  builds: {
+    // Recommended builds per hero
+    byHero: (heroId: string) =>
+      request(`/heroes/${heroId}/builds`, { fallback: [], auth: false }),
+    get: (heroId: string, buildId: string) =>
+      request(`/heroes/${heroId}/builds/${buildId}`, { fallback: null, auth: false }),
+    create: (heroId: string, data: any) =>
+      request(`/heroes/${heroId}/builds`, { method: 'POST', body: data }),
+    update: (heroId: string, buildId: string, data: any) =>
+      request(`/heroes/${heroId}/builds/${buildId}`, { method: 'PATCH', body: data }),
+    delete: (heroId: string, buildId: string) =>
+      request(`/heroes/${heroId}/builds/${buildId}`, { method: 'DELETE' }),
+  },
+
   esport: {
     org: () => request('/esport', { fallback: null, auth: false }),
     teams: (type?: string) =>

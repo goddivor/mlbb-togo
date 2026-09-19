@@ -83,17 +83,20 @@ export default function HeroDetailModal({
   const t = useT();
   const [hero, setHero] = useState<any>(null);
   const [meta, setMeta] = useState<any>(null);
+  const [builds, setBuilds] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState<'skills' | 'counters'>('skills');
+  const [tab, setTab] = useState<'skills' | 'counters' | 'builds'>('skills');
 
   useEffect(() => {
     if (heroId == null) return;
     setLoading(true);
     setHero(null);
     setMeta(null);
+    setBuilds([]);
     setTab('skills');
     api.mlbb.hero(heroId).then(setHero).catch(() => setHero(null)).finally(() => setLoading(false));
     api.mlbb.heroMeta(heroId).then(setMeta).catch(() => setMeta(null));
+    api.builds.byHero(String(heroId)).then(setBuilds).catch(() => setBuilds([]));
   }, [heroId]);
 
   // Lock body scroll while the modal is open.
@@ -222,18 +225,18 @@ export default function HeroDetailModal({
                     </div>
                   </div>
 
-                  <div className="flex gap-1 border-t border-stroke px-6 pt-4 dark:border-strokedark md:px-8">
-                    {(['skills', 'counters'] as const).map((tk) => (
+                  <div className="flex gap-1 overflow-x-auto border-t border-stroke px-6 pt-4 dark:border-strokedark md:px-8">
+                    {(['skills', 'counters', 'builds'] as const).map((tk) => (
                       <button
                         key={tk}
                         onClick={() => setTab(tk)}
-                        className={`px-4 py-2 rounded-t-lg text-sm font-semibold transition-colors ${
+                        className={`shrink-0 whitespace-nowrap px-3 py-2 rounded-t-lg text-sm font-semibold transition-colors sm:px-4 ${
                           tab === tk
                             ? 'text-primary border-b-2 border-primary'
                             : 'text-body hover:text-black dark:text-bodydark dark:hover:text-white'
                         }`}
                       >
-                        {t(tk === 'skills' ? 'heroes.tab.skills' : 'heroes.tab.counters')}
+                        {t(tk === 'skills' ? 'heroes.tab.skills' : tk === 'counters' ? 'heroes.tab.counters' : 'heroes.tab.builds')}
                       </button>
                     ))}
                   </div>
@@ -400,6 +403,96 @@ export default function HeroDetailModal({
                           </div>
                         );
                       })()}
+                    </div>
+                  )}
+
+                  {tab === 'builds' && (
+                    <div className="p-6 md:p-8">
+                      {builds?.length > 0 ? (
+                        <div className="space-y-6">
+                          {builds.map((build, i) => (
+                            <div key={build.id || i} className="border border-stroke rounded-sm bg-gray-2 p-4 dark:border-strokedark dark:bg-meta-4">
+                              <div className="mb-4">
+                                <h4 className="text-base font-bold text-black dark:text-white">
+                                  {build.name || t('heroes.builds.unnamed')}
+                                </h4>
+                                {build.description && (
+                                  <p className="text-sm text-body dark:text-bodydark mt-1">{build.description}</p>
+                                )}
+                              </div>
+
+                              <div className="space-y-3">
+                                {build.items?.length > 0 && (
+                                  <div>
+                                    <p className="text-xs font-semibold uppercase text-bodydark2 mb-2">{t('heroes.builds.items')}</p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {build.items.map((item: any, j: number) => (
+                                        <div
+                                          key={item.id || j}
+                                          className="flex items-center gap-1.5 rounded-sm border border-stroke bg-white p-2 dark:border-strokedark dark:bg-boxdark"
+                                        >
+                                          {item.icon && (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img
+                                              src={mlbbImg(item.icon, 80)}
+                                              alt={item.name}
+                                              referrerPolicy="no-referrer"
+                                              className="h-8 w-8 rounded object-cover"
+                                            />
+                                          )}
+                                          <span className="text-xs font-medium text-black dark:text-white">{item.name}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-3">
+                                  {build.emblem && (
+                                    <div>
+                                      <p className="text-xs font-semibold uppercase text-bodydark2 mb-2">{t('heroes.builds.emblem')}</p>
+                                      <div className="flex items-center gap-2 rounded-sm border border-stroke bg-white p-2 dark:border-strokedark dark:bg-boxdark">
+                                        {build.emblem.icon && (
+                                          // eslint-disable-next-line @next/next/no-img-element
+                                          <img
+                                            src={mlbbImg(build.emblem.icon, 80)}
+                                            alt={build.emblem.name}
+                                            referrerPolicy="no-referrer"
+                                            className="h-8 w-8 rounded object-cover"
+                                          />
+                                        )}
+                                        <span className="text-xs font-medium text-black dark:text-white">{build.emblem.name}</span>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {build.battleSpell && (
+                                    <div>
+                                      <p className="text-xs font-semibold uppercase text-bodydark2 mb-2">{t('heroes.builds.battleSpell')}</p>
+                                      <div className="flex items-center gap-2 rounded-sm border border-stroke bg-white p-2 dark:border-strokedark dark:bg-boxdark">
+                                        {build.battleSpell.icon && (
+                                          // eslint-disable-next-line @next/next/no-img-element
+                                          <img
+                                            src={mlbbImg(build.battleSpell.icon, 80)}
+                                            alt={build.battleSpell.name}
+                                            referrerPolicy="no-referrer"
+                                            className="h-8 w-8 rounded object-cover"
+                                          />
+                                        )}
+                                        <span className="text-xs font-medium text-black dark:text-white">{build.battleSpell.name}</span>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-center text-bodydark2 py-10">
+                          {t('heroes.builds.empty')}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
