@@ -30,6 +30,7 @@ const SECTIONS: { key: string; id?: string; href?: string; icon: any }[] = [
   { key: 'nav.league', href: '/league', icon: Flag },
   { key: 'nav.partners', id: 'partners', icon: Handshake },
   { key: 'nav.about', href: '/about', icon: Info },
+  { key: 'nav.hallOfFame', href: '/hall-of-fame', icon: Trophy },
   { key: 'nav.contact', id: 'contact', icon: Mail },
 ];
 

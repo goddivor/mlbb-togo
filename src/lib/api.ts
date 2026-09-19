@@ -936,6 +936,30 @@ export const api = {
         auth: false,
       }),
   },
+  awards: {
+    /** Awards + regular / playoffs podiums + sponsors of a season (id or slug). */
+    season: (idOrSlug: string) =>
+      request(`/awards/seasons/${encodeURIComponent(idOrSlug)}`, { fallback: null, auth: false }),
+    hallOfFame: () => request('/awards/hall-of-fame', { fallback: { seasons: [] }, auth: false }),
+    suggest: (seasonId: string, minGames?: number) =>
+      request(`/awards/seasons/${encodeURIComponent(seasonId)}/suggest`, {
+        method: 'POST',
+        body: minGames ? { minGames } : {},
+      }),
+    create: (seasonId: string, data: any) =>
+      request(`/awards/seasons/${encodeURIComponent(seasonId)}`, { method: 'POST', body: data }),
+    update: (awardId: string, data: any) => request(`/awards/${awardId}`, { method: 'PATCH', body: data }),
+    remove: (awardId: string) => request(`/awards/${awardId}`, { method: 'DELETE' }),
+    setPodium: (
+      seasonId: string,
+      data: {
+        regular?: { placement: number; teamId: string }[] | null;
+        playoffs?: { placement: number; teamId: string }[] | null;
+        derivePlayoffs?: 'matches' | 'tournament';
+        tournamentId?: string;
+      },
+    ) => request(`/awards/seasons/${encodeURIComponent(seasonId)}/podium`, { method: 'PUT', body: data }),
+  },
   ai: {
     status: (): Promise<{ enabled: boolean; model: string; mode: 'llm' | 'heuristic' }> =>
       request('/ai/status', { fallback: { enabled: false, model: 'unknown', mode: 'heuristic' }, auth: false }),
