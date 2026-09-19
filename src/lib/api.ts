@@ -444,6 +444,29 @@ export const api = {
     },
   },
 
+  // League standings (#43): season table, head-to-head, PDF export, settings.
+  standings: {
+    get: (seasonId: string, type: 'league' | 'playoff' | 'all' = 'league') =>
+      request(`/standings?seasonId=${encodeURIComponent(seasonId)}&type=${type}`, {
+        fallback: null,
+        auth: false,
+      }),
+    h2h: (seasonId: string, teamA: string, teamB?: string, type: 'league' | 'playoff' | 'all' = 'all') =>
+      request(
+        `/standings/h2h?seasonId=${encodeURIComponent(seasonId)}&teamA=${encodeURIComponent(teamA)}${
+          teamB ? `&teamB=${encodeURIComponent(teamB)}` : ''
+        }&type=${type}`,
+        { fallback: null, auth: false },
+      ),
+    /** Direct download URL of the server-side PDF (opened in a new tab). */
+    exportUrl: (seasonId: string, type: 'league' | 'playoff' | 'all', lang: string) =>
+      `${API_URL}/standings/export.pdf?seasonId=${encodeURIComponent(seasonId)}&type=${type}&lang=${encodeURIComponent(lang)}`,
+    settings: (seasonId: string) =>
+      request(`/standings/settings/${encodeURIComponent(seasonId)}`, { fallback: null, auth: false }),
+    updateSettings: (seasonId: string, data: { qualifyTop?: number; points?: { win?: number; draw?: number; loss?: number } }) =>
+      request(`/standings/settings/${encodeURIComponent(seasonId)}`, { method: 'PATCH', body: data }),
+  },
+
   esport: {
     org: () => request('/esport', { fallback: null, auth: false }),
     teams: (type?: string) =>

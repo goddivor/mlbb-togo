@@ -13,6 +13,7 @@ import {
   Lock,
   RotateCcw,
   Trophy,
+  SlidersHorizontal,
   Sparkles,
   ExternalLink,
 } from 'lucide-react';
@@ -79,8 +80,48 @@ export default function AdminSeasonsPage() {
   const [force, setForce] = useState(false);
   // Frozen summary viewer for closed seasons.
   const [viewing, setViewing] = useState<Season | null>(null);
+  // Standings settings (qualification threshold + points rule) per season.
+  const [settingsFor, setSettingsFor] = useState<Season | null>(null);
+  const [settings, setSettings] = useState({ qualifyTop: 4, win: 3, draw: 1, loss: 0 });
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
 
   const errMsg = (e: any) => e?.message || t('admin.esport.errorGeneric');
+
+  const openSettings = async (season: Season) => {
+    setSettingsFor(season);
+    setSettingsLoading(true);
+    try {
+      const data = await api.standings.settings(season.id);
+      setSettings({
+        qualifyTop: data?.qualifyTop ?? 4,
+        win: data?.points?.win ?? 3,
+        draw: data?.points?.draw ?? 1,
+        loss: data?.points?.loss ?? 0,
+      });
+    } catch (e: any) {
+      toast.error(errMsg(e));
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
+
+  const saveSettings = async () => {
+    if (!settingsFor) return;
+    setSettingsSaving(true);
+    try {
+      await api.standings.updateSettings(settingsFor.id, {
+        qualifyTop: settings.qualifyTop,
+        points: { win: settings.win, draw: settings.draw, loss: settings.loss },
+      });
+      toast.success(t('admin.seasons.settings.saved'));
+      setSettingsFor(null);
+    } catch (e: any) {
+      toast.error(errMsg(e));
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
 
   const load = async () => {
     try {
@@ -365,6 +406,9 @@ export default function AdminSeasonsPage() {
                         </Button>
                       </>
                     )}
+                    <Button size="sm" variant="ghost" onClick={() => openSettings(s)}>
+                      <SlidersHorizontal size={14} /> {t('admin.seasons.settings.action')}
+                    </Button>
                     <span className="flex-1" />
                     {s.slug && (
                       <Link
@@ -627,6 +671,64 @@ export default function AdminSeasonsPage() {
           </div>
         ) : (
           <p className="text-sm text-body dark:text-bodydark">{t('seasons.podium.empty')}</p>
+        )}
+      </Modal>
+
+      <Modal
+        open={!!settingsFor}
+        onClose={() => setSettingsFor(null)}
+        closeLabel={t('common.close')}
+        title={t('admin.seasons.settings.title')}
+        subtitle={settingsFor?.name}
+        icon={<SlidersHorizontal size={20} />}
+      >
+        {settingsLoading ? (
+          <LoadingSpinner />
+        ) : (
+          <div className="space-y-4">
+            <p className="text-xs text-bodydark2">{t('admin.seasons.settings.hint')}</p>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">
+                {t('admin.seasons.settings.qualifyTop')}
+              </label>
+              <select
+                value={settings.qualifyTop}
+                onChange={(e) => setSettings((v) => ({ ...v, qualifyTop: Number(e.target.value) }))}
+                className="w-full rounded-sm border border-stroke bg-transparent px-3 py-2 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:text-white dark:bg-meta-4"
+              >
+                {[1, 2, 3, 4, 6, 8].map((n) => (
+                  <option key={n} value={n}>
+                    {t('admin.seasons.settings.topN', { n })}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {(['win', 'draw', 'loss'] as const).map((key) => (
+                <div key={key}>
+                  <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">
+                    {t(`admin.seasons.settings.${key}`)}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={settings[key]}
+                    onChange={(e) => setSettings((v) => ({ ...v, [key]: Number(e.target.value) }))}
+                    className="w-full rounded-sm border border-stroke bg-transparent px-3 py-2 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:text-white dark:bg-meta-4"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSettingsFor(null)}>
+                {t('admin.esport.cancel')}
+              </Button>
+              <Button onClick={saveSettings} loading={settingsSaving}>
+                {t('admin.esport.save')}
+              </Button>
+            </div>
+          </div>
         )}
       </Modal>
 
