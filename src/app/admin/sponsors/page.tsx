@@ -526,7 +526,7 @@ export default function AdminSponsorsPage() {
               <label className={labelCls}>{t('admin.sponsors.tier')}</label>
               <select className={inputCls} value={sponsorForm.tier} onChange={(e) => setSponsorForm({ ...sponsorForm, tier: e.target.value as Tier | '' })}>
                 <option value="">{t('sponsors.tier.partner')}</option>
-                {TIERS.map((tier) => (
+                {TIERS.filter((tier) => tier !== 'partner').map((tier) => (
                   <option key={tier} value={tier}>
                     {t(`sponsors.tier.${tier}`)}
                   </option>

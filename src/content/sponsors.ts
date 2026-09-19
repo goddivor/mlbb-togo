@@ -27,7 +27,7 @@ export const SPONSORS_FR: SponsorsContent = {
   hero: {
     eyebrow: 'Devenir sponsor',
     title: 'Associez votre marque à la ligue MLBB du Togo',
-    subtitle: `${O.brand} organise la ligue de référence de Mobile Legends: Bang Bang au Togo : saisons régulières, finales en présentiel, diffusion en direct et une communauté de joueurs qui revient chaque semaine. Nos partenaires sont visibles à chaque étape.`,
+    subtitle: `${O.brand} organise la ligue de référence de Mobile Legends: Bang Bang au Togo : saisons régulières, finales en présentiel, diffusion en direct et une communauté de joueurs qui revient chaque semaine. Nos partenaires sont visibles à chaque étape.`,
     ctaPrimary: 'Voir les offres',
     ctaSecondary: 'Nous contacter',
   },
@@ -36,7 +36,7 @@ export const SPONSORS_FR: SponsorsContent = {
     title: 'Pourquoi sponsoriser la ligue',
     paragraphs: [
       'Le jeu mobile est le premier loisir numérique des 15-30 ans au Togo, et Mobile Legends en est le titre compétitif phare. Chaque saison, des dizaines d’équipes s’affrontent devant une audience qui suit les classements, commente les matchs et se déplace pour les finales.',
-      'Sponsoriser la ligue, c’est parler à cette génération dans un cadre positif, structuré et mesurable : logo sur le site et les overlays de stream, mentions à l’antenne, activations en présentiel, contenus dédiés sur nos réseaux et bilan chiffré en fin de saison.',
+      'Sponsoriser la ligue, c’est parler à cette génération dans un cadre positif, structuré et mesurable : logo sur le site et les overlays de stream, mentions à l’antenne, activations en présentiel, contenus dédiés sur nos réseaux et bilan chiffré en fin de saison.',
     ],
   },
   figures: {
@@ -50,7 +50,7 @@ export const SPONSORS_FR: SponsorsContent = {
     subtitle: 'Chaque pack est rattaché à une saison de ligue. Les tarifs sont communiqués sur devis selon la durée et les activations retenues.',
     empty: 'Les offres de la saison seront publiées prochainement. Contactez-nous pour recevoir la plaquette.',
     cta: 'Choisir ce pack',
-    custom: 'Vous avez un projet particulier ? Nous construisons aussi des offres sur mesure.',
+    custom: 'Vous avez un projet particulier ? Nous construisons aussi des offres sur mesure.',
   },
   activations: {
     eyebrow: 'Activations',
@@ -69,7 +69,7 @@ export const SPONSORS_FR: SponsorsContent = {
   form: {
     eyebrow: 'Partenariat',
     title: 'Parlons de votre projet',
-    subtitle: 'Laissez-nous vos coordonnées : nous revenons vers vous sous 48 heures ouvrées avec une proposition détaillée.',
+    subtitle: 'Laissez-nous vos coordonnées : nous revenons vers vous sous 48 heures ouvrées avec une proposition détaillée.',
   },
   current: {
     eyebrow: 'Ils nous font confiance',
