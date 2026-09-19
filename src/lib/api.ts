@@ -528,12 +528,38 @@ export const api = {
     reopenSeason: (id: string) => request(`/esport/seasons/${id}/reopen`, { method: 'POST' }),
 
     // Matches
-    matches: (params: { seasonId?: string; teamId?: string; status?: string } = {}) => {
+    matches: (
+      params: {
+        seasonId?: string;
+        teamId?: string;
+        status?: string;
+        stage?: string;
+        from?: string;
+        to?: string;
+      } = {},
+    ) => {
       const qs = new URLSearchParams(
         Object.entries(params).filter(([, v]) => v != null && v !== '').map(([k, v]) => [k, String(v)]),
       ).toString();
       return request(`/esport/matches${qs ? `?${qs}` : ''}`, { fallback: [], auth: false });
     },
+    // Matches of a period grouped by day (calendar view).
+    matchesCalendar: (
+      params: { seasonId?: string; teamId?: string; stage?: string; from?: string; to?: string } = {},
+    ) => {
+      const qs = new URLSearchParams(
+        Object.entries(params).filter(([, v]) => v != null && v !== '').map(([k, v]) => [k, String(v)]),
+      ).toString();
+      return request(`/esport/matches/calendar${qs ? `?${qs}` : ''}`, {
+        fallback: { from: null, to: null, total: 0, days: [], undated: [] },
+        auth: false,
+      });
+    },
+    // Full match sheet (teams, games, screenshots, links, MVP, player stats).
+    match: (id: string) => request(`/esport/matches/${id}`, { fallback: null, auth: false }),
+    // Match sheet details: format, games, screenshots, VOD / stream, MVP.
+    setMatchDetails: (id: string, data: any) =>
+      request(`/esport/matches/${id}/details`, { method: 'PATCH', body: data }),
     teamMatches: (teamId: string) =>
       request(`/esport/teams/${teamId}/matches`, { fallback: [], auth: false }),
 

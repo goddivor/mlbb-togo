@@ -43,6 +43,7 @@ export const playerMenuGroups: MenuGroupConfig[] = [
       { href: '/teams', labelKey: 'header.teams', icon: Shield },
       { href: '/stats', labelKey: 'header.stats', icon: BarChart3 },
       { href: '/standings', labelKey: 'header.standings', icon: ListOrdered },
+      { href: '/matches', labelKey: 'header.matches', icon: CalendarDays },
       { href: '/recruitment', labelKey: 'header.recruitment', icon: Megaphone },
       { href: '/draft', labelKey: 'header.draft', icon: Gamepad2 },
       { href: '/pick-ban', labelKey: 'header.pickban', icon: Swords },
