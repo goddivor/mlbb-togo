@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import {
   Bell,
   BellOff,
+  AtSign,
   Check,
   CheckCheck,
   ChevronLeft,
@@ -50,6 +51,7 @@ const STATUSES: { id: Status; key: string }[] = [
  */
 const TYPE_STYLE: Record<string, { icon: any; variant: string }> = {
   message: { icon: MessageSquare, variant: 'blue' },
+  mention: { icon: AtSign, variant: 'blue' },
   friend_request: { icon: UserPlus, variant: 'purple' },
   friend_accept: { icon: Users2, variant: 'green' },
   team_request: { icon: Shield, variant: 'gold' },

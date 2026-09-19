@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { timeAgo, truncateText } from '@/lib/helpers';
-import { getSocket, usePresence } from '@/lib/realtime';
+import { getSocket, useChatUnread, usePresence } from '@/lib/realtime';
 import { useAuthStore } from '@/store/useStore';
 import { Avatar } from '@/components/ui';
+import { RoomAvatar } from '@/components/messages/RoomView';
 
 interface MessageDropdownProps {
   /** Where the icon and every row link to (player: /messages, admin: /admin/messages). */
@@ -28,16 +29,33 @@ export default function MessageDropdown({ href = '/messages' }: MessageDropdownP
   const t = useT();
   const [open, setOpen] = useState(false);
   const [threads, setThreads] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<any[]>([]);
   const [notifying, setNotifying] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const connected = usePresence((s) => s.connected);
   const myId = useAuthStore((s: any) => s.user?.id);
+  // Unread total (direct threads + group rooms), kept live by RealtimeProvider.
+  const unreadTotal = useChatUnread((s) => s.total);
 
-  const loadThreads = () =>
+  const loadThreads = () => {
     api.messages
       .threads()
       .then((l: any) => setThreads(Array.isArray(l) ? l : []))
       .catch(() => {});
+    api.messages
+      .rooms()
+      .then((l: any) => setRooms(Array.isArray(l) ? l : []))
+      .catch(() => {});
+  };
+
+  // Rooms and threads interleaved by recency; rooms without any message are
+  // left out of the dropdown (they still show on the messages page).
+  const rows: { key: string; room?: any; thread?: any; at: any }[] = [
+    ...rooms
+      .filter((r) => r.lastMessage)
+      .map((r) => ({ key: `room:${r.id}`, room: r, at: r.lastMessageAt })),
+    ...threads.map((th) => ({ key: `thread:${th.id}`, thread: th, at: th.lastMessageAt })),
+  ].sort((a, b) => new Date(b.at || 0).getTime() - new Date(a.at || 0).getTime());
 
   // Initial load so the dropdown is ready before the first open.
   useEffect(() => {
@@ -98,10 +116,16 @@ export default function MessageDropdown({ href = '/messages' }: MessageDropdownP
         aria-label={t('header.messages')}
         className="relative flex h-12 w-12 items-center justify-center rounded-full border-[0.5px] border-stroke bg-gray text-black hover:text-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
       >
-        {notifying && (
-          <span className="absolute right-2.5 top-2.5 z-1 h-2 w-2 rounded-full bg-meta-1">
-            <span className="absolute -z-1 inline-flex h-full w-full animate-ping rounded-full bg-meta-1 opacity-75" />
+        {unreadTotal > 0 ? (
+          <span className="absolute -right-0.5 -top-0.5 z-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-meta-1 px-1 text-[10px] font-bold leading-none text-white">
+            {unreadTotal > 99 ? '99+' : unreadTotal}
           </span>
+        ) : (
+          notifying && (
+            <span className="absolute right-2.5 top-2.5 z-1 h-2 w-2 rounded-full bg-meta-1">
+              <span className="absolute -z-1 inline-flex h-full w-full animate-ping rounded-full bg-meta-1 opacity-75" />
+            </span>
+          )
         )}
 
         <svg
@@ -138,15 +162,50 @@ export default function MessageDropdown({ href = '/messages' }: MessageDropdownP
           </div>
 
           <ul className="flex flex-1 flex-col overflow-y-auto">
-            {threads.length === 0 ? (
+            {rows.length === 0 ? (
               <li className="flex flex-1 items-center justify-center px-4.5 py-6 text-center text-sm text-body dark:text-bodydark">
                 {t('messages.none')}
               </li>
             ) : (
-              threads.map((th) => {
+              rows.map((row) => {
+                if (row.room) {
+                  const r = row.room;
+                  const target = `${href}?room=${r.kind}:${r.scopeId}`;
+                  return (
+                    <li key={row.key}>
+                      <Link
+                        href={target}
+                        onClick={() => setOpen(false)}
+                        className="flex gap-4.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4"
+                      >
+                        <RoomAvatar room={r} className="h-10 w-10" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <h6 className="truncate text-sm font-medium text-black dark:text-white">
+                              {r.title}
+                            </h6>
+                            {r.unread > 0 && (
+                              <span className="ml-auto shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                                {r.unread}
+                              </span>
+                            )}
+                          </div>
+                          <p className="truncate text-sm text-body dark:text-bodydark">
+                            {truncateText(
+                              `${nameOf(r.lastMessage?.sender) ? `${nameOf(r.lastMessage.sender)}: ` : ''}${r.lastMessage?.body || ''}`,
+                              32,
+                            )}
+                          </p>
+                          <p className="text-xs">{timeAgo(r.lastMessageAt)}</p>
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                }
+                const th = row.thread;
                 const o = th.other;
                 return (
-                  <li key={th.id}>
+                  <li key={row.key}>
                     <Link
                       href={href}
                       onClick={() => setOpen(false)}
@@ -158,10 +217,17 @@ export default function MessageDropdown({ href = '/messages' }: MessageDropdownP
                         size="md"
                         className="shrink-0"
                       />
-                      <div className="min-w-0">
-                        <h6 className="truncate text-sm font-medium text-black dark:text-white">
-                          {nameOf(o) || th.subject || ''}
-                        </h6>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <h6 className="truncate text-sm font-medium text-black dark:text-white">
+                            {nameOf(o) || th.subject || ''}
+                          </h6>
+                          {th.unread > 0 && (
+                            <span className="ml-auto shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                              {th.unread}
+                            </span>
+                          )}
+                        </div>
                         <p className="truncate text-sm text-body dark:text-bodydark">
                           {truncateText(th.lastMessage?.body || '', 32)}
                         </p>

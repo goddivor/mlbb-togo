@@ -782,6 +782,21 @@ export const api = {
       request(`/messages/threads/${id}`, { method: 'POST', body: { body } }),
     markRead: (id: string) =>
       request(`/messages/threads/${id}/read`, { method: 'POST' }),
+    // Unread badges: direct threads + group rooms.
+    unread: () => request('/messages/unread', { fallback: { direct: 0, rooms: 0, total: 0 } }),
+    // Group rooms (esport team / tournament / draft team), membership derived server-side.
+    rooms: () => request('/messages/rooms', { fallback: [] }),
+    room: (kind: string, scopeId: string, params?: { before?: string; limit?: number }) => {
+      const q = new URLSearchParams();
+      if (params?.before) q.set('before', params.before);
+      if (params?.limit) q.set('limit', String(params.limit));
+      const qs = q.toString();
+      return request(`/messages/rooms/${kind}/${scopeId}${qs ? `?${qs}` : ''}`, { fallback: null });
+    },
+    postRoom: (kind: string, scopeId: string, body: string) =>
+      request(`/messages/rooms/${kind}/${scopeId}`, { method: 'POST', body: { body } }),
+    markRoomRead: (kind: string, scopeId: string) =>
+      request(`/messages/rooms/${kind}/${scopeId}/read`, { method: 'POST' }),
   },
 
   push: {
