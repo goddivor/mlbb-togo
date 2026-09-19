@@ -2305,8 +2305,6 @@ export const translations: Record<string, Dict> = {
     'admin.awards.openCeremony': 'Cérémonie',
     'admin.awards.sameTeam': 'Une équipe ne peut occuper qu’une seule place.',
     'admin.awards.closedNote': 'Saison clôturée : les modifications sont répercutées dans le récapitulatif figé.',
-    'admin.sponsors.seasons': 'Saisons sponsorisées',
-    'admin.sponsors.seasonsHint': 'Le sponsor apparaît dans le Hall of Fame et sur la page Awards des saisons cochées.',
   },
 
   en: {
@@ -4609,8 +4607,6 @@ export const translations: Record<string, Dict> = {
     'admin.awards.openCeremony': 'Ceremony',
     'admin.awards.sameTeam': 'A team can only hold one place.',
     'admin.awards.closedNote': 'Closed season: changes are mirrored into the frozen recap.',
-    'admin.sponsors.seasons': 'Sponsored seasons',
-    'admin.sponsors.seasonsHint': 'The sponsor shows up in the Hall of Fame and on the Awards page of the ticked seasons.',
   },
 };
 
