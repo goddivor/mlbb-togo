@@ -20,6 +20,8 @@ import {
   BarChart3,
   ListOrdered,
   Flag,
+  Award,
+  Crown,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -46,6 +48,8 @@ export const playerMenuGroups: MenuGroupConfig[] = [
       { href: '/stats', labelKey: 'header.stats', icon: BarChart3 },
       { href: '/standings', labelKey: 'header.standings', icon: ListOrdered },
       { href: '/matches', labelKey: 'header.matches', icon: CalendarDays },
+      { href: '/awards', labelKey: 'header.awards', icon: Award },
+      { href: '/hall-of-fame', labelKey: 'header.hallOfFame', icon: Crown },
       { href: '/recruitment', labelKey: 'header.recruitment', icon: Megaphone },
       { href: '/draft', labelKey: 'header.draft', icon: Gamepad2 },
       { href: '/pick-ban', labelKey: 'header.pickban', icon: Swords },
@@ -80,6 +84,7 @@ export const adminMenuGroups: MenuGroupConfig[] = [
       { href: '/admin/tournaments', labelKey: 'admin.tournaments.title', icon: Medal },
       { href: '/admin/seasons', labelKey: 'admin.seasons.title', icon: CalendarDays },
       { href: '/admin/matches', labelKey: 'admin.matches.title', icon: Swords },
+      { href: '/admin/awards', labelKey: 'admin.awards.title', icon: Award },
       { href: '/admin/draft', labelKey: 'admin.draft.title', icon: Gamepad2 },
       { href: '/admin/stream', labelKey: 'admin.stream.title', icon: Radio },
     ],

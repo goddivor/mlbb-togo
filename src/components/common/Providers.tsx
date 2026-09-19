@@ -19,7 +19,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     pathname.startsWith('/legal') ||
     pathname.startsWith('/seasons') ||
     pathname === '/sponsors' ||
-    pathname === '/league';
+    pathname === '/league' ||
+    pathname.startsWith('/awards') ||
+    pathname.startsWith('/hall-of-fame') ||
+    pathname.startsWith('/ceremony');
   const dark = isPublic ? true : theme === 'dark';
 
   useEffect(() => {
