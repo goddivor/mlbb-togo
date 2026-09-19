@@ -382,7 +382,7 @@ export const api = {
       ).then((d) => d.esportOrg),
     sponsors: () =>
       gql<{ sponsors: any[] }>(
-        `{ sponsors { id name logo url sort } }`,
+        `{ sponsors { id name logo url sort tier description } }`,
       ).then((d) => d.sponsors),
     lanes: () =>
       gql<{ lanes: any[] }>(
@@ -694,6 +694,38 @@ export const api = {
         fallback: { entries: [], total: 0 },
         auth: false,
       }),
+  },
+
+  // Sponsoring (issue #52): public page data, partnership form, admin offers / inbox.
+  sponsors: {
+    // Active sponsors of a season (id, slug or 'current'), tiered.
+    list: (seasonId?: string) =>
+      request(`/sponsors${seasonId ? `?seasonId=${encodeURIComponent(seasonId)}` : ''}`, {
+        fallback: { season: null, tiers: [], items: [], byTier: {} },
+        auth: false,
+      }),
+    offers: () => request('/sponsors/offers', { fallback: [], auth: false }),
+    faq: (lang: string) =>
+      request(`/sponsors/faq?lang=${encodeURIComponent(lang)}`, { fallback: { lang, items: [] }, auth: false }),
+    sendRequest: (data: {
+      company: string;
+      contactName: string;
+      email: string;
+      phone?: string;
+      message: string;
+      offerId?: string;
+    }) => request('/sponsors/requests', { method: 'POST', body: data, auth: false }),
+    // Admin
+    all: () => request('/sponsors/all', { fallback: [] }),
+    allOffers: () => request('/sponsors/offers/all', { fallback: [] }),
+    createOffer: (data: any) => request('/sponsors/offers', { method: 'POST', body: data }),
+    updateOffer: (id: string, data: any) => request(`/sponsors/offers/${id}`, { method: 'PATCH', body: data }),
+    deleteOffer: (id: string) => request(`/sponsors/offers/${id}`, { method: 'DELETE' }),
+    requests: (status?: string) =>
+      request(`/sponsors/requests${status ? `?status=${encodeURIComponent(status)}` : ''}`, { fallback: [] }),
+    updateRequest: (id: string, data: { status?: string; adminNote?: string }) =>
+      request(`/sponsors/requests/${id}`, { method: 'PATCH', body: data }),
+    deleteRequest: (id: string) => request(`/sponsors/requests/${id}`, { method: 'DELETE' }),
   },
 
   contact: {

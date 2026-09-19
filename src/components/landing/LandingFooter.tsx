@@ -21,6 +21,8 @@ const columns = [
       { key: 'footer.link.tournaments', href: '/tournaments' },
       { key: 'footer.link.events', href: '/events' },
       { key: 'footer.link.matches', href: '/matches' },
+      { key: 'nav.league', href: '/league' },
+      { key: 'sponsors.becomeSponsor', href: '/sponsors' },
     ],
   },
   {
