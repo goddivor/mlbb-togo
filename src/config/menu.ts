@@ -50,6 +50,7 @@ export const playerMenuGroups: MenuGroupConfig[] = [
     titleKey: 'nav.section.social',
     items: [
       { href: '/friends', labelKey: 'header.friends', icon: Users2 },
+      { href: '/forum', labelKey: 'header.communication', icon: MessageSquare },
       { href: '/notifications', labelKey: 'notif.title', icon: Bell },
     ],
   },

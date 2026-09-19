@@ -1,348 +1,399 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  MessagesSquare, Plus, Heart, MessageCircle, Eye, Pin, Search,
-  TrendingUp, Clock,
-} from 'lucide-react';
-import { Card, SectionCard, Badge, Avatar, Button, PageHeader, EmptyState, Input, Select, Textarea } from '@/components/ui';
-import Modal from '@/components/ui/Modal';
-import { useForumStore } from '@/store/useStore';
+import { MessagesSquare, Plus, Clock, TrendingUp, Pin } from 'lucide-react';
+import { Button, PageHeader, EmptyState, LoadingSpinner } from '@/components/ui';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import { useAuthStore } from '@/store/useStore';
 import { api } from '@/lib/api';
-import { timeAgo, getRankName } from '@/lib/helpers';
+import { cn } from '@/lib/helpers';
 import { useT } from '@/lib/i18n';
 import toast from 'react-hot-toast';
+import PostCard, { type FeedPost } from '@/components/forum/PostCard';
+import PostComposerModal from '@/components/forum/PostComposerModal';
+import PostDetailModal from '@/components/forum/PostDetailModal';
+import SponsorPickerModal from '@/components/forum/SponsorPickerModal';
+import {
+  FEED_CATEGORIES,
+  FEED_SORTS,
+  CATEGORY_META,
+  isStaffRole,
+  normalizeCategory,
+  type FeedSort,
+} from '@/components/forum/constants';
 
-export default function Forum() {
+const PAGE_SIZE = 10;
+const SORT_ICONS: Record<FeedSort, any> = { pinned: Pin, latest: Clock, popular: TrendingUp };
+
+export default function CommunicationFeed() {
   const t = useT();
-  const { posts, categories, setPosts, likePost } = useForumStore();
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [activeSort, setActiveSort] = useState('recent');
-  const [search, setSearch] = useState('');
-  const [showCreate, setShowCreate] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<any>(null);
-  const [saving, setSaving] = useState(false);
-  const [commentText, setCommentText] = useState<Record<string, string>>({});
-  const [commenting, setCommenting] = useState<string | null>(null);
+  const user = useAuthStore((s: any) => s.user);
+  const isLoggedIn = !!user;
+  const isStaff = isStaffRole(user?.roleUser);
 
-  const [newCategory, setNewCategory] = useState('strategies');
-  const [newTitle, setNewTitle] = useState('');
-  const [newContent, setNewContent] = useState('');
+  const [category, setCategory] = useState<string>('all');
+  const [sort, setSort] = useState<FeedSort>('pinned');
+  const [posts, setPosts] = useState<FeedPost[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const likedIds = useRef<Set<string>>(new Set());
 
-  const reload = () => api.posts.list().then((l: any) => setPosts(Array.isArray(l) ? l : []));
+  const [showComposer, setShowComposer] = useState(false);
+  const [selected, setSelected] = useState<FeedPost | null>(null);
+  const [sponsorTarget, setSponsorTarget] = useState<FeedPost | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<FeedPost | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    reload();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const decorate = useCallback(
+    (list: FeedPost[]) => list.map((p) => ({ ...p, likedByMe: likedIds.current.has(p.id) })),
+    [],
+  );
+
+  const patchPost = (id: string, patch: Partial<FeedPost> | ((p: FeedPost) => Partial<FeedPost>)) => {
+    const apply = (p: FeedPost) => (p.id === id ? { ...p, ...(typeof patch === 'function' ? patch(p) : patch) } : p);
+    setPosts((l) => l.map(apply));
+    setSelected((s) => (s && s.id === id ? apply(s) : s));
+  };
+
+  const refreshCounts = useCallback(() => {
+    api.posts.categories().then((r: any) => setCounts(r?.counts ?? {}));
   }, []);
 
-  const filteredPosts = posts
-    .filter((p: any) => {
-      if (activeCategory !== 'all' && p.category !== activeCategory) return false;
-      if (search && !p.title.toLowerCase().includes(search.toLowerCase())) return false;
-      return true;
-    })
-    .sort((a: any, b: any) => {
-      if (activeSort === 'recent') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      if (activeSort === 'popular') return b.likes - a.likes;
-      if (activeSort === 'comments') return b.comments.length - a.comments.length;
-      return 0;
-    });
+  const load = useCallback(
+    async (nextPage: number, append: boolean) => {
+      if (append) setLoadingMore(true);
+      else setLoading(true);
+      try {
+        const res: any = await api.posts.feed({ category, sort, page: nextPage, limit: PAGE_SIZE });
+        const items = decorate(Array.isArray(res?.items) ? res.items : []);
+        setPosts((prev) => (append ? [...prev, ...items] : items));
+        setPage(res?.page ?? nextPage);
+        setHasMore(!!res?.hasMore);
+        setTotal(res?.total ?? items.length);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [category, sort, decorate],
+  );
 
-  const handleLike = (id: string) => {
-    likePost(id);
-    api.posts.like(id).then(reload).catch(() => {});
-  };
+  // Liked post ids for the current user, then the feed.
+  useEffect(() => {
+    let cancelled = false;
+    const boot = async () => {
+      if (isLoggedIn) {
+        const ids: any = await api.posts.liked().catch(() => []);
+        if (cancelled) return;
+        likedIds.current = new Set(Array.isArray(ids) ? ids : []);
+      } else {
+        likedIds.current = new Set();
+      }
+      setPosts((l) => decorate(l));
+    };
+    boot();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggedIn, decorate]);
 
-  const handleCreate = async () => {
-    if (!newTitle.trim()) {
-      toast.error(t('forum.titleRequired'));
+  useEffect(() => {
+    load(1, false);
+    refreshCounts();
+  }, [load, refreshCounts]);
+
+  const handleLike = async (post: FeedPost) => {
+    if (!isLoggedIn) {
+      toast.error(t('comm.loginToLike'));
       return;
     }
-    setSaving(true);
+    const wasLiked = !!post.likedByMe;
+    // Optimistic toggle.
+    patchPost(post.id, (p) => ({ likedByMe: !wasLiked, likes: Math.max(0, p.likes + (wasLiked ? -1 : 1)) }));
+    if (wasLiked) likedIds.current.delete(post.id);
+    else likedIds.current.add(post.id);
     try {
-      await api.posts.create({
-        category: newCategory,
-        title: newTitle.trim(),
-        content: newContent.trim(),
-      });
-      await reload();
-      setShowCreate(false);
-      setNewTitle('');
-      setNewContent('');
-      toast.success(t('forum.published'));
+      const res: any = await api.posts.like(post.id);
+      if (res && typeof res.likes === 'number') {
+        patchPost(post.id, { likedByMe: !!res.liked, likes: res.likes });
+        if (res.liked) likedIds.current.add(post.id);
+        else likedIds.current.delete(post.id);
+      }
     } catch (e: any) {
+      patchPost(post.id, (p) => ({ likedByMe: wasLiked, likes: Math.max(0, p.likes + (wasLiked ? 1 : -1)) }));
+      if (wasLiked) likedIds.current.add(post.id);
+      else likedIds.current.delete(post.id);
       toast.error(e?.message || t('common.error'));
-    } finally {
-      setSaving(false);
     }
   };
 
-  const handleComment = async (postId: string) => {
-    const content = (commentText[postId] || '').trim();
-    if (!content) return;
-    setCommenting(postId);
+  const handleShare = async (post: FeedPost) => {
+    const url = `${window.location.origin}/forum?post=${post.id}`;
     try {
-      await api.posts.comment(postId, { content });
-      setCommentText((s) => ({ ...s, [postId]: '' }));
-      await reload();
+      if (navigator.share) {
+        await navigator.share({ title: post.title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success(t('comm.shareCopied'));
+      }
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
+      toast.error(t('comm.shareFailed'));
+      return;
+    }
+    patchPost(post.id, (p) => ({ shares: (p.shares ?? 0) + 1 }));
+    api.posts.share(post.id).then((r: any) => {
+      if (r && typeof r.shares === 'number') patchPost(post.id, { shares: r.shares });
+    }).catch(() => {});
+  };
+
+  const handleTogglePin = async (post: FeedPost) => {
+    try {
+      const updated = await api.posts.update(post.id, { isPinned: !post.isPinned });
+      patchPost(post.id, { isPinned: !!updated?.isPinned });
+      toast.success(t('comm.admin.pinSaved'));
+      if (sort === 'pinned') load(1, false);
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error'));
+    }
+  };
+
+  const handleSponsorSave = async (patch: { isSponsored: boolean; sponsorId: string | null }) => {
+    if (!sponsorTarget) return;
+    setBusy(true);
+    try {
+      const updated = await api.posts.update(sponsorTarget.id, patch);
+      patchPost(sponsorTarget.id, {
+        isSponsored: !!updated?.isSponsored,
+        sponsorId: updated?.sponsorId ?? null,
+        sponsor: updated?.sponsor ?? null,
+      });
+      toast.success(t('comm.admin.sponsorSaved'));
+      setSponsorTarget(null);
     } catch (e: any) {
       toast.error(e?.message || t('common.error'));
     } finally {
-      setCommenting(null);
+      setBusy(false);
     }
   };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setBusy(true);
+    try {
+      await api.posts.remove(deleteTarget.id);
+      setPosts((l) => l.filter((p) => p.id !== deleteTarget.id));
+      setTotal((n) => Math.max(0, n - 1));
+      if (selected?.id === deleteTarget.id) setSelected(null);
+      setDeleteTarget(null);
+      toast.success(t('comm.admin.deleted'));
+      refreshCounts();
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCreated = (post: FeedPost) => {
+    const cat = normalizeCategory(post.category);
+    if (category === 'all' || category === cat) {
+      setPosts((l) => [{ ...post, likedByMe: false }, ...l]);
+      setTotal((n) => n + 1);
+    } else {
+      setCategory(cat);
+    }
+    refreshCounts();
+  };
+
+  // Deep link: /forum?post=<id> opens the detail modal.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('post');
+    if (!id) return;
+    api.posts.get(id).then((p: any) => {
+      if (p) setSelected({ ...p, likedByMe: likedIds.current.has(p.id) });
+    });
+  }, []);
+
+  const tabs = ['all', ...FEED_CATEGORIES] as const;
 
   return (
     <div className="space-y-6">
-
       <PageHeader
         icon={<MessagesSquare size={28} />}
-        title={t('forum.title')}
-        subtitle={t('forum.subtitle')}
+        title={t('comm.title')}
+        subtitle={t('comm.subtitle')}
         variant="danger"
         action={
-          <Button onClick={() => setShowCreate(true)}>
-            <Plus size={16} />
-            {t('forum.newPost')}
-          </Button>
+          isLoggedIn ? (
+            <Button onClick={() => setShowComposer(true)}>
+              <Plus size={16} />
+              {t('comm.newPost')}
+            </Button>
+          ) : undefined
         }
       />
 
-      <div className="flex flex-col lg:flex-row gap-6">
-
-        <div className="lg:w-64 flex-shrink-0">
-          <SectionCard>
-            <h3 className="mb-3 text-sm font-bold text-black dark:text-white">{t('forum.categories')}</h3>
-            <div className="space-y-1">
+      {/* Category tabs with counters */}
+      <div className="-mx-1 overflow-x-auto px-1 pb-1">
+        <div className="flex min-w-max gap-2">
+          {tabs.map((id) => {
+            const meta = CATEGORY_META[id];
+            const Icon = meta.icon;
+            const active = category === id;
+            const count = counts[id];
+            return (
               <button
-                onClick={() => setActiveCategory('all')}
-                className={`w-full rounded-sm px-3 py-2 text-left text-sm transition-colors ${
-                  activeCategory === 'all'
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4'
-                }`}
+                key={id}
+                type="button"
+                onClick={() => setCategory(id)}
+                className={cn(
+                  'flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors',
+                  active
+                    ? 'border-primary bg-primary text-white'
+                    : 'border-stroke bg-white text-body hover:border-primary hover:text-primary dark:border-strokedark dark:bg-boxdark dark:text-bodydark',
+                )}
               >
-                📋 {t('forum.allCategories')}
-              </button>
-              {categories.map((cat: any) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`w-full rounded-sm px-3 py-2 text-left text-sm transition-colors ${
-                    activeCategory === cat.id
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4'
-                  }`}
-                >
-                  {cat.icon} {cat.name}
-                </button>
-              ))}
-            </div>
-          </SectionCard>
-        </div>
-
-        <div className="flex-1">
-
-          <SectionCard className="!p-4 mb-6">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bodydark2" />
-                <input
-                  type="text"
-                  placeholder={t('forum.searchPlaceholder')}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-sm border border-stroke bg-gray-2 py-2.5 pl-10 pr-4 text-sm text-black outline-none transition-all placeholder:text-bodydark2 focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
-                />
-              </div>
-              <div className="flex gap-2">
-                {[
-                  { id: 'recent', label: t('forum.sortRecent'), icon: Clock },
-                  { id: 'popular', label: t('forum.sortPopular'), icon: TrendingUp },
-                  { id: 'comments', label: t('forum.sortDiscussed'), icon: MessageCircle },
-                ].map((sort) => (
-                  <button
-                    key={sort.id}
-                    onClick={() => setActiveSort(sort.id)}
-                    className={`flex items-center gap-1.5 rounded-sm px-3 py-2 text-xs font-medium transition-colors ${
-                      activeSort === sort.id
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4'
-                    }`}
+                <Icon size={15} />
+                {t(`comm.cat.${id}`)}
+                {typeof count === 'number' && (
+                  <span
+                    className={cn(
+                      'rounded-full px-1.5 py-0.5 text-xs',
+                      active ? 'bg-white/20 text-white' : 'bg-gray-2 text-bodydark2 dark:bg-meta-4',
+                    )}
                   >
-                    <sort.icon size={14} />
-                    {sort.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </SectionCard>
-
-          <div className="space-y-4">
-            {filteredPosts.map((post: any, index: number) => {
-              const category = categories.find((c: any) => c.id === post.category);
-
-              return (
-                <motion.div
-                  key={post.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Card className="cursor-pointer" onClick={() => setSelectedPost(selectedPost === post.id ? null : post.id)}>
-                    <div className="flex gap-4">
-                      <Avatar name={post.authorName} size="md" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          {post.isPinned && <Pin size={14} className="text-warning" />}
-                          <Badge variant="purple" size="sm">{category?.icon} {category?.name}</Badge>
-                          <span className="text-xs text-bodydark2">
-                            {timeAgo(post.createdAt)}
-                          </span>
-                        </div>
-                        <h3 className="mb-1 text-base font-bold text-black dark:text-white">
-                          {post.title}
-                        </h3>
-                        <p className="mb-3 line-clamp-2 text-sm text-body dark:text-bodydark">
-                          {post.content}
-                        </p>
-
-                        <div className="flex items-center gap-4 text-xs text-body dark:text-bodydark">
-                          <div className="flex items-center gap-1.5">
-                            <Avatar name={post.authorName} size="sm" />
-                            <span className="font-medium text-body dark:text-bodydark">
-                              {post.authorName}
-                            </span>
-                            <Badge variant="neon" size="sm">{getRankName(post.authorRank)}</Badge>
-                          </div>
-                          <div className="flex items-center gap-3 ml-auto">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleLike(post.id); }}
-                              className="flex items-center gap-1 hover:text-red-400 transition-colors"
-                            >
-                              <Heart size={14} className="text-red-400" />
-                              {post.likes}
-                            </button>
-                            <span className="flex items-center gap-1">
-                              <MessageCircle size={14} />
-                              {post.comments.length}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Eye size={14} />
-                              {post.views}
-                            </span>
-                          </div>
-                        </div>
-
-                        {selectedPost === post.id && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            className="mt-4 border-t border-stroke pt-4 dark:border-strokedark"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {post.comments.length > 0 && (
-                              <p className="mb-3 text-xs text-body dark:text-bodydark">{t('forum.comments')} ({post.comments.length})</p>
-                            )}
-                            {post.comments.map((comment: any) => (
-                              <div key={comment.id} className="mb-3 flex gap-3">
-                                <Avatar name={comment.authorName} size="sm" />
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-black dark:text-white">
-                                      {comment.authorName}
-                                    </span>
-                                    <span className="text-xs text-bodydark2">{timeAgo(comment.createdAt)}</span>
-                                  </div>
-                                  <p className="mt-0.5 text-sm text-body dark:text-bodydark">
-                                    {comment.content}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
-                            <div className="mt-3 flex gap-2">
-                              <input
-                                type="text"
-                                placeholder={t('forum.addComment')}
-                                value={commentText[post.id] || ''}
-                                onChange={(e) => setCommentText((s) => ({ ...s, [post.id]: e.target.value }))}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    handleComment(post.id);
-                                  }
-                                }}
-                                className="flex-1 rounded-sm border border-stroke bg-gray-2 px-3 py-2 text-sm text-black outline-none placeholder:text-bodydark2 focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
-                              />
-                              <Button
-                                size="sm"
-                                loading={commenting === post.id}
-                                disabled={!(commentText[post.id] || '').trim()}
-                                onClick={() => handleComment(post.id)}
-                              >
-                                {t('forum.send')}
-                              </Button>
-                            </div>
-                          </motion.div>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {filteredPosts.length === 0 && (
-            <EmptyState
-              icon={<MessagesSquare size={28} />}
-              title={t('forum.noPostsFound')}
-              description={t('forum.beFirstToPost')}
-            />
-          )}
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Post creation modal */}
-      <Modal
-        open={showCreate}
-        onClose={() => setShowCreate(false)}
-        title={t('forum.newPost')}
-        icon={<MessagesSquare size={20} />}
-        size="md"
-      >
-        <div className="space-y-4">
-          <Select
-            label={t('forum.category')}
-            value={newCategory}
-            onChange={(e: any) => setNewCategory(e.target.value)}
-          >
-            {categories.map((cat: any) => (
-              <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
-            ))}
-          </Select>
-          <Input
-            label={t('forum.postTitle')}
-            type="text"
-            value={newTitle}
-            onChange={(e: any) => setNewTitle(e.target.value)}
-            placeholder={t('forum.postTitlePlaceholder')}
-          />
-          <Textarea
-            label={t('forum.content')}
-            value={newContent}
-            onChange={(e: any) => setNewContent(e.target.value)}
-            placeholder={t('forum.contentPlaceholder')}
-            rows={5}
-          />
-          <div className="flex gap-3 pt-2">
-            <Button variant="ghost" onClick={() => setShowCreate(false)} className="flex-1">{t('forum.cancel')}</Button>
-            <Button onClick={handleCreate} loading={saving} className="flex-1">{t('forum.publish')}</Button>
-          </div>
+      {/* Sort control */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-bodydark2">{t('comm.postCount', { count: total })}</span>
+        <div className="ml-auto inline-flex rounded-md border border-stroke bg-white p-1 dark:border-strokedark dark:bg-boxdark">
+          {FEED_SORTS.map((id) => {
+            const Icon = SORT_ICONS[id];
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setSort(id)}
+                className={cn(
+                  'flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-colors',
+                  sort === id ? 'bg-primary/10 text-primary' : 'text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4',
+                )}
+              >
+                <Icon size={13} />
+                {t(`comm.sort.${id}`)}
+              </button>
+            );
+          })}
         </div>
-      </Modal>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <LoadingSpinner size="lg" />
+        </div>
+      ) : posts.length === 0 ? (
+        <EmptyState
+          icon={<MessagesSquare size={28} />}
+          title={t('comm.empty')}
+          description={t('comm.emptyHint')}
+          action={
+            isLoggedIn ? (
+              <Button onClick={() => setShowComposer(true)}>
+                <Plus size={16} />
+                {t('comm.newPost')}
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <div className="space-y-4">
+          {posts.map((post, index) => (
+            <motion.div
+              key={post.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(index, 8) * 0.04 }}
+            >
+              <PostCard
+                post={post}
+                isStaff={isStaff}
+                canDelete={isStaff || post.authorId === user?.id}
+                onOpen={setSelected}
+                onLike={handleLike}
+                onShare={handleShare}
+                onTogglePin={handleTogglePin}
+                onSponsor={setSponsorTarget}
+                onDelete={setDeleteTarget}
+              />
+            </motion.div>
+          ))}
+          {hasMore && (
+            <div className="flex justify-center pt-2">
+              <Button variant="outline" loading={loadingMore} onClick={() => load(page + 1, true)}>
+                {t('comm.loadMore')}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <PostComposerModal
+        open={showComposer}
+        onClose={() => setShowComposer(false)}
+        onCreated={handleCreated}
+        isStaff={isStaff}
+        defaultCategory={category}
+      />
+
+      <PostDetailModal
+        post={selected}
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        isLoggedIn={isLoggedIn}
+        onLike={handleLike}
+        onShare={handleShare}
+        onUpdated={(full) =>
+          patchPost(full.id, {
+            views: full.views,
+            comments: full.comments,
+            commentCount: full.commentCount ?? full.comments?.length ?? 0,
+          })
+        }
+      />
+
+      <SponsorPickerModal
+        post={sponsorTarget}
+        open={!!sponsorTarget}
+        onClose={() => setSponsorTarget(null)}
+        onSave={handleSponsorSave}
+        saving={busy}
+      />
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        variant="danger"
+        loading={busy}
+        title={t('comm.admin.deleteTitle')}
+        message={t('comm.admin.deleteMessage')}
+        confirmLabel={t('comm.admin.delete')}
+        cancelLabel={t('comm.composer.cancel')}
+      />
     </div>
   );
 }
