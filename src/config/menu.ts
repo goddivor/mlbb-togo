@@ -19,6 +19,7 @@ import {
   Bot,
   BarChart3,
   ListOrdered,
+  Flag,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -40,6 +41,7 @@ export const playerMenuGroups: MenuGroupConfig[] = [
     id: 'esport',
     titleKey: 'nav.section.esport',
     items: [
+      { href: '/league', labelKey: 'nav.league', icon: Flag },
       { href: '/teams', labelKey: 'header.teams', icon: Shield },
       { href: '/stats', labelKey: 'header.stats', icon: BarChart3 },
       { href: '/standings', labelKey: 'header.standings', icon: ListOrdered },

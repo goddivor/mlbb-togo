@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Globe, ChevronDown, Menu, X, Home, Check,
   LayoutGrid, Trophy, Sparkles, Handshake, Mail,
-  LayoutDashboard, LogOut, Info,
+  LayoutDashboard, LogOut, Info, Flag,
 } from 'lucide-react';
 import { useLangStore, useAuthStore } from '@/store/useStore';
 import { useT } from '@/lib/i18n';
@@ -27,6 +27,7 @@ const SECTIONS: { key: string; id?: string; href?: string; icon: any }[] = [
   { key: 'nav.features', id: 'features', icon: LayoutGrid },
   { key: 'nav.mtl', id: 'mtl', icon: Trophy },
   { key: 'nav.heroes', id: 'heroes', icon: Sparkles },
+  { key: 'nav.league', href: '/league', icon: Flag },
   { key: 'nav.partners', id: 'partners', icon: Handshake },
   { key: 'nav.about', href: '/about', icon: Info },
   { key: 'nav.contact', id: 'contact', icon: Mail },

@@ -24,7 +24,7 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{var p=location.pathname;var pub=p==='/'||p.indexOf('/admin-login')===0||p==='/about'||p.indexOf('/legal')===0||p.indexOf('/seasons')===0;var t=localStorage.getItem('mlbb-theme')||'light';var pal=localStorage.getItem('mlbb-palette')||'default';var d=pub?true:t==='dark';if(pal!=='default')d=true;document.documentElement.classList.toggle('dark',d);if(pal!=='default')document.documentElement.classList.add('theme-'+pal);}catch(e){document.documentElement.classList.add('dark');}})();",
+              "(function(){try{var p=location.pathname;var pub=p==='/'||p.indexOf('/admin-login')===0||p==='/about'||p.indexOf('/legal')===0||p.indexOf('/seasons')===0||p==='/sponsors'||p==='/league';var t=localStorage.getItem('mlbb-theme')||'light';var pal=localStorage.getItem('mlbb-palette')||'default';var d=pub?true:t==='dark';if(pal!=='default')d=true;document.documentElement.classList.toggle('dark',d);if(pal!=='default')document.documentElement.classList.add('theme-'+pal);}catch(e){document.documentElement.classList.add('dark');}})();",
           }}
         />
         <meta name="referrer" content="no-referrer" />
