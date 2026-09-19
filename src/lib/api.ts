@@ -792,6 +792,29 @@ export const api = {
     remove: (id: string) => request(`/pickban/${id}`, { method: 'DELETE' }),
   },
 
+  // League statistics (teams / players / meta / records), public.
+  // `seasonId` accepts a season id, 'current' or 'all'.
+  leagueStats: {
+    teams: (seasonId: string) =>
+      request(`/league-stats/teams?seasonId=${encodeURIComponent(seasonId)}`, { fallback: null, auth: false }),
+    players: (params: { seasonId: string; role?: string; sort?: string; limit?: number }) => {
+      const q = new URLSearchParams({ seasonId: params.seasonId });
+      if (params.role) q.set('role', params.role);
+      if (params.sort) q.set('sort', params.sort);
+      if (params.limit) q.set('limit', String(params.limit));
+      return request(`/league-stats/players?${q.toString()}`, { fallback: null, auth: false });
+    },
+    meta: (seasonId: string, limit = 10) =>
+      request(`/league-stats/meta?seasonId=${encodeURIComponent(seasonId)}&limit=${limit}`, {
+        fallback: null,
+        auth: false,
+      }),
+    records: (seasonId: string, period: 'week' | 'season') =>
+      request(`/league-stats/records?seasonId=${encodeURIComponent(seasonId)}&period=${period}`, {
+        fallback: null,
+        auth: false,
+      }),
+  },
   ai: {
     status: (): Promise<{ enabled: boolean; model: string; mode: 'llm' | 'heuristic' }> =>
       request('/ai/status', { fallback: { enabled: false, model: 'unknown', mode: 'heuristic' }, auth: false }),
