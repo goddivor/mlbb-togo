@@ -108,8 +108,11 @@ export default function AdminAwardsPage() {
         setSeasons(list);
         setTeams(Array.isArray(tm) ? tm : []);
         setTournaments(Array.isArray(tr) ? tr.map((x: any) => ({ id: x.id, name: x.name })) : []);
+        // Deep link (?season=<id>) from the league control room, else the live season.
+        const wanted = new URLSearchParams(window.location.search).get('season');
+        const linked = wanted ? list.find((x) => x.id === wanted || x.slug === wanted) : null;
         const live = list.find((x) => x.status === 'active' || x.status === 'playoffs');
-        setSeasonId(live?.id ?? list[0]?.id ?? '');
+        setSeasonId(linked?.id ?? live?.id ?? list[0]?.id ?? '');
         if (!list.length) setLoading(false);
       } catch (e: any) {
         toast.error(errMsg(e));
