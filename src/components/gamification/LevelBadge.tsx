@@ -24,7 +24,7 @@ export default function LevelBadge({
   return (
     <span
       title={`${t('progress.level')} ${level}`}
-      className={`inline-flex items-center rounded-full font-semibold bg-gradient-to-r from-primary to-meta-5 text-white shadow-sm ${sizes[size]} ${className}`}
+      className={`inline-flex items-center rounded font-semibold num bg-gradient-to-r from-primary to-accent-violet text-on-primary ${sizes[size]} ${className}`}
     >
       <Sparkles size={icon} />
       {t('progress.levelShort')} {level}

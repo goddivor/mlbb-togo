@@ -112,7 +112,7 @@ export default function PostComposerModal({
   const tabClass = (active: boolean) =>
     cn(
       'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-      active ? 'bg-primary text-white' : 'text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4',
+      active ? 'bg-primary text-on-primary' : 'text-ink-2 hover:bg-surface-2 hover:text-ink-1',
     );
 
   return (
@@ -135,7 +135,7 @@ export default function PostComposerModal({
           ))}
         </Select>
         {!isStaff && (
-          <p className="-mt-2 flex items-center gap-1 text-xs text-bodydark2">
+          <p className="-mt-2 flex items-center gap-1 text-xs text-ink-3">
             <Lock size={12} />
             {t('comm.cat.announcement')} / {t('comm.cat.stream')} : {t('comm.staffOnly')}
           </p>
@@ -151,8 +151,8 @@ export default function PostComposerModal({
 
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-black dark:text-white">{t('comm.composer.content')}</span>
-            <div className="flex gap-1 rounded-md border border-stroke p-0.5 dark:border-strokedark">
+            <span className="text-ink-1">{t('comm.composer.content')}</span>
+            <div className="flex gap-1 rounded-md border border-line-subtle bg-surface-2/70 p-0.5">
               <button type="button" className={tabClass(mode === 'write')} onClick={() => setMode('write')}>
                 {t('comm.composer.write')}
               </button>
@@ -169,21 +169,21 @@ export default function PostComposerModal({
               rows={8}
             />
           ) : (
-            <div className="min-h-[12rem] rounded-lg border border-stroke bg-gray-2 p-4 dark:border-strokedark dark:bg-meta-4">
+            <div className="min-h-[12rem] rounded-lg border border-line-subtle bg-surface-2 p-4">
               {content.trim() ? (
                 <MarkdownContent content={content} format="markdown" />
               ) : (
-                <p className="text-sm text-bodydark2">{t('comm.composer.previewEmpty')}</p>
+                <p className="text-sm text-ink-3">{t('comm.composer.previewEmpty')}</p>
               )}
             </div>
           )}
-          <p className="mt-1.5 text-xs text-bodydark2">{t('comm.composer.markdownHint')}</p>
+          <p className="mt-1.5 text-xs text-ink-3">{t('comm.composer.markdownHint')}</p>
         </div>
 
         <div>
-          <span className="mb-2 block text-black dark:text-white">
+          <span className="mb-2 block text-ink-1">
             {t('comm.composer.images')}{' '}
-            <span className="text-xs text-bodydark2">({t('comm.composer.imagesMax', { max: MAX_POST_IMAGES })})</span>
+            <span className="text-xs text-ink-3">({t('comm.composer.imagesMax', { max: MAX_POST_IMAGES })})</span>
           </span>
           <div className="flex gap-2">
             <Input
@@ -206,7 +206,7 @@ export default function PostComposerModal({
           {images.length > 0 && (
             <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
               {images.map((src, i) => (
-                <div key={`${src}-${i}`} className="group relative h-20 overflow-hidden rounded-lg border border-stroke bg-gray-2 dark:border-strokedark dark:bg-meta-4">
+                <div key={`${src}-${i}`} className="group relative h-20 overflow-hidden rounded-lg border border-line-subtle bg-surface-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" className="h-full w-full object-cover" />
                   <button
@@ -224,8 +224,8 @@ export default function PostComposerModal({
         </div>
 
         {isStaff && (
-          <div className="rounded-lg border border-dashed border-warning/40 bg-warning/5 p-3">
-            <label className="mb-2 flex cursor-pointer items-center gap-2 text-sm text-black dark:text-white">
+          <div className="rounded-lg border border-dashed border-accent-gold/40 bg-accent-gold/5 p-3">
+            <label className="mb-2 flex cursor-pointer items-center gap-2 text-sm text-ink-1">
               <input
                 type="checkbox"
                 checked={isSponsored}
@@ -233,7 +233,7 @@ export default function PostComposerModal({
                   setIsSponsored(e.target.checked);
                   if (!e.target.checked) setSponsorId('');
                 }}
-                className="h-4 w-4 accent-warning"
+                className="h-4 w-4 accent-accent-gold"
               />
               {t('comm.composer.markSponsored')}
             </label>

@@ -55,7 +55,7 @@ export default function SponsorPickerModal({
           ))}
         </Select>
         {selected?.logo && (
-          <div className="flex items-center justify-center rounded-lg border border-stroke bg-gray-2 p-3 dark:border-strokedark dark:bg-meta-4">
+          <div className="flex items-center justify-center rounded-lg border border-line-subtle bg-surface-2 p-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={selected.logo} alt={selected.name ?? ''} className="h-12 object-contain" />
           </div>

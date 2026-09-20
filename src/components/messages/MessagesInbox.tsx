@@ -381,24 +381,24 @@ export default function MessagesInbox() {
   const renderTicks = (m: any) => {
     if (m.status === 'pending') return <Clock size={13} className="opacity-70" />;
     if (m.status === 'failed')
-      return <span className="text-[11px] font-bold text-danger">!</span>;
-    if (m.readAt) return <CheckCheck size={15} className="text-sky-400" />;
+      return <span className="text-[11px] font-bold text-accent-red">!</span>;
+    if (m.readAt) return <CheckCheck size={15} className="text-primary" />;
     return <CheckCheck size={15} className="opacity-60" />;
   };
 
   return (
-    <div className="h-[calc(100vh-186px)] overflow-hidden sm:h-[calc(100vh-174px)]">
-      <div className="h-full rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark xl:flex">
+    <div className="h-[calc(100vh-250px)] min-h-[480px] overflow-hidden sm:h-[calc(100vh-236px)]">
+      <div className="h-full overflow-hidden rounded-lg border border-line-subtle bg-surface-1 shadow-elev-1 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1 xl:flex">
         {/* Left column: conversation list */}
         <div
           className={`${
             panelOpen ? 'hidden' : 'flex'
           } h-full flex-col xl:flex xl:w-1/4`}
         >
-          <div className="sticky border-b border-stroke px-6 py-7.5 dark:border-strokedark">
-            <h3 className="text-lg font-medium text-black dark:text-white 2xl:text-xl">
+          <div className="sticky border-b border-line-subtle px-6 py-5">
+            <h3 className="flex items-center gap-3 font-display text-lg font-bold tracking-tight2 text-ink-1">
               {t('messages.conversations')}
-              <span className="rounded-md border-[.5px] border-stroke bg-gray-2 px-2 py-0.5 text-base font-medium text-black dark:border-strokedark dark:bg-boxdark-2 dark:text-white 2xl:ml-4">
+              <span className="rounded bg-surface-3 px-2 py-0.5 num text-xs font-semibold text-ink-2">
                 {threads.length + rooms.length}
               </span>
             </h3>
@@ -406,16 +406,16 @@ export default function MessagesInbox() {
 
           <div className="flex max-h-full flex-col overflow-auto p-5">
             {/* Search */}
-            <form className="sticky mb-7" onSubmit={(e) => e.preventDefault()}>
+            <form className="sticky mb-5" onSubmit={(e) => e.preventDefault()}>
               <div className="relative">
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded border border-stroke bg-gray-2 py-2.5 pl-5 pr-10 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark-2 dark:text-white"
+                  className="w-full rounded border border-line-strong bg-surface-1 py-2.5 pl-4 pr-10 text-sm text-ink-1 outline-none transition-[border-color,box-shadow] duration-base placeholder:text-ink-3 focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60"
                   placeholder={t('messages.search')}
                 />
-                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-bodydark2">
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-3">
                   <Search size={18} />
                 </span>
               </div>
@@ -424,17 +424,17 @@ export default function MessagesInbox() {
             {/* Rooms (team / tournament) */}
             {!loading && (
               <div className="mb-5">
-                <h4 className="mb-2 flex items-center gap-2 px-4 text-xs font-semibold uppercase tracking-wide text-bodydark2">
+                <h4 className="eyebrow mb-2 flex items-center gap-2 px-3 !text-ink-3">
                   <Users size={13} />
                   {t('messages.rooms')}
                   {roomsUnread > 0 && (
-                    <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                    <span className="ml-auto rounded bg-primary px-1.5 py-0.5 num text-[10px] font-bold leading-none text-on-primary">
                       {roomsUnread}
                     </span>
                   )}
                 </h4>
                 {visibleRooms.length === 0 ? (
-                  <p className="px-4 py-2 text-xs text-bodydark2">{t('messages.rooms.none')}</p>
+                  <p className="px-3 py-2 text-xs text-ink-3">{t('messages.rooms.none')}</p>
                 ) : (
                   <div className="flex flex-col">
                     {visibleRooms.map((r) => {
@@ -452,26 +452,26 @@ export default function MessagesInbox() {
                               openRoom(r);
                             }
                           }}
-                          className={`flex cursor-pointer items-center rounded px-4 py-2 hover:bg-gray-2 dark:hover:bg-strokedark ${
-                            active ? 'bg-gray-2 dark:bg-strokedark' : ''
+                          className={`flex cursor-pointer items-center rounded-md px-3 py-2 transition-colors duration-fast hover:bg-surface-2/70 ${
+                            active ? 'bg-primary/10 ring-1 ring-inset ring-primary/30' : ''
                           }`}
                         >
                           <RoomAvatar room={r} className="mr-3.5 h-11 w-11" />
                           <div className="w-full min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <h5 className="truncate text-sm font-medium text-black dark:text-white">
+                              <h5 className="truncate text-sm font-semibold text-ink-1">
                                 {r.title}
                               </h5>
-                              <span className="shrink-0 rounded bg-meta-5/10 px-1 py-0.5 text-[9px] font-bold uppercase text-meta-5">
+                              <span className="shrink-0 rounded bg-accent-violet/10 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-accent-violet">
                                 {t(`messages.room.kind.${r.kind}`)}
                               </span>
                               {r.unread > 0 && (
-                                <span className="ml-auto shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                                <span className="ml-auto shrink-0 rounded bg-primary px-1.5 py-0.5 num text-[10px] font-bold leading-none text-on-primary">
                                   {r.unread}
                                 </span>
                               )}
                             </div>
-                            <p className="truncate text-sm font-medium text-body dark:text-bodydark">
+                            <p className="truncate text-xs text-ink-2">
                               {r.lastMessage
                                 ? `${senderName ? `${senderName}: ` : ''}${r.lastMessage.body}`
                                 : t('messages.room.members', { count: r.memberCount ?? 0 })}
@@ -487,11 +487,11 @@ export default function MessagesInbox() {
 
             {/* Thread list */}
             {!loading && (
-              <h4 className="mb-2 flex items-center gap-2 px-4 text-xs font-semibold uppercase tracking-wide text-bodydark2">
+              <h4 className="eyebrow mb-2 flex items-center gap-2 px-3 !text-ink-3">
                 <MessageSquare size={13} />
                 {t('messages.direct')}
                 {threadsUnread > 0 && (
-                  <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                  <span className="ml-auto rounded bg-primary px-1.5 py-0.5 num text-[10px] font-bold leading-none text-on-primary">
                     {threadsUnread}
                   </span>
                 )}
@@ -499,10 +499,10 @@ export default function MessagesInbox() {
             )}
             {loading ? (
               <div className="flex items-center justify-center py-10">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-stroke border-t-primary dark:border-strokedark dark:border-t-primary" />
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-line-strong border-t-primary" />
               </div>
             ) : visibleThreads.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 px-4 py-12 text-center text-sm text-bodydark2">
+              <div className="flex flex-col items-center justify-center gap-2 px-4 py-12 text-center text-sm text-ink-3">
                 <MessageSquare size={28} className="opacity-50" />
                 {t('messages.none')}
               </div>
@@ -523,8 +523,8 @@ export default function MessagesInbox() {
                           openThread(th.id);
                         }
                       }}
-                      className={`flex cursor-pointer items-center rounded px-4 py-2 hover:bg-gray-2 dark:hover:bg-strokedark ${
-                        active ? 'bg-gray-2 dark:bg-strokedark' : ''
+                      className={`flex cursor-pointer items-center rounded-md px-3 py-2 transition-colors duration-fast hover:bg-surface-2/70 ${
+                        active ? 'bg-primary/10 ring-1 ring-inset ring-primary/30' : ''
                       }`}
                     >
                       <div className="relative mr-3.5 h-11 w-11 shrink-0 rounded-full">
@@ -537,31 +537,31 @@ export default function MessagesInbox() {
                             className="h-full w-full rounded-full object-cover"
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+                          <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-accent-cyan to-accent-violet font-display text-sm font-bold text-on-primary">
                             {initialOf(o)}
                           </div>
                         )}
                         {o?.id && online.has(o.id) && (
-                          <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full border-2 border-gray-2 bg-success" />
+                          <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full border-2 border-surface-1 bg-accent-green" />
                         )}
                       </div>
                       <div className="w-full min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <h5 className="truncate text-sm font-medium text-black dark:text-white">
+                          <h5 className="truncate text-sm font-semibold text-ink-1">
                             {nameOf(o) || th.subject || ''}
                           </h5>
                           {isStaff(o?.roleUser) && (
-                            <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-meta-5/10 px-1 py-0.5 text-[9px] font-bold uppercase text-meta-5">
+                            <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-accent-violet/10 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-accent-violet">
                               <Shield size={9} /> {o.roleUser}
                             </span>
                           )}
                           {th.unread > 0 && (
-                            <span className="ml-auto shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                            <span className="ml-auto shrink-0 rounded bg-primary px-1.5 py-0.5 num text-[10px] font-bold leading-none text-on-primary">
                               {th.unread}
                             </span>
                           )}
                         </div>
-                        <p className="truncate text-sm font-medium text-body dark:text-bodydark">
+                        <p className="truncate text-xs text-ink-2">
                           {th.lastMessage?.body || ''}
                         </p>
                       </div>
@@ -577,11 +577,13 @@ export default function MessagesInbox() {
         <div
           className={`${
             panelOpen ? 'flex' : 'hidden'
-          } h-full flex-col border-l border-stroke dark:border-strokedark xl:flex xl:w-3/4`}
+          } h-full flex-col border-l border-line-subtle xl:flex xl:w-3/4`}
         >
           {!panelOpen ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-2 text-sm text-bodydark2">
-              <MessageSquare size={32} className="opacity-50" />
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 text-sm text-ink-3">
+              <span className="flex h-16 w-16 items-center justify-center rounded cut-corners bg-surface-2 ring-1 ring-inset ring-line-subtle">
+                <MessageSquare size={28} className="opacity-70" />
+              </span>
               {t('messages.empty')}
             </div>
           ) : activeRoom ? (
@@ -596,12 +598,12 @@ export default function MessagesInbox() {
           ) : (
             <>
               {/* Header */}
-              <div className="sticky flex items-center justify-between border-b border-stroke px-6 py-4.5 dark:border-strokedark">
+              <div className="sticky flex items-center justify-between border-b border-line-subtle bg-surface-1/80 px-6 py-4 backdrop-blur">
                 <div className="flex items-center">
                   <button
                     type="button"
                     onClick={closePanel}
-                    className="mr-3 rounded-md p-1.5 text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4 xl:hidden"
+                    className="mr-3 rounded p-1.5 text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink-1 xl:hidden"
                     aria-label={t('messages.title')}
                   >
                     <ArrowLeft size={18} />
@@ -616,19 +618,19 @@ export default function MessagesInbox() {
                         className="h-full w-full rounded-full object-cover"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center rounded-full bg-primary text-base font-bold text-white">
+                      <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-accent-cyan to-accent-violet font-display text-base font-bold text-on-primary">
                         {initialOf(headerPeer)}
                       </div>
                     )}
                     {headerPeer?.id && online.has(headerPeer.id) && (
-                      <span className="absolute bottom-0 right-0 block h-3.5 w-3.5 rounded-full border-2 border-white bg-success dark:border-boxdark" />
+                      <span className="absolute bottom-0 right-0 block h-3.5 w-3.5 rounded-full border-2 border-surface-1 bg-accent-green" />
                     )}
                   </div>
                   <div className="min-w-0">
-                    <h5 className="truncate font-medium text-black dark:text-white">
+                    <h5 className="truncate font-display font-bold tracking-tight2 text-ink-1">
                       {nameOf(headerPeer) || thread?.subject || ''}
                     </h5>
-                    <p className="text-sm font-medium text-body dark:text-bodydark">
+                    <p className="text-xs text-ink-2">
                       {t('messages.replyTo')}
                     </p>
                   </div>
@@ -638,17 +640,17 @@ export default function MessagesInbox() {
               {/* Message thread */}
               <div
                 ref={scrollRef}
-                className="no-scrollbar max-h-full flex-1 space-y-3.5 overflow-auto px-6 py-7.5"
+                className="no-scrollbar max-h-full flex-1 space-y-3 overflow-auto px-6 py-6"
               >
                 {!thread ? (
                   draftPeer ? (
-                    <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-bodydark2">
+                    <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-ink-3">
                       <MessageSquare size={28} className="opacity-50" />
                       {t('messages.startWith', { name: draftPeer.name })}
                     </div>
                   ) : (
                     <div className="flex items-center justify-center py-10">
-                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-stroke border-t-primary dark:border-strokedark dark:border-t-primary" />
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-line-strong border-t-primary" />
                     </div>
                   )
                 ) : (
@@ -657,15 +659,15 @@ export default function MessagesInbox() {
                       // Sent message
                       <div key={m.id} className="ml-auto max-w-[31.25rem]">
                         <div
-                          className={`mb-2.5 rounded-2xl rounded-br-none bg-primary px-5 py-3 ${
+                          className={`mb-1.5 rounded-xl rounded-br-sm bg-primary px-4 py-2.5 shadow-elev-1 ${
                             m.status === 'pending' ? 'opacity-80' : ''
                           }`}
                         >
-                          <p className="whitespace-pre-wrap break-words font-medium text-white">
+                          <p className="whitespace-pre-wrap break-words text-sm text-on-primary">
                             {m.body}
                           </p>
                         </div>
-                        <div className="flex items-center justify-end gap-1 text-xs font-medium text-body dark:text-bodydark">
+                        <div className="flex items-center justify-end gap-1 num text-[11px] text-ink-3">
                           {fmtTime(m.createdAt)}
                           {renderTicks(m)}
                         </div>
@@ -673,15 +675,15 @@ export default function MessagesInbox() {
                     ) : (
                       // Received message
                       <div key={m.id} className="max-w-[31.25rem]">
-                        <p className="mb-2.5 text-sm font-medium text-black dark:text-white">
+                        <p className="mb-1 text-xs font-semibold text-ink-1">
                           {nameOf(other) || thread?.subject || ''}
                         </p>
-                        <div className="mb-2.5 rounded-2xl rounded-tl-none bg-gray px-5 py-3 dark:bg-boxdark-2">
-                          <p className="whitespace-pre-wrap break-words font-medium text-black dark:text-white">
+                        <div className="mb-1.5 rounded-xl rounded-tl-sm border border-line-subtle bg-surface-2 px-4 py-2.5">
+                          <p className="whitespace-pre-wrap break-words text-sm text-ink-1">
                             {m.body}
                           </p>
                         </div>
-                        <p className="text-xs font-medium text-body dark:text-bodydark">
+                        <p className="num text-[11px] text-ink-3">
                           {fmtTime(m.createdAt)}
                         </p>
                       </div>
@@ -691,7 +693,7 @@ export default function MessagesInbox() {
               </div>
 
               {/* Composer */}
-              <div className="sticky bottom-0 border-t border-stroke bg-white px-6 py-5 dark:border-strokedark dark:bg-boxdark">
+              <div className="sticky bottom-0 border-t border-line-subtle bg-surface-1 px-6 py-4">
                 <form
                   className="flex items-center justify-between space-x-4.5"
                   onSubmit={(e) => {
@@ -705,14 +707,14 @@ export default function MessagesInbox() {
                       value={text}
                       onChange={(e) => setText(e.target.value)}
                       placeholder={t('messages.placeholder')}
-                      className="h-13 w-full rounded-md border border-stroke bg-gray pl-5 pr-19 font-medium text-black placeholder-body outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark-2 dark:text-white"
+                      className="h-12 w-full rounded border border-line-strong bg-surface-1 pl-4 pr-4 text-sm text-ink-1 outline-none transition-[border-color,box-shadow] duration-base placeholder:text-ink-3 focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60"
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={!text.trim()}
                     aria-label={t('messages.send')}
-                    className="flex h-13 w-13 items-center justify-center rounded-md bg-primary text-white hover:bg-opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="btn-cut flex h-12 w-12 items-center justify-center text-on-primary transition-[box-shadow,filter] duration-base hover:shadow-glow-cyan disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-none"
                   >
                     <Send size={18} />
                   </button>

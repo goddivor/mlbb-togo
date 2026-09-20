@@ -54,7 +54,7 @@ export function RoomAvatar({ room, className = 'h-11 w-11' }: { room: any; class
           className="h-full w-full rounded-full object-cover"
         />
       ) : (
-        <div className="flex h-full w-full items-center justify-center rounded-full bg-meta-5/15 text-meta-5 dark:bg-meta-5/20">
+        <div className="flex h-full w-full items-center justify-center rounded-full bg-accent-violet/15 text-accent-violet">
           <RoomKindIcon kind={room?.kind} />
         </div>
       )}
@@ -86,7 +86,7 @@ function MessageBody({ body, members }: { body: string; members: any[] }) {
     <>
       {parts.map((p, i) =>
         p.mention ? (
-          <span key={i} className="rounded bg-white/20 px-1 font-semibold dark:bg-primary/20">
+          <span key={i} className="rounded bg-black/10 px-1 font-semibold dark:bg-white/15">
             {p.text}
           </span>
         ) : (
@@ -406,22 +406,22 @@ export default function RoomView({ room, myId, onBack, onRead, onMessage }: Room
   return (
     <>
       {/* Header */}
-      <div className="sticky flex items-center justify-between border-b border-stroke px-6 py-4.5 dark:border-strokedark">
+      <div className="sticky flex items-center justify-between border-b border-line-subtle bg-surface-1/80 px-6 py-4 backdrop-blur">
         <div className="flex min-w-0 items-center">
           <button
             type="button"
             onClick={onBack}
-            className="mr-3 rounded-md p-1.5 text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4 xl:hidden"
+            className="mr-3 rounded p-1.5 text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink-1 xl:hidden"
             aria-label={t('messages.title')}
           >
             <ArrowLeft size={18} />
           </button>
           <RoomAvatar room={thread ?? room} className="mr-4.5 h-13 w-13" />
           <div className="min-w-0">
-            <h5 className="truncate font-medium text-black dark:text-white">
+            <h5 className="truncate font-display font-bold tracking-tight2 text-ink-1">
               {thread?.title || t(`messages.room.kind.${room.kind}`)}
             </h5>
-            <p className="truncate text-sm font-medium text-body dark:text-bodydark">
+            <p className="truncate text-xs text-ink-2">
               {t(`messages.room.kind.${room.kind}`)}
               {' · '}
               {t('messages.room.members', { count: memberCount })}
@@ -436,7 +436,7 @@ export default function RoomView({ room, myId, onBack, onRead, onMessage }: Room
             onClick={() => setMembersOpen((o) => !o)}
             aria-label={t('messages.room.membersTitle')}
             aria-expanded={membersOpen}
-            className="flex items-center gap-1 rounded-md border border-stroke px-2.5 py-1.5 text-sm text-body hover:bg-gray-2 dark:border-strokedark dark:text-bodydark dark:hover:bg-meta-4"
+            className="flex items-center gap-1 rounded border border-line-strong px-2.5 py-1.5 num text-sm text-ink-2 transition-colors hover:border-primary hover:text-primary"
           >
             <div className="flex -space-x-2">
               {members.slice(0, 3).map((m) => (
@@ -445,7 +445,7 @@ export default function RoomView({ room, myId, onBack, onRead, onMessage }: Room
                   name={nameOf(m)}
                   src={m?.avatar ? avatarSrc(m.avatar, 48) : undefined}
                   size="sm"
-                  className="rounded-full ring-2 ring-white dark:ring-boxdark"
+                  className="rounded-full ring-2 ring-surface-1"
                 />
               ))}
             </div>
@@ -453,8 +453,8 @@ export default function RoomView({ room, myId, onBack, onRead, onMessage }: Room
             <span className="hidden sm:inline">{memberCount}</span>
           </button>
           {membersOpen && (
-            <div className="absolute right-0 z-20 mt-2 w-64 rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-              <div className="border-b border-stroke px-4 py-2.5 text-sm font-medium text-black dark:border-strokedark dark:text-white">
+            <div className="absolute right-0 z-20 mt-2 w-64 rounded-lg border border-line-strong bg-surface-1 shadow-elev-3">
+              <div className="border-b border-line-subtle px-4 py-2.5 text-sm font-semibold text-ink-1">
                 {t('messages.room.membersTitle')} ({memberCount})
               </div>
               <ul className="max-h-72 overflow-y-auto py-1">
@@ -467,19 +467,19 @@ export default function RoomView({ room, myId, onBack, onRead, onMessage }: Room
                       online={online.has(m.id)}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-black dark:text-white">
+                      <p className="truncate text-sm font-medium text-ink-1">
                         {nameOf(m)}
                         {m.id === myId && (
-                          <span className="ml-1 text-xs text-body dark:text-bodydark">
+                          <span className="ml-1 text-xs text-ink-3">
                             ({t('messages.room.you')})
                           </span>
                         )}
                       </p>
-                      <p className="truncate text-xs text-body dark:text-bodydark">@{m.username}</p>
+                      <p className="truncate text-xs text-ink-3">@{m.username}</p>
                     </div>
                     <span
                       className={`h-2.5 w-2.5 shrink-0 rounded-full ${
-                        online.has(m.id) ? 'bg-success' : 'bg-bodydark2/40'
+                        online.has(m.id) ? 'bg-accent-green' : 'bg-ink-3/40'
                       }`}
                       title={online.has(m.id) ? t('messages.room.online') : t('messages.room.offline')}
                     />
@@ -495,17 +495,17 @@ export default function RoomView({ room, myId, onBack, onRead, onMessage }: Room
       <div
         ref={scrollRef}
         onScroll={onScroll}
-        className="no-scrollbar max-h-full flex-1 space-y-3.5 overflow-auto px-6 py-7.5"
+        className="no-scrollbar max-h-full flex-1 space-y-3 overflow-auto px-6 py-6"
       >
         {!data ? (
           <div className="flex items-center justify-center py-10">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-stroke border-t-primary dark:border-strokedark dark:border-t-primary" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-line-strong border-t-primary" />
           </div>
         ) : (
           <>
             {loadingOlder && (
               <div className="flex justify-center py-1">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-stroke border-t-primary dark:border-strokedark" />
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-line-strong border-t-primary" />
               </div>
             )}
             {!loadingOlder && hasMore && (
@@ -513,14 +513,14 @@ export default function RoomView({ room, myId, onBack, onRead, onMessage }: Room
                 <button
                   type="button"
                   onClick={() => void loadOlder()}
-                  className="rounded-full border border-stroke px-3 py-1 text-xs text-body hover:bg-gray-2 dark:border-strokedark dark:text-bodydark dark:hover:bg-meta-4"
+                  className="rounded border border-line-strong px-3 py-1 text-xs font-semibold text-ink-2 transition-colors hover:border-primary hover:text-primary"
                 >
                   {t('messages.room.loadOlder')}
                 </button>
               </div>
             )}
             {messages.length === 0 && (
-              <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-bodydark2">
+              <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-ink-3">
                 <AtSign size={28} className="opacity-50" />
                 {t('messages.room.empty')}
               </div>
@@ -535,27 +535,27 @@ export default function RoomView({ room, myId, onBack, onRead, onMessage }: Room
                 <div key={m.id}>
                   {showDay && (
                     <div className="my-4 flex items-center gap-3">
-                      <div className="h-px flex-1 bg-stroke dark:bg-strokedark" />
-                      <span className="rounded-full bg-gray-2 px-3 py-0.5 text-xs font-medium text-body dark:bg-boxdark-2 dark:text-bodydark">
+                      <div className="h-px flex-1 bg-line-subtle" />
+                      <span className="eyebrow rounded bg-surface-2 px-3 py-1 !text-ink-3">
                         {dayLabel(date)}
                       </span>
-                      <div className="h-px flex-1 bg-stroke dark:bg-strokedark" />
+                      <div className="h-px flex-1 bg-line-subtle" />
                     </div>
                   )}
                   {mine ? (
                     <div className="ml-auto max-w-[31.25rem]">
                       <div
-                        className={`mb-1.5 rounded-2xl rounded-br-none bg-primary px-5 py-3 ${
+                        className={`mb-1.5 rounded-xl rounded-br-sm bg-primary px-4 py-2.5 shadow-elev-1 ${
                           m.status === 'pending' ? 'opacity-80' : ''
                         } ${m.status === 'failed' ? 'ring-2 ring-danger' : ''}`}
                       >
-                        <p className="whitespace-pre-wrap break-words font-medium text-white">
+                        <p className="whitespace-pre-wrap break-words text-sm text-on-primary">
                           <MessageBody body={m.body} members={members} />
                         </p>
                       </div>
-                      <div className="flex items-center justify-end gap-1 text-xs font-medium text-body dark:text-bodydark">
+                      <div className="flex items-center justify-end gap-1 num text-[11px] text-ink-3">
                         {m.status === 'failed' ? (
-                          <span className="font-bold text-danger">{t('messages.room.failed')}</span>
+                          <span className="font-bold text-accent-red">{t('messages.room.failed')}</span>
                         ) : (
                           fmtTime(m.createdAt)
                         )}
@@ -570,15 +570,15 @@ export default function RoomView({ room, myId, onBack, onRead, onMessage }: Room
                         className="mb-5 shrink-0"
                       />
                       <div className="min-w-0">
-                        <p className="mb-1 text-sm font-medium text-black dark:text-white">
+                        <p className="mb-1 text-xs font-semibold text-ink-1">
                           {nameOf(sender) || t('messages.room.unknownMember')}
                         </p>
-                        <div className="mb-1.5 rounded-2xl rounded-tl-none bg-gray px-5 py-3 dark:bg-boxdark-2">
-                          <p className="whitespace-pre-wrap break-words font-medium text-black dark:text-white">
+                        <div className="mb-1.5 rounded-xl rounded-tl-sm border border-line-subtle bg-surface-2 px-4 py-2.5">
+                          <p className="whitespace-pre-wrap break-words text-sm text-ink-1">
                             <MessageBody body={m.body} members={members} />
                           </p>
                         </div>
-                        <p className="text-xs font-medium text-body dark:text-bodydark">
+                        <p className="num text-[11px] text-ink-3">
                           {fmtTime(m.createdAt)}
                         </p>
                       </div>
@@ -592,8 +592,8 @@ export default function RoomView({ room, myId, onBack, onRead, onMessage }: Room
       </div>
 
       {/* Composer */}
-      <div className="sticky bottom-0 border-t border-stroke bg-white px-6 py-4 dark:border-strokedark dark:bg-boxdark">
-        <p className="mb-1.5 h-4 truncate text-xs italic text-body dark:text-bodydark" aria-live="polite">
+      <div className="sticky bottom-0 border-t border-line-subtle bg-surface-1 px-6 py-4">
+        <p className="mb-1.5 h-4 truncate text-xs italic text-ink-3" aria-live="polite">
           {typingNames.length === 1
             ? t('messages.room.typingOne', { name: typingNames[0] })
             : typingNames.length > 1
@@ -611,7 +611,7 @@ export default function RoomView({ room, myId, onBack, onRead, onMessage }: Room
             {mentionQuery !== null && mentionCandidates.length > 0 && (
               <ul
                 role="listbox"
-                className="absolute bottom-full left-0 z-20 mb-2 w-72 overflow-hidden rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark"
+                className="absolute bottom-full left-0 z-20 mb-2 w-72 overflow-hidden rounded-lg border border-line-strong bg-surface-1 shadow-elev-3"
               >
                 {mentionCandidates.map((m, i) => (
                   <li
@@ -624,7 +624,7 @@ export default function RoomView({ room, myId, onBack, onRead, onMessage }: Room
                     }}
                     onMouseEnter={() => setMentionIndex(i)}
                     className={`flex cursor-pointer items-center gap-3 px-3 py-2 ${
-                      i === mentionIndex ? 'bg-gray-2 dark:bg-meta-4' : ''
+                      i === mentionIndex ? 'bg-primary/10' : ''
                     }`}
                   >
                     <Avatar
@@ -633,10 +633,10 @@ export default function RoomView({ room, myId, onBack, onRead, onMessage }: Room
                       size="sm"
                     />
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-black dark:text-white">
+                      <p className="truncate text-sm font-medium text-ink-1">
                         {nameOf(m)}
                       </p>
-                      <p className="truncate text-xs text-body dark:text-bodydark">@{m.username}</p>
+                      <p className="truncate text-xs text-ink-3">@{m.username}</p>
                     </div>
                   </li>
                 ))}
@@ -652,14 +652,14 @@ export default function RoomView({ room, myId, onBack, onRead, onMessage }: Room
               onBlur={() => setMentionQuery(null)}
               placeholder={t('messages.room.placeholder')}
               autoComplete="off"
-              className="h-13 w-full rounded-md border border-stroke bg-gray pl-5 pr-5 font-medium text-black placeholder-body outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark-2 dark:text-white"
+              className="h-12 w-full rounded border border-line-strong bg-surface-1 pl-4 pr-4 text-sm text-ink-1 outline-none transition-[border-color,box-shadow] duration-base placeholder:text-ink-3 focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60"
             />
           </div>
           <button
             type="submit"
             disabled={!text.trim() || !data}
             aria-label={t('messages.send')}
-            className="flex h-13 w-13 shrink-0 items-center justify-center rounded-md bg-primary text-white hover:bg-opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-cut flex h-12 w-12 shrink-0 items-center justify-center text-on-primary transition-[box-shadow,filter] duration-base hover:shadow-glow-cyan disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-none"
           >
             <Send size={18} />
           </button>

@@ -18,7 +18,7 @@ export default function MarkdownContent({
     () => (format === 'markdown' ? renderMarkdown(content) : null),
     [content, format],
   );
-  const base = 'text-sm leading-relaxed text-body dark:text-bodydark space-y-2 break-words';
+  const base = 'text-sm leading-relaxed text-ink-2 space-y-2 break-words';
   if (html === null) {
     return <div className={cn(base, 'whitespace-pre-wrap', className)}>{content}</div>;
   }

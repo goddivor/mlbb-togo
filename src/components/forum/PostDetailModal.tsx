@@ -103,14 +103,14 @@ export default function PostDetailModal({
             <Badge variant="gold" size="sm"><Pin size={12} />{t('comm.pinned')}</Badge>
           )}
           {merged.isSponsored && <SponsorBadge sponsor={merged.sponsor} t={t} />}
-          <span className="ml-auto text-xs text-bodydark2" title={new Date(merged.createdAt).toLocaleString()}>
+          <span className="ml-auto text-xs text-ink-3" title={new Date(merged.createdAt).toLocaleString()}>
             {timeAgo(merged.createdAt)}
           </span>
         </div>
 
         <div className="flex items-center gap-2 text-sm">
           <Avatar name={merged.authorName} size="sm" />
-          <span className="font-medium text-black dark:text-white">{merged.authorName}</span>
+          <span className="font-medium text-ink-1">{merged.authorName}</span>
           {merged.authorRank && <Badge variant="neon" size="sm">{getRankName(merged.authorRank)}</Badge>}
         </div>
 
@@ -119,11 +119,11 @@ export default function PostDetailModal({
             href={merged.sponsor.url ?? undefined}
             target="_blank"
             rel="noopener noreferrer nofollow"
-            className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 p-3"
+            className="flex items-center gap-3 rounded-lg border border-accent-gold/30 bg-accent-gold/5 p-3"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={merged.sponsor.logo} alt={merged.sponsor.name ?? ''} className="h-10 max-w-[8rem] object-contain" />
-            <span className="text-xs text-body dark:text-bodydark">
+            <span className="text-xs text-ink-2">
               {merged.sponsor.name ? t('comm.sponsoredBy', { name: merged.sponsor.name }) : t('comm.sponsored')}
             </span>
           </a>
@@ -132,14 +132,14 @@ export default function PostDetailModal({
         <MarkdownContent content={merged.content} format={merged.contentFormat} />
         {merged.images && merged.images.length > 0 && <PostImages images={merged.images} />}
 
-        <div className="flex flex-wrap items-center gap-2 border-y border-stroke py-3 text-sm text-body dark:border-strokedark dark:text-bodydark">
+        <div className="flex flex-wrap items-center gap-2 border-y border-line-subtle py-3 text-sm text-ink-2">
           <button
             type="button"
             onClick={() => onLike(merged)}
             aria-pressed={!!merged.likedByMe}
             className={cn(
-              'flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors hover:bg-gray-2 dark:hover:bg-meta-4',
-              merged.likedByMe ? 'text-danger' : 'hover:text-danger',
+              'flex items-center gap-1.5 rounded px-3 py-1.5 num transition-colors duration-fast hover:bg-surface-2',
+              merged.likedByMe ? 'text-accent-red' : 'hover:text-accent-red',
             )}
           >
             <Heart size={16} className={merged.likedByMe ? 'fill-current' : ''} />
@@ -148,7 +148,7 @@ export default function PostDetailModal({
           <button
             type="button"
             onClick={() => onShare(merged)}
-            className="flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors hover:bg-gray-2 hover:text-primary dark:hover:bg-meta-4"
+            className="flex items-center gap-1.5 rounded px-3 py-1.5 num transition-colors duration-fast hover:bg-surface-2 hover:text-primary"
           >
             <Share2 size={16} />
             {merged.shares ?? 0} · {t('comm.share')}
@@ -160,25 +160,25 @@ export default function PostDetailModal({
         </div>
 
         <div>
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-black dark:text-white">
+          <h3 className="mb-3 flex items-center gap-2 font-display text-sm font-bold text-ink-1">
             <MessageCircle size={16} />
             {t('comm.comments')} ({comments.length})
           </h3>
           {loading && comments.length === 0 ? (
             <LoadingSpinner size="sm" />
           ) : comments.length === 0 ? (
-            <p className="text-sm text-bodydark2">{t('comm.detail.noComments')}</p>
+            <p className="text-sm text-ink-3">{t('comm.detail.noComments')}</p>
           ) : (
             <div className="space-y-3">
               {comments.map((c: any) => (
                 <div key={c.id} className="flex gap-3">
                   <Avatar name={c.authorName} size="sm" />
-                  <div className="min-w-0 flex-1 rounded-lg bg-gray-2 px-3 py-2 dark:bg-meta-4">
+                  <div className="min-w-0 flex-1 rounded-lg bg-surface-2 px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-black dark:text-white">{c.authorName}</span>
-                      <span className="text-xs text-bodydark2">{timeAgo(c.createdAt)}</span>
+                      <span className="text-sm font-medium text-ink-1">{c.authorName}</span>
+                      <span className="text-xs text-ink-3">{timeAgo(c.createdAt)}</span>
                     </div>
-                    <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-body dark:text-bodydark">{c.content}</p>
+                    <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-ink-2">{c.content}</p>
                   </div>
                 </div>
               ))}
@@ -198,7 +198,7 @@ export default function PostDetailModal({
                     sendComment();
                   }
                 }}
-                className="flex-1 rounded-lg border border-stroke bg-gray-2 px-3 py-2 text-sm text-black outline-none placeholder:text-bodydark2 focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+                className="flex-1 rounded border border-line-strong bg-surface-1 px-3 py-2 text-sm text-ink-1 outline-none placeholder:text-ink-3 transition-[border-color,box-shadow] duration-base focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60"
               />
               <Button size="sm" loading={sending} disabled={!comment.trim()} onClick={sendComment}>
                 <Send size={14} />
@@ -206,7 +206,7 @@ export default function PostDetailModal({
               </Button>
             </div>
           ) : (
-            <p className="mt-4 text-xs text-bodydark2">{t('comm.detail.loginToComment')}</p>
+            <p className="mt-4 text-xs text-ink-3">{t('comm.detail.loginToComment')}</p>
           )}
         </div>
       </div>

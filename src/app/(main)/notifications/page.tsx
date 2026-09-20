@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
+  Award,
   Bell,
   BellOff,
   AtSign,
@@ -27,11 +28,15 @@ import {
   SectionCard,
   Badge,
   EmptyState,
-  LoadingSpinner,
   Button,
+  Tabs,
+  StatTile,
+  Skeleton,
 } from '@/components/ui';
 import { useT, notifContent } from '@/lib/i18n';
+import { useLangStore } from '@/store/useStore';
 import { timeAgo } from '@/lib/helpers';
+import { fadeUp, stagger, still } from '@/lib/motion';
 import { getSocket, usePresence } from '@/lib/realtime';
 
 const PAGE_SIZE = 20;
@@ -61,10 +66,55 @@ const TYPE_STYLE: Record<string, { icon: any; variant: string }> = {
   tournament_open: { icon: Trophy, variant: 'gold' },
   tournament_second_phase: { icon: Trophy, variant: 'pink' },
   tournament_team: { icon: Shield, variant: 'blue' },
+  sponsorship_request: { icon: Handshake, variant: 'gold' },
+  achievement_unlock: { icon: Award, variant: 'purple' },
 };
 
 const styleOf = (type: string) =>
   TYPE_STYLE[type] ?? { icon: Bell, variant: 'default' };
+
+const ACCENT_OF: Record<string, 'cyan' | 'violet' | 'gold' | 'red' | 'green'> = {
+  blue: 'cyan',
+  purple: 'violet',
+  gold: 'gold',
+  green: 'green',
+  pink: 'violet',
+  red: 'red',
+};
+
+const ACCENT_ICON: Record<string, string> = {
+  cyan: 'bg-accent-cyan/10 text-accent-cyan',
+  violet: 'bg-accent-violet/10 text-accent-violet',
+  gold: 'bg-accent-gold/15 text-accent-gold',
+  red: 'bg-accent-red/10 text-accent-red',
+  green: 'bg-accent-green/10 text-accent-green',
+};
+
+/** Groups rows by calendar day (today / yesterday / dated) keeping the order. */
+function groupByDay(items: AppNotification[], lang: string) {
+  const today = new Date();
+  const dayKey = (d: Date) => d.toDateString();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const groups: { key: string; label: 'today' | 'yesterday' | string; items: AppNotification[] }[] = [];
+  for (const n of items) {
+    const d = new Date(n.createdAt);
+    const key = dayKey(d);
+    let g = groups.find((x) => x.key === key);
+    if (!g) {
+      const label =
+        key === dayKey(today)
+          ? 'today'
+          : key === dayKey(yesterday)
+            ? 'yesterday'
+            : d.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+      g = { key, label, items: [] };
+      groups.push(g);
+    }
+    g.items.push(n);
+  }
+  return groups;
+}
 
 const EMPTY: NotificationPage = {
   items: [],
@@ -78,6 +128,8 @@ const EMPTY: NotificationPage = {
 
 export default function NotificationsPage() {
   const t = useT();
+  const lang = useLangStore((s: any) => s.lang);
+  const reduce = useReducedMotion();
   const router = useRouter();
   const connected = usePresence((s) => s.connected);
 
@@ -184,10 +236,14 @@ export default function NotificationsPage() {
   };
 
   const hasUnreadHere = data.items.some((n) => !n.read);
+  const groups = useMemo(() => groupByDay(data.items, lang), [data.items, lang]);
+  const readCount = Math.max(0, data.total - data.unread);
 
   return (
     <div className="space-y-6">
       <PageHeader
+        icon={<Bell size={22} />}
+        eyebrow={t('notif.page.eyebrow')}
         title={t('notif.page.title')}
         subtitle={t('notif.page.subtitle')}
         breadcrumb={t('notif.title')}
@@ -214,75 +270,68 @@ export default function NotificationsPage() {
         }
       />
 
-      {/* Filters */}
-      <SectionCard className="!p-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium uppercase text-bodydark2">
-              {t('notif.filter.status')}
-            </span>
-            {STATUSES.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => {
-                  setStatus(s.id);
-                  setPage(1);
-                }}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  status === s.id
-                    ? 'bg-primary text-white'
-                    : 'bg-gray text-body hover:bg-gray-2 dark:bg-meta-4 dark:text-bodydark'
-                }`}
-              >
-                {t(s.key)}
-                {s.id === 'unread' && data.unread > 0 ? ` (${data.unread})` : ''}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium uppercase text-bodydark2">
-              {t('notif.filter.type')}
-            </span>
+      {/* KPI strip + filters */}
+      <SectionCard className="!p-0">
+        <div className="grid grid-cols-3 divide-x divide-line-subtle border-b border-line-subtle">
+          <StatTile label={t('notif.page.total')} value={data.total} className="px-5 py-4" />
+          <StatTile label={t('notif.page.unread')} value={data.unread} accent={data.unread > 0 ? 'red' : undefined} className="px-5 py-4" />
+          <StatTile label={t('notif.filter.read')} value={readCount} className="px-5 py-4" />
+        </div>
+        <div className="overflow-x-auto overflow-y-hidden whitespace-nowrap px-2">
+          <Tabs
+            variant="underline"
+            className="min-w-max !border-b-0"
+            tabs={STATUSES.map((s) => ({
+              id: s.id,
+              label: t(s.key),
+              count: s.id === 'unread' ? data.unread : s.id === 'read' ? readCount : data.total,
+            }))}
+            active={status}
+            onChange={(id) => {
+              setStatus(id);
+              setPage(1);
+            }}
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-t border-line-subtle px-4 py-3">
+          <span className="eyebrow mr-1">{t('notif.filter.type')}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setType('');
+              setPage(1);
+            }}
+            className={`rounded px-2.5 py-1 text-xs font-semibold transition-colors duration-fast ${
+              type === ''
+                ? 'bg-primary text-on-primary'
+                : 'bg-surface-2 text-ink-2 hover:bg-surface-3 hover:text-ink-1'
+            }`}
+          >
+            {t('notif.filter.allTypes')}
+          </button>
+          {typeOptions.map((o) => (
             <button
+              key={o.key}
               type="button"
               onClick={() => {
-                setType('');
+                setType(o.key);
                 setPage(1);
               }}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                type === ''
-                  ? 'bg-primary text-white'
-                  : 'bg-gray text-body hover:bg-gray-2 dark:bg-meta-4 dark:text-bodydark'
+              className={`inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-semibold transition-colors duration-fast ${
+                type === o.key
+                  ? 'bg-primary text-on-primary'
+                  : 'bg-surface-2 text-ink-2 hover:bg-surface-3 hover:text-ink-1'
               }`}
             >
-              {t('notif.filter.allTypes')}
+              {t(`notif.type.${o.key}`)}
+              <span className={`num ${type === o.key ? 'opacity-80' : 'text-ink-3'}`}>{o.count}</span>
             </button>
-            {typeOptions.map((o) => (
-              <button
-                key={o.key}
-                type="button"
-                onClick={() => {
-                  setType(o.key);
-                  setPage(1);
-                }}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  type === o.key
-                    ? 'bg-primary text-white'
-                    : 'bg-gray text-body hover:bg-gray-2 dark:bg-meta-4 dark:text-bodydark'
-                }`}
-              >
-                {t(`notif.type.${o.key}`)} ({o.count})
-              </button>
-            ))}
-          </div>
-
+          ))}
           {filtered && (
             <button
               type="button"
               onClick={resetFilters}
-              className="ml-auto text-xs font-medium text-primary hover:underline"
+              className="ml-auto text-xs font-semibold text-primary hover:underline"
             >
               {t('notif.filter.reset')}
             </button>
@@ -292,8 +341,15 @@ export default function NotificationsPage() {
 
       {/* List */}
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <LoadingSpinner size="lg" />
+        <div className="space-y-3" aria-busy="true">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SectionCard key={i} className="!p-4">
+              <div className="flex items-start gap-3">
+                <Skeleton circle className="h-9 w-9 shrink-0" />
+                <Skeleton lines={2} className="flex-1" />
+              </div>
+            </SectionCard>
+          ))}
         </div>
       ) : error ? (
         <EmptyState
@@ -322,86 +378,82 @@ export default function NotificationsPage() {
           }
         />
       ) : (
-        <SectionCard className="!p-0">
-          <div className="flex items-center justify-between border-b border-stroke px-4.5 py-3 dark:border-strokedark">
-            <h4 className="text-sm font-medium text-black dark:text-white">
-              {t('notif.title')}
-            </h4>
-            <div className="flex items-center gap-2">
-              <Badge variant="default" size="sm">
-                {t('notif.page.total')} {data.total}
-              </Badge>
-              {data.unread > 0 && (
-                <Badge variant="red" size="sm">
-                  {t('notif.page.unread')} {data.unread}
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          <ul>
-            {data.items.map((n, i) => {
-              const { title, message } = notifContent(n, t);
-              const { icon: Icon, variant } = styleOf(n.type);
-              const time = timeAgo(n.createdAt);
-              return (
-                <motion.li
-                  key={n.id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(i * 0.02, 0.3) }}
-                  className="border-b border-stroke last:border-b-0 dark:border-strokedark"
-                >
-                  <button
-                    type="button"
-                    onClick={() => openItem(n)}
-                    className={`flex w-full items-start gap-3 px-4.5 py-4 text-left transition-colors hover:bg-gray-2 dark:hover:bg-meta-4 ${
-                      !n.read ? 'bg-gray-2/60 dark:bg-meta-4/40' : ''
-                    }`}
-                  >
-                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray text-body dark:bg-meta-4 dark:text-bodydark">
-                      <Icon size={16} />
-                    </span>
-
-                    <span className="min-w-0 flex-1">
-                      <span className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-semibold text-black dark:text-white">
-                          {title}
+        <div className="space-y-6">
+          {groups.map((g) => (
+            <section key={g.key} aria-label={g.label}>
+              <p className="eyebrow mb-3 flex items-center gap-3">
+                {g.label === 'today'
+                  ? t('notif.page.today')
+                  : g.label === 'yesterday'
+                    ? t('notif.page.yesterday')
+                    : g.label}
+                <span className="h-px flex-1 bg-line-subtle" aria-hidden="true" />
+                <span className="num text-ink-3">{g.items.length}</span>
+              </p>
+              <motion.ul
+                variants={reduce ? still : stagger(0.03)}
+                initial="hidden"
+                animate="visible"
+                className="space-y-2"
+              >
+                {g.items.map((n) => {
+                  const { title, message } = notifContent(n, t);
+                  const { icon: Icon, variant } = styleOf(n.type);
+                  const accent = ACCENT_OF[variant] ?? 'cyan';
+                  const time = timeAgo(n.createdAt);
+                  return (
+                    <motion.li key={n.id} variants={reduce ? still : fadeUp}>
+                      <button
+                        type="button"
+                        onClick={() => openItem(n)}
+                        className={`flex w-full items-start gap-3 rounded-lg border border-l-2 px-4 py-3.5 text-left shadow-elev-1 transition-[transform,box-shadow,border-color,background-color] duration-base ease-out hover:-translate-y-0.5 hover:border-line-strong hover:shadow-elev-2 ${
+                          n.read
+                            ? 'border-line-subtle bg-surface-1 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1'
+                            : 'border-line-subtle bg-surface-1 ring-1 ring-inset ring-primary/25'
+                        }`}
+                        style={{ borderLeftColor: `rgb(var(--accent-${accent}))` }}
+                      >
+                        <span
+                          className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded cut-corners-sm ${ACCENT_ICON[accent]}`}
+                        >
+                          <Icon size={16} />
                         </span>
-                        <Badge variant={variant} size="sm">
-                          {t(`notif.type.${n.type}`)}
-                        </Badge>
-                        {!n.read && (
-                          <Badge variant="red" size="sm">
-                            {t('notif.page.unreadBadge')}
-                          </Badge>
-                        )}
-                      </span>
-                      {message && (
-                        <span className="mt-0.5 block text-sm text-body dark:text-bodydark">
-                          {message}
-                        </span>
-                      )}
-                      {time && (
-                        <span className="mt-1 block text-xs text-bodydark2">{time}</span>
-                      )}
-                    </span>
 
-                    {!n.read && (
-                      <Check
-                        size={16}
-                        className="mt-1 shrink-0 text-primary"
-                        aria-label={t('notif.page.markRead')}
-                      />
-                    )}
-                  </button>
-                </motion.li>
-              );
-            })}
-          </ul>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex flex-wrap items-center gap-2">
+                            <span className={`text-sm text-ink-1 ${n.read ? 'font-medium' : 'font-semibold'}`}>
+                              {title}
+                            </span>
+                            <Badge variant={variant} size="sm">
+                              {t(`notif.type.${n.type}`)}
+                            </Badge>
+                            {!n.read && (
+                              <Badge variant="red" size="sm" dot>
+                                {t('notif.page.unreadBadge')}
+                              </Badge>
+                            )}
+                          </span>
+                          {message && (
+                            <span className="mt-0.5 block text-sm text-ink-2">{message}</span>
+                          )}
+                        </span>
+
+                        <span className="flex shrink-0 flex-col items-end gap-1">
+                          {time && <span className="num text-xs text-ink-3">{time}</span>}
+                          {!n.read && (
+                            <Check size={16} className="text-primary" aria-label={t('notif.page.markRead')} />
+                          )}
+                        </span>
+                      </button>
+                    </motion.li>
+                  );
+                })}
+              </motion.ul>
+            </section>
+          ))}
 
           {data.pages > 1 && (
-            <div className="flex items-center justify-between gap-3 border-t border-stroke px-4.5 py-3 dark:border-strokedark">
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-line-subtle bg-surface-1 px-4 py-3">
               <Button
                 size="sm"
                 variant="secondary"
@@ -411,7 +463,7 @@ export default function NotificationsPage() {
                 <ChevronLeft size={14} />
                 {t('notif.page.prev')}
               </Button>
-              <span className="text-xs text-body dark:text-bodydark">
+              <span className="num text-xs text-ink-2">
                 {t('notif.page.pagination', { page: data.page, pages: data.pages })}
               </span>
               <Button
@@ -425,7 +477,7 @@ export default function NotificationsPage() {
               </Button>
             </div>
           )}
-        </SectionCard>
+        </div>
       )}
     </div>
   );
