@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   Plus,
   Pencil,
@@ -17,7 +18,17 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Card, Badge, Button, PageHeader, EmptyState, LoadingSpinner, Tabs } from '@/components/ui';
+import { fadeUp, stagger, still } from '@/lib/motion';
+import {
+  Card,
+  Badge,
+  Button,
+  PageHeader,
+  EmptyState,
+  Skeleton,
+  StatCard,
+  Tabs,
+} from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import toast from 'react-hot-toast';
@@ -28,7 +39,7 @@ type Tier = 'title' | 'gold' | 'silver' | 'partner';
 const TIERS: Tier[] = ['title', 'gold', 'silver', 'partner'];
 const REQUEST_STATUSES = ['new', 'contacted', 'accepted', 'declined'] as const;
 
-const tierVariant: Record<Tier, string> = { title: 'gold', gold: 'gold', silver: 'default', partner: 'blue' };
+const tierVariant: Record<Tier, string> = { title: 'tier-gold', gold: 'tier-gold', silver: 'tier-silver', partner: 'blue' };
 const statusVariant: Record<string, string> = { new: 'neon', contacted: 'gold', accepted: 'green', declined: 'red' };
 
 type SponsorForm = {
@@ -54,12 +65,14 @@ type OfferForm = {
 };
 const emptyOffer: OfferForm = { name: '', tier: '', priceLabel: '', benefits: '', highlight: false, isActive: true, sort: 0 };
 
+/** Compact field classes (the primitives use a taller padding than these dense forms). */
 const inputCls =
-  'w-full px-3 py-2 text-sm rounded-lg border border-stroke bg-gray-2 text-black placeholder-bodydark2 focus:outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white';
-const labelCls = 'block text-xs text-body dark:text-bodydark mb-1';
+  'w-full rounded border border-line-strong bg-surface-1 px-3 py-2 text-sm text-ink-1 placeholder:text-ink-3 outline-none transition-[border-color,box-shadow] duration-base focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60';
+const labelCls = 'mb-1 block text-xs font-medium text-ink-2';
 
 export default function AdminSponsorsPage() {
   const t = useT();
+  const reduce = useReducedMotion();
   const [tab, setTab] = useState<Tab>('sponsors');
   const [loading, setLoading] = useState(true);
   const [sponsors, setSponsors] = useState<any[]>([]);
@@ -302,17 +315,23 @@ export default function AdminSponsorsPage() {
   };
 
   const newCount = requests.filter((r) => r.status === 'new').length;
+  const activeSponsors = sponsors.filter((s) => s.isActive !== false).length;
+  const activeOffers = offers.filter((o) => o.isActive !== false).length;
 
   const tabs = [
-    { id: 'sponsors', label: t('admin.sponsors.tab.sponsors'), icon: Handshake },
-    { id: 'offers', label: t('admin.sponsors.tab.offers'), icon: Package },
-    { id: 'requests', label: `${t('admin.sponsors.tab.requests')}${newCount ? ` (${newCount})` : ''}`, icon: Inbox },
+    { id: 'sponsors', label: t('admin.sponsors.tab.sponsors'), icon: Handshake, count: sponsors.length },
+    { id: 'offers', label: t('admin.sponsors.tab.offers'), icon: Package, count: offers.length },
+    { id: 'requests', label: t('admin.sponsors.tab.requests'), icon: Inbox, count: newCount || undefined },
   ];
+
+  const listVariants = reduce ? still : stagger();
+  const itemVariants = reduce ? still : fadeUp;
 
   return (
     <div className="space-y-6">
       <PageHeader
         icon={<Handshake size={28} />}
+        eyebrow={t('nav.section.partners')}
         title={t('admin.sponsors.title')}
         subtitle={t('admin.sponsors.subtitle')}
         variant="gold"
@@ -329,30 +348,60 @@ export default function AdminSponsorsPage() {
         }
       />
 
-      <Tabs tabs={tabs} active={tab} onChange={(id: Tab) => setTab(id)} />
+      {!loading && (
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+          <StatCard label={t('admin.sponsors.tab.sponsors')} value={sponsors.length} accent="gold" icon={<Handshake size={16} />} />
+          <StatCard label={t('admin.sponsors.active')} value={activeSponsors} accent="green" />
+          <StatCard label={t('admin.sponsors.tab.offers')} value={activeOffers} accent="violet" icon={<Package size={16} />} />
+          <StatCard label={t('admin.sponsors.status.new')} value={newCount} accent={newCount ? 'cyan' : 'green'} icon={<Inbox size={16} />} />
+        </div>
+      )}
+
+      <div className="overflow-x-auto whitespace-nowrap">
+        <Tabs variant="underline" tabs={tabs} active={tab} onChange={(id: Tab) => setTab(id)} />
+      </div>
 
       {loading ? (
-        <LoadingSpinner size="lg" className="py-24" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="!p-3">
+              <div className="flex items-start gap-3">
+                <Skeleton className="h-14 w-14 shrink-0 rounded-lg" />
+                <Skeleton lines={3} className="flex-1" />
+              </div>
+            </Card>
+          ))}
+        </div>
       ) : tab === 'sponsors' ? (
         sponsors.length === 0 ? (
           <EmptyState icon={<Handshake size={28} />} title={t('admin.esport.noSponsors')} />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <motion.div
+            className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+            variants={listVariants}
+            initial="hidden"
+            animate="visible"
+          >
             {sponsors.map((s) => (
-              <Card key={s.id} hover={false} className={`!p-3 flex items-start gap-3 ${s.isActive === false ? 'opacity-60' : ''}`}>
+              <motion.div key={s.id} variants={itemVariants}>
+              <Card
+                hover={false}
+                accent={s.tier === 'title' || s.tier === 'gold' ? 'gold' : undefined}
+                className={`flex h-full items-start gap-3 !p-3 ${s.isActive === false ? 'opacity-60' : ''}`}
+              >
                 {s.logo ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={s.logo}
                     alt={s.name || 'sponsor'}
                     referrerPolicy="no-referrer"
-                    className="w-14 h-14 rounded-lg object-contain bg-gray-2 border border-stroke shrink-0 dark:bg-meta-4 dark:border-strokedark"
+                    className="h-14 w-14 shrink-0 rounded-lg border border-line-subtle bg-surface-2 object-contain"
                   />
                 ) : (
-                  <div className="w-14 h-14 rounded-lg bg-gray-2 border border-stroke shrink-0 dark:bg-meta-4 dark:border-strokedark" />
+                  <div className="h-14 w-14 shrink-0 rounded-lg border border-line-subtle bg-surface-2" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-black dark:text-white truncate">{s.name || '—'}</p>
+                  <p className="truncate text-sm font-semibold text-ink-1">{s.name || '—'}</p>
                   <div className="mt-1 flex flex-wrap gap-1">
                     <Badge variant={tierVariant[(s.tier as Tier) || 'partner']} size="sm">
                       {t(`sponsors.tier.${s.tier || 'partner'}`)}
@@ -391,23 +440,34 @@ export default function AdminSponsorsPage() {
                   </Button>
                 </div>
               </Card>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )
       ) : tab === 'offers' ? (
         offers.length === 0 ? (
           <EmptyState icon={<Package size={28} />} title={t('admin.sponsors.noOffers')} />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <motion.div
+            className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+            variants={listVariants}
+            initial="hidden"
+            animate="visible"
+          >
             {offers.map((o) => (
-              <Card key={o.id} hover={false} className={`!p-4 flex flex-col gap-2 ${o.isActive === false ? 'opacity-60' : ''}`}>
+              <motion.div key={o.id} variants={itemVariants}>
+              <Card
+                hover={false}
+                glow={!!o.highlight}
+                className={`flex h-full flex-col gap-2 !p-4 ${o.isActive === false ? 'opacity-60' : ''}`}
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-black dark:text-white truncate">
-                      {o.highlight && <Star size={13} className="inline mr-1 text-warning" />}
+                    <p className="truncate font-display text-sm font-bold tracking-tight2 text-ink-1">
+                      {o.highlight && <Star size={13} className="mr-1 inline text-accent-gold" />}
                       {o.name}
                     </p>
-                    <p className="text-xs text-primary font-medium">{o.priceLabel || t('sponsors.offer.onQuote')}</p>
+                    <p className="text-xs font-medium text-primary num">{o.priceLabel || t('sponsors.offer.onQuote')}</p>
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <Button size="sm" variant="ghost" onClick={() => openOffer(o)}>
@@ -428,50 +488,57 @@ export default function AdminSponsorsPage() {
                     </Badge>
                   )}
                 </div>
-                <ul className="text-xs text-body dark:text-bodydark space-y-0.5">
+                <ul className="space-y-0.5 text-xs text-ink-2">
                   {(o.benefits || []).map((b: string) => (
                     <li key={b} className="flex gap-1.5">
-                      <Check size={12} className="mt-0.5 shrink-0 text-success" /> {b}
+                      <Check size={12} className="mt-0.5 shrink-0 text-accent-green" /> {b}
                     </li>
                   ))}
                 </ul>
               </Card>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )
       ) : (
         <div className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant={requestFilter === '' ? 'primary' : 'ghost'} onClick={() => changeFilter('')}>
-              {t('admin.sponsors.status.all')}
-            </Button>
-            {REQUEST_STATUSES.map((s) => (
-              <Button key={s} size="sm" variant={requestFilter === s ? 'primary' : 'ghost'} onClick={() => changeFilter(s)}>
-                {t(`admin.sponsors.status.${s}`)}
-              </Button>
-            ))}
+          <div className="overflow-x-auto whitespace-nowrap">
+            <Tabs
+              size="sm"
+              tabs={[
+                { id: '', label: t('admin.sponsors.status.all') },
+                ...REQUEST_STATUSES.map((s) => ({ id: s, label: t(`admin.sponsors.status.${s}`) })),
+              ]}
+              active={requestFilter}
+              onChange={(id: string) => changeFilter(id)}
+            />
           </div>
           {requests.length === 0 ? (
             <EmptyState icon={<Inbox size={28} />} title={t('admin.sponsors.noRequests')} />
           ) : (
-            <div className="space-y-2">
+            <motion.div className="space-y-2" variants={listVariants} initial="hidden" animate="visible">
               {requests.map((r) => (
-                <Card key={r.id} hover={false} className="!p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                <motion.div key={r.id} variants={itemVariants}>
+                <Card
+                  hover={false}
+                  accent={r.status === 'new' ? 'cyan' : r.status === 'accepted' ? 'green' : r.status === 'declined' ? 'red' : undefined}
+                  className="flex flex-col gap-3 !p-4 sm:flex-row sm:items-center"
+                >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold text-black dark:text-white">{r.company}</p>
+                      <p className="text-sm font-semibold text-ink-1">{r.company}</p>
                       <Badge variant={statusVariant[r.status] || 'default'} size="sm">
                         {t(`admin.sponsors.status.${r.status}`)}
                       </Badge>
                       {r.offer && <Badge variant="gold" size="sm">{r.offer.name}</Badge>}
                     </div>
-                    <p className="text-xs text-body dark:text-bodydark mt-0.5">
+                    <p className="mt-0.5 break-words text-xs text-ink-3 num">
                       {r.contactName} · {r.email}
                       {r.phone ? ` · ${r.phone}` : ''} · {new Date(r.createdAt).toLocaleDateString()}
                     </p>
-                    <p className="text-sm text-body dark:text-bodydark mt-1 line-clamp-2">{r.message}</p>
+                    <p className="mt-1 line-clamp-2 text-sm text-ink-2">{r.message}</p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex shrink-0 items-center gap-2">
                     <select
                       className={`${inputCls} !w-auto`}
                       value={r.status}
@@ -491,8 +558,9 @@ export default function AdminSponsorsPage() {
                     </Button>
                   </div>
                 </Card>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
         </div>
       )}
@@ -545,7 +613,7 @@ export default function AdminSponsorsPage() {
           <div>
             <label className={labelCls}>{t('admin.sponsors.seasons')}</label>
             {seasons.length === 0 ? (
-              <p className="text-xs text-body dark:text-bodydark">{t('seasons.none')}</p>
+              <p className="text-xs text-ink-2">{t('seasons.none')}</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {seasons.map((s) => {
@@ -557,8 +625,8 @@ export default function AdminSponsorsPage() {
                       onClick={() => toggleSeason(s.id)}
                       className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                         on
-                          ? 'border-primary bg-primary text-white'
-                          : 'border-stroke text-body hover:border-primary dark:border-strokedark dark:text-bodydark'
+                          ? 'border-primary bg-primary text-on-primary'
+                          : 'border-line-strong text-ink-2 hover:border-primary hover:text-ink-1'
                       }`}
                     >
                       {s.name}
@@ -567,9 +635,9 @@ export default function AdminSponsorsPage() {
                 })}
               </div>
             )}
-            <p className="mt-1 text-xs text-body dark:text-bodydark">{t('admin.sponsors.seasonsHint')}</p>
+            <p className="mt-1 text-xs text-ink-2">{t('admin.sponsors.seasonsHint')}</p>
           </div>
-          <label className="flex items-center gap-2 text-sm text-black dark:text-white">
+          <label className="flex items-center gap-2 text-sm text-ink-1">
             <input type="checkbox" checked={sponsorForm.isActive} onChange={(e) => setSponsorForm({ ...sponsorForm, isActive: e.target.checked })} />
             {t('admin.sponsors.active')}
           </label>
@@ -624,14 +692,14 @@ export default function AdminSponsorsPage() {
           <div>
             <label className={labelCls}>{t('admin.sponsors.benefits')}</label>
             <textarea rows={5} className={inputCls} value={offerForm.benefits} onChange={(e) => setOfferForm({ ...offerForm, benefits: e.target.value })} />
-            <p className="mt-1 text-xs text-body dark:text-bodydark">{t('admin.sponsors.benefitsHint')}</p>
+            <p className="mt-1 text-xs text-ink-2">{t('admin.sponsors.benefitsHint')}</p>
           </div>
           <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-2 text-sm text-black dark:text-white">
+            <label className="flex items-center gap-2 text-sm text-ink-1">
               <input type="checkbox" checked={offerForm.highlight} onChange={(e) => setOfferForm({ ...offerForm, highlight: e.target.checked })} />
               {t('admin.sponsors.highlight')}
             </label>
-            <label className="flex items-center gap-2 text-sm text-black dark:text-white">
+            <label className="flex items-center gap-2 text-sm text-ink-1">
               <input type="checkbox" checked={offerForm.isActive} onChange={(e) => setOfferForm({ ...offerForm, isActive: e.target.checked })} />
               {t('admin.sponsors.active')}
             </label>
@@ -663,9 +731,9 @@ export default function AdminSponsorsPage() {
                 {t(`admin.sponsors.status.${request.status}`)}
               </Badge>
               {request.offer && <Badge variant="gold" size="sm">{request.offer.name}</Badge>}
-              <span className="text-xs text-body dark:text-bodydark">{new Date(request.createdAt).toLocaleString()}</span>
+              <span className="text-xs text-ink-3 num">{new Date(request.createdAt).toLocaleString()}</span>
             </div>
-            <p className="text-sm text-black dark:text-white font-medium">{request.contactName}</p>
+            <p className="text-sm text-ink-1 font-medium">{request.contactName}</p>
             <div className="flex flex-wrap gap-3 text-sm">
               <a href={`mailto:${request.email}`} className="inline-flex items-center gap-1 text-primary hover:underline">
                 <Mail size={14} /> {request.email}
@@ -676,7 +744,7 @@ export default function AdminSponsorsPage() {
                 </a>
               )}
             </div>
-            <p className="text-sm text-body dark:text-bodydark whitespace-pre-wrap rounded-lg bg-gray-2 p-3 dark:bg-meta-4">{request.message}</p>
+            <p className="whitespace-pre-wrap rounded-lg border border-line-subtle bg-surface-2 p-3 text-sm text-ink-2">{request.message}</p>
             <div>
               <label className={labelCls}>{t('admin.sponsors.status.label')}</label>
               <select className={inputCls} value={request.status} onChange={(e) => setStatus(request, e.target.value)}>

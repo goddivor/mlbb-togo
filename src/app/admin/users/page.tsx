@@ -5,12 +5,12 @@ import { Users, Search, Shield, ShieldCheck, Ban, CheckCircle2, Trash2 } from 'l
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { useAuthStore } from '@/store/useStore';
-import { Card, Badge, Avatar, Button, PageHeader, EmptyState, LoadingSpinner, Tabs } from '@/components/ui';
+import { Card, Badge, Avatar, Button, PageHeader, EmptyState, LoadingSpinner, Tabs, DataTable, StatTile, type DataColumn } from '@/components/ui';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import toast from 'react-hot-toast';
 
 const ROLE_BADGE: Record<string, { label: string; variant: any }> = {
-  admin: { label: 'admin.users.role.admin', variant: 'danger' },
+  admin: { label: 'admin.users.role.admin', variant: 'red' },
   moderator: { label: 'admin.users.role.moderator', variant: 'gold' },
   user: { label: 'admin.users.role.user', variant: 'neon' },
 };
@@ -87,131 +87,177 @@ export default function AdminUsers() {
     return isNaN(d.getTime()) ? '' : d.toLocaleDateString();
   };
 
+  const counts = useMemo(
+    () => ({
+      total: users.length,
+      mods: users.filter((u) => u.roleUser === 'moderator').length,
+      admins: users.filter((u) => u.roleUser === 'admin').length,
+      banned: users.filter((u) => u.isBanned).length,
+    }),
+    [users],
+  );
+
+  const columns: DataColumn<any>[] = [
+    {
+      key: 'user',
+      header: t('admin.users.colUser'),
+      render: (u) => {
+        const self = u.id === me?.id;
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar
+              name={u.displayName || u.username}
+              src={u.avatar ? avatarSrc(u.avatar, 64) : undefined}
+              size="sm"
+              online={u.isOnline}
+            />
+            <div className="min-w-0">
+              <p className="truncate font-medium text-ink-1">
+                {u.displayName || u.username}
+                {self && <span className="ml-1 text-xs text-ink-3">({t('admin.users.you')})</span>}
+              </p>
+              <p className="truncate text-xs text-ink-2">{u.email}</p>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'role',
+      header: t('admin.users.colRole'),
+      render: (u) => {
+        const rb = ROLE_BADGE[u.roleUser] || ROLE_BADGE.user;
+        return <Badge variant={rb.variant} size="sm">{t(rb.label)}</Badge>;
+      },
+    },
+    {
+      key: 'status',
+      header: t('admin.users.colStatus'),
+      hideBelow: 'sm',
+      render: (u) =>
+        u.isBanned ? (
+          <Badge variant="red" size="sm">{t('admin.users.bannedTag')}</Badge>
+        ) : (
+          <Badge variant="green" size="sm">{t('admin.users.active')}</Badge>
+        ),
+    },
+    {
+      key: 'joined',
+      header: t('admin.users.colJoined'),
+      hideBelow: 'md',
+      className: 'text-xs text-ink-2 num',
+      render: (u) => fmtDate(u.joinedAt),
+    },
+    {
+      key: 'actions',
+      header: t('admin.users.colActions'),
+      align: 'right',
+      render: (u) => {
+        const self = u.id === me?.id;
+        return (
+          <div className="flex items-center justify-end gap-1">
+            {/* Ban / unban: admin + moderator */}
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={self || busy === u.id + 'b'}
+              onClick={() => toggleBan(u)}
+              title={u.isBanned ? t('admin.users.unban') : t('admin.users.ban')}
+            >
+              {u.isBanned ? <CheckCircle2 size={15} className="text-accent-green" /> : <Ban size={15} className="text-accent-red" />}
+            </Button>
+
+            {/* Change role + delete: admin only */}
+            {isAdmin && (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={self || busy === u.id + 'r'}
+                  onClick={() => cycleRole(u)}
+                  title={t('admin.users.changeRole')}
+                >
+                  {u.roleUser === 'admin' ? <ShieldCheck size={15} className="text-accent-red" /> : <Shield size={15} />}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={self || busy === u.id + 'd'}
+                  onClick={() => setConfirmDelete(u)}
+                  title={t('admin.users.delete')}
+                >
+                  <Trash2 size={15} className="text-accent-red" />
+                </Button>
+              </>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      <PageHeader icon={<Users size={28} />} title={t('admin.users.title')} variant="blue" />
+      <PageHeader
+        icon={<Users size={28} />}
+        eyebrow={t('nav.section.community')}
+        title={t('admin.users.title')}
+        variant="blue"
+      />
 
-      <Card hover={false}>
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {!loading && (
+        <Card className="!p-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <StatTile label={t('admin.users.all')} value={counts.total} />
+            <StatTile label={t('admin.users.mods')} value={counts.mods} accent="gold" />
+            <StatTile label={t('admin.users.admins')} value={counts.admins} accent="red" />
+            <StatTile label={t('admin.users.banned2')} value={counts.banned} accent={counts.banned ? 'red' : undefined} />
+          </div>
+        </Card>
+      )}
+
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bodydark2" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('admin.users.search')}
-              className="w-full rounded-sm border border-stroke bg-gray-2 py-2.5 pl-10 pr-4 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+              className="w-full rounded border border-line-strong bg-surface-1 py-2.5 pl-10 pr-4 text-sm text-ink-1 placeholder:text-ink-3 outline-none transition-[border-color,box-shadow] duration-base focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60"
             />
           </div>
-          <Tabs
-            tabs={[
-              { id: 'all', label: t('admin.users.all') },
-              { id: 'user', label: t('admin.users.players') },
-              { id: 'moderator', label: t('admin.users.mods') },
-              { id: 'admin', label: t('admin.users.admins') },
-              { id: 'banned', label: t('admin.users.banned2') },
-            ]}
-            active={roleTab}
-            onChange={setRoleTab}
-          />
+          <div className="overflow-x-auto whitespace-nowrap">
+            <Tabs
+              variant="underline"
+              size="sm"
+              tabs={[
+                { id: 'all', label: t('admin.users.all') },
+                { id: 'user', label: t('admin.users.players') },
+                { id: 'moderator', label: t('admin.users.mods') },
+                { id: 'admin', label: t('admin.users.admins') },
+                { id: 'banned', label: t('admin.users.banned2') },
+              ]}
+              active={roleTab}
+              onChange={setRoleTab}
+            />
+          </div>
         </div>
 
         {loading ? (
           <LoadingSpinner size="lg" className="py-16" />
         ) : filtered.length === 0 ? (
-          <EmptyState icon={<Users size={28} />} title={t('admin.users.none')} />
+          <EmptyState icon={<Users size={28} />} title={t('admin.users.none')} className="!min-h-0 py-12" />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-stroke text-xs uppercase text-bodydark2 dark:border-strokedark">
-                  <th className="py-3 pr-4 font-medium">{t('admin.users.colUser')}</th>
-                  <th className="py-3 pr-4 font-medium">{t('admin.users.colRole')}</th>
-                  <th className="py-3 pr-4 font-medium">{t('admin.users.colStatus')}</th>
-                  <th className="py-3 pr-4 font-medium">{t('admin.users.colJoined')}</th>
-                  <th className="py-3 pr-4 font-medium text-right">{t('admin.users.colActions')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((u) => {
-                  const rb = ROLE_BADGE[u.roleUser] || ROLE_BADGE.user;
-                  const self = u.id === me?.id;
-                  return (
-                    <tr key={u.id} className="border-b border-stroke dark:border-strokedark">
-                      <td className="py-3 pr-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar
-                            name={u.displayName || u.username}
-                            src={u.avatar ? avatarSrc(u.avatar, 64) : undefined}
-                            size="sm"
-                            online={u.isOnline}
-                          />
-                          <div className="min-w-0">
-                            <p className="truncate font-medium text-black dark:text-white">
-                              {u.displayName || u.username}
-                              {self && <span className="ml-1 text-xs text-bodydark2">({t('admin.users.you')})</span>}
-                            </p>
-                            <p className="truncate text-xs text-body dark:text-bodydark">{u.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 pr-4">
-                        <Badge variant={rb.variant} size="sm">{t(rb.label)}</Badge>
-                      </td>
-                      <td className="py-3 pr-4">
-                        {u.isBanned ? (
-                          <Badge variant="danger" size="sm">{t('admin.users.bannedTag')}</Badge>
-                        ) : (
-                          <Badge variant="green" size="sm">{t('admin.users.active')}</Badge>
-                        )}
-                      </td>
-                      <td className="py-3 pr-4 text-xs text-body dark:text-bodydark">{fmtDate(u.joinedAt)}</td>
-                      <td className="py-3 pr-4">
-                        <div className="flex items-center justify-end gap-2">
-                          {/* Ban / unban: admin + moderator */}
-                          <Button
-                            size="sm"
-                            variant={u.isBanned ? 'ghost' : 'ghost'}
-                            disabled={self || busy === u.id + 'b'}
-                            onClick={() => toggleBan(u)}
-                            title={u.isBanned ? t('admin.users.unban') : t('admin.users.ban')}
-                          >
-                            {u.isBanned ? <CheckCircle2 size={15} className="text-success" /> : <Ban size={15} className="text-danger" />}
-                          </Button>
-
-                          {/* Change role + delete: admin only */}
-                          {isAdmin && (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                disabled={self || busy === u.id + 'r'}
-                                onClick={() => cycleRole(u)}
-                                title={t('admin.users.changeRole')}
-                              >
-                                {u.roleUser === 'admin' ? <ShieldCheck size={15} className="text-danger" /> : <Shield size={15} />}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                disabled={self || busy === u.id + 'd'}
-                                onClick={() => setConfirmDelete(u)}
-                                title={t('admin.users.delete')}
-                              >
-                                <Trash2 size={15} className="text-danger" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={columns}
+            rows={filtered}
+            rowKey={(u) => u.id}
+            emptyMessage={t('admin.users.none')}
+          />
         )}
-      </Card>
+      </div>
 
       <ConfirmModal
         open={!!confirmDelete}

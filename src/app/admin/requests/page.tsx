@@ -1,36 +1,47 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Check, X, Eye, MessageSquare, Inbox, Plus, ExternalLink } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { fadeUp, stagger, still } from '@/lib/motion';
 import {
-  Card,
+  Avatar,
   Badge,
   Button,
-  PageHeader,
-  SectionCard,
+  Card,
   EmptyState,
-  LoadingSpinner,
+  Input,
+  PageHeader,
+  Skeleton,
+  StatCard,
+  Tabs,
+  Textarea,
 } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 
-const inputCls =
-  'w-full px-3 py-2 text-sm rounded-lg border border-stroke bg-gray-2 text-black placeholder-bodydark2 focus:outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white';
-
 const STATUSES = ['pending', 'in_review', 'approved', 'rejected'] as const;
 
 const statusVariant: Record<string, string> = {
-  pending: 'default',
+  pending: 'outline',
   in_review: 'neon',
+  approved: 'green',
+  rejected: 'red',
+};
+
+/** Card edge colour per status (mirrors the badge). */
+const statusAccent: Record<string, 'cyan' | 'green' | 'red' | undefined> = {
+  in_review: 'cyan',
   approved: 'green',
   rejected: 'red',
 };
 
 export default function AdminRequestsPage() {
   const t = useT();
+  const reduce = useReducedMotion();
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('');
@@ -152,88 +163,95 @@ export default function AdminRequestsPage() {
     }
   };
 
+  // Counts of the currently loaded list (the API already filters by status).
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { pending: 0, in_review: 0, approved: 0, rejected: 0 };
+    requests.forEach((r) => {
+      if (r.status in c) c[r.status] += 1;
+    });
+    return c;
+  }, [requests]);
+
+  const tabs = [
+    { id: '', label: t('requests.filterAll') },
+    ...STATUSES.map((s) => ({ id: s, label: t('requests.status.' + s) })),
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
         icon={<Inbox size={28} />}
+        eyebrow={t('nav.section.community')}
         title={t('requests.title')}
         variant="blue"
       />
 
-      <SectionCard className="!p-4 flex flex-wrap gap-2">
-        <button
-          onClick={() => setFilter('')}
-          className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-            filter === ''
-              ? 'bg-primary/10 text-primary border-primary/30'
-              : 'bg-gray-2 text-body border-stroke hover:text-black dark:bg-meta-4 dark:text-bodydark dark:border-strokedark dark:hover:text-white'
-          }`}
-        >
-          {t('requests.filterAll')}
-        </button>
-        {STATUSES.map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-              filter === s
-                ? 'bg-primary/10 text-primary border-primary/30'
-                : 'bg-gray-2 text-body border-stroke hover:text-black dark:bg-meta-4 dark:text-bodydark dark:border-strokedark dark:hover:text-white'
-            }`}
-          >
-            {t('requests.status.' + s)}
-          </button>
-        ))}
-      </SectionCard>
+      {!loading && filter === '' && requests.length > 0 && (
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+          <StatCard label={t('requests.status.pending')} value={counts.pending} accent="gold" />
+          <StatCard label={t('requests.status.in_review')} value={counts.in_review} accent="cyan" />
+          <StatCard label={t('requests.status.approved')} value={counts.approved} accent="green" />
+          <StatCard label={t('requests.status.rejected')} value={counts.rejected} accent="red" />
+        </div>
+      )}
+
+      <div className="overflow-x-auto whitespace-nowrap">
+        <Tabs variant="underline" tabs={tabs} active={filter} onChange={setFilter} />
+      </div>
 
       {loading ? (
-        <LoadingSpinner size="lg" className="py-24" />
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="!p-4">
+              <div className="flex items-start gap-3">
+                <Skeleton circle className="h-12 w-12 shrink-0" />
+                <Skeleton lines={3} className="flex-1" />
+              </div>
+            </Card>
+          ))}
+        </div>
       ) : requests.length === 0 ? (
         <EmptyState icon={<Inbox size={28} />} title={t('requests.none')} />
       ) : (
-        <div className="space-y-3">
+        <motion.div
+          className="space-y-3"
+          variants={reduce ? still : stagger()}
+          initial="hidden"
+          animate="visible"
+        >
           {requests.map((r) => {
             const requester = r.requester;
             const name = requester?.displayName || requester?.username || '—';
-            const initial = (name || '?').charAt(0).toUpperCase();
             return (
-              <Card key={r.id} hover={false} className="!p-4">
+              <motion.div key={r.id} variants={reduce ? still : fadeUp}>
+                <Card hover={false} accent={statusAccent[r.status]} className="!p-4">
                   <div className="flex items-start gap-3">
-                    {requester?.avatar ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={avatarSrc(requester.avatar, 64)}
-                        alt={name}
-                        referrerPolicy="no-referrer"
-                        className="w-12 h-12 rounded-full object-cover bg-gray-2 border border-stroke shrink-0 dark:bg-meta-4 dark:border-strokedark"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-gray-2 border border-stroke shrink-0 flex items-center justify-center text-sm font-bold text-body dark:bg-meta-4 dark:border-strokedark dark:text-bodydark">
-                        {initial}
-                      </div>
-                    )}
+                    <Avatar
+                      name={name}
+                      src={requester?.avatar ? avatarSrc(requester.avatar, 64) : undefined}
+                      size="lg"
+                      className="shrink-0"
+                    />
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm text-body dark:text-bodydark truncate">{name}</p>
+                        <p className="truncate text-sm text-ink-2">{name}</p>
                         <Badge variant={statusVariant[r.status] || 'default'} size="sm">
                           {t('requests.status.' + r.status)}
                         </Badge>
                       </div>
 
-                      <p className="text-base font-semibold text-black dark:text-white mt-0.5">
+                      <p className="mt-0.5 font-display text-base font-bold tracking-tight2 text-ink-1">
                         {r.proposedName}
                       </p>
 
                       {r.message && (
-                        <p className="text-sm text-body dark:text-bodydark mt-1 whitespace-pre-line break-words">{r.message}</p>
+                        <p className="mt-1 whitespace-pre-line break-words text-sm text-ink-2">{r.message}</p>
                       )}
 
-                      <p className="text-xs text-bodydark2 mt-1">
-                        {new Date(r.createdAt).toLocaleString()}
-                      </p>
+                      <p className="mt-1 text-xs text-ink-3 num">{new Date(r.createdAt).toLocaleString()}</p>
 
-                      <div className="flex flex-wrap gap-2 mt-3">
+                      <div className="mt-3 flex flex-wrap gap-2">
                         {(r.status === 'pending' || r.status === 'in_review') && (
                           <>
                             {r.status === 'pending' && (
@@ -283,10 +301,11 @@ export default function AdminRequestsPage() {
                       </div>
                     </div>
                   </div>
-              </Card>
+                </Card>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
       <Modal
@@ -299,24 +318,14 @@ export default function AdminRequestsPage() {
         }`}
       >
         <form onSubmit={sendMessage} className="space-y-3">
-          <div>
-            <label className="block text-xs text-body dark:text-bodydark mb-1">{t('messages.subject')}</label>
-            <input
-              className={inputCls}
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-body dark:text-bodydark mb-1">{t('messages.body')}</label>
-            <textarea
-              className={inputCls}
-              rows={5}
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              required
-            />
-          </div>
+          <Input label={t('messages.subject')} value={subject} onChange={(e: any) => setSubject(e.target.value)} />
+          <Textarea
+            label={t('messages.body')}
+            rows={5}
+            value={body}
+            onChange={(e: any) => setBody(e.target.value)}
+            required
+          />
           <div className="flex gap-2 pt-2">
             <Button size="sm" type="submit" disabled={sending || !body.trim()}>
               <MessageSquare size={16} /> {t('messages.send')}
@@ -337,39 +346,30 @@ export default function AdminRequestsPage() {
         headerVariant="gradient"
       >
         {createReq?.requester && (
-          <p className="text-sm text-body dark:text-bodydark mb-4">
+          <p className="mb-4 text-sm text-ink-2">
             {t('admin.teams.fromRequest')}{' '}
-            <span className="text-black dark:text-white font-medium">
+            <span className="font-medium text-ink-1">
               {createReq.requester.displayName || createReq.requester.username}
             </span>
           </p>
         )}
         <form onSubmit={submitCreate} className="space-y-3">
-          <div>
-            <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.esport.teamName')}</label>
-            <input
-              className={inputCls}
-              value={createForm.name}
-              onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.esport.teamImage')}</label>
-            <input
-              className={inputCls}
-              value={createForm.image}
-              onChange={(e) => setCreateForm({ ...createForm, image: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.esport.teamDesc')}</label>
-            <textarea
-              className={`${inputCls} min-h-[80px] resize-y`}
-              value={createForm.description}
-              onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-            />
-          </div>
+          <Input
+            label={t('admin.esport.teamName')}
+            value={createForm.name}
+            onChange={(e: any) => setCreateForm({ ...createForm, name: e.target.value })}
+            required
+          />
+          <Input
+            label={t('admin.esport.teamImage')}
+            value={createForm.image}
+            onChange={(e: any) => setCreateForm({ ...createForm, image: e.target.value })}
+          />
+          <Textarea
+            label={t('admin.esport.teamDesc')}
+            value={createForm.description}
+            onChange={(e: any) => setCreateForm({ ...createForm, description: e.target.value })}
+          />
           <div className="flex gap-2 pt-2">
             <Button size="sm" type="submit" disabled={creating || !createForm.name.trim()}>
               <Check size={16} /> {t('admin.esport.create')}

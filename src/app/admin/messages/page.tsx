@@ -11,6 +11,7 @@ export default function AdminMessagesPage() {
     <div className="space-y-6">
       <PageHeader
         icon={<MessageSquare size={28} />}
+        eyebrow={t('nav.section.community')}
         title={t('messages.title')}
         variant="blue"
       />

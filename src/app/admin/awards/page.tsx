@@ -2,15 +2,18 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Award, Check, Crown, ExternalLink, Pencil, Plus, Presentation, RotateCcw, Sparkles, Trash2, Trophy, Wand2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Button, Card, PageHeader, EmptyState, LoadingSpinner, Badge } from '@/components/ui';
+import { fadeUp, stagger, still } from '@/lib/motion';
+import { Button, Card, PageHeader, EmptyState, LoadingSpinner, Badge, SectionTitle, StatTile } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import RoleIcon from '@/components/game/RoleIcon';
 import { SeasonStatusBadge, seasonShortLabel, type TFn } from '@/components/seasons/shared';
+import type { Variants } from 'framer-motion';
 import type { Season } from '@/store/useSeasonStore';
 import {
   CATEGORY_ICON,
@@ -28,8 +31,10 @@ import {
   type UserRef,
 } from '@/components/awards/shared';
 
+/** Compact field classes (dense admin forms). */
 const inputCls =
-  'w-full px-3 py-2 text-sm rounded-lg border border-stroke bg-gray-2 text-black placeholder-bodydark2 focus:outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white';
+  'w-full rounded border border-line-strong bg-surface-1 px-3 py-2 text-sm text-ink-1 placeholder:text-ink-3 outline-none transition-[border-color,box-shadow] duration-base focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60';
+const labelCls = 'mb-1 block text-xs font-medium text-ink-2';
 
 type Suggestion = {
   category: AwardCategory;
@@ -76,6 +81,7 @@ const emptyPodium: PodiumDraft = { 1: '', 2: '', 3: '' };
  */
 export default function AdminAwardsPage() {
   const t = useT();
+  const reduce = useReducedMotion();
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [seasonId, setSeasonId] = useState<string>('');
   const [teams, setTeams] = useState<TeamWithMembers[]>([]);
@@ -319,19 +325,25 @@ export default function AdminAwardsPage() {
     <div className="space-y-6">
       <PageHeader
         icon={<Award size={28} />}
+        eyebrow={t('nav.section.esport')}
         title={t('admin.awards.title')}
         subtitle={t('admin.awards.subtitle')}
         variant="gold"
         action={
-          <div className="flex flex-wrap items-center gap-2">
-            <select className={`${inputCls} w-auto`} value={seasonId} onChange={(e) => setSeasonId(e.target.value)} aria-label={t('admin.awards.season')}>
+          <div className="flex flex-nowrap items-center gap-2">
+            <select
+              className={`${inputCls} w-auto max-w-[11rem] !py-2 text-sm`}
+              value={seasonId}
+              onChange={(e) => setSeasonId(e.target.value)}
+              aria-label={t('admin.awards.season')}
+            >
               {seasons.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {seasonShortLabel(s)} · {s.name}
+                  {seasonShortLabel(s)}
                 </option>
               ))}
             </select>
-            <Button size="sm" onClick={suggest} disabled={!seasonId || suggesting} loading={suggesting}>
+            <Button size="sm" className="whitespace-nowrap" onClick={suggest} disabled={!seasonId || suggesting} loading={suggesting}>
               <Wand2 size={16} /> {suggesting ? t('admin.awards.suggesting') : t('admin.awards.suggest')}
             </Button>
           </div>
@@ -345,13 +357,20 @@ export default function AdminAwardsPage() {
       ) : (
         <>
           {/* Season strip */}
-          <Card className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-            <div className="flex flex-wrap items-center gap-2 min-w-0">
-              <SeasonStatusBadge status={season.status} t={t} />
-              <span className="font-semibold text-black dark:text-white truncate">{season.name}</span>
-              <span className="text-xs text-body dark:text-bodydark">
-                {t('awards.count', { n: data?.awards.length ?? 0 })} · {t('awards.matches', { n: data?.matches.completed ?? 0 })}
-              </span>
+          <Card
+            accent="gold"
+            className="flex flex-col gap-4 !p-4 lg:flex-row lg:items-center lg:justify-between"
+            style={season.color ? { borderLeftColor: season.color } : undefined}
+          >
+            <div className="flex min-w-0 flex-wrap items-center gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <SeasonStatusBadge status={season.status} t={t} />
+                <span className="truncate font-display text-lg font-bold tracking-tight2 text-ink-1">{season.name}</span>
+              </div>
+              <div className="flex items-center gap-6 border-l border-line-subtle pl-4">
+                <StatTile label={t('header.awards')} value={data?.awards.length ?? 0} accent="gold" />
+                <StatTile label={t('header.matches')} value={data?.matches.completed ?? 0} />
+              </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {suggestions && suggestions.length > 0 && (
@@ -371,14 +390,20 @@ export default function AdminAwardsPage() {
               )}
             </div>
           </Card>
-          {season.status === 'closed' && <p className="text-xs text-body dark:text-bodydark">{t('admin.awards.closedNote')}</p>}
-          {suggestions && !hasStats && <p className="text-xs text-warning">{t('admin.awards.noStats')}</p>}
+          {season.status === 'closed' && <p className="text-xs text-ink-3">{t('admin.awards.closedNote')}</p>}
+          {suggestions && !hasStats && <p className="text-xs text-accent-gold">{t('admin.awards.noStats')}</p>}
 
           {/* Fixed categories */}
-          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
+          <motion.div
+            className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3"
+            variants={reduce ? still : stagger()}
+            initial="hidden"
+            animate="visible"
+          >
             {FIXED_CATEGORIES.map((c) => (
               <CategoryCard
                 key={c}
+                variants={reduce ? still : fadeUp}
                 category={c}
                 award={byCategory.get(c) ?? null}
                 suggestion={suggestionFor(c)}
@@ -389,28 +414,33 @@ export default function AdminAwardsPage() {
                 onApply={applyOne}
               />
             ))}
-          </div>
+          </motion.div>
 
           {/* Custom awards */}
-          <Card className="p-5 space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="font-semibold text-black dark:text-white inline-flex items-center gap-2">
-                <Sparkles size={16} /> {t('admin.awards.custom')}
-              </h3>
-              <Button size="sm" variant="ghost" onClick={() => openAssign('custom')}>
-                <Plus size={14} /> {t('admin.awards.addCustom')}
-              </Button>
-            </div>
+          <Card className="space-y-4 !p-5">
+            <SectionTitle
+              size="sm"
+              title={
+                <span className="inline-flex items-center gap-2">
+                  <Sparkles size={16} className="text-accent-violet" /> {t('admin.awards.custom')}
+                </span>
+              }
+              action={
+                <Button size="sm" variant="ghost" onClick={() => openAssign('custom')}>
+                  <Plus size={14} /> {t('admin.awards.addCustom')}
+                </Button>
+              }
+            />
             {customs.length === 0 ? (
-              <p className="text-sm text-body dark:text-bodydark">{t('awards.none')}</p>
+              <p className="text-sm text-ink-2">{t('awards.none')}</p>
             ) : (
-              <ul className="divide-y divide-stroke dark:divide-strokedark">
+              <ul className="divide-y divide-line-subtle">
                 {customs.map((a) => (
-                  <li key={a.id} className="py-3 flex items-center gap-3">
+                  <li key={a.id} className="flex items-center gap-3 py-3">
                     <TrophyVisual category="custom" imageUrl={a.imageUrl} size="sm" />
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-black dark:text-white truncate">{a.title}</p>
-                      <p className="text-xs text-body dark:text-bodydark truncate">
+                      <p className="truncate font-semibold text-ink-1">{a.title}</p>
+                      <p className="truncate text-xs text-ink-2">
                         {a.user ? a.user.displayName || a.user.username : a.team?.name || t('admin.awards.unassigned')}
                         {a.user && a.team ? ` · ${a.team.name}` : ''}
                       </p>
@@ -419,7 +449,7 @@ export default function AdminAwardsPage() {
                       <Pencil size={14} />
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => setPendingRemove(a)} aria-label={t('admin.awards.remove')}>
-                      <Trash2 size={14} className="text-danger" />
+                      <Trash2 size={14} className="text-accent-red" />
                     </Button>
                   </li>
                 ))}
@@ -428,14 +458,17 @@ export default function AdminAwardsPage() {
           </Card>
 
           {/* Podiums */}
-          <Card className="p-5 space-y-4">
-            <div>
-              <h3 className="font-semibold text-black dark:text-white inline-flex items-center gap-2">
-                <Trophy size={16} className="text-warning" /> {t('admin.awards.podiums')}
-              </h3>
-              <p className="text-xs text-body dark:text-bodydark mt-1">{t('admin.awards.podiumsHint')}</p>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="space-y-4 !p-5">
+            <SectionTitle
+              size="sm"
+              title={
+                <span className="inline-flex items-center gap-2">
+                  <Trophy size={16} className="text-accent-gold" /> {t('admin.awards.podiums')}
+                </span>
+              }
+              description={t('admin.awards.podiumsHint')}
+            />
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <PodiumEditor
                 label={t('admin.awards.podiumRegular')}
                 source={t('awards.source.' + (data?.podiums.source.regular ?? 'none'))}
@@ -462,8 +495,8 @@ export default function AdminAwardsPage() {
                   <Wand2 size={14} /> {t('admin.awards.deriveMatches')}
                 </Button>
                 {tournaments.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <select className={`${inputCls} w-auto`} value={tournamentId} onChange={(e) => setTournamentId(e.target.value)} aria-label={t('admin.awards.tournament')}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select className={`${inputCls} w-auto max-w-full`} value={tournamentId} onChange={(e) => setTournamentId(e.target.value)} aria-label={t('admin.awards.tournament')}>
                       <option value="">{t('admin.awards.tournament')}</option>
                       {tournaments.map((x) => (
                         <option key={x.id} value={x.id}>
@@ -507,7 +540,7 @@ export default function AdminAwardsPage() {
         <form onSubmit={submit} className="space-y-4">
           {form.category === 'custom' && (
             <div>
-              <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.awards.titleField')}</label>
+              <label className={labelCls}>{t('admin.awards.titleField')}</label>
               <input className={inputCls} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required maxLength={120} />
             </div>
           )}
@@ -522,19 +555,19 @@ export default function AdminAwardsPage() {
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
-              <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.awards.description')}</label>
+              <label className={labelCls}>{t('admin.awards.description')}</label>
               <textarea className={inputCls} rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={1000} />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs text-body dark:text-bodydark mb-1">{t('admin.awards.imageUrl')}</label>
+              <label className={labelCls}>{t('admin.awards.imageUrl')}</label>
               <input className={inputCls} value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://" />
             </div>
           </div>
           {form.criteria && (
-            <label className="flex items-center gap-2 text-sm text-black dark:text-white">
+            <label className="flex flex-wrap items-center gap-2 text-sm text-ink-1">
               <input type="checkbox" checked={form.keepCriteria} onChange={(e) => setForm({ ...form, keepCriteria: e.target.checked })} />
               {t('admin.awards.keepCriteria')}
-              <span className="text-xs text-body dark:text-bodydark">
+              <span className="text-xs text-ink-2 num">
                 ({t('awards.criteria.games')} {fmtNum(form.criteria.games)} · {t('awards.criteria.kda')} {fmtNum(form.criteria.kda, 2)} ·{' '}
                 {t('awards.criteria.mvp')} {fmtNum(form.criteria.mvpCount)})
               </span>
@@ -580,7 +613,9 @@ function CategoryCard({
   onEdit,
   onRemove,
   onApply,
+  variants,
 }: {
+  variants: Variants;
   category: AwardCategory;
   award: AwardItem | null;
   suggestion: Suggestion | null;
@@ -594,28 +629,29 @@ function CategoryCard({
   const lane = laneOf(category);
   const sameAsSuggestion = !!award && !!suggestion && award.userId === suggestion.userId;
   return (
-    <Card className="p-4 space-y-3">
+    <motion.div variants={variants} className="h-full">
+    <Card className="h-full space-y-3 !p-4" accent={award ? 'gold' : undefined}>
       <div className="flex items-center gap-2">
         <TrophyVisual category={category} imageUrl={award?.imageUrl} size="sm" />
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-black dark:text-white truncate inline-flex items-center gap-1.5">
+          <p className="inline-flex max-w-full items-center gap-1.5 truncate font-display font-bold tracking-tight2 text-ink-1">
             <Icon size={14} /> {t('awards.category.' + category)}
           </p>
-          <p className="text-xs text-body dark:text-bodydark">{award ? t('awards.criteria.basis.' + (award.criteria?.basis ?? (category === 'mvp' ? 'mvp' : 'kda'))) : t('admin.awards.unassigned')}</p>
+          <p className="text-xs text-ink-3">{award ? t('awards.criteria.basis.' + (award.criteria?.basis ?? (category === 'mvp' ? 'mvp' : 'kda'))) : t('admin.awards.unassigned')}</p>
         </div>
         {lane && <RoleIcon role={lane} size={22} />}
       </div>
 
       {award ? (
-        <div className="flex items-center gap-3 rounded-lg border border-stroke dark:border-strokedark p-3">
+        <div className="flex items-center gap-3 rounded-lg border border-line-subtle bg-surface-2/50 p-3">
           <PlayerAvatar user={award.user} size="md" />
           <div className="min-w-0 flex-1">
-            <p className="font-bold text-black dark:text-white truncate">
+            <p className="truncate font-bold text-ink-1">
               {award.user ? award.user.displayName || award.user.username : t('awards.noPlayer')}
             </p>
-            <p className="text-xs text-body dark:text-bodydark truncate">{award.team?.name ?? t('awards.noTeam')}</p>
+            <p className="truncate text-xs text-ink-2">{award.team?.name ?? t('awards.noTeam')}</p>
             {award.criteria && (
-              <p className="text-[11px] text-body dark:text-bodydark tabular-nums whitespace-normal">
+              <p className="whitespace-normal text-[11px] text-ink-3 num">
                 {t('awards.criteria.games')} {fmtNum(award.criteria.games)} · {t('awards.criteria.kda')} {fmtNum(award.criteria.kda, 2)} · {t('awards.criteria.mvp')}{' '}
                 {fmtNum(award.criteria.mvpCount)}
               </p>
@@ -625,7 +661,7 @@ function CategoryCard({
             <Pencil size={14} />
           </Button>
           <Button size="sm" variant="ghost" onClick={() => onRemove(award)} aria-label={t('admin.awards.remove')}>
-            <Trash2 size={14} className="text-danger" />
+            <Trash2 size={14} className="text-accent-red" />
           </Button>
         </div>
       ) : (
@@ -635,15 +671,15 @@ function CategoryCard({
       )}
 
       {suggestion && !sameAsSuggestion && (
-        <div className="rounded-lg bg-warning/5 border border-warning/30 p-3 space-y-2">
-          <p className="text-[11px] uppercase tracking-wider text-warning inline-flex items-center gap-1">
+        <div className="space-y-2 rounded-lg border border-accent-gold/30 bg-accent-gold/5 p-3">
+          <p className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-eyebrow text-accent-gold">
             <Wand2 size={11} /> {t('admin.awards.suggestion')}
           </p>
           <div className="flex items-center gap-2">
             <PlayerAvatar user={suggestion.user} size="sm" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-black dark:text-white truncate">{suggestion.user.displayName || suggestion.user.username}</p>
-              <p className="text-[11px] text-body dark:text-bodydark truncate tabular-nums">
+              <p className="truncate text-sm font-semibold text-ink-1">{suggestion.user.displayName || suggestion.user.username}</p>
+              <p className="truncate text-[11px] text-ink-2 num">
                 {suggestion.team.name} · {t('awards.criteria.games')} {fmtNum(suggestion.criteria.games)} · {t('awards.criteria.kda')}{' '}
                 {fmtNum(suggestion.criteria.kda, 2)} · {t('awards.criteria.mvp')} {fmtNum(suggestion.criteria.mvpCount)}
               </p>
@@ -654,14 +690,14 @@ function CategoryCard({
           </div>
           {suggestion.alternatives.length > 0 && (
             <details className="text-xs">
-              <summary className="cursor-pointer text-body dark:text-bodydark">{t('admin.awards.alternatives')}</summary>
+              <summary className="cursor-pointer text-ink-2">{t('admin.awards.alternatives')}</summary>
               <ul className="mt-1 space-y-1">
                 {suggestion.alternatives.map((a) => (
                   <li key={a.userId} className="flex items-center justify-between gap-2">
-                    <span className="truncate text-black dark:text-white">
-                      {a.user.displayName || a.user.username} <span className="text-body dark:text-bodydark">· {a.team.name}</span>
+                    <span className="truncate text-ink-1">
+                      {a.user.displayName || a.user.username} <span className="text-ink-2">· {a.team.name}</span>
                     </span>
-                    <span className="tabular-nums text-body dark:text-bodydark shrink-0">
+                    <span className="shrink-0 text-ink-2 num">
                       {fmtNum(a.criteria.games)}G · {fmtNum(a.criteria.kda, 2)} · {fmtNum(a.criteria.mvpCount)} MVP
                     </span>
                     <button
@@ -684,6 +720,7 @@ function CategoryCard({
         </Badge>
       )}
     </Card>
+    </motion.div>
   );
 }
 
@@ -739,7 +776,7 @@ function PlayerPicker({
 
   return (
     <div className="space-y-2">
-      <label className="block text-xs text-body dark:text-bodydark">{t('admin.awards.pickPlayer')}</label>
+      <label className={labelCls}>{t('admin.awards.pickPlayer')}</label>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <select className={inputCls} value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)}>
           <option value="">{t('admin.awards.allTeams')}</option>
@@ -751,9 +788,9 @@ function PlayerPicker({
         </select>
         <input className={inputCls} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('admin.awards.searchPlayer')} />
       </div>
-      <div className="max-h-56 overflow-y-auto rounded-lg border border-stroke dark:border-strokedark divide-y divide-stroke dark:divide-strokedark">
+      <div className="max-h-56 divide-y divide-line-subtle overflow-y-auto rounded-lg border border-line-subtle">
         {rows.length === 0 ? (
-          <p className="p-3 text-sm text-body dark:text-bodydark">{t('admin.awards.noPlayer')}</p>
+          <p className="p-3 text-sm text-ink-2">{t('admin.awards.noPlayer')}</p>
         ) : (
           rows.map((r) => {
             const active = r.userId === userId;
@@ -763,13 +800,13 @@ function PlayerPicker({
                 type="button"
                 onClick={() => onChange(active ? null : r.userId, active ? null : r.teamId)}
                 className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${
-                  active ? 'bg-primary/10' : 'hover:bg-gray dark:hover:bg-meta-4'
+                  active ? 'bg-primary/10' : 'hover:bg-surface-2'
                 }`}
               >
                 <PlayerAvatar user={r.user} size="sm" />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium text-black dark:text-white truncate">{r.user.displayName || r.user.username}</span>
-                  <span className="block text-[11px] text-body dark:text-bodydark truncate">{r.teamName}</span>
+                  <span className="block truncate text-sm font-medium text-ink-1">{r.user.displayName || r.user.username}</span>
+                  <span className="block truncate text-[11px] text-ink-2">{r.teamName}</span>
                 </span>
                 {r.role && <RoleIcon role={r.role} size={18} />}
                 {active && <Check size={16} className="text-primary" />}
@@ -802,13 +839,13 @@ function PodiumEditor({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-stroke dark:border-strokedark p-4 space-y-3">
+    <div className="space-y-3 rounded-lg border border-line-subtle bg-surface-2/40 p-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="font-semibold text-black dark:text-white">{label}</p>
-        <span className="text-[11px] text-body dark:text-bodydark">{t('admin.awards.source', { s: source })}</span>
+        <p className="font-semibold text-ink-1">{label}</p>
+        <span className="text-[11px] text-ink-3">{t('admin.awards.source', { s: source })}</span>
       </div>
       {current.length > 0 && (
-        <p className="text-xs text-body dark:text-bodydark truncate">
+        <p className="truncate text-xs text-ink-2 num">
           {current
             .slice()
             .sort((a, b) => a.placement - b.placement)
@@ -818,7 +855,7 @@ function PodiumEditor({
       )}
       {([1, 2, 3] as const).map((p) => (
         <div key={p} className="flex items-center gap-2">
-          <span className="w-16 shrink-0 text-xs text-body dark:text-bodydark">{t('admin.awards.place' + p)}</span>
+          <span className="w-16 shrink-0 text-xs text-ink-2">{t('admin.awards.place' + p)}</span>
           <select className={inputCls} value={draft[p]} onChange={(e) => onChange({ ...draft, [p]: e.target.value })}>
             <option value="">{t('admin.awards.empty')}</option>
             {teams.map((tm) => (

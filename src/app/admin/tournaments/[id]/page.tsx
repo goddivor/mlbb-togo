@@ -19,10 +19,11 @@ import {
   Calendar,
   Search,
   Info,
+  Trophy,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Card, Button, Badge, LoadingSpinner, Input, Select, Avatar } from '@/components/ui';
+import { Card, Button, Badge, LoadingSpinner, Input, Select, Avatar, PageHeader, SectionTitle, StatTile } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import EliminationBracket from '@/components/tournaments/EliminationBracket';
@@ -177,7 +178,7 @@ export default function AdminTournamentManagePage() {
           <ArrowLeft size={16} /> {t('admin.tournaments.back')}
         </Button>
         <Card>
-          <p className="py-8 text-center text-sm text-body dark:text-bodydark">{t('tournament.notFound')}</p>
+          <p className="py-8 text-center text-sm text-ink-2">{t('tournament.notFound')}</p>
         </Card>
       </div>
     );
@@ -187,6 +188,8 @@ export default function AdminTournamentManagePage() {
   const hasBracket = allMatches.length > 0;
   const registeredIds = new Set(participants.map((p: any) => p.id));
   const availableTeams = esportTeams.filter((tm) => !registeredIds.has(tm.id));
+  const finishedCount = allMatches.filter((m) => m.status === 'finished').length;
+  const playableCount = allMatches.filter((m) => m.status !== 'bye').length;
   const filteredUsers = users
     .filter((u) => {
       const q = mvpQuery.trim().toLowerCase();
@@ -197,71 +200,89 @@ export default function AdminTournamentManagePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div>
         <Button variant="ghost" size="sm" onClick={() => router.push('/admin/tournaments')}>
           <ArrowLeft size={16} /> {t('admin.tournaments.back')}
         </Button>
-        <Link href={`/tournaments/${id}`} target="_blank">
-          <Button variant="ghost" size="sm">
-            <ExternalLink size={14} /> {t('admin.tournaments.viewPublic')}
-          </Button>
-        </Link>
       </div>
 
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
+      {/* Header (banner art when the tournament has one) */}
+      <PageHeader
+        eyebrow={t('nav.section.esport')}
+        icon={<Trophy size={28} />}
+        title={tournament.name}
+        subtitle={tournament.description || undefined}
+        breadcrumb={t('admin.tournaments.title')}
+        banner={tournament.banner || undefined}
+        variant={tournament.status === 'ongoing' ? 'green' : tournament.status === 'completed' ? 'gold' : 'default'}
+        action={
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-title-md2 font-bold text-black dark:text-white">{tournament.name}</h2>
             <Badge variant={TOURNAMENT_STATUS_VARIANT[tournament.status] || 'default'} size="sm">
               {t(`tournament.status.${tournament.status}`)}
             </Badge>
             {tournament.format && <Badge variant="purple" size="sm">{tournament.format}</Badge>}
             {liveMatch && (
-              <Badge variant="red" size="sm">
-                <Radio size={10} className="animate-pulse" /> {t('admin.tournaments.live')}
+              <Badge variant="live" size="sm">
+                {t('admin.tournaments.live')}
               </Badge>
             )}
+            <Link href={`/tournaments/${id}`} target="_blank">
+              <Button variant={tournament.banner ? 'outline' : 'ghost'} size="sm" className={tournament.banner ? 'border-white/40 text-white hover:border-white hover:text-white' : undefined}>
+                <ExternalLink size={14} /> {t('admin.tournaments.viewPublic')}
+              </Button>
+            </Link>
           </div>
-          {tournament.description && (
-            <p className="mt-1 text-sm text-body dark:text-bodydark">{tournament.description}</p>
-          )}
+        }
+      />
+
+      {/* KPI strip */}
+      <Card className="!p-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <StatTile label={t('admin.tournaments.registered')} value={`${participants.length}/${tournament.maxTeams}`} />
+          <StatTile label={t('admin.tournaments.bracket')} value={hasBracket ? `${finishedCount}/${playableCount}` : '—'} accent="cyan" />
+          <StatTile label={t('admin.tournaments.live')} value={liveMatch ? 1 : 0} accent={liveMatch ? 'red' : undefined} />
+          <StatTile label={t('admin.tournaments.mvp')} value={mvp ? mvp.name : '—'} accent={mvp ? 'gold' : undefined} />
         </div>
-      </div>
+      </Card>
 
       {/* Registered teams */}
       <Card>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h3 className="flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-            <Users size={20} className="text-primary" /> {t('admin.tournaments.registered')}
-            <Badge variant="default" size="sm">
-              {participants.length}/{tournament.maxTeams}
-            </Badge>
-          </h3>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => setAddTeamOpen(true)}
-            disabled={!!busy || participants.length >= tournament.maxTeams}
-          >
-            <UserPlus size={16} /> {t('admin.tournaments.addTeam')}
-          </Button>
-        </div>
+        <SectionTitle
+          className="mb-4"
+          title={
+            <span className="flex items-center gap-2">
+              <Users size={18} className="text-primary" /> {t('admin.tournaments.registered')}
+              <Badge variant="default" size="sm">
+                {participants.length}/{tournament.maxTeams}
+              </Badge>
+            </span>
+          }
+          action={
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setAddTeamOpen(true)}
+              disabled={!!busy || participants.length >= tournament.maxTeams}
+            >
+              <UserPlus size={16} /> {t('admin.tournaments.addTeam')}
+            </Button>
+          }
+        />
         {participants.length === 0 ? (
-          <p className="py-6 text-center text-sm text-bodydark2">{t('tournament.participants.empty')}</p>
+          <p className="py-6 text-center text-sm text-ink-3">{t('tournament.participants.empty')}</p>
         ) : (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {participants.map((p: any) => (
               <div
                 key={p.id}
-                className={`flex items-center gap-3 rounded-lg border p-3 ${
-                  p.champion ? 'border-warning/60' : p.eliminated ? 'border-stroke opacity-70 dark:border-strokedark' : 'border-stroke dark:border-strokedark'
+                className={`flex items-center gap-3 rounded-lg border bg-surface-2/40 p-3 ${
+                  p.champion ? 'border-accent-gold/60 shadow-glow-gold' : p.eliminated ? 'border-line-subtle opacity-60' : 'border-line-subtle'
                 }`}
               >
                 <TeamLogo name={p.name} logo={p.logo} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-black dark:text-white">{p.name}</p>
-                  <p className="text-xs text-body dark:text-bodydark">
+                  <p className="truncate text-sm font-semibold text-ink-1">{p.name}</p>
+                  <p className="text-xs text-ink-2 num">
                     {t('tournament.participants.seed', { n: p.seed })} · {t('tournament.participants.wins', { count: p.wins })}
                   </p>
                 </div>
@@ -286,15 +307,15 @@ export default function AdminTournamentManagePage() {
 
       {/* Bracket controls */}
       <Card>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h3 className="flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-            <GitBranch size={20} className="text-primary" /> {t('admin.tournaments.bracket')}
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <h3 className="flex items-center gap-2 font-display text-lg font-bold tracking-tight2 text-ink-1">
+            <GitBranch size={18} className="text-primary" /> {t('admin.tournaments.bracket')}
           </h3>
           <div className="flex flex-wrap items-center gap-2">
             <select
               value={seeding}
               onChange={(e) => setSeeding(e.target.value as any)}
-              className="rounded-lg border border-stroke bg-gray-2 px-3 py-2 text-sm text-black focus:border-primary focus:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white"
+              className="rounded border border-line-strong bg-surface-1 px-3 py-2 text-sm text-ink-1 outline-none transition-[border-color,box-shadow] duration-base focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60"
               aria-label={t('admin.tournaments.seeding')}
             >
               <option value="random">{t('admin.tournaments.seeding.random')}</option>
@@ -349,13 +370,13 @@ export default function AdminTournamentManagePage() {
         </div>
 
         {participants.length < 2 && !hasBracket ? (
-          <div className="flex items-start gap-2 rounded-lg border border-stroke bg-gray-2 p-3 text-sm text-body dark:border-strokedark dark:bg-meta-4 dark:text-bodydark">
+          <div className="flex items-start gap-2 rounded-lg border border-line-subtle bg-surface-2 p-3 text-sm text-ink-2">
             <Info size={16} className="mt-0.5 shrink-0 text-primary" />
             <span>{t('admin.tournaments.minTeams')}</span>
           </div>
         ) : hasBracket ? (
           <>
-            <p className="mb-3 text-xs text-bodydark2">{t('admin.tournaments.bracketHint')}</p>
+            <p className="mb-3 text-xs text-ink-3">{t('admin.tournaments.bracketHint')}</p>
             <EliminationBracket
               teams={bracketTeams}
               matches={allMatches}
@@ -368,27 +389,27 @@ export default function AdminTournamentManagePage() {
             />
           </>
         ) : (
-          <p className="py-6 text-center text-sm text-bodydark2">{t('tournament.bracket.empty')}</p>
+          <p className="py-6 text-center text-sm text-ink-3">{t('tournament.bracket.empty')}</p>
         )}
       </Card>
 
       {/* Live + MVP */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
-          <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-            <Radio size={20} className={liveMatch ? 'animate-pulse text-danger' : 'text-primary'} />{' '}
+          <h3 className="mb-3 flex items-center gap-2 font-display text-lg font-bold tracking-tight2 text-ink-1">
+            <Radio size={18} className={liveMatch ? 'animate-pulse text-accent-red' : 'text-primary'} />{' '}
             {t('admin.tournaments.live')}
           </h3>
           {liveMatch ? (
             <MatchSummary match={liveMatch} roundKey={roundKeyOf.get(liveMatch.round)} onClick={() => openMatch(liveMatch)} />
           ) : (
-            <p className="py-4 text-center text-sm text-bodydark2">{t('admin.tournaments.noLive')}</p>
+            <p className="py-4 text-center text-sm text-ink-3">{t('admin.tournaments.noLive')}</p>
           )}
         </Card>
         <Card>
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h3 className="flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-              <Star size={20} className="text-warning" /> {t('admin.tournaments.mvp')}
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="flex items-center gap-2 font-display text-lg font-bold tracking-tight2 text-ink-1">
+              <Star size={18} className="text-accent-gold" /> {t('admin.tournaments.mvp')}
             </h3>
             <div className="flex items-center gap-2">
               {mvp && (
@@ -408,14 +429,14 @@ export default function AdminTournamentManagePage() {
           </div>
           {mvp ? (
             <div className="flex items-center gap-3">
-              <Avatar name={mvp.name} src={mvp.avatar} size="lg" />
+              <Avatar name={mvp.name} src={mvp.avatar} size="lg" ring />
               <div className="min-w-0">
-                <p className="truncate text-base font-bold text-black dark:text-white">{mvp.name}</p>
-                <p className="text-xs text-body dark:text-bodydark">{mvp.rank} · {mvp.role}</p>
+                <p className="truncate font-display text-base font-bold tracking-tight2 text-ink-1">{mvp.name}</p>
+                <p className="text-xs text-ink-2">{mvp.rank} · {mvp.role}</p>
               </div>
             </div>
           ) : (
-            <p className="py-4 text-center text-sm text-bodydark2">{t('tournament.mvp.empty')}</p>
+            <p className="py-4 text-center text-sm text-ink-3">{t('tournament.mvp.empty')}</p>
           )}
         </Card>
       </div>
@@ -429,9 +450,9 @@ export default function AdminTournamentManagePage() {
         size="sm"
         closeLabel={t('common.close')}
       >
-        <p className="mb-3 text-sm text-body dark:text-bodydark">{t('admin.tournaments.addTeamPick')}</p>
+        <p className="mb-3 text-sm text-ink-2">{t('admin.tournaments.addTeamPick')}</p>
         {availableTeams.length === 0 ? (
-          <p className="py-4 text-center text-sm text-bodydark2">{t('admin.tournaments.noTeamLeft')}</p>
+          <p className="py-4 text-center text-sm text-ink-3">{t('admin.tournaments.noTeamLeft')}</p>
         ) : (
           <div className="max-h-80 space-y-2 overflow-y-auto">
             {availableTeams.map((tm) => (
@@ -444,10 +465,10 @@ export default function AdminTournamentManagePage() {
                     () => setAddTeamOpen(false),
                   )
                 }
-                className="flex w-full items-center gap-3 rounded-lg border border-stroke bg-white p-3 text-left hover:border-primary disabled:opacity-60 dark:border-strokedark dark:bg-boxdark-2"
+                className="flex w-full items-center gap-3 rounded-lg border border-line-subtle bg-surface-2/60 p-3 text-left transition-colors duration-fast hover:border-primary disabled:opacity-60"
               >
                 <TeamLogo name={tm.name} logo={tm.image} size="sm" />
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-black dark:text-white">{tm.name}</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink-1">{tm.name}</span>
                 <Badge variant="default" size="sm">{tm.type}</Badge>
               </button>
             ))}
@@ -472,7 +493,7 @@ export default function AdminTournamentManagePage() {
         />
         <div className="mt-3 max-h-80 space-y-2 overflow-y-auto">
           {filteredUsers.length === 0 ? (
-            <p className="py-4 text-center text-sm text-bodydark2">{t('admin.tournaments.mvpNone')}</p>
+            <p className="py-4 text-center text-sm text-ink-3">{t('admin.tournaments.mvpNone')}</p>
           ) : (
             filteredUsers.map((u) => {
               const name = u.displayName || u.gameNickname || u.username;
@@ -486,11 +507,11 @@ export default function AdminTournamentManagePage() {
                       setMvpOpen(false),
                     )
                   }
-                  className="flex w-full items-center gap-3 rounded-lg border border-stroke bg-white p-2 text-left hover:border-primary disabled:opacity-60 dark:border-strokedark dark:bg-boxdark-2"
+                  className="flex w-full items-center gap-3 rounded-lg border border-line-subtle bg-surface-2/60 p-2 text-left transition-colors duration-fast hover:border-primary disabled:opacity-60"
                 >
                   <Avatar name={name} src={u.avatar} size="sm" />
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-black dark:text-white">{name}</span>
-                  {u.username !== name && <span className="text-xs text-bodydark2">@{u.username}</span>}
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink-1">{name}</span>
+                  {u.username !== name && <span className="text-xs text-ink-3">@{u.username}</span>}
                 </button>
               );
             })
@@ -512,16 +533,16 @@ export default function AdminTournamentManagePage() {
             <MatchSummary match={selected} roundKey={roundKeyOf.get(selected.round)} />
 
             {selected.status === 'bye' ? (
-              <p className="text-sm text-bodydark2">{t('tournament.match.status.bye')}</p>
+              <p className="text-sm text-ink-3">{t('tournament.match.status.bye')}</p>
             ) : (
               <>
                 {/* Result */}
-                <section className="space-y-3 rounded-lg border border-stroke p-4 dark:border-strokedark">
-                  <h4 className="flex items-center gap-2 text-sm font-semibold text-black dark:text-white">
+                <section className="space-y-3 rounded-lg border border-line-subtle bg-surface-2/40 p-4">
+                  <h4 className="flex items-center gap-2 text-sm font-semibold text-ink-1">
                     <Swords size={16} className="text-primary" /> {t('admin.tournaments.match.result')}
                   </h4>
                   {!selected.teamAId || !selected.teamBId ? (
-                    <p className="text-sm text-bodydark2">{t('admin.tournaments.match.incomplete')}</p>
+                    <p className="text-sm text-ink-3">{t('admin.tournaments.match.incomplete')}</p>
                   ) : (
                     <>
                       <div className="grid grid-cols-2 gap-3">
@@ -560,8 +581,8 @@ export default function AdminTournamentManagePage() {
                 </section>
 
                 {/* Schedule */}
-                <section className="space-y-3 rounded-lg border border-stroke p-4 dark:border-strokedark">
-                  <h4 className="flex items-center gap-2 text-sm font-semibold text-black dark:text-white">
+                <section className="space-y-3 rounded-lg border border-line-subtle bg-surface-2/40 p-4">
+                  <h4 className="flex items-center gap-2 text-sm font-semibold text-ink-1">
                     <Calendar size={16} className="text-primary" /> {t('admin.tournaments.match.schedule')}
                   </h4>
                   <Input

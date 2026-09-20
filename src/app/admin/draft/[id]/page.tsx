@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Card, Button, Badge, LoadingSpinner } from '@/components/ui';
+import { Card, Button, Badge, EmptyState, PageHeader, SectionTitle, Skeleton, StatTile } from '@/components/ui';
 import DraftBracket from '@/components/draft/DraftBracket';
 import toast from 'react-hot-toast';
 
@@ -86,7 +86,16 @@ export default function AdminDraftManagePage() {
     }
   };
 
-  if (loading) return <LoadingSpinner size="lg" className="py-24" />;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-64" />
+        <Card>
+          <Skeleton lines={4} />
+        </Card>
+      </div>
+    );
+  }
 
   if (!tournament) {
     return (
@@ -95,9 +104,7 @@ export default function AdminDraftManagePage() {
           <ArrowLeft size={16} /> {t('admin.draft.back')}
         </Button>
         <Card>
-          <p className="py-8 text-center text-sm text-body dark:text-bodydark">
-            {t('admin.draft.noTournaments')}
-          </p>
+          <EmptyState className="!min-h-0 py-8" title={t('admin.draft.noTournaments')} />
         </Card>
       </div>
     );
@@ -111,40 +118,58 @@ export default function AdminDraftManagePage() {
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" size="sm" onClick={() => router.push('/admin/draft')}>
-        <ArrowLeft size={16} /> {t('admin.draft.back')}
-      </Button>
-
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-title-md2 font-bold text-black dark:text-white">{tournament.name}</h2>
+      <PageHeader
+        eyebrow={t('nav.section.esport')}
+        breadcrumb={t('admin.draft.title')}
+        title={
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {tournament.name}
             <Badge variant="neon" size="sm">
               {tournament.category}
             </Badge>
-            <Badge variant={statusVariant[status] || 'default'} size="sm">
+            <Badge variant={statusVariant[status] || 'default'} size="sm" dot>
               {t('draft.status.' + status)}
             </Badge>
-          </div>
-          {tournament.description && (
-            <p className="mt-1 text-sm text-body dark:text-bodydark">{tournament.description}</p>
-          )}
-        </div>
-      </div>
+          </span>
+        }
+        subtitle={tournament.description || undefined}
+        variant="purple"
+        action={
+          <Button variant="ghost" size="sm" onClick={() => router.push('/admin/draft')}>
+            <ArrowLeft size={16} /> {t('admin.draft.back')}
+          </Button>
+        }
+      />
 
-      {/* Divisibility reminder */}
-      <div className="flex items-start gap-2 rounded-lg border border-stroke bg-gray-2 p-3 text-sm text-body dark:border-strokedark dark:bg-meta-4 dark:text-bodydark">
-        <Info size={16} className="mt-0.5 shrink-0 text-primary" />
-        <span>{t('admin.draft.divisibility', { size: teamSize })}</span>
-      </div>
+      {/* Key figures + divisibility reminder */}
+      <Card className="!p-4 sm:!p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-6">
+            <StatTile label={t('admin.draft.registrations')} value={regCount} accent="cyan" />
+            <StatTile
+              label={t('admin.draft.teams')}
+              value={Math.floor(regCount / teamSize)}
+              accent={regCount > 0 ? (divisible ? 'green' : 'red') : undefined}
+            />
+          </div>
+          <div className="flex items-start gap-2 text-sm text-ink-2">
+            <Info size={16} className="mt-0.5 shrink-0 text-primary" />
+            <span>{t('admin.draft.divisibility', { size: teamSize })}</span>
+          </div>
+        </div>
+      </Card>
 
       {/* Registration control + registrants */}
       <Card>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h3 className="flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-            <Users size={20} className="text-primary" /> {t('admin.draft.registrations')}
-          </h3>
+          <SectionTitle
+            title={
+              <span className="inline-flex items-center gap-2">
+                <Users size={20} className="text-primary" /> {t('admin.draft.registrations')}
+              </span>
+            }
+          />
           <div className="flex items-center gap-2">
             {(status === 'draft' || status === 'closed') && (
               <Button
@@ -171,7 +196,7 @@ export default function AdminDraftManagePage() {
         </div>
 
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 text-sm text-body dark:text-bodydark">
+          <span className="inline-flex items-center gap-1.5 text-sm text-ink-2 num">
             <ListChecks size={16} /> {t('draft.registeredCount', { count: regCount })}
           </span>
           {regCount > 0 && (
@@ -182,21 +207,19 @@ export default function AdminDraftManagePage() {
         </div>
 
         {registrations.length === 0 ? (
-          <p className="py-6 text-center text-sm text-bodydark2">
-            {t('draft.registeredCount', { count: 0 })}
-          </p>
+          <EmptyState className="!min-h-0 py-6" title={t('draft.registeredCount', { count: 0 })} />
         ) : (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {registrations.map((r) => (
               <div
                 key={r.id}
-                className="flex items-center justify-between gap-2 rounded-lg border border-stroke px-3 py-2 dark:border-strokedark"
+                className="flex items-center justify-between gap-2 rounded-lg border border-line-subtle bg-surface-2/60 px-3 py-2"
               >
-                <span className="min-w-0 truncate text-sm font-medium text-black dark:text-white">
+                <span className="min-w-0 truncate text-sm font-medium text-ink-1">
                   {r.name}
                 </span>
                 {r.preferredRole && (
-                  <Badge variant="default" size="sm">
+                  <Badge variant="outline" size="sm">
                     {t('draft.role.' + r.preferredRole)}
                   </Badge>
                 )}
@@ -210,9 +233,13 @@ export default function AdminDraftManagePage() {
       {(status === 'closed' || status === 'drafted') && (
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-              <Play size={20} className="text-primary" /> {t('admin.draft.teams')}
-            </h3>
+            <SectionTitle
+              title={
+                <span className="inline-flex items-center gap-2">
+                  <Play size={20} className="text-primary" /> {t('admin.draft.teams')}
+                </span>
+              }
+            />
             <div className="flex flex-wrap items-center gap-2">
               {status === 'closed' && (
                 <Button
@@ -260,11 +287,16 @@ export default function AdminDraftManagePage() {
       {hasBracket && (
         <>
           <Card>
-            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-              <Users size={20} className="text-primary" /> {t('admin.draft.teams')}
-            </h3>
+            <SectionTitle
+              className="mb-4"
+              title={
+                <span className="inline-flex items-center gap-2">
+                  <Users size={20} className="text-primary" /> {t('admin.draft.teams')}
+                </span>
+              }
+            />
             {bracket.teams.length === 0 ? (
-              <p className="py-6 text-center text-sm text-bodydark2">—</p>
+              <p className="py-6 text-center text-sm text-ink-3">—</p>
             ) : (
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 {bracket.teams.map((tm) => (
@@ -272,8 +304,8 @@ export default function AdminDraftManagePage() {
                     key={tm.id}
                     className={`flex items-center gap-3 rounded-lg border p-3 ${
                       tm.eliminated
-                        ? 'border-danger/40 opacity-70'
-                        : 'border-stroke dark:border-strokedark'
+                        ? 'border-accent-red/40 opacity-70'
+                        : 'border-line-subtle bg-surface-2/60'
                     }`}
                   >
                     {tm.icon ? (
@@ -281,15 +313,15 @@ export default function AdminDraftManagePage() {
                       <img
                         src={tm.icon}
                         alt=""
-                        className="h-9 w-9 shrink-0 rounded-lg bg-gray-2 object-cover dark:bg-meta-4"
+                        className="h-9 w-9 shrink-0 rounded-lg bg-surface-3 object-cover"
                       />
                     ) : (
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-2 text-bodydark2 dark:bg-meta-4">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-3 font-display font-bold text-ink-3 num">
                         {tm.seed ?? '?'}
                       </span>
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-black dark:text-white">
+                      <p className="truncate text-sm font-semibold text-ink-1">
                         {tm.name}
                       </p>
                       {tm.complete === false && (
@@ -331,9 +363,7 @@ export default function AdminDraftManagePage() {
           </Card>
 
           <Card>
-            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-              {t('draft.bracket')}
-            </h3>
+            <SectionTitle className="mb-4" title={t('draft.bracket')} />
             <DraftBracket
               teams={bracket.teams}
               matches={bracket.matches}

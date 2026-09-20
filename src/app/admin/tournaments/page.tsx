@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Trophy, Settings2, Users, Calendar } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Card, Button, Badge, PageHeader, EmptyState, LoadingSpinner, Input, Textarea, Select } from '@/components/ui';
+import { Card, Button, Badge, PageHeader, EmptyState, LoadingSpinner, Input, Textarea, Select, StatCard } from '@/components/ui';
+import { fadeUp, stagger, still } from '@/lib/motion';
 import CitySelect from '@/components/geo/CitySelect';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -48,6 +50,7 @@ const emptyForm: Form = {
 
 export default function AdminTournamentsPage() {
   const t = useT();
+  const reduce = useReducedMotion();
   const [loading, setLoading] = useState(true);
   const [tournaments, setTournaments] = useState<any[]>([]);
   const [formOpen, setFormOpen] = useState(false);
@@ -58,6 +61,13 @@ export default function AdminTournamentsPage() {
   const [deleting, setDeleting] = useState(false);
 
   const errMsg = (e: any) => e?.message || t('common.error');
+
+  // Status counts derived from the loaded list (no extra request).
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { upcoming: 0, ongoing: 0, completed: 0 };
+    for (const tn of tournaments) c[tn.status] = (c[tn.status] ?? 0) + 1;
+    return c;
+  }, [tournaments]);
 
   const load = async () => {
     try {
@@ -155,6 +165,7 @@ export default function AdminTournamentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow={t('nav.section.esport')}
         icon={<Trophy size={28} />}
         title={t('admin.tournaments.title')}
         subtitle={t('admin.tournaments.subtitle')}
@@ -164,6 +175,15 @@ export default function AdminTournamentsPage() {
           </Button>
         }
       />
+
+      {!loading && tournaments.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <StatCard label={t('admin.tournaments.title')} value={tournaments.length} icon={<Trophy size={16} />} />
+          <StatCard label={t('tournament.status.upcoming')} value={counts.upcoming} icon={<Calendar size={16} />} accent="violet" />
+          <StatCard label={t('tournament.status.ongoing')} value={counts.ongoing} icon={<Settings2 size={16} />} accent="green" />
+          <StatCard label={t('tournament.status.completed')} value={counts.completed} icon={<Users size={16} />} accent="gold" />
+        </div>
+      )}
 
       {loading ? (
         <LoadingSpinner size="lg" className="py-24" />
@@ -178,29 +198,36 @@ export default function AdminTournamentsPage() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <motion.div
+          variants={reduce ? still : stagger()}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+        >
           {tournaments.map((tn) => {
             const regCount = (tn.registeredTeams || []).length;
             const hasBracket = Array.isArray(tn.brackets) && tn.brackets.length > 0;
+            const accent = tn.status === 'ongoing' ? 'green' : tn.status === 'completed' ? 'gold' : 'cyan';
             return (
-              <Card key={tn.id} hover className="flex flex-col gap-3">
+              <motion.div key={tn.id} variants={reduce ? still : fadeUp} className="h-full">
+              <Card accent={accent} className="flex h-full flex-col gap-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="truncate text-base font-semibold text-black dark:text-white">{tn.name}</p>
+                    <p className="truncate font-display text-base font-bold tracking-tight2 text-ink-1">{tn.name}</p>
                     {tn.description && (
-                      <p className="mt-0.5 line-clamp-2 text-xs text-body dark:text-bodydark">{tn.description}</p>
+                      <p className="mt-0.5 line-clamp-2 text-xs text-ink-2">{tn.description}</p>
                     )}
                   </div>
-                  <Badge variant={TOURNAMENT_STATUS_VARIANT[tn.status] || 'default'} size="sm">
+                  <Badge variant={TOURNAMENT_STATUS_VARIANT[tn.status] || 'default'} size="sm" pulse={tn.status === 'ongoing'}>
                     {t(`tournament.status.${tn.status}`) }
                   </Badge>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 text-xs text-body dark:text-bodydark">
-                  <span className="inline-flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-3 text-xs text-ink-2">
+                  <span className="inline-flex items-center gap-1 num">
                     <Users size={12} /> {t('tournament.teamsCount', { count: regCount, max: tn.maxTeams })}
                   </span>
                   {(tn.startDate || tn.endDate) && (
-                    <span className="inline-flex items-center gap-1">
+                    <span className="inline-flex items-center gap-1 num">
                       <Calendar size={12} /> {tn.startDate}{tn.endDate ? ` → ${tn.endDate}` : ''}
                     </span>
                   )}
@@ -221,9 +248,10 @@ export default function AdminTournamentsPage() {
                   </Button>
                 </div>
               </Card>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
       <Modal
