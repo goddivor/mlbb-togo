@@ -733,6 +733,14 @@ export const api = {
       request('/contact', { method: 'POST', body: data, auth: false }),
   },
 
+  // Togo map (issue #70): static gazetteer + per-city counts.
+  geo: {
+    cities: () =>
+      request('/geo/cities', { fallback: { regions: [], cities: [], other: { id: 'other', name: 'Autre' } }, auth: false }),
+    map: (seasonId?: string | null) =>
+      request(`/geo/map${qs({ seasonId })}`, { fallback: null, auth: false }),
+  },
+
   notifications: {
     list: (params: NotificationsQuery = {}) => {
       const qs = new URLSearchParams();

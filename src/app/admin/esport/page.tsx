@@ -35,6 +35,7 @@ import RoleIcon from '@/components/game/RoleIcon';
 import RoleSelect from '@/components/game/RoleSelect';
 import toast from 'react-hot-toast';
 import { StaffPanel, HonoursPanel } from './TeamExtrasPanels';
+import CitySelect from '@/components/geo/CitySelect';
 
 const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
 
@@ -42,12 +43,14 @@ type TeamForm = {
   name: string;
   image: string;
   description: string;
+  city: string;
 };
 
 const emptyTeamForm: TeamForm = {
   name: '',
   image: '',
   description: '',
+  city: '',
 };
 
 const inputCls =
@@ -439,6 +442,7 @@ function TeamFormModal({
             name: team.name || '',
             image: team.image || '',
             description: team.description || '',
+            city: team.city || '',
           }
         : emptyTeamForm,
     );
@@ -453,6 +457,7 @@ function TeamFormModal({
         name: form.name.trim(),
         image: form.image.trim() || undefined,
         description: form.description.trim() || undefined,
+        city: form.city || null,
       };
       if (team) await api.esport.updateTeam(team.id, payload);
       else await api.esport.createTeam({ ...payload, type });
@@ -492,6 +497,12 @@ function TeamFormModal({
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
         </div>
+        <CitySelect
+          label={t('admin.esport.teamCity')}
+          value={form.city}
+          onChange={(city) => setForm({ ...form, city })}
+          className="py-2 px-3 text-sm"
+        />
         <div className="flex gap-2 pt-2">
           <Button size="sm" type="submit" disabled={saving}>
             <Check size={16} /> {team ? t('admin.esport.save') : t('admin.esport.create')}

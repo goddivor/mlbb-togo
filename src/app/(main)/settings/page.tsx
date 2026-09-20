@@ -14,6 +14,7 @@ import { api, setToken } from '@/lib/api';
 import { isPushSupported, isPushEnabled, enablePush, disablePush } from '@/lib/push';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
+import CitySelect from '@/components/geo/CitySelect';
 
 const DEFAULT_NOTIFS = { friends: true, messages: true, teams: true };
 const DEFAULT_PRIVACY = { profilePublic: true, showStats: true, showOnline: true, allowInvites: true };
@@ -178,6 +179,19 @@ export default function Settings() {
                   readOnly
                 />
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CitySelect
+                  label={t('settings.city')}
+                  value={profile.city}
+                  onChange={(city) => setProfile({ ...profile, city })}
+                />
+                <Input
+                  label={t('settings.country')}
+                  value={profile.country}
+                  onChange={(e: any) => setProfile({ ...profile, country: e.target.value })}
+                />
+              </div>
+              <p className="text-xs text-body dark:text-bodydark -mt-2">{t('settings.cityHint')}</p>
               <Textarea
                 label={t('settings.bio')}
                 value={profile.bio}

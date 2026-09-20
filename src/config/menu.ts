@@ -22,6 +22,7 @@ import {
   Flag,
   Award,
   Crown,
+  MapPin,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -37,6 +38,7 @@ export const playerMenuGroups: MenuGroupConfig[] = [
       { href: '/leaderboard', labelKey: 'header.leaderboard', icon: Trophy },
       { href: '/progress', labelKey: 'header.progress', icon: Sparkles },
       { href: '/ai', labelKey: 'header.ai', icon: Bot },
+      { href: '/map', labelKey: 'header.map', icon: MapPin },
     ],
   },
   {

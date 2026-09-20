@@ -6,6 +6,7 @@ import { Plus, Pencil, Trash2, Trophy, Settings2, Users, Calendar } from 'lucide
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { Card, Button, Badge, PageHeader, EmptyState, LoadingSpinner, Input, Textarea, Select } from '@/components/ui';
+import CitySelect from '@/components/geo/CitySelect';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { TOURNAMENT_STATUS_VARIANT } from '@/components/tournaments/tournament-utils';
@@ -26,6 +27,7 @@ type Form = {
   rules: string;
   banner: string;
   streamUrl: string;
+  city: string;
 };
 
 const emptyForm: Form = {
@@ -41,6 +43,7 @@ const emptyForm: Form = {
   rules: '',
   banner: '',
   streamUrl: '',
+  city: '',
 };
 
 export default function AdminTournamentsPage() {
@@ -90,6 +93,7 @@ export default function AdminTournamentsPage() {
       rules: tn.rules || '',
       banner: tn.banner || '',
       streamUrl: tn.streamUrl || '',
+      city: tn.city || '',
     });
     setFormOpen(true);
   };
@@ -115,6 +119,7 @@ export default function AdminTournamentsPage() {
         rules: form.rules.trim() || undefined,
         banner: form.banner.trim() || undefined,
         streamUrl: form.streamUrl.trim() || undefined,
+        city: form.city || null,
       };
       if (editing) {
         await api.tournaments.update(editing.id, payload);
@@ -246,6 +251,7 @@ export default function AdminTournamentsPage() {
             <Input type="number" min={2} label={t('admin.tournaments.form.maxTeams')} value={form.maxTeams} onChange={set('maxTeams')} />
             <Input label={t('admin.tournaments.form.format')} value={form.format} onChange={set('format')} />
             <Input label={t('admin.tournaments.form.banner')} value={form.banner} onChange={set('banner')} />
+            <CitySelect label={t('admin.tournaments.form.city')} value={form.city} onChange={(city) => setForm((f) => ({ ...f, city }))} />
           </div>
           <Input label={t('admin.tournaments.form.streamUrl')} value={form.streamUrl} onChange={set('streamUrl')} />
           <Textarea label={t('admin.tournaments.form.rules')} value={form.rules} onChange={set('rules')} />
