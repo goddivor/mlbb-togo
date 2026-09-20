@@ -2,12 +2,13 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
+import { fadeUp, stagger, still } from '@/lib/motion';
 import { Coins, Crosshair, Flame, HandHelping, Medal, Scale, Timer } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { useLangStore } from '@/store/useStore';
-import { EmptyState, LoadingSpinner, SectionCard } from '@/components/ui';
+import { EmptyState, SectionCard, Skeleton, Tabs } from '@/components/ui';
 import { HeroThumb, PlayerAvatar, TeamLogo, fmt, fmtInt, type TeamRef, type UserRef } from './shared';
 
 type PlayerRecord = {
@@ -63,17 +64,15 @@ function dateLabel(iso: string | null, lang: string) {
   return new Date(iso).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' });
 }
 
-function RecordCard({ icon, title, children, index }: { icon: ReactNode; title: string; children: ReactNode; index: number }) {
+function RecordCard({ icon, title, children, reduce }: { icon: ReactNode; title: string; children: ReactNode; reduce: boolean }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04, duration: 0.25 }}
-      className="rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark"
+      variants={reduce ? still : fadeUp}
+      className="relative overflow-hidden rounded-lg border border-line-subtle bg-surface-1 p-4 shadow-elev-1 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1"
     >
-      <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-body dark:text-bodydark">
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-meta-2 text-primary dark:bg-meta-4">{icon}</span>
-        {title}
+      <div className="mb-3 flex items-center gap-2">
+        <span className="flex h-8 w-8 items-center justify-center rounded cut-corners-sm bg-accent-cyan/10 text-accent-cyan">{icon}</span>
+        <span className="eyebrow">{title}</span>
       </div>
       {children}
     </motion.div>
@@ -82,6 +81,7 @@ function RecordCard({ icon, title, children, index }: { icon: ReactNode; title: 
 
 export default function RecordsTab({ scope, ready }: { scope: string; ready: boolean }) {
   const t = useT();
+  const reduce = !!useReducedMotion();
   const lang = useLangStore((s: any) => s.lang);
   const [period, setPeriod] = useState<'week' | 'season'>('week');
   const [rec, setRec] = useState<Records | null>(null);
@@ -105,7 +105,7 @@ export default function RecordsTab({ scope, ready }: { scope: string; ready: boo
     key === 'topKda' ? fmt(r.value, 2) : key === 'topDamage' || key === 'topGold' ? fmtInt(r.value, lang) : String(r.value);
 
   const playerBody = (key: string, r: PlayerRecord | null) => {
-    if (!r) return <p className="text-sm text-bodydark2">{t('lstats.records.none')}</p>;
+    if (!r) return <p className="text-sm text-ink-3">{t('lstats.records.none')}</p>;
     const name = r.user.displayName || r.user.username;
     return (
       <div className="flex items-center gap-3">
@@ -115,16 +115,16 @@ export default function RecordsTab({ scope, ready }: { scope: string; ready: boo
           </Link>
           {r.heroCard && (
             <span className="absolute -bottom-1 -right-1">
-              <HeroThumb hero={r.heroCard} size={22} className="ring-2 ring-white dark:ring-boxdark" />
+              <HeroThumb hero={r.heroCard} size={22} className="!ring-2 !ring-surface-1" />
             </span>
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-2xl font-bold leading-tight text-black dark:text-white tabular-nums">{valueOf(key, r)}</p>
-          <Link href={`/players/${r.user.id}`} className="block truncate text-sm font-semibold text-black hover:text-primary dark:text-white">
+          <p className="font-display text-3xl font-bold leading-none tracking-tight2 num text-ink-1">{valueOf(key, r)}</p>
+          <Link href={`/players/${r.user.id}`} className="mt-1 block truncate text-sm font-semibold text-ink-1 hover:text-primary">
             {name}
           </Link>
-          <p className="flex flex-wrap items-center gap-x-1 text-[11px] text-bodydark2">
+          <p className="flex flex-wrap items-center gap-x-1 text-[11px] num text-ink-3">
             <TeamLogo team={r.team} size={12} />
             <span className="truncate">{r.team.name}</span>
             {r.hero && <span>· {t('lstats.records.with')} {r.hero}</span>}
@@ -137,20 +137,20 @@ export default function RecordsTab({ scope, ready }: { scope: string; ready: boo
   };
 
   const matchBody = (r: MatchRecord | null, unavailable: boolean) => {
-    if (unavailable) return <p className="text-sm text-bodydark2">{t('lstats.records.notRecorded')}</p>;
-    if (!r) return <p className="text-sm text-bodydark2">{t('lstats.records.none')}</p>;
+    if (unavailable) return <p className="text-sm text-ink-3">{t('lstats.records.notRecorded')}</p>;
+    if (!r) return <p className="text-sm text-ink-3">{t('lstats.records.none')}</p>;
     const side = (team: TeamRef | null, score: number, won: boolean) => (
-      <div className={`flex items-center gap-2 min-w-0 ${won ? '' : 'opacity-70'}`}>
+      <div className={`flex min-w-0 items-center gap-2 ${won ? '' : 'opacity-70'}`}>
         {team && <TeamLogo team={team} size={28} />}
-        <span className="truncate text-sm font-semibold text-black dark:text-white">{team?.name ?? '?'}</span>
-        <span className={`ml-auto text-xl font-bold tabular-nums ${won ? 'text-success' : 'text-black dark:text-white'}`}>{score}</span>
+        <span className="truncate text-sm font-semibold text-ink-1">{team?.name ?? '?'}</span>
+        <span className={`ml-auto font-display text-xl font-bold num ${won ? 'text-accent-green' : 'text-ink-1'}`}>{score}</span>
       </div>
     );
     return (
       <div className="space-y-1.5">
         {side(r.teamA, r.scoreA, r.scoreA > r.scoreB)}
         {side(r.teamB, r.scoreB, r.scoreB > r.scoreA)}
-        <p className="text-[11px] text-bodydark2">
+        <p className="text-[11px] num text-ink-3">
           +{r.value}
           {r.date && ` · ${dateLabel(r.date, lang)}`}
         </p>
@@ -165,55 +165,51 @@ export default function RecordsTab({ scope, ready }: { scope: string; ready: boo
       <SectionCard className="!p-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="font-bold text-black dark:text-white">
+            <h3 className="font-display font-bold tracking-tight2 text-ink-1">
               {period === 'week' ? t('lstats.records.week') : t('lstats.records.season')}
             </h3>
             {rec && (
-              <p className="text-xs text-bodydark2">
+              <p className="text-xs num text-ink-3">
                 {t('lstats.records.matchesInWindow', { n: rec.matches })}
                 {rec.window && ` · ${dateLabel(rec.window.from, lang)} → ${dateLabel(rec.window.to, lang)}`}
               </p>
             )}
           </div>
-          <div className="flex gap-1.5">
-            {(['week', 'season'] as const).map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setPeriod(p)}
-                className={`px-3 py-1.5 text-sm rounded-sm border transition-colors ${
-                  period === p
-                    ? 'bg-primary border-primary text-white'
-                    : 'bg-gray-2 border-stroke text-body hover:border-primary dark:bg-meta-4 dark:border-strokedark dark:text-bodydark'
-                }`}
-              >
-                {t(`lstats.records.period.${p}`)}
-              </button>
-            ))}
-          </div>
+          <Tabs
+            size="sm"
+            tabs={(['week', 'season'] as const).map((p) => ({ id: p, label: t(`lstats.records.period.${p}`) }))}
+            active={period}
+            onChange={(p: 'week' | 'season') => setPeriod(p)}
+          />
         </div>
       </SectionCard>
 
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <LoadingSpinner size="lg" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true">
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-lg" />)}
         </div>
       ) : !rec || !hasAny ? (
         <EmptyState icon={<Medal size={26} />} title={t('lstats.records.empty')} description={t('lstats.empty.desc')} />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {PLAYER_KEYS.map((k, i) => (
-            <RecordCard key={k} icon={ICONS[k]} title={t(`lstats.records.${k}`)} index={i}>
+        <motion.div
+          key={period}
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
+          variants={reduce ? still : stagger(0.04)}
+          initial="hidden"
+          animate="visible"
+        >
+          {PLAYER_KEYS.map((k) => (
+            <RecordCard key={k} icon={ICONS[k]} title={t(`lstats.records.${k}`)} reduce={reduce}>
               {playerBody(k, rec[k])}
             </RecordCard>
           ))}
-          <RecordCard icon={ICONS.biggestMargin} title={t('lstats.records.biggestMargin')} index={5}>
+          <RecordCard icon={ICONS.biggestMargin} title={t('lstats.records.biggestMargin')} reduce={reduce}>
             {matchBody(rec.biggestMargin, false)}
           </RecordCard>
-          <RecordCard icon={ICONS.longestGame} title={t('lstats.records.longestGame')} index={6}>
+          <RecordCard icon={ICONS.longestGame} title={t('lstats.records.longestGame')} reduce={reduce}>
             {matchBody(rec.longestGame, rec.longestGame === null)}
           </RecordCard>
-        </div>
+        </motion.div>
       )}
     </div>
   );

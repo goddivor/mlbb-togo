@@ -7,7 +7,7 @@ import MatchCard from './MatchCard';
 import { DisplayStatus, EsportMatch, MatchTeam, TFn, displayStatus } from './shared';
 
 const selectCls =
-  'rounded-sm border border-stroke bg-gray-2 py-2 pl-3 pr-8 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white';
+  'rounded border border-line-strong bg-surface-1 py-2 pl-3 pr-8 text-sm text-ink-1 outline-none transition-[border-color,box-shadow] duration-base focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60';
 
 export type ResultsFilter = { teamId: string; status: '' | DisplayStatus };
 
@@ -82,7 +82,7 @@ export default function MatchResults({
             </option>
           ))}
         </select>
-        <span className="ml-auto text-xs text-body dark:text-bodydark">
+        <span className="ml-auto text-xs num text-ink-2">
           {t('matches.results.count', { n: list.length })}
         </span>
       </div>

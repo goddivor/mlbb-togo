@@ -68,7 +68,7 @@ export default function ScreenshotGallery({
             key={it.url + i}
             type="button"
             onClick={() => setIndex(i)}
-            className="group relative aspect-video overflow-hidden rounded-sm border border-stroke bg-gray-2 dark:border-strokedark dark:bg-meta-4"
+            className="group relative aspect-video overflow-hidden rounded-lg border border-line-subtle bg-surface-2 transition-colors hover:border-primary/40"
             title={it.caption || t('matches.screenshots.open')}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -84,7 +84,7 @@ export default function ScreenshotGallery({
               }}
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
-            <span className="hidden h-full w-full flex-col items-center justify-center gap-1 text-bodydark2 [&:not(.hidden)]:flex">
+            <span className="hidden h-full w-full flex-col items-center justify-center gap-1 text-ink-3 [&:not(.hidden)]:flex">
               <Camera size={20} />
               <span className="text-[10px]">{i + 1}</span>
             </span>
@@ -172,7 +172,7 @@ export default function ScreenshotGallery({
                   src={current.url}
                   alt={current.caption || ''}
                   referrerPolicy="no-referrer"
-                  className="max-h-[80vh] max-w-full rounded-sm object-contain shadow-2xl"
+                  className="max-h-[80vh] max-w-full rounded-lg object-contain shadow-elev-3"
                 />
                 {current.caption && (
                   <figcaption className="mt-3 text-center text-sm text-white/80">{current.caption}</figcaption>

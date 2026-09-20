@@ -7,11 +7,12 @@ import {
   Trophy, Gamepad2, RefreshCw, ArrowUpRight, MapPin,
 } from 'lucide-react';
 import {
-  SectionCard, Badge, Button, PageHeader, LoadingSpinner,
+  Card, Badge, Button, PageHeader, LoadingSpinner, StatTile,
 } from '@/components/ui';
 import { useAuthStore } from '@/store/useStore';
 import { api, avatarSrc, clearApiCache } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
+import RankFrame from '@/components/game/RankFrame';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
 import { getSocket, usePresence } from '@/lib/realtime';
@@ -26,22 +27,22 @@ import {
   WidgetSkeleton,
 } from '@/components/dashboard/widgets';
 
-/** Game identity card (kept as the first widget of the grid). */
+/** Game identity card: the player's in-game identity, framed by rank tier. */
 function GameIdentityCard({ userProfile }: { userProfile: any }) {
   const t = useT();
   const nick = userProfile.gameNickname || userProfile.displayName;
 
   if (!userProfile.hasGame) {
     return (
-      <SectionCard className="!p-5 sm:!p-6">
+      <Card className="!p-5 sm:!p-6">
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded cut-corners bg-accent-cyan/10 text-accent-cyan">
               <Gamepad2 size={26} />
             </span>
             <div>
-              <p className="text-lg font-bold text-black dark:text-white">{t('dashboard.noGame.title')}</p>
-              <p className="text-sm text-body dark:text-bodydark">{t('dashboard.noGame.desc')}</p>
+              <p className="font-display text-lg font-bold tracking-tight2 text-ink-1">{t('dashboard.noGame.title')}</p>
+              <p className="text-sm text-ink-2">{t('dashboard.noGame.desc')}</p>
             </div>
           </div>
           <Link href="/profile">
@@ -50,66 +51,68 @@ function GameIdentityCard({ userProfile }: { userProfile: any }) {
             </Button>
           </Link>
         </div>
-      </SectionCard>
+      </Card>
     );
   }
 
   return (
-    <SectionCard className="!p-5 sm:!p-6">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+    <Card glow className="relative overflow-hidden !p-5 sm:!p-6">
+      {/* Corner accent: the only glow element of the page. */}
+      <span aria-hidden="true" className="absolute -right-8 -top-8 h-16 w-16 rotate-45 bg-primary/10" />
+      <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         {/* Identity */}
         <div className="flex items-center gap-4">
-          {userProfile.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarSrc(userProfile.avatar, 160)}
-              alt={nick}
-              referrerPolicy="no-referrer"
-              className="h-16 w-16 rounded-full object-cover ring-2 ring-primary/30"
-            />
-          ) : (
-            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl font-bold text-white">
-              {nick?.[0]?.toUpperCase() || 'J'}
-            </span>
-          )}
+          <RankFrame
+            name={nick}
+            src={userProfile.avatar ? avatarSrc(userProfile.avatar, 160) : null}
+            rank={userProfile.gameRank}
+            size={72}
+          />
           <div className="min-w-0">
-            <p className="truncate text-xl font-bold text-black dark:text-white">{nick}</p>
-            <p className="mt-0.5 text-sm text-body dark:text-bodydark">
-              {t('dashboard.gameId')} {userProfile.mlbbRoleId} · {t('dashboard.gameServer')} {userProfile.mlbbZoneId}
+            <p className="eyebrow mb-1">{t('dashboard.gameId')} {userProfile.mlbbRoleId}</p>
+            <p className="truncate font-display text-2xl font-bold leading-tight tracking-tight2 text-ink-1">{nick}</p>
+            <p className="mt-0.5 text-sm num text-ink-2">
+              {t('dashboard.gameServer')} {userProfile.mlbbZoneId}
+              {userProfile.gameCountry && (
+                <span className="ml-2 inline-flex items-center gap-1 text-ink-3">
+                  <MapPin size={12} /> {userProfile.gameCountry}
+                </span>
+              )}
             </p>
           </div>
         </div>
 
-        {/* Rank / peak / level / country */}
+        {/* Rank / peak / level */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 lg:justify-end">
           {userProfile.gameRank && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               {hasRankBadge(userProfile.gameRank) ? (
                 <RankBadge rank={userProfile.gameRank} size={40} />
               ) : (
-                <Trophy size={18} className="text-yellow-400" />
+                <Trophy size={18} className="text-accent-gold" />
               )}
-              <div className="leading-tight">
-                <p className="text-[10px] uppercase tracking-wide text-bodydark2">{t('dashboard.currentRank')}</p>
-                <p className="text-sm font-bold text-black dark:text-white">{userProfile.gameRank}</p>
-                {userProfile.gameRankLevel != null && (
-                  <p className="text-[11px] text-body dark:text-bodydark">{userProfile.gameRankLevel} pts</p>
-                )}
-              </div>
+              <StatTile
+                label={t('dashboard.currentRank')}
+                value={
+                  <span className="text-base">
+                    {userProfile.gameRank}
+                    {userProfile.gameRankLevel != null && (
+                      <span className="ml-1.5 text-xs font-semibold text-ink-3">{userProfile.gameRankLevel} pts</span>
+                    )}
+                  </span>
+                }
+              />
             </div>
           )}
 
           {userProfile.gamePeakRank && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               {hasRankBadge(userProfile.gamePeakRank) ? (
                 <RankBadge rank={userProfile.gamePeakRank} size={40} />
               ) : (
-                <Trophy size={18} className="text-yellow-400" />
+                <Trophy size={18} className="text-accent-gold" />
               )}
-              <div className="leading-tight">
-                <p className="text-[10px] uppercase tracking-wide text-bodydark2">{t('dashboard.peakRank')}</p>
-                <p className="text-sm font-bold text-black dark:text-white">{userProfile.gamePeakRank}</p>
-              </div>
+              <StatTile label={t('dashboard.peakRank')} value={<span className="text-base">{userProfile.gamePeakRank}</span>} accent="gold" />
             </div>
           )}
 
@@ -117,18 +120,13 @@ function GameIdentityCard({ userProfile }: { userProfile: any }) {
             {userProfile.gameLevel != null && (
               <Badge variant="neon" size="sm">{t('dashboard.level')} {userProfile.gameLevel}</Badge>
             )}
-            {userProfile.gameCountry && (
-              <span className="inline-flex items-center gap-1 text-xs text-body dark:text-bodydark">
-                <MapPin size={12} /> {userProfile.gameCountry}
-              </span>
-            )}
-            <Link href="/profile" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+            <Link href="/profile" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
               {t('dashboard.manageProfile')} <ArrowUpRight size={12} />
             </Link>
           </div>
         </div>
       </div>
-    </SectionCard>
+    </Card>
   );
 }
 
@@ -242,6 +240,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow={nick}
         title={t('header.dashboard')}
         breadcrumb={nick}
         action={
@@ -263,7 +262,7 @@ export default function Dashboard() {
       <GameIdentityCard userProfile={userProfile} />
 
       {error && !loading && (
-        <div className="flex items-center justify-between gap-3 rounded-sm border border-danger/40 bg-danger/5 px-4 py-3 text-sm text-danger">
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-accent-red/40 bg-accent-red/5 px-4 py-3 text-sm text-accent-red">
           <span>{t('dashboard.loadError')}</span>
           <Button variant="outline" size="sm" onClick={refresh}>
             <RefreshCw size={14} /> {t('dashboard.refresh')}

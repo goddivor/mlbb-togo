@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Trophy, Crown, Flame, Medal, Swords } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useSelectedSeason } from '@/store/useSeasonStore';
@@ -11,12 +11,18 @@ import {
   PageHeader,
   SectionCard,
   Badge,
+  DataTable,
   EmptyState,
-  LoadingSpinner,
+  Skeleton,
+  Tabs,
+  type DataColumn,
 } from '@/components/ui';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
+import RankFrame from '@/components/game/RankFrame';
 import RoleIcon from '@/components/game/RoleIcon';
 import { useT } from '@/lib/i18n';
+import { cn } from '@/lib/helpers';
+import { fadeUp, stagger, still } from '@/lib/motion';
 
 type Metric = 'winRate' | 'wins' | 'mvpCount' | 'streak';
 
@@ -35,38 +41,18 @@ function metricValue(entry: any, metric: Metric): string {
   return String(entry.streak ?? 0);
 }
 
-const PODIUM_STYLES = [
-  { ring: 'ring-[#FFD700]', chip: 'bg-[#FFD700] text-black', order: 'sm:order-2 sm:-mt-4' },
-  { ring: 'ring-[#C0C0C0]', chip: 'bg-[#C0C0C0] text-black', order: 'sm:order-1' },
-  { ring: 'ring-[#CD7F32]', chip: 'bg-[#CD7F32] text-white', order: 'sm:order-3' },
+const PODIUM = [
+  { tier: 'gold' as const, badge: 'tier-gold', order: 'sm:order-2 sm:-mt-6', size: 96, glow: true },
+  { tier: 'silver' as const, badge: 'tier-silver', order: 'sm:order-1', size: 72, glow: false },
+  { tier: 'bronze' as const, badge: 'tier-bronze', order: 'sm:order-3', size: 72, glow: false },
 ];
 
-function PlayerAvatar({ entry, size }: { entry: any; size: number }) {
-  const name = entry.displayName || entry.username || '';
-  if (entry.avatar) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={avatarSrc(entry.avatar, size * 2)}
-        alt={name}
-        referrerPolicy="no-referrer"
-        style={{ width: size, height: size }}
-        className="rounded-full object-cover border border-stroke dark:border-strokedark"
-      />
-    );
-  }
-  return (
-    <div
-      style={{ width: size, height: size }}
-      className="rounded-full bg-primary flex items-center justify-center font-bold text-white"
-    >
-      {name[0]?.toUpperCase() || 'J'}
-    </div>
-  );
-}
+const selectClass =
+  'rounded border border-line-strong bg-surface-1 py-2 pl-3 pr-8 text-sm text-ink-1 outline-none transition-[border-color,box-shadow] duration-base focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60';
 
 export default function LeaderboardPage() {
   const t = useT();
+  const reduce = useReducedMotion();
 
   const [metric, setMetric] = useState<Metric>('winRate');
   const [role, setRole] = useState('');
@@ -109,46 +95,97 @@ export default function LeaderboardPage() {
 
   const podium = entries.slice(0, 3);
   const rest = entries.slice(3);
+  const metricLabel = t(`leaderboard.metric.${metric === 'mvpCount' ? 'mvp' : metric}`);
 
-  const selectClass =
-    'py-2 pl-3 pr-8 text-sm rounded-sm bg-gray-2 border border-stroke text-black focus:outline-none focus:border-primary dark:bg-meta-4 dark:border-strokedark dark:text-white';
+  const columns: DataColumn<any>[] = [
+    {
+      key: 'position',
+      header: '#',
+      align: 'right',
+      width: 'w-14',
+      render: (e) => <span className="font-display font-bold text-ink-3">{e.position}</span>,
+    },
+    {
+      key: 'player',
+      header: t('leaderboard.player'),
+      render: (e) => (
+        <Link href={`/players/${e.id}`} className="flex min-w-0 items-center gap-2.5 hover:text-primary">
+          <RankFrame name={e.displayName || e.username} src={e.avatar ? avatarSrc(e.avatar, 64) : null} rank={e.gameRank} size={32} showBadge={false} />
+          <span className="truncate font-semibold text-ink-1">{e.displayName || e.username}</span>
+          {hasRankBadge(e.gameRank) && <RankBadge rank={e.gameRank} size={16} />}
+        </Link>
+      ),
+    },
+    {
+      key: 'role',
+      header: t('leaderboard.role'),
+      align: 'center',
+      hideBelow: 'sm',
+      render: (e) => <RoleIcon role={e.role} size={18} />,
+    },
+    {
+      key: 'record',
+      header: t('leaderboard.record'),
+      align: 'center',
+      hideBelow: 'md',
+      render: (e) => (
+        <span className="whitespace-nowrap text-ink-2">
+          <span className="text-accent-green">{e.wins ?? 0}{t('leaderboard.winShort')}</span> / <span className="text-accent-red">{e.losses ?? 0}{t('leaderboard.lossShort')}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'mvp',
+      header: <Medal size={14} className="inline" aria-label={t('leaderboard.metric.mvp')} />,
+      align: 'center',
+      hideBelow: 'lg',
+      render: (e) => <span className="text-ink-2">{e.mvpCount ?? 0}</span>,
+    },
+    {
+      key: 'streak',
+      header: <Flame size={14} className="inline" aria-label={t('leaderboard.metric.streak')} />,
+      align: 'center',
+      hideBelow: 'lg',
+      render: (e) =>
+        (e.streak ?? 0) > 0 ? (
+          <Badge variant="green" size="sm">{e.streak}</Badge>
+        ) : (
+          <span className="text-ink-3">—</span>
+        ),
+    },
+    {
+      key: 'metric',
+      header: metricLabel,
+      align: 'right',
+      render: (e) => <span className="whitespace-nowrap font-display text-base font-bold text-primary">{metricValue(e, metric)}</span>,
+    },
+  ];
 
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow={t('nav.section.community')}
+        icon={<Trophy size={20} />}
+        variant="gold"
         title={t('leaderboard.title')}
-        subtitle={
-          loading
-            ? '…'
-            : `${total} ${t('leaderboard.rankedPlayers')}`
-        }
+        subtitle={loading ? '…' : `${total} ${t('leaderboard.rankedPlayers')}`}
       />
 
-      {/* Filtres */}
+      {/* Filters */}
       <SectionCard className="!p-4">
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap gap-1.5">
-            {METRICS.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setMetric(m.id)}
-                className={`px-3 py-1.5 text-sm rounded-sm border transition-colors ${
-                  metric === m.id
-                    ? 'bg-primary border-primary text-white'
-                    : 'bg-gray-2 border-stroke text-body hover:border-primary dark:bg-meta-4 dark:border-strokedark dark:text-bodydark'
-                }`}
-              >
-                {t(m.labelKey)}
-              </button>
-            ))}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="overflow-x-auto overflow-y-hidden">
+            <Tabs
+              size="sm"
+              tabs={METRICS.map((m) => ({ id: m.id, label: t(m.labelKey) }))}
+              active={metric}
+              onChange={(id: Metric) => setMetric(id)}
+              className="whitespace-nowrap"
+            />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className={selectClass}
-            >
+            <select value={role} onChange={(e) => setRole(e.target.value)} className={selectClass} aria-label={t('leaderboard.role')}>
               <option value="">{t('leaderboard.allRoles')}</option>
               {MLBB_ROLES.map((r) => (
                 <option key={r.id} value={r.id}>
@@ -161,6 +198,7 @@ export default function LeaderboardPage() {
               value={selection === 'current' ? 'current' : seasonId ? seasonId : 'all'}
               onChange={(e) => setSelection(e.target.value)}
               className={selectClass}
+              aria-label={t('seasons.switcher.current')}
             >
               <option value="current">{t('seasons.switcher.current')}</option>
               <option value="all">{t('leaderboard.allSeasons')}</option>
@@ -172,7 +210,7 @@ export default function LeaderboardPage() {
             </select>
 
             {metric === 'winRate' && (
-              <label className="flex items-center gap-2 text-sm text-body dark:text-bodydark cursor-pointer select-none">
+              <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-ink-2">
                 <input
                   type="checkbox"
                   checked={rankedOnly}
@@ -183,152 +221,84 @@ export default function LeaderboardPage() {
               </label>
             )}
           </div>
-
-          {seasonId && (
-            <p className="text-xs text-bodydark2">{t('leaderboard.seasonNote')}</p>
-          )}
         </div>
+        {seasonId && <p className="mt-2 text-xs text-ink-3">{t('leaderboard.seasonNote')}</p>}
       </SectionCard>
 
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <LoadingSpinner size="lg" />
+        <div className="space-y-6" aria-busy="true">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-56 w-full rounded-lg" />)}
+          </div>
+          <Skeleton className="h-64 w-full rounded-lg" />
         </div>
       ) : entries.length === 0 ? (
         <EmptyState icon={<Trophy size={26} />} title={t('leaderboard.none')} />
       ) : (
         <>
           {/* Podium */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-            {podium.map((e, i) => (
-              <motion.div
-                key={e.id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.06 }}
-                className={PODIUM_STYLES[i].order}
-              >
-                <Link
-                  href={`/players/${e.id}`}
-                  className="flex flex-col items-center gap-2 rounded-sm border border-stroke bg-white shadow-default hover:border-primary transition-colors p-5 dark:border-strokedark dark:bg-boxdark"
-                >
-                  <div className={`relative rounded-full ring-2 ${PODIUM_STYLES[i].ring}`}>
-                    <PlayerAvatar entry={e} size={i === 0 ? 76 : 64} />
-                    {i === 0 && (
-                      <Crown
-                        size={22}
-                        className="absolute -top-3 left-1/2 -translate-x-1/2 text-[#FFD700]"
-                      />
+          <motion.div
+            key={`${metric}-${role}-${seasonId}`}
+            className="grid grid-cols-1 items-end gap-4 sm:grid-cols-3"
+            variants={reduce ? still : stagger(0.08)}
+            initial="hidden"
+            animate="visible"
+          >
+            {podium.map((e, i) => {
+              const p = PODIUM[i];
+              return (
+                <motion.div key={e.id} variants={reduce ? still : fadeUp} className={p.order}>
+                  <Link
+                    href={`/players/${e.id}`}
+                    className={cn(
+                      'group relative flex flex-col items-center gap-3 overflow-hidden rounded-lg border bg-surface-1 p-5 shadow-elev-1 transition-[transform,box-shadow,border-color] duration-base ease-out hover:-translate-y-0.5 hover:shadow-elev-2 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1',
+                      i === 0 ? 'border-accent-gold/50 shadow-glow-gold' : 'border-line-subtle hover:border-primary/40',
+                      i === 0 && 'pt-7'
                     )}
-                  </div>
-
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-xs font-bold ${PODIUM_STYLES[i].chip}`}
                   >
-                    #{e.position}
-                  </span>
+                    {i === 0 && (
+                      <Crown size={22} className="absolute left-1/2 top-2 -translate-x-1/2 text-accent-gold" aria-hidden="true" />
+                    )}
+                    <RankFrame
+                      name={e.displayName || e.username}
+                      src={e.avatar ? avatarSrc(e.avatar, 192) : null}
+                      rank={e.gameRank}
+                      tier={p.tier}
+                      size={p.size}
+                    />
 
-                  <p className="text-sm font-semibold text-black dark:text-white text-center truncate max-w-full">
-                    {e.displayName || e.username}
-                  </p>
+                    <Badge variant={p.badge} size="sm" className="mt-1">#{e.position}</Badge>
 
-                  <p className="text-xl font-bold text-primary">
-                    {metricValue(e, metric)}
-                  </p>
+                    <p className="max-w-full truncate text-center font-display text-base font-bold tracking-tight2 text-ink-1">
+                      {e.displayName || e.username}
+                    </p>
 
-                  <div className="flex items-center gap-2 text-xs text-bodydark2">
-                    <RoleIcon role={e.role} size={14} />
-                    {hasRankBadge(e.gameRank) && <RankBadge rank={e.gameRank} size={16} />}
-                    <span>
-                      {e.wins ?? 0}{t('leaderboard.winShort')} / {e.losses ?? 0}{t('leaderboard.lossShort')}
-                    </span>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
+                    <p className={cn('font-display font-bold leading-none num text-primary', i === 0 ? 'text-4xl' : 'text-3xl')}>
+                      {metricValue(e, metric)}
+                    </p>
+                    <p className="-mt-1.5 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{metricLabel}</p>
 
-          {/* Reste du classement */}
+                    <div className="flex items-center gap-2 text-xs num text-ink-3">
+                      <RoleIcon role={e.role} size={14} />
+                      {hasRankBadge(e.gameRank) && <RankBadge rank={e.gameRank} size={16} />}
+                      <span>
+                        <span className="text-accent-green">{e.wins ?? 0}{t('leaderboard.winShort')}</span> / <span className="text-accent-red">{e.losses ?? 0}{t('leaderboard.lossShort')}</span>
+                      </span>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+
+          {/* Rest of the ranking */}
           {rest.length > 0 && (
-            <SectionCard className="!p-0 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-gray-2 text-left text-xs uppercase text-bodydark2 dark:bg-meta-4">
-                      <th className="py-3 px-4 w-14">#</th>
-                      <th className="py-3 px-4">{t('leaderboard.player')}</th>
-                      <th className="py-3 px-4 text-center hidden sm:table-cell">
-                        {t('leaderboard.role')}
-                      </th>
-                      <th className="py-3 px-4 text-center hidden md:table-cell">
-                        {t('leaderboard.record')}
-                      </th>
-                      <th className="py-3 px-4 text-center hidden lg:table-cell">
-                        <Medal size={14} className="inline" />
-                      </th>
-                      <th className="py-3 px-4 text-center hidden lg:table-cell">
-                        <Flame size={14} className="inline" />
-                      </th>
-                      <th className="py-3 px-4 text-right">{t(`leaderboard.metric.${
-                        metric === 'mvpCount' ? 'mvp' : metric
-                      }`)}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rest.map((e) => (
-                      <tr
-                        key={e.id}
-                        className="border-t border-stroke hover:bg-gray-2 transition-colors dark:border-strokedark dark:hover:bg-meta-4"
-                      >
-                        <td className="py-3 px-4 font-semibold text-bodydark2">
-                          {e.position}
-                        </td>
-                        <td className="py-3 px-4">
-                          <Link
-                            href={`/players/${e.id}`}
-                            className="flex items-center gap-2.5 min-w-0 hover:text-primary"
-                          >
-                            <PlayerAvatar entry={e} size={32} />
-                            <span className="font-medium text-black dark:text-white truncate">
-                              {e.displayName || e.username}
-                            </span>
-                            {hasRankBadge(e.gameRank) && (
-                              <RankBadge rank={e.gameRank} size={16} />
-                            )}
-                          </Link>
-                        </td>
-                        <td className="py-3 px-4 text-center hidden sm:table-cell">
-                          <RoleIcon role={e.role} size={18} />
-                        </td>
-                        <td className="py-3 px-4 text-center hidden md:table-cell whitespace-nowrap text-body dark:text-bodydark">
-                          {e.wins ?? 0}{t('leaderboard.winShort')} / {e.losses ?? 0}{t('leaderboard.lossShort')}
-                        </td>
-                        <td className="py-3 px-4 text-center hidden lg:table-cell text-body dark:text-bodydark">
-                          {e.mvpCount ?? 0}
-                        </td>
-                        <td className="py-3 px-4 text-center hidden lg:table-cell">
-                          {(e.streak ?? 0) > 0 ? (
-                            <Badge variant="success" size="sm">
-                              {e.streak}
-                            </Badge>
-                          ) : (
-                            <span className="text-bodydark2">—</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-right font-bold text-primary whitespace-nowrap">
-                          {metricValue(e, metric)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </SectionCard>
+            <DataTable columns={columns} rows={rest} rowKey={(e) => e.id} />
           )}
 
           {total > entries.length && (
-            <p className="text-center text-xs text-bodydark2">
-              <Swords size={12} className="inline mr-1" />
+            <p className="flex items-center justify-center gap-2 text-center text-xs text-ink-3">
+              <Swords size={12} />
               {t('leaderboard.showing')
                 .replace('{shown}', String(entries.length))
                 .replace('{total}', String(total))}

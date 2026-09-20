@@ -39,28 +39,29 @@ export default function MatchCard({
   const live = status === 'live';
 
   const teamCls = (won: boolean) =>
-    `line-clamp-2 break-words text-sm font-semibold leading-tight ${
-      done && !won ? 'text-body dark:text-bodydark' : 'text-black dark:text-white'
+    `line-clamp-2 break-words font-display text-sm font-bold leading-tight ${
+      done && !won ? 'text-ink-2' : 'text-ink-1'
     }`;
   const scoreCls = (won: boolean) =>
-    `text-2xl font-black tabular-nums leading-none ${
-      won ? 'text-success' : done ? 'text-bodydark2' : 'text-black dark:text-white'
+    `font-display text-3xl font-bold num leading-none ${
+      won ? 'text-ink-1' : done ? 'text-ink-3' : 'text-ink-1'
     }`;
 
   const pad = compact ? 'px-3' : 'px-4';
 
   return (
     <div
-      className={`group rounded-sm border bg-white shadow-default transition-all hover:-translate-y-0.5 hover:shadow-lg dark:bg-boxdark ${
-        live ? 'border-danger/60' : 'border-stroke hover:border-primary/60 dark:border-strokedark'
+      className={`group relative overflow-hidden rounded-lg border bg-surface-1 shadow-elev-1 transition-[transform,box-shadow,border-color] duration-base ease-out hover:-translate-y-0.5 hover:shadow-elev-2 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1 ${
+        live ? 'border-accent-red/50' : 'border-line-subtle hover:border-primary/40'
       }`}
     >
+      {live && <span aria-hidden="true" className="absolute inset-x-0 top-0 h-0.5 bg-accent-red" />}
       <Link href={`/matches/${match.id}`} className={`block ${pad} ${compact ? 'pt-3 pb-3' : 'pt-4 pb-4'}`}>
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <MatchStatusBadge match={match} t={t} />
           {showStage && <StageBadge stage={match.stage} t={t} />}
           <FormatBadge format={match.format} />
-          <span className="ml-auto inline-flex items-center gap-1 text-xs text-body dark:text-bodydark">
+          <span className="ml-auto inline-flex items-center gap-1 text-xs num text-ink-3">
             <Clock size={12} />
             {match.scheduledAt ? (
               <>
@@ -78,7 +79,7 @@ export default function MatchCard({
             <div className="min-w-0">
               <p className={teamCls(aWon)}>{match.teamA?.name || '?'}</p>
               {aWon && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-success">
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-eyebrow text-accent-green">
                   <Trophy size={11} /> {t('matches.winner')}
                 </span>
               )}
@@ -89,11 +90,11 @@ export default function MatchCard({
             {done || live ? (
               <div className="flex items-center gap-2">
                 <span className={scoreCls(aWon)}>{match.scoreA ?? 0}</span>
-                <span className="text-sm font-bold text-bodydark2">:</span>
+                <span className="text-xs font-semibold text-ink-3">VS</span>
                 <span className={scoreCls(bWon)}>{match.scoreB ?? 0}</span>
               </div>
             ) : (
-              <span className="rounded-sm bg-gray-2 px-3 py-1 text-xs font-black text-body dark:bg-meta-4 dark:text-bodydark">
+              <span className="rounded cut-corners-sm bg-surface-3 px-3 py-1 font-display text-xs font-bold text-ink-2">
                 VS
               </span>
             )}
@@ -103,7 +104,7 @@ export default function MatchCard({
             <div className="min-w-0">
               <p className={teamCls(bWon)}>{match.teamB?.name || '?'}</p>
               {bWon && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-success">
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-eyebrow text-accent-green">
                   <Trophy size={11} /> {t('matches.winner')}
                 </span>
               )}
@@ -115,14 +116,14 @@ export default function MatchCard({
 
       {(match.mvp || match.vodUrl || match.streamUrl || match.screenshotsCount > 0) && (
         <div
-          className={`flex items-center gap-2 border-t border-stroke ${pad} py-2.5 dark:border-strokedark`}
+          className={`flex items-center gap-2 border-t border-line-subtle ${pad} py-2.5`}
         >
           {match.mvp && (
-            <span className="inline-flex items-center gap-1.5 text-xs text-body dark:text-bodydark">
+            <span className="inline-flex items-center gap-1.5 text-xs text-ink-2">
               <MvpAvatar user={match.mvp} t={t} />
               <span className="hidden sm:inline">
                 {t('matches.mvp')} ·{' '}
-                <b className="text-black dark:text-white">{match.mvp.displayName || match.mvp.username}</b>
+                <b className="text-ink-1">{match.mvp.displayName || match.mvp.username}</b>
               </span>
             </span>
           )}
@@ -133,10 +134,10 @@ export default function MatchCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 title={t('matches.links.stream')}
-                className={`inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+                className={`inline-flex h-7 w-7 items-center justify-center rounded cut-corners-sm transition-colors ${
                   live
-                    ? 'bg-danger/10 text-danger'
-                    : 'bg-gray-2 text-body hover:text-primary dark:bg-meta-4 dark:text-bodydark'
+                    ? 'bg-accent-red/10 text-accent-red'
+                    : 'bg-surface-3 text-ink-2 hover:text-primary'
                 }`}
               >
                 <Radio size={14} />
@@ -148,7 +149,7 @@ export default function MatchCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 title={t('matches.links.vod')}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-2 text-body transition-colors hover:text-primary dark:bg-meta-4 dark:text-bodydark"
+                className="inline-flex h-7 w-7 items-center justify-center rounded cut-corners-sm bg-surface-3 text-ink-2 transition-colors hover:text-primary"
               >
                 <Video size={14} />
               </a>
@@ -158,7 +159,7 @@ export default function MatchCard({
                 title={t('matches.screenshots.count', {
                   n: match.screenshotsCount,
                 })}
-                className="inline-flex h-7 items-center gap-1 rounded-full bg-gray-2 px-2 text-xs text-body dark:bg-meta-4 dark:text-bodydark"
+                className="inline-flex h-7 items-center gap-1 rounded cut-corners-sm bg-surface-3 px-2 text-xs num text-ink-2"
               >
                 <Camera size={13} /> {match.screenshotsCount}
               </span>

@@ -7,7 +7,7 @@ import { Bar } from 'react-chartjs-2';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { useThemeStore } from '@/store/useStore';
-import { EmptyState, LoadingSpinner, SectionCard } from '@/components/ui';
+import { EmptyState, SectionCard, SectionTitle, Skeleton } from '@/components/ui';
 import { HeroThumb, InfoTip, LaneCell, SortableTable, WinRateBar, fmt, type Column } from './shared';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
@@ -45,7 +45,7 @@ function useChartTheme() {
   const dark = theme === 'dark';
   return {
     dark,
-    bar: dark ? '#8A98FF' : '#3C50E0',
+    bar: dark ? '#22d3ee' : '#0891b2',
     grid: dark ? 'rgba(174,183,192,0.12)' : 'rgba(100,116,139,0.15)',
     tick: dark ? '#AEB7C0' : '#64748B',
   };
@@ -110,16 +110,16 @@ function PickRateChart({ heroes }: { heroes: HeroRow[] }) {
 
 function HeroCard({ h, value, sub }: { h: HeroRow; value: string; sub?: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-sm border border-stroke bg-white p-2.5 dark:border-strokedark dark:bg-boxdark">
-      <HeroThumb hero={{ name: h.hero, image: h.image }} size={44} />
+    <div className="flex items-center gap-3 rounded-lg border border-line-subtle bg-surface-2/40 p-2.5 transition-colors hover:border-primary/40">
+      <HeroThumb hero={{ name: h.hero, image: h.image }} size={44} className="!rounded cut-corners-sm" />
       <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-black dark:text-white">{h.hero}</p>
-        <p className="text-[11px] text-bodydark2 capitalize truncate">
+        <p className="truncate font-display font-bold text-ink-1">{h.hero}</p>
+        <p className="truncate text-[11px] capitalize num text-ink-3">
           {h.role ?? h.heroClass ?? ''}
           {sub ? ` · ${sub}` : ''}
         </p>
       </div>
-      <span className="text-lg font-bold text-primary tabular-nums">{value}</span>
+      <span className="font-display text-lg font-bold num text-primary">{value}</span>
     </div>
   );
 }
@@ -141,8 +141,8 @@ function Column3({
     <SectionCard className="!p-4">
       <div className="mb-3 flex items-center gap-2">
         <span className="text-primary">{icon}</span>
-        <h3 className="font-bold text-black dark:text-white">{title}</h3>
-        <span className="ml-auto inline-flex items-center gap-2 text-[11px] text-bodydark2">
+        <h3 className="font-display font-bold tracking-tight2 text-ink-1">{title}</h3>
+        <span className="ml-auto inline-flex items-center gap-2 text-[11px] num text-ink-3">
           {hint}
           {extra}
         </span>
@@ -173,8 +173,8 @@ export default function MetaTab({ scope, ready }: { scope: string; ready: boolea
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <LoadingSpinner size="lg" />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3" aria-busy="true">
+        {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-lg" />)}
       </div>
     );
   }
@@ -227,7 +227,7 @@ export default function MetaTab({ scope, ready }: { scope: string; ready: boolea
       value: (r) => r.winRate,
       render: (r) =>
         r.winRate === null ? (
-          <span className="text-bodydark2 text-xs" title={t('lstats.meta.minGames', { n: meta.minGames })}>
+          <span className="text-xs text-ink-3" title={t('lstats.meta.minGames', { n: meta.minGames })}>
             –
           </span>
         ) : (
@@ -246,7 +246,7 @@ export default function MetaTab({ scope, ready }: { scope: string; ready: boolea
       ),
       value: (r) => r.bans,
       render: (r) =>
-        meta.banSource === 'unavailable' ? <span className="text-bodydark2">–</span> : `${r.bans}${r.banRate !== null ? ` (${fmt(r.banRate)}%)` : ''}`,
+        meta.banSource === 'unavailable' ? <span className="text-ink-3">–</span> : `${r.bans}${r.banRate !== null ? ` (${fmt(r.banRate)}%)` : ''}`,
       align: 'right',
     },
   ];
@@ -261,7 +261,7 @@ export default function MetaTab({ scope, ready }: { scope: string; ready: boolea
         </Column3>
         <Column3 icon={<Trophy size={18} />} title={t('lstats.meta.bestWinRate')} hint={t('lstats.meta.minGames', { n: meta.minGames })}>
           {meta.bestWinRate.length === 0 ? (
-            <p className="text-sm text-bodydark2 py-4 text-center">{t('lstats.meta.noWinRate')}</p>
+            <p className="py-4 text-center text-sm text-ink-3">{t('lstats.meta.noWinRate')}</p>
           ) : (
             meta.bestWinRate.map((h) => (
               <HeroCard
@@ -275,7 +275,7 @@ export default function MetaTab({ scope, ready }: { scope: string; ready: boolea
         </Column3>
         <Column3 icon={<Ban size={18} />} title={t('lstats.meta.mostBanned')} extra={source}>
           {meta.mostBanned.length === 0 ? (
-            <p className="text-sm text-bodydark2 py-4 text-center">
+            <p className="py-4 text-center text-sm text-ink-3">
               {meta.banSource === 'unavailable' ? t('lstats.meta.source.bansUnavailable') : t('lstats.meta.noBans')}
             </p>
           ) : (
@@ -287,12 +287,12 @@ export default function MetaTab({ scope, ready }: { scope: string; ready: boolea
       </div>
 
       <SectionCard className="!p-4">
-        <h3 className="mb-3 font-bold text-black dark:text-white">{t('lstats.meta.chartTitle')}</h3>
+        <SectionTitle size="sm" title={t('lstats.meta.chartTitle')} className="mb-3" />
         <PickRateChart heroes={meta.mostPlayed} />
       </SectionCard>
 
       <SectionCard className="!p-0 overflow-hidden">
-        <h3 className="px-4 pt-4 pb-2 font-bold text-black dark:text-white">{t('lstats.meta.allHeroes')}</h3>
+        <div className="px-4 pt-4 pb-3"><SectionTitle size="sm" title={t('lstats.meta.allHeroes')} /></div>
         <SortableTable columns={columns} rows={meta.heroes} rowKey={(r) => r.hero} defaultSort={{ key: 'picks', dir: 'desc' }} />
       </SectionCard>
     </div>

@@ -82,7 +82,7 @@ export default function HeroCard({
         {/* Gradient mask so the name sits on the art. */}
         <div className="absolute inset-0 bg-gradient-to-t from-surface-1 via-surface-1/40 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-3">
-          <div className="mb-1.5 flex items-center gap-1">
+          <div className="mb-1.5 flex flex-wrap items-center gap-1">
             {roles.map((r) => (
               <span key={r} className="inline-flex items-center gap-1 rounded bg-surface-0/70 px-1.5 py-0.5 text-[10px] font-semibold text-ink-1 backdrop-blur-sm">
                 <RoleIcon role={r} size={11} />

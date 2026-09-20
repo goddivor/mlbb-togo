@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, Flame, ListChecks, Swords, Trophy } from 'lucide-react';
-import { LoadingSpinner, PageHeader, SectionCard, Tabs } from '@/components/ui';
+import { PageHeader, SectionCard, Skeleton, StatCard, Tabs } from '@/components/ui';
 import MatchCalendar, { CalendarView, monthRange } from '@/components/matches/MatchCalendar';
 import MatchResults, { ResultsFilter } from '@/components/matches/MatchResults';
 import { EsportMatch, MatchStage, displayStatus } from '@/components/matches/shared';
@@ -141,46 +141,40 @@ export default function MatchesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        icon={<Swords size={28} />}
+        eyebrow={season ? season.name : t('nav.section.esport')}
+        icon={<Swords size={20} />}
         title={t('matches.title')}
         subtitle={season ? t('matches.subtitleSeason', { season: season.name }) : t('matches.subtitle')}
-        variant="blue"
-      />
+      >
+        <StatCard icon={<Swords size={18} />} label={t('matches.stage.' + stage)} value={counters.total} hint={t('matches.counters.total', { n: counters.total })} />
+        <StatCard icon={<Flame size={18} />} accent="red" label={t('matches.status.live')} value={counters.live} hint={t('matches.counters.live', { n: counters.live })} />
+        <StatCard icon={<CalendarDays size={18} />} accent="cyan" label={t('matches.status.scheduled')} value={counters.upcoming} hint={t('matches.counters.upcoming', { n: counters.upcoming })} />
+        <StatCard icon={<Trophy size={18} />} accent="green" label={t('matches.status.completed')} value={counters.completed} hint={t('matches.counters.completed', { n: counters.completed })} />
+      </PageHeader>
 
-      <SectionCard className="!p-3 sm:!p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="overflow-x-auto">
-            <Tabs tabs={stageTabs} active={stage} onChange={(id: string) => setStage(id as StageTab)} />
+      <SectionCard className="!p-0">
+        <div className="flex flex-col gap-3 px-3 pt-2 sm:px-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="overflow-x-auto overflow-y-hidden">
+            <Tabs variant="underline" tabs={stageTabs} active={stage} onChange={(id: string) => setStage(id as StageTab)} className="min-w-max whitespace-nowrap border-b-0" />
           </div>
-          <Tabs
-            tabs={[
-              { id: 'calendar', label: t('matches.view.calendar'), icon: CalendarDays },
-              { id: 'results', label: t('matches.view.results'), icon: ListChecks },
-            ]}
-            active={view}
-            onChange={(id: string) => changeView(id as View)}
-          />
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2 text-xs">
-          <span className="inline-flex items-center gap-1 rounded-full bg-gray-2 px-2.5 py-1 text-body dark:bg-meta-4 dark:text-bodydark">
-            <Swords size={12} /> {t('matches.counters.total', { n: counters.total })}
-          </span>
-          {counters.live > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2.5 py-1 font-semibold text-danger">
-              <Flame size={12} /> {t('matches.counters.live', { n: counters.live })}
-            </span>
-          )}
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-primary">
-            <CalendarDays size={12} /> {t('matches.counters.upcoming', { n: counters.upcoming })}
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-1 text-success">
-            <Trophy size={12} /> {t('matches.counters.completed', { n: counters.completed })}
-          </span>
+          <div className="pb-2">
+            <Tabs
+              size="sm"
+              tabs={[
+                { id: 'calendar', label: t('matches.view.calendar'), icon: CalendarDays },
+                { id: 'results', label: t('matches.view.results'), icon: ListChecks },
+              ]}
+              active={view}
+              onChange={(id: string) => changeView(id as View)}
+            />
+          </div>
         </div>
       </SectionCard>
 
       {!ready || (loading && matches.length === 0 && view === 'results') ? (
-        <LoadingSpinner size="lg" className="py-24" />
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2" aria-busy="true">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-lg" />)}
+        </div>
       ) : view === 'calendar' ? (
         <MatchCalendar
           matches={calendar}

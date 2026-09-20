@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, CalendarDays, Camera, Layers, Radio, Star, Swords, Trophy, Video } from 'lucide-react';
-import { Button, EmptyState, LoadingSpinner, PageHeader } from '@/components/ui';
+import { Button, EmptyState, PageHeader, Skeleton } from '@/components/ui';
+import { cn } from '@/lib/helpers';
+import { scaleIn, still } from '@/lib/motion';
 import GamesBreakdown from '@/components/matches/GamesBreakdown';
 import MatchPlayersTable from '@/components/matches/MatchPlayersTable';
 import MatchVideo from '@/components/matches/MatchVideo';
@@ -28,6 +30,7 @@ import { useSeasonStore } from '@/store/useSeasonStore';
 
 export default function MatchDetailPage() {
   const t = useT();
+  const reduce = useReducedMotion();
   const lang = useLangStore((s: any) => s.lang) as string;
   const params = useParams();
   const id = String(params?.id || '');
@@ -87,7 +90,18 @@ export default function MatchDetailPage() {
     return items;
   }, [match, t]);
 
-  if (loading) return <LoadingSpinner size="lg" className="py-24" />;
+  if (loading) {
+    return (
+      <div className="space-y-6" aria-busy="true">
+        <Skeleton className="h-10 w-1/2" />
+        <Skeleton className="h-56 w-full rounded-lg" />
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <Skeleton className="h-64 w-full rounded-lg" />
+          <Skeleton className="h-64 w-full rounded-lg" />
+        </div>
+      </div>
+    );
+  }
 
   if (!match)
     return (
@@ -117,17 +131,18 @@ export default function MatchDetailPage() {
   const teamBlock = (team: typeof match.teamA, won: boolean, align: 'left' | 'right') => (
     <Link
       href={`/teams/${team.id}`}
-      className={`flex min-w-0 flex-1 flex-col items-center gap-2 text-center sm:flex-row sm:gap-4 ${
+      className={cn(
+        'group flex min-w-0 flex-1 flex-col items-center gap-2 text-center sm:flex-row sm:gap-4',
         align === 'right' ? 'sm:flex-row-reverse sm:text-right' : 'sm:text-left'
-      }`}
+      )}
     >
-      <TeamLogo team={team} size="xl" className={won ? 'ring-4 ring-success/40' : ''} />
+      <TeamLogo team={team} size="xl" className={won ? '!ring-2 !ring-accent-green/60 shadow-glow-cyan' : 'opacity-90'} />
       <div className="min-w-0">
-        <p className={`break-words text-lg font-bold leading-tight sm:text-xl ${won ? 'text-success' : 'text-black dark:text-white'}`}>
+        <p className={cn('break-words font-display text-xl font-bold leading-tight tracking-tight2 transition-colors group-hover:text-primary sm:text-2xl', won || !done ? 'text-ink-1' : 'text-ink-2')}>
           {team.name}
         </p>
         {won && (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-success">
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-eyebrow text-accent-green">
             <Trophy size={12} /> {t('matches.winner')}
           </span>
         )}
@@ -138,9 +153,11 @@ export default function MatchDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow={season ? season.name : t('matches.stage.' + match.stage)}
+        variant={live ? 'danger' : 'default'}
         title={
           <span className="flex flex-wrap items-center gap-2">
-            {match.teamA?.name} <span className="text-bodydark2">vs</span> {match.teamB?.name}
+            {match.teamA?.name} <span className="text-ink-3">vs</span> {match.teamB?.name}
           </span>
         }
         subtitle={fmtDateTime(match.scheduledAt, lang) || t('matches.tbd')}
@@ -156,69 +173,74 @@ export default function MatchDetailPage() {
 
       {/* Scoreboard */}
       <motion.section
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`relative overflow-hidden rounded-sm border bg-white p-5 shadow-default dark:bg-boxdark sm:p-8 ${
-          live ? 'border-danger/60' : 'border-stroke dark:border-strokedark'
-        }`}
+        variants={reduce ? still : scaleIn}
+        initial="hidden"
+        animate="visible"
+        className={cn(
+          'relative overflow-hidden rounded-lg border bg-surface-1 p-5 shadow-elev-2 dark:bg-gradient-to-b dark:from-surface-2/60 dark:to-surface-1 sm:p-8',
+          live ? 'border-accent-red/50' : 'border-line-subtle'
+        )}
       >
-        <div className="mb-5 flex flex-wrap items-center gap-2">
+        {/* Arena glow behind the score: the one glow element of the page. */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(50%_80%_at_50%_0%,rgb(var(--accent-cyan)/0.14),transparent_70%)]" />
+        {live && <span aria-hidden="true" className="absolute inset-x-0 top-0 h-0.5 bg-accent-red" />}
+        <div className="relative mb-6 flex flex-wrap items-center gap-2">
           <MatchStatusBadge match={match} t={t} size="md" />
           <StageBadge stage={match.stage} t={t} size="md" />
           <FormatBadge format={match.format} size="md" />
           {season && (
             <Link
               href={season.slug ? `/seasons/${season.slug}` : '/seasons'}
-              className="inline-flex items-center gap-1 rounded-full bg-gray-2 px-2.5 py-1 text-sm text-body hover:text-primary dark:bg-meta-4 dark:text-bodydark"
+              className="inline-flex items-center gap-1 rounded bg-surface-3 px-2.5 py-1.5 text-xs font-semibold text-ink-2 transition-colors hover:text-primary"
             >
               <Layers size={13} /> {season.name}
             </Link>
           )}
-          <span className="ml-auto inline-flex items-center gap-1 text-sm text-body dark:text-bodydark">
+          <span className="ml-auto inline-flex items-center gap-1 text-sm num text-ink-2">
             <CalendarDays size={14} /> {fmtDateTime(match.scheduledAt, lang) || t('matches.tbd')}
           </span>
         </div>
 
-        <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
+        <div className="relative flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
           {teamBlock(match.teamA, aWon, 'left')}
           <div className="flex shrink-0 flex-col items-center">
             {done || live ? (
-              <div className="flex items-center gap-3">
-                <span className={`text-5xl font-black tabular-nums ${aWon ? 'text-success' : 'text-black dark:text-white'}`}>
+              <div className="flex items-center gap-4 font-display num">
+                <span className={cn('text-6xl font-bold leading-none tracking-tight2 sm:text-7xl', aWon || live ? 'text-ink-1' : 'text-ink-3')}>
                   {match.scoreA}
                 </span>
-                <span className="text-2xl font-bold text-bodydark2">:</span>
-                <span className={`text-5xl font-black tabular-nums ${bWon ? 'text-success' : 'text-black dark:text-white'}`}>
+                <span className="text-sm font-semibold text-ink-3">VS</span>
+                <span className={cn('text-6xl font-bold leading-none tracking-tight2 sm:text-7xl', bWon || live ? 'text-ink-1' : 'text-ink-3')}>
                   {match.scoreB}
                 </span>
               </div>
             ) : (
-              <span className="rounded-sm bg-gray-2 px-5 py-2 text-lg font-black text-body dark:bg-meta-4 dark:text-bodydark">
+              <span className="rounded cut-corners bg-surface-3 px-6 py-2.5 font-display text-2xl font-bold text-ink-2">
                 VS
               </span>
             )}
             {match.format && (
-              <span className="mt-1 text-xs uppercase tracking-wider text-bodydark2">{match.format}</span>
+              <span className="mt-2 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{match.format}</span>
             )}
           </div>
           {teamBlock(match.teamB, bWon, 'right')}
         </div>
 
         {(mvpUser || match.notes) && (
-          <div className="mt-6 flex flex-col gap-3 border-t border-stroke pt-4 dark:border-strokedark sm:flex-row sm:items-center">
+          <div className="relative mt-6 flex flex-col gap-3 border-t border-line-subtle pt-4 sm:flex-row sm:items-center">
             {mvpUser && (
               <Link
                 href={`/players/${mvpUser.id}`}
-                className="inline-flex items-center gap-3 rounded-sm border border-warning/30 bg-warning/10 px-3 py-2 hover:border-warning"
+                className="tier-gold inline-flex items-center gap-3 rounded px-3 py-2 transition-[filter] hover:brightness-110"
               >
                 <MvpAvatar user={mvpUser} t={t} size="md" link={false} />
                 <span className="min-w-0">
-                  <span className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-warning">
+                  <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-eyebrow text-accent-gold">
                     <Star size={11} fill="currentColor" /> {t('matches.mvp')}
                   </span>
-                  <span className="block truncate text-sm font-bold text-black dark:text-white">{userLabel(mvpUser)}</span>
+                  <span className="block truncate font-display text-sm font-bold text-ink-1">{userLabel(mvpUser)}</span>
                   {match.mvpStats && (
-                    <span className="block text-xs text-body dark:text-bodydark">
+                    <span className="block text-xs num text-ink-2">
                       {match.mvpStats.hero ? `${match.mvpStats.hero} · ` : ''}
                       {match.mvpStats.kills}/{match.mvpStats.deaths}/{match.mvpStats.assists}
                     </span>
@@ -226,7 +248,7 @@ export default function MatchDetailPage() {
                 </span>
               </Link>
             )}
-            {match.notes && <p className="text-sm text-body dark:text-bodydark sm:ml-auto sm:max-w-md">{match.notes}</p>}
+            {match.notes && <p className="text-sm text-ink-2 sm:ml-auto sm:max-w-md">{match.notes}</p>}
           </div>
         )}
       </motion.section>
@@ -236,18 +258,13 @@ export default function MatchDetailPage() {
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
           {match.games.length > 0 && (
             <section className={match.vodUrl || match.streamUrl ? 'xl:col-span-1' : 'xl:col-span-3'}>
-              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-body dark:text-bodydark">
-                <Swords size={14} /> {t('matches.games.title')}
-              </h3>
+              <h3 className="eyebrow mb-3 flex items-center gap-1.5"><Swords size={12} /> {t('matches.games.title')}</h3>
               <GamesBreakdown match={match} games={match.games} t={t} onOpenScreenshot={(url) => setGalleryOpen(url)} />
             </section>
           )}
           {(match.vodUrl || match.streamUrl) && (
             <section className={`space-y-4 ${match.games.length > 0 ? 'xl:col-span-2' : 'xl:col-span-3'}`}>
-              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-body dark:text-bodydark">
-                {live && match.streamUrl ? <Radio size={14} className="text-danger" /> : <Video size={14} />}{' '}
-                {t('matches.links.title')}
-              </h3>
+              <h3 className="eyebrow mb-3 flex items-center gap-1.5">{live && match.streamUrl ? <Radio size={12} className="text-accent-red" /> : <Video size={12} />} {t('matches.links.title')}</h3>
               {match.streamUrl && (live || !match.vodUrl) && <MatchVideo url={match.streamUrl} kind="stream" t={t} />}
               {match.vodUrl && <MatchVideo url={match.vodUrl} kind="vod" t={t} />}
               {match.streamUrl && match.vodUrl && !live && (
@@ -255,7 +272,7 @@ export default function MatchDetailPage() {
                   href={match.streamUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
                 >
                   <Radio size={14} /> {t('matches.links.stream')}
                 </a>
@@ -268,19 +285,14 @@ export default function MatchDetailPage() {
       {/* Screenshots */}
       {gallery.length > 0 && (
         <section>
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-body dark:text-bodydark">
-            <Camera size={14} /> {t('matches.screenshots.title')}
-            <span className="text-xs font-normal normal-case text-bodydark2">({gallery.length})</span>
-          </h3>
+          <h3 className="eyebrow mb-3 flex items-center gap-1.5"><Camera size={12} /> {t('matches.screenshots.title')} <span className="num">({gallery.length})</span></h3>
           <ScreenshotGallery items={gallery} t={t} openUrl={galleryOpen} onOpenHandled={() => setGalleryOpen(null)} />
         </section>
       )}
 
       {/* Player stats */}
       <section>
-        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-body dark:text-bodydark">
-          <Star size={14} /> {t('matches.players.title')}
-        </h3>
+        <h3 className="eyebrow mb-3 flex items-center gap-1.5"><Star size={12} /> {t('matches.players.title')}</h3>
         {match.players.teamA.length === 0 && match.players.teamB.length === 0 ? (
           <EmptyState icon={<Star size={24} />} title={t('matches.players.none')} description={t('matches.players.noneHint')} />
         ) : (

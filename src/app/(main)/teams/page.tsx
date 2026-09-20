@@ -2,19 +2,23 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Search, Shield, Users, Plus, Check } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { fadeUp, stagger, still } from '@/lib/motion';
 import {
   Button,
   Input,
   Textarea,
-  SectionCard,
+  Card,
   PageHeader,
   EmptyState,
-  LoadingSpinner,
+  Skeleton,
+  StatTile,
   Tabs,
 } from '@/components/ui';
+import { TeamCard } from '@/components/game';
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 
@@ -33,43 +37,9 @@ interface EsportOrg {
   teams?: EsportTeam[];
 }
 
-function TeamCard({ tm, accent }: { tm: EsportTeam; accent: string }) {
-  return (
-    <Link
-      href={`/teams/${tm.id}`}
-      className="group block overflow-hidden rounded-sm border border-stroke bg-white shadow-default transition-colors hover:border-primary dark:border-strokedark dark:bg-boxdark"
-    >
-      <div className="relative aspect-video w-full overflow-hidden bg-gray-2 dark:bg-meta-4">
-        {tm.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={tm.image}
-            alt={tm.name}
-            referrerPolicy="no-referrer"
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Shield size={40} className="text-bodydark2" />
-          </div>
-        )}
-        <div className="absolute inset-x-0 bottom-0 h-1" style={{ backgroundColor: accent }} />
-      </div>
-      <div className="flex items-center justify-between gap-2 p-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <Shield size={16} style={{ color: accent }} className="shrink-0" />
-          <p className="truncate text-sm font-medium text-black dark:text-white">{tm.name}</p>
-        </div>
-        <span className="inline-flex shrink-0 items-center gap-1 text-xs text-body dark:text-bodydark">
-          <Users size={13} /> {tm.memberCount ?? 0}
-        </span>
-      </div>
-    </Link>
-  );
-}
-
 export default function TeamsPage() {
   const t = useT();
+  const reduce = useReducedMotion();
   const [org, setOrg] = useState<EsportOrg | null>(null);
   const [community, setCommunity] = useState<EsportTeam[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,7 +69,7 @@ export default function TeamsPage() {
   const filteredCommunity = useMemo(() => byQuery(community), [community, query]);
 
   const activeList = tab === 'esport' ? filteredEsport : filteredCommunity;
-  const activeAccent = tab === 'esport' ? accent : '#5b6b8c';
+  const activeAccent = tab === 'esport' ? accent : 'rgb(var(--accent-cyan))';
 
   const [proposeOpen, setProposeOpen] = useState(false);
   const [form, setForm] = useState({ proposedName: '', message: '' });
@@ -127,20 +97,17 @@ export default function TeamsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        icon={<Shield size={28} />}
+        eyebrow={t('nav.section.esport')}
+        icon={<Shield size={20} />}
         title={t('teams.title')}
         subtitle={loading ? '…' : `${total} ${t('teams.count')}`}
-        variant="default"
         action={
           <div className="flex items-center gap-2">
             <Button size="sm" onClick={() => setProposeOpen(true)}>
               <Plus size={16} /> <span className="hidden sm:inline">{t('requests.propose')}</span>
             </Button>
-            <Link
-              href="/my-requests"
-              className="inline-flex shrink-0 items-center rounded-md border border-stroke px-3 py-1.5 text-xs font-medium text-body transition-colors hover:border-primary hover:text-primary dark:border-strokedark dark:text-bodydark"
-            >
-              {t('requests.mine')}
+            <Link href="/my-requests">
+              <Button size="sm" variant="outline">{t('requests.mine')}</Button>
             </Link>
           </div>
         }
@@ -148,63 +115,84 @@ export default function TeamsPage() {
 
       {/* Esport organisation */}
       {org && (
-        <SectionCard className="flex items-center gap-4">
-          {org.logo && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={org.logo}
-              alt={org.name}
-              referrerPolicy="no-referrer"
-              className="h-16 w-16 rounded-sm bg-gray-2 object-contain p-1 dark:bg-meta-4"
-            />
-          )}
-          <div className="min-w-0">
-            <h2 className="text-lg font-bold" style={{ color: accent }}>
-              {org.name}
-            </h2>
-            {org.description && <p className="mt-0.5 text-sm text-body dark:text-bodydark">{t('teams.orgDesc')}</p>}
+        <Card className="relative overflow-hidden !p-5">
+          <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1 -skew-x-12" style={{ background: accent }} />
+          <div className="flex flex-col gap-4 pl-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              {org.logo && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={org.logo}
+                  alt={org.name}
+                  referrerPolicy="no-referrer"
+                  className="h-16 w-16 rounded cut-corners-sm bg-surface-2 object-contain p-1 ring-1 ring-inset ring-line-subtle"
+                />
+              )}
+              <div className="min-w-0">
+                <p className="eyebrow mb-1" style={{ color: accent }}>{t('teams.sectionEsport')}</p>
+                <h2 className="font-display text-xl font-bold tracking-tight2 text-ink-1">{org.name}</h2>
+                {org.description && <p className="mt-0.5 text-sm text-ink-2">{t('teams.orgDesc')}</p>}
+              </div>
+            </div>
+            <div className="flex items-center gap-6 sm:pr-2">
+              <StatTile label={t('teams.sectionEsport')} value={esportTeams.length} accent="gold" />
+              <StatTile label={t('teams.sectionCommunity')} value={community.length} />
+            </div>
           </div>
-        </SectionCard>
+        </Card>
       )}
 
       {/* Tabs + search */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <Tabs
-          active={tab}
-          onChange={(id: 'esport' | 'community') => setTab(id)}
-          tabs={[
-            { id: 'esport', label: `${t('teams.sectionEsport')} (${esportTeams.length})`, icon: Shield },
-            { id: 'community', label: `${t('teams.sectionCommunity')} (${community.length})`, icon: Users },
-          ]}
-        />
-        <div className="relative w-full sm:w-72">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 z-10 -translate-y-1/2 text-bodydark2"
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="overflow-x-auto overflow-y-hidden">
+          <Tabs
+            variant="underline"
+            active={tab}
+            onChange={(id: 'esport' | 'community') => setTab(id)}
+            className="min-w-max whitespace-nowrap"
+            tabs={[
+              { id: 'esport', label: t('teams.sectionEsport'), icon: Shield, count: esportTeams.length },
+              { id: 'community', label: t('teams.sectionCommunity'), icon: Users, count: community.length },
+            ]}
           />
+        </div>
+        <div className="relative w-full sm:w-72">
+          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-ink-3" />
           <Input
             value={query}
             onChange={(e: any) => setQuery(e.target.value)}
             placeholder={t('teams.search')}
-            className="pl-9"
+            className="!py-2.5 pl-9"
           />
         </div>
       </div>
 
       {/* Active tab content */}
       {loading ? (
-        <LoadingSpinner size="lg" className="py-24" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-lg" />
+          ))}
+        </div>
       ) : activeList.length === 0 ? (
         <EmptyState
           icon={tab === 'esport' ? <Shield size={28} /> : <Users size={28} />}
           title={query.trim() ? t('teams.none') : t('teams.empty')}
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <motion.div
+          key={tab}
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          variants={reduce ? still : stagger(0.04)}
+          initial="hidden"
+          animate="visible"
+        >
           {activeList.map((tm) => (
-            <TeamCard key={tm.id} tm={tm} accent={activeAccent} />
+            <motion.div key={tm.id} variants={reduce ? still : fadeUp}>
+              <TeamCard team={{ ...tm, color: activeAccent }} />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       <Modal

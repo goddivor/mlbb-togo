@@ -29,15 +29,15 @@ export default function MatchVideo({
   const label = t(kind === 'stream' ? 'matches.links.stream' : 'matches.links.vod');
 
   return (
-    <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-      <div className="flex items-center gap-2 border-b border-stroke px-4 py-3 dark:border-strokedark">
-        <Icon size={16} className={kind === 'stream' ? 'text-danger' : 'text-primary'} />
-        <span className="text-sm font-semibold text-black dark:text-white">{label}</span>
+    <div className="overflow-hidden rounded-lg border border-line-subtle bg-surface-1 shadow-elev-1">
+      <div className="flex items-center gap-2 border-b border-line-subtle px-4 py-3">
+        <Icon size={16} className={kind === 'stream' ? 'text-accent-red' : 'text-primary'} />
+        <span className="font-display text-sm font-bold text-ink-1">{label}</span>
         <a
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="ml-auto inline-flex items-center gap-1 text-xs text-primary hover:underline"
+          className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
         >
           <ExternalLink size={12} /> {t('matches.links.open')}
         </a>
@@ -58,7 +58,7 @@ export default function MatchVideo({
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 px-4 py-10 text-sm text-body hover:text-primary dark:text-bodydark"
+          className="flex items-center justify-center gap-2 px-4 py-10 text-sm text-ink-2 hover:text-primary"
         >
           <Icon size={20} /> {t('matches.links.external')}
         </a>

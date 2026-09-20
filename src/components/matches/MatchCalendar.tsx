@@ -114,7 +114,7 @@ export default function MatchCalendar({
           <Button size="sm" variant="ghost" onClick={prev} title={t('matches.calendar.prev')}>
             <ChevronLeft size={16} />
           </Button>
-          <h3 className="min-w-[10rem] text-center text-base font-bold capitalize text-black dark:text-white">
+          <h3 className="min-w-[10rem] text-center font-display text-base font-bold capitalize tracking-tight2 text-ink-1">
             {monthLabel(year, month, lang)}
           </h3>
           <Button size="sm" variant="ghost" onClick={next} title={t('matches.calendar.next')}>
@@ -124,17 +124,18 @@ export default function MatchCalendar({
             {t('matches.calendar.today')}
           </Button>
         </div>
-        <div className="ml-auto inline-flex rounded-sm border border-stroke bg-white p-0.5 dark:border-strokedark dark:bg-boxdark">
+        <div className="ml-auto inline-flex rounded-md border border-line-subtle bg-surface-2/70 p-1">
           {(['grid', 'list'] as CalendarView[]).map((v) => (
             <button
               key={v}
               type="button"
               onClick={() => onViewChange(v)}
               title={t('matches.calendar.view.' + v)}
-              className={`inline-flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              aria-pressed={view === v}
+              className={`inline-flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-semibold transition-colors duration-fast ${
                 view === v
-                  ? 'bg-primary text-white'
-                  : 'text-body hover:bg-gray dark:text-bodydark dark:hover:bg-meta-4'
+                  ? 'bg-primary text-on-primary'
+                  : 'text-ink-2 hover:text-ink-1'
               }`}
             >
               {v === 'grid' ? <LayoutGrid size={14} /> : <List size={14} />}
@@ -145,8 +146,8 @@ export default function MatchCalendar({
       </div>
 
       {view === 'grid' ? (
-        <div className={`rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark ${loading ? 'opacity-60' : ''}`}>
-          <div className="grid grid-cols-7 border-b border-stroke text-center text-[11px] font-semibold uppercase tracking-wide text-body dark:border-strokedark dark:text-bodydark">
+        <div className={`overflow-hidden rounded-lg border border-line-subtle bg-surface-1 shadow-elev-1 transition-opacity ${loading ? 'opacity-60' : ''}`}>
+          <div className="grid grid-cols-7 border-b border-line-subtle bg-surface-2 text-center text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">
             {weekdays.map((w) => (
               <div key={w} className="py-2">
                 {w}
@@ -156,7 +157,7 @@ export default function MatchCalendar({
           <div className="grid grid-cols-7">
             {cells.map((d, i) => {
               if (!d)
-                return <div key={`b${i}`} className="min-h-[3.5rem] border-b border-r border-stroke/60 bg-gray-2/40 dark:border-strokedark/60 dark:bg-meta-4/20 sm:min-h-[6rem]" />;
+                return <div key={`b${i}`} className="min-h-[3.5rem] border-b border-r border-line-subtle bg-surface-2/30 sm:min-h-[6rem]" />;
               const key = localDayKey(d);
               const list = byDay.get(key) ?? [];
               const isToday = key === todayKey;
@@ -166,13 +167,13 @@ export default function MatchCalendar({
                   key={key}
                   type="button"
                   onClick={() => setSelectedDay(isSel ? null : key)}
-                  className={`flex min-h-[3.5rem] flex-col border-b border-r border-stroke/60 p-1 text-left transition-colors dark:border-strokedark/60 sm:min-h-[6rem] sm:p-1.5 ${
-                    isSel ? 'bg-primary/10' : 'hover:bg-gray dark:hover:bg-meta-4'
+                  className={`flex min-h-[3.5rem] flex-col border-b border-r border-line-subtle p-1 text-left transition-colors duration-fast sm:min-h-[6rem] sm:p-1.5 ${
+                    isSel ? 'bg-primary/10' : 'hover:bg-surface-2/60'
                   }`}
                 >
                   <span
-                    className={`mb-1 inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
-                      isToday ? 'bg-primary text-white' : 'text-black dark:text-white'
+                    className={`mb-1 inline-flex h-6 w-6 items-center justify-center rounded cut-corners-sm font-display text-xs font-bold num ${
+                      isToday ? 'bg-primary text-on-primary shadow-glow-cyan' : 'text-ink-1'
                     }`}
                   >
                     {d.getDate()}
@@ -186,9 +187,9 @@ export default function MatchCalendar({
                             key={m.id}
                             className={`h-1.5 w-1.5 rounded-full ${
                               displayStatus(m) === 'live'
-                                ? 'bg-danger'
+                                ? 'bg-accent-red'
                                 : m.status === 'completed'
-                                  ? 'bg-success'
+                                  ? 'bg-accent-green'
                                   : 'bg-primary'
                             }`}
                           />
@@ -198,11 +199,11 @@ export default function MatchCalendar({
                         {list.slice(0, 3).map((m) => (
                           <span
                             key={m.id}
-                            className={`flex items-center gap-1 rounded px-1 py-0.5 text-[11px] leading-tight ${
+                            className={`flex items-center gap-1 rounded px-1 py-0.5 text-[11px] font-semibold num leading-tight ${
                               displayStatus(m) === 'live'
-                                ? 'bg-danger/10 text-danger'
+                                ? 'bg-accent-red/10 text-accent-red'
                                 : m.status === 'completed'
-                                  ? 'bg-success/10 text-success'
+                                  ? 'bg-accent-green/10 text-accent-green'
                                   : 'bg-primary/10 text-primary'
                             }`}
                           >
@@ -214,7 +215,7 @@ export default function MatchCalendar({
                           </span>
                         ))}
                         {list.length > 3 && (
-                          <span className="text-[10px] text-bodydark2">+{list.length - 3}</span>
+                          <span className="text-[10px] num text-ink-3">+{list.length - 3}</span>
                         )}
                       </span>
                     </>
@@ -233,16 +234,16 @@ export default function MatchCalendar({
             const isToday = key === todayKey;
             return (
               <section key={key}>
-                <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold capitalize text-black dark:text-white">
+                <h4 className="mb-2 flex items-center gap-2 font-display text-sm font-bold capitalize text-ink-1">
                   <span
-                    className={`inline-flex h-7 min-w-[1.75rem] items-center justify-center rounded-md px-1.5 text-xs ${
-                      isToday ? 'bg-primary text-white' : 'bg-gray-2 text-body dark:bg-meta-4 dark:text-bodydark'
+                    className={`inline-flex h-7 min-w-[1.75rem] items-center justify-center rounded cut-corners-sm px-1.5 text-xs num ${
+                      isToday ? 'bg-primary text-on-primary' : 'bg-surface-3 text-ink-2'
                     }`}
                   >
                     {new Date(key + 'T00:00:00').getDate()}
                   </span>
                   {fmtDay(key + 'T00:00:00', lang, { weekday: 'long', year: 'numeric' })}
-                  <span className="text-xs font-normal text-bodydark2">
+                  <span className="font-sans text-xs font-normal text-ink-3">
                     · {t('matches.calendar.count', { n: list.length })}
                   </span>
                 </h4>
@@ -259,12 +260,12 @@ export default function MatchCalendar({
 
       {view === 'grid' && selectedDay && (
         <div>
-          <h4 className="mb-2 flex items-center justify-between text-sm font-semibold capitalize text-black dark:text-white">
+          <h4 className="mb-2 flex items-center justify-between font-display text-sm font-bold capitalize text-ink-1">
             <span>{fmtDay(selectedDay + 'T00:00:00', lang, { weekday: 'long', year: 'numeric' })}</span>
-            <span className="text-xs font-normal text-bodydark2">{t('matches.calendar.count', { n: selected.length })}</span>
+            <span className="font-sans text-xs font-normal text-ink-3">{t('matches.calendar.count', { n: selected.length })}</span>
           </h4>
           {selected.length === 0 ? (
-            <p className="rounded-sm border border-dashed border-stroke p-4 text-center text-sm text-body dark:border-strokedark dark:text-bodydark">
+            <p className="rounded-lg border border-dashed border-line-strong p-4 text-center text-sm text-ink-2">
               {t('matches.calendar.noneThatDay')}
             </p>
           ) : (
@@ -278,7 +279,7 @@ export default function MatchCalendar({
       )}
 
       {view === 'grid' && !selectedDay && days.length > 0 && (
-        <p className="text-center text-xs text-bodydark2">
+        <p className="text-center text-xs text-ink-3">
           {t('matches.calendar.hint', { n: matches.length })}{' '}
           <Link href="#" onClick={(e) => { e.preventDefault(); onViewChange('list'); }} className="text-primary hover:underline">
             {t('matches.calendar.view.list')}

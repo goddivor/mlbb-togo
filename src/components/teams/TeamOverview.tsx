@@ -12,55 +12,43 @@ import {
   Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { Card, EmptyState } from '@/components/ui';
+import { Card, EmptyState, StatCard, Table, Td, Th } from '@/components/ui';
+import { cn } from '@/lib/helpers';
 import { useLangStore, useThemeStore } from '@/store/useStore';
 import { ResultBadge, TeamChip, SectionTitle, fmtDate, type TFn } from './shared';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
-const PRIMARY = '#6366f1';
-
-function StatTile({ icon, label, value, accent = 'text-primary' }: { icon: React.ReactNode; label: string; value: React.ReactNode; accent?: string }) {
-  return (
-    <div className="rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
-      <div className="flex items-center gap-3">
-        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4 ${accent}`}>{icon}</div>
-        <div className="min-w-0">
-          <p className="text-xl font-bold leading-tight text-black dark:text-white">{value}</p>
-          <p className="truncate text-xs text-body dark:text-bodydark">{label}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
+const LINE_DARK = '#22d3ee';
+const LINE_LIGHT = '#0891b2';
 
 function RecordTable({ rows, firstCol, t, firstRender }: { rows: any[]; firstCol: string; t: TFn; firstRender: (r: any) => React.ReactNode }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <Table>
         <thead>
-          <tr className="border-b border-stroke text-left text-xs uppercase tracking-wide text-body dark:border-strokedark dark:text-bodydark">
-            <th className="py-2 pr-2 font-semibold">{firstCol}</th>
-            <th className="py-2 px-2 text-center font-semibold" title={t('teams.detail.played')}>{t('teams.stats.colPlayed')}</th>
-            <th className="py-2 px-2 text-center font-semibold text-success" title={t('teams.detail.wins')}>{t('teams.stats.colWins')}</th>
-            <th className="py-2 px-2 text-center font-semibold text-danger" title={t('teams.detail.losses')}>{t('teams.stats.colLosses')}</th>
-            <th className="py-2 px-2 text-center font-semibold" title={t('teams.stats.draws')}>{t('teams.stats.colDraws')}</th>
-            <th className="py-2 pl-2 text-right font-semibold" title={t('teams.detail.winRate')}>{t('teams.stats.colWinRate')}</th>
+          <tr className="border-b border-line-subtle">
+            <Th className="pl-0">{firstCol}</Th>
+            <Th align="center" title={t('teams.detail.played')}>{t('teams.stats.colPlayed')}</Th>
+            <Th align="center" className="text-accent-green" title={t('teams.detail.wins')}>{t('teams.stats.colWins')}</Th>
+            <Th align="center" className="text-accent-red" title={t('teams.detail.losses')}>{t('teams.stats.colLosses')}</Th>
+            <Th align="center" title={t('teams.stats.draws')}>{t('teams.stats.colDraws')}</Th>
+            <Th align="right" className="pr-0" title={t('teams.detail.winRate')}>{t('teams.stats.colWinRate')}</Th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} className="border-b border-stroke/60 last:border-0 dark:border-strokedark/60">
-              <td className="py-2 pr-2 text-black dark:text-white">{firstRender(r)}</td>
-              <td className="py-2 px-2 text-center text-body dark:text-bodydark">{r.played}</td>
-              <td className="py-2 px-2 text-center font-semibold text-success">{r.wins}</td>
-              <td className="py-2 px-2 text-center font-semibold text-danger">{r.losses}</td>
-              <td className="py-2 px-2 text-center text-body dark:text-bodydark">{r.draws}</td>
-              <td className="py-2 pl-2 text-right font-semibold text-black dark:text-white">{r.winRate}%</td>
+            <tr key={i} className="border-b border-line-subtle last:border-0">
+              <Td className="pl-0 py-2">{firstRender(r)}</Td>
+              <Td align="center" className="py-2 text-ink-2">{r.played}</Td>
+              <Td align="center" className="py-2 font-semibold text-accent-green">{r.wins}</Td>
+              <Td align="center" className="py-2 font-semibold text-accent-red">{r.losses}</Td>
+              <Td align="center" className="py-2 text-ink-2">{r.draws}</Td>
+              <Td align="right" className="pr-0 py-2 font-display font-bold">{r.winRate}%</Td>
             </tr>
           ))}
         </tbody>
-      </table>
+      </Table>
     </div>
   );
 }
@@ -79,13 +67,13 @@ export default function TeamOverview({ stats, t }: { stats: any; t: TFn }) {
         {
           label: t('teams.stats.chartLabel'),
           data: timeline.map((p) => p.winRate),
-          borderColor: PRIMARY,
-          backgroundColor: 'rgba(99, 102, 241, 0.12)',
+          borderColor: dark ? LINE_DARK : LINE_LIGHT,
+          backgroundColor: dark ? 'rgba(34, 211, 238, 0.12)' : 'rgba(8, 145, 178, 0.12)',
           borderWidth: 2,
           pointRadius: 4,
           pointHoverRadius: 6,
-          pointBackgroundColor: timeline.map((p) => (p.result === 'W' ? '#219653' : p.result === 'L' ? '#D34053' : '#FFA70B')),
-          pointBorderColor: dark ? '#24303F' : '#ffffff',
+          pointBackgroundColor: timeline.map((p) => (p.result === 'W' ? '#22c55e' : p.result === 'L' ? '#ef4444' : '#f2b544')),
+          pointBorderColor: dark ? '#0f1524' : '#ffffff',
           pointBorderWidth: 2,
           fill: true,
           tension: 0.3,
@@ -120,7 +108,7 @@ export default function TeamOverview({ stats, t }: { stats: any; t: TFn }) {
         y: {
           min: 0,
           max: 100,
-          grid: { color: dark ? 'rgba(46,58,71,0.8)' : 'rgba(226,232,240,0.9)' },
+          grid: { color: dark ? 'rgba(174,183,192,0.12)' : 'rgba(100,116,139,0.15)' },
           ticks: { color: dark ? '#AEB7C0' : '#64748B', stepSize: 25, callback: (v: any) => `${v}%` },
         },
       },
@@ -148,19 +136,19 @@ export default function TeamOverview({ stats, t }: { stats: any; t: TFn }) {
   return (
     <div className="space-y-6">
       {/* Headline stats */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile icon={<Swords size={18} />} label={t('teams.detail.played')} value={stats.played} />
-        <StatTile icon={<Trophy size={18} />} label={t('teams.detail.wins')} value={stats.wins} accent="text-success" />
-        <StatTile icon={<ThumbsDown size={18} />} label={t('teams.detail.losses')} value={stats.losses} accent="text-danger" />
-        <StatTile icon={<Percent size={18} />} label={t('teams.detail.winRate')} value={`${stats.winRate}%`} />
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        <StatCard icon={<Swords size={18} />} label={t('teams.detail.played')} value={stats.played} />
+        <StatCard icon={<Trophy size={18} />} label={t('teams.detail.wins')} value={stats.wins} accent="green" />
+        <StatCard icon={<ThumbsDown size={18} />} label={t('teams.detail.losses')} value={stats.losses} accent="red" />
+        <StatCard icon={<Percent size={18} />} label={t('teams.detail.winRate')} value={`${stats.winRate}%`} accent="gold" sparkline={timeline.length > 1 ? timeline.map((p) => p.winRate) : undefined} />
       </div>
 
       {/* Form + streaks */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="!p-4">
           <SectionTitle hint={t('teams.stats.formHint')}>{t('teams.stats.form')}</SectionTitle>
           {form.length === 0 ? (
-            <p className="text-sm text-bodydark2">{t('teams.stats.noForm')}</p>
+            <p className="text-sm text-ink-3">{t('teams.stats.noForm')}</p>
           ) : (
             <div className="flex items-center gap-1.5">
               {form.map((r, i) => <ResultBadge key={i} result={r} t={t} className={i === form.length - 1 ? 'ring-2 ring-primary/40' : ''} />)}
@@ -170,34 +158,34 @@ export default function TeamOverview({ stats, t }: { stats: any; t: TFn }) {
         <Card className="!p-4">
           <SectionTitle>{t('teams.stats.streak')}</SectionTitle>
           <div className="flex items-center gap-2">
-            <Flame size={18} className={streak?.type === 'W' ? 'text-success' : streak?.type === 'L' ? 'text-danger' : 'text-bodydark2'} />
-            <span className="text-sm font-semibold text-black dark:text-white">{streakLabel}</span>
+            <Flame size={18} className={streak?.type === 'W' ? 'text-accent-green' : streak?.type === 'L' ? 'text-accent-red' : 'text-ink-3'} />
+            <span className="font-display text-base font-bold text-ink-1">{streakLabel}</span>
           </div>
-          <p className="mt-2 text-xs text-body dark:text-bodydark">
-            {t('teams.stats.bestStreak')} : <span className="font-semibold text-black dark:text-white">{t('teams.stats.bestStreakValue', { n: stats.bestWinStreak ?? 0 })}</span>
+          <p className="mt-2 text-xs text-ink-2">
+            {t('teams.stats.bestStreak')} : <span className="font-semibold num text-ink-1">{t('teams.stats.bestStreakValue', { n: stats.bestWinStreak ?? 0 })}</span>
           </p>
         </Card>
         <Card className="!p-4">
           <SectionTitle>{t('teams.stats.biggestWin')}</SectionTitle>
           {stats.biggestWin ? (
             <div className="flex items-center gap-3">
-              <Zap size={18} className="shrink-0 text-warning" />
+              <Zap size={18} className="shrink-0 text-accent-gold" />
               <div className="min-w-0">
-                <p className="text-lg font-bold leading-tight text-black dark:text-white">
+                <p className="font-display text-lg font-bold leading-tight num text-ink-1">
                   {stats.biggestWin.scoreFor} - {stats.biggestWin.scoreAgainst}
                 </p>
-                <div className="mt-1 flex items-center gap-1.5 text-xs text-body dark:text-bodydark">
+                <div className="mt-1 flex items-center gap-1.5 text-xs text-ink-2">
                   <span>{t('teams.schedule.vs')}</span>
                   <TeamChip team={stats.biggestWin.opponent} size={6} />
                 </div>
-                <p className="mt-0.5 text-xs text-bodydark2">{fmtDate(stats.biggestWin.date, lang)}</p>
+                <p className="mt-0.5 text-xs num text-ink-3">{fmtDate(stats.biggestWin.date, lang)}</p>
               </div>
             </div>
           ) : (
-            <p className="text-sm text-bodydark2">{t('teams.stats.noForm')}</p>
+            <p className="text-sm text-ink-3">{t('teams.stats.noForm')}</p>
           )}
-          <p className="mt-2 text-xs text-body dark:text-bodydark">
-            {t('teams.stats.scoreDiff')} : <span className={`font-semibold ${stats.scoreDiff > 0 ? 'text-success' : stats.scoreDiff < 0 ? 'text-danger' : 'text-black dark:text-white'}`}>{stats.scoreDiff > 0 ? '+' : ''}{stats.scoreDiff}</span>
+          <p className="mt-2 text-xs text-ink-2">
+            {t('teams.stats.scoreDiff')} : <span className={cn('font-semibold num', stats.scoreDiff > 0 ? 'text-accent-green' : stats.scoreDiff < 0 ? 'text-accent-red' : 'text-ink-1')}>{stats.scoreDiff > 0 ? '+' : ''}{stats.scoreDiff}</span>
           </p>
         </Card>
       </div>
@@ -213,7 +201,7 @@ export default function TeamOverview({ stats, t }: { stats: any; t: TFn }) {
       )}
 
       {/* Per season / per type */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {bySeason.length > 0 && (
           <Card className="!p-4">
             <SectionTitle>{t('teams.stats.bySeason')}</SectionTitle>
@@ -223,7 +211,7 @@ export default function TeamOverview({ stats, t }: { stats: any; t: TFn }) {
               firstCol={t('teams.stats.colSeason')}
               firstRender={(r) => (
                 <span className="inline-flex items-center gap-1.5">
-                  <Award size={14} className={r.seasonId ? 'text-warning' : 'text-bodydark2'} />
+                  <Award size={14} className={r.seasonId ? 'text-accent-gold' : 'text-ink-3'} />
                   {r.season || t('teams.stats.noSeason')}
                 </span>
               )}
@@ -243,37 +231,37 @@ export default function TeamOverview({ stats, t }: { stats: any; t: TFn }) {
         <Card className="!p-4">
           <SectionTitle hint={t('teams.stats.headToHeadHint')}>{t('teams.stats.headToHead')}</SectionTitle>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <Table>
               <thead>
-                <tr className="border-b border-stroke text-left text-xs uppercase tracking-wide text-body dark:border-strokedark dark:text-bodydark">
-                  <th className="py-2 pr-2 font-semibold">{t('teams.stats.colOpponent')}</th>
-                  <th className="py-2 px-2 text-center font-semibold">{t('teams.stats.colPlayed')}</th>
-                  <th className="py-2 px-2 text-center font-semibold text-success">{t('teams.stats.colWins')}</th>
-                  <th className="py-2 px-2 text-center font-semibold text-danger">{t('teams.stats.colLosses')}</th>
-                  <th className="py-2 px-2 text-center font-semibold">{t('teams.stats.colWinRate')}</th>
-                  <th className="py-2 pl-2 text-right font-semibold">{t('teams.stats.lastMeeting')}</th>
+                <tr className="border-b border-line-subtle">
+                  <Th className="pl-0">{t('teams.stats.colOpponent')}</Th>
+                  <Th align="center">{t('teams.stats.colPlayed')}</Th>
+                  <Th align="center" className="text-accent-green">{t('teams.stats.colWins')}</Th>
+                  <Th align="center" className="text-accent-red">{t('teams.stats.colLosses')}</Th>
+                  <Th align="center">{t('teams.stats.colWinRate')}</Th>
+                  <Th align="right" className="pr-0">{t('teams.stats.lastMeeting')}</Th>
                 </tr>
               </thead>
               <tbody>
                 {h2h.map((r) => (
-                  <tr key={r.opponent?.id} className="border-b border-stroke/60 last:border-0 dark:border-strokedark/60">
-                    <td className="py-2 pr-2"><TeamChip team={r.opponent} size={6} /></td>
-                    <td className="py-2 px-2 text-center text-body dark:text-bodydark">{r.played}</td>
-                    <td className="py-2 px-2 text-center font-semibold text-success">{r.wins}</td>
-                    <td className="py-2 px-2 text-center font-semibold text-danger">{r.losses}</td>
-                    <td className="py-2 px-2 text-center font-semibold text-black dark:text-white">{r.winRate}%</td>
-                    <td className="py-2 pl-2 text-right">
+                  <tr key={r.opponent?.id} className="border-b border-line-subtle last:border-0">
+                    <Td className="pl-0 py-2"><TeamChip team={r.opponent} size={6} /></Td>
+                    <Td align="center" className="py-2 text-ink-2">{r.played}</Td>
+                    <Td align="center" className="py-2 font-semibold text-accent-green">{r.wins}</Td>
+                    <Td align="center" className="py-2 font-semibold text-accent-red">{r.losses}</Td>
+                    <Td align="center" className="py-2 font-display font-bold">{r.winRate}%</Td>
+                    <Td align="right" className="pr-0 py-2">
                       {r.last && (
                         <span className="inline-flex items-center gap-2">
-                          <span className="hidden text-xs text-bodydark2 sm:inline">{fmtDate(r.last.date, lang)}</span>
+                          <span className="hidden text-xs num text-ink-3 sm:inline">{fmtDate(r.last.date, lang)}</span>
                           <ResultBadge result={r.last.result} t={t} />
                         </span>
                       )}
-                    </td>
+                    </Td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
           </div>
         </Card>
       )}

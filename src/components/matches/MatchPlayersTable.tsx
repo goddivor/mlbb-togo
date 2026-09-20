@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Star, Users } from 'lucide-react';
 import RoleIcon from '@/components/game/RoleIcon';
 import { avatarSrc, mlbbImg } from '@/lib/api';
+import { Badge, Table, Td, Th } from '@/components/ui';
 import { MatchPlayer, MatchTeam, TFn, TeamLogo, userLabel } from './shared';
 
 const LANE_ORDER = ['roam', 'jungle', 'mid', 'exp', 'gold'];
@@ -32,44 +33,42 @@ export default function MatchPlayersTable({
   });
 
   return (
-    <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-      <div className="flex items-center gap-3 border-b border-stroke px-4 py-3 dark:border-strokedark">
+    <div className={`overflow-hidden rounded-lg border bg-surface-1 shadow-elev-1 ${won ? 'border-accent-green/40' : 'border-line-subtle'}`}>
+      <div className="flex items-center gap-3 border-b border-line-subtle px-4 py-3">
         <TeamLogo team={team} size="sm" />
-        <Link href={`/teams/${team.id}`} className="truncate font-semibold text-black hover:text-primary dark:text-white">
+        <Link href={`/teams/${team.id}`} className="truncate font-display font-bold text-ink-1 hover:text-primary">
           {team.name}
         </Link>
         {won && (
-          <span className="rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-semibold text-success">
-            {t('matches.winner')}
-          </span>
+          <Badge variant="green" size="sm">{t('matches.winner')}</Badge>
         )}
-        <span className="ml-auto inline-flex items-center gap-1 text-xs text-body dark:text-bodydark">
+        <span className="ml-auto inline-flex items-center gap-1 text-xs num text-ink-2">
           <Users size={12} /> {rows.length}
         </span>
       </div>
       {rows.length === 0 ? (
-        <p className="px-4 py-6 text-center text-sm text-body dark:text-bodydark">{t('matches.players.none')}</p>
+        <p className="px-4 py-6 text-center text-sm text-ink-3">{t('matches.players.none')}</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] text-sm">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-wide text-body dark:text-bodydark">
-                <th className="px-4 py-2 font-medium">{t('matches.players.player')}</th>
-                <th className="px-2 py-2 font-medium">{t('matches.players.hero')}</th>
-                <th className="px-2 py-2 text-center font-medium">K</th>
-                <th className="px-2 py-2 text-center font-medium">D</th>
-                <th className="px-2 py-2 text-center font-medium">A</th>
-                <th className="px-2 py-2 text-center font-medium">KDA</th>
-                <th className="px-4 py-2 text-center font-medium">{t('matches.mvp')}</th>
+          <Table className="min-w-[520px]">
+            <thead className="bg-surface-2">
+              <tr className="border-b border-line-subtle">
+                <Th className="px-4">{t('matches.players.player')}</Th>
+                <Th className="px-2">{t('matches.players.hero')}</Th>
+                <Th align="center" className="px-2 text-accent-green">K</Th>
+                <Th align="center" className="px-2 text-accent-red">D</Th>
+                <Th align="center" className="px-2 text-accent-cyan">A</Th>
+                <Th align="center" className="px-2">KDA</Th>
+                <Th align="center" className="px-4">{t('matches.mvp')}</Th>
               </tr>
             </thead>
             <tbody>
               {rows.map((p) => (
                 <tr
                   key={p.id}
-                  className={`border-t border-stroke dark:border-strokedark ${p.isMvp ? 'bg-warning/5' : ''}`}
+                  className={`border-b border-line-subtle last:border-b-0 transition-colors hover:bg-surface-2/60 ${p.isMvp ? 'bg-accent-gold/5' : ''}`}
                 >
-                  <td className="px-4 py-2">
+                  <Td className="px-4 py-2">
                     <Link href={`/players/${p.userId}`} className="flex items-center gap-2 hover:text-primary">
                       {p.user?.avatar ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -77,24 +76,24 @@ export default function MatchPlayersTable({
                           src={avatarSrc(p.user.avatar, 64)}
                           alt=""
                           referrerPolicy="no-referrer"
-                          className="h-8 w-8 shrink-0 rounded-full object-cover"
+                          className="h-8 w-8 shrink-0 rounded cut-corners-sm object-cover"
                         />
                       ) : (
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded cut-corners-sm bg-surface-3 text-xs font-bold text-ink-2">
                           {userLabel(p.user)[0]?.toUpperCase()}
                         </span>
                       )}
                       <span className="min-w-0">
-                        <span className="block truncate font-medium text-black dark:text-white">{userLabel(p.user)}</span>
+                        <span className="block truncate font-medium text-ink-1">{userLabel(p.user)}</span>
                         {p.role && (
-                          <span className="flex items-center gap-1 text-[11px] text-bodydark2">
+                          <span className="flex items-center gap-1 text-[11px] text-ink-3">
                             <RoleIcon role={p.role} size={12} /> {t('lane.' + p.role)}
                           </span>
                         )}
                       </span>
                     </Link>
-                  </td>
-                  <td className="px-2 py-2">
+                  </Td>
+                  <Td className="px-2 py-2">
                     <span className="flex items-center gap-2">
                       {p.heroImage ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -102,27 +101,27 @@ export default function MatchPlayersTable({
                           src={mlbbImg(p.heroImage, 64)}
                           alt={p.hero || ''}
                           referrerPolicy="no-referrer"
-                          className="h-8 w-8 shrink-0 rounded-full border border-stroke object-cover dark:border-strokedark"
+                          className="h-8 w-8 shrink-0 rounded cut-corners-sm object-cover ring-1 ring-inset ring-line-subtle"
                         />
                       ) : (
-                        <span className="h-8 w-8 shrink-0 rounded-full bg-gray-2 dark:bg-meta-4" />
+                        <span className="h-8 w-8 shrink-0 rounded cut-corners-sm bg-surface-3" />
                       )}
-                      <span className="truncate text-black dark:text-white">{p.hero || '—'}</span>
+                      <span className="truncate text-ink-1">{p.hero || '—'}</span>
                     </span>
-                  </td>
-                  <td className="px-2 py-2 text-center font-semibold tabular-nums text-success">{p.kills}</td>
-                  <td className="px-2 py-2 text-center font-semibold tabular-nums text-danger">{p.deaths}</td>
-                  <td className="px-2 py-2 text-center font-semibold tabular-nums text-primary">{p.assists}</td>
-                  <td className="px-2 py-2 text-center tabular-nums text-black dark:text-white">{kdaLabel(p)}</td>
-                  <td className="px-4 py-2 text-center">
+                  </Td>
+                  <Td align="center" className="px-2 py-2 font-semibold text-accent-green">{p.kills}</Td>
+                  <Td align="center" className="px-2 py-2 font-semibold text-accent-red">{p.deaths}</Td>
+                  <Td align="center" className="px-2 py-2 font-semibold text-accent-cyan">{p.assists}</Td>
+                  <Td align="center" className="px-2 py-2 font-display font-bold">{kdaLabel(p)}</Td>
+                  <Td align="center" className="px-4 py-2">
                     {p.isMvp && (
-                      <Star size={16} className="inline text-warning" fill="currentColor" aria-label={t('matches.mvp')} />
+                      <Star size={16} className="inline text-accent-gold" fill="currentColor" aria-label={t('matches.mvp')} />
                     )}
-                  </td>
+                  </Td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </div>
       )}
     </div>

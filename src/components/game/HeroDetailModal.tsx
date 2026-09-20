@@ -45,7 +45,7 @@ function HeroList({ heroes }: { heroes: any[] }) {
       {heroes.map((h, i) => (
         <div
           key={h.heroId ?? i}
-          className="flex items-center gap-2.5 rounded-sm border border-stroke bg-gray-2 p-1.5 pr-3 dark:border-strokedark dark:bg-meta-4"
+          className="flex items-center gap-2.5 rounded border border-line-subtle bg-surface-2/60 p-1.5 pr-3"
         >
           {h.image && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -53,11 +53,11 @@ function HeroList({ heroes }: { heroes: any[] }) {
               src={mlbbImg(h.image, 72)}
               alt={h.name || ''}
               referrerPolicy="no-referrer"
-              className="w-10 h-10 rounded-sm object-cover bg-gray-2 shrink-0 dark:bg-boxdark-2"
+              className="h-10 w-10 shrink-0 rounded cut-corners-sm bg-surface-3 object-cover"
             />
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-sm text-black dark:text-white truncate">{h.name ?? `#${h.heroId}`}</p>
+            <p className="truncate text-sm font-medium text-ink-1">{h.name ?? `#${h.heroId}`}</p>
             <p
               className={`text-xs font-medium ${
                 h.increaseWinRate >= 0 ? 'text-success' : 'text-danger'
@@ -112,9 +112,9 @@ export default function HeroDetailModal({
   const art = hero?.painting || hero?.imageBig || hero?.image;
   const rates = meta?.available
     ? [
-        { key: 'heroes.winRate', v: meta.winRate, color: 'text-success' },
-        { key: 'heroes.pickRate', v: meta.pickRate, color: 'text-primary' },
-        { key: 'heroes.banRate', v: meta.banRate, color: 'text-danger' },
+        { key: 'heroes.winRate', v: meta.winRate, color: 'text-accent-green' },
+        { key: 'heroes.pickRate', v: meta.pickRate, color: 'text-accent-cyan' },
+        { key: 'heroes.banRate', v: meta.banRate, color: 'text-accent-red' },
       ]
     : null;
 
@@ -134,42 +134,44 @@ export default function HeroDetailModal({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 14 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-6xl max-h-[92vh] overflow-y-auto rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark"
+              className="relative max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-lg border border-line-subtle bg-surface-1 shadow-elev-3"
             >
               <button
                 onClick={onClose}
                 aria-label={t('heroes.close')}
-                className="absolute top-4 right-4 z-10 rounded-md bg-gray-2 p-1.5 text-body transition-colors hover:text-primary dark:bg-meta-4 dark:text-bodydark"
+                className="absolute right-4 top-4 z-10 rounded cut-corners-sm bg-surface-0/70 p-1.5 text-ink-1 backdrop-blur-sm transition-colors hover:text-primary"
               >
                 <X size={20} />
               </button>
 
               {loading || !hero ? (
                 <div className="flex items-center justify-center py-40">
-                  <div className="w-10 h-10 rounded-full border-2 border-stroke border-t-primary animate-spin dark:border-strokedark" />
+                  <div className="h-10 w-10 animate-spin rounded-full border-2 border-line-strong border-t-primary" />
                 </div>
               ) : (
                 <div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-                    <div className="relative flex min-h-[320px] items-end justify-center bg-gray-2 dark:bg-boxdark-2">
+                    <div className="relative flex min-h-[320px] items-end justify-center overflow-hidden bg-surface-2">
+                      <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_40%,rgb(var(--accent-cyan)/0.18),transparent_70%)]" />
                       {art && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={mlbbImg(art, 800)}
                           alt={hero.name}
                           referrerPolicy="no-referrer"
-                          className="max-h-[460px] w-full object-contain"
+                          className="relative max-h-[460px] w-full object-contain"
                         />
                       )}
                     </div>
 
                     <div className="p-6 md:p-8">
-                      <h2 className="text-3xl font-bold text-black dark:text-white">{hero.name}</h2>
+                      <p className="eyebrow mb-2">{t('nav.section.catalog')}</p>
+                      <h2 className="font-display text-3xl font-bold tracking-tight2 text-ink-1 md:text-4xl">{hero.name}</h2>
                       <div className="flex flex-wrap gap-1.5 mt-3">
                         {hero.roles?.map((r: string) => (
                           <span
                             key={r}
-                            className="rounded-full bg-meta-5/10 px-2.5 py-1 text-xs font-medium text-meta-5"
+                            className="rounded bg-accent-violet/10 px-2.5 py-1 text-xs font-semibold text-accent-violet ring-1 ring-inset ring-accent-violet/25"
                           >
                             {r}
                           </span>
@@ -177,14 +179,14 @@ export default function HeroDetailModal({
                         {hero.lanes?.map((l: string) => (
                           <span
                             key={l}
-                            className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+                            className="rounded bg-accent-cyan/10 px-2.5 py-1 text-xs font-semibold text-accent-cyan ring-1 ring-inset ring-accent-cyan/25"
                           >
                             {l}
                           </span>
                         ))}
                       </div>
                       {hero.specialities?.length > 0 && (
-                        <p className="text-sm text-body dark:text-bodydark mt-3">
+                        <p className="mt-3 text-sm text-ink-2">
                           {t('heroes.specialities')} : {hero.specialities.join(', ')}
                         </p>
                       )}
@@ -194,10 +196,10 @@ export default function HeroDetailModal({
                           {rates.map((r) => (
                             <div
                               key={r.key}
-                              className="rounded-sm border border-stroke bg-gray-2 p-2.5 text-center dark:border-strokedark dark:bg-meta-4"
+                              className="rounded border border-line-subtle bg-surface-2/40 p-2.5 text-center"
                             >
-                              <p className={`text-lg font-bold ${r.color}`}>{r.v}%</p>
-                              <p className="text-[11px] text-bodydark2">{t(r.key)}</p>
+                              <p className={`font-display text-xl font-bold num ${r.color}`}>{r.v}%</p>
+                              <p className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t(r.key)}</p>
                             </div>
                           ))}
                         </div>
@@ -209,10 +211,10 @@ export default function HeroDetailModal({
                           return (
                             <div key={s.i}>
                               <div className="flex justify-between text-sm mb-1">
-                                <span className="text-body dark:text-bodydark">{t(s.key)}</span>
-                                <span className="font-semibold text-black dark:text-white">{v}</span>
+                                <span className="text-ink-2">{t(s.key)}</span>
+                                <span className="font-semibold num text-ink-1">{v}</span>
                               </div>
-                              <div className="h-2 rounded-full bg-stroke overflow-hidden dark:bg-strokedark">
+                              <div className="h-1.5 overflow-hidden rounded-full bg-surface-3">
                                 <div
                                   className="h-full rounded-full"
                                   style={{ width: `${Math.min(100, v)}%`, background: s.color }}
@@ -225,15 +227,15 @@ export default function HeroDetailModal({
                     </div>
                   </div>
 
-                  <div className="flex gap-1 overflow-x-auto border-t border-stroke px-6 pt-4 dark:border-strokedark md:px-8">
+                  <div className="flex gap-1 overflow-x-auto whitespace-nowrap border-y border-line-subtle px-6 pt-2 md:px-8">
                     {(['skills', 'counters', 'builds'] as const).map((tk) => (
                       <button
                         key={tk}
                         onClick={() => setTab(tk)}
-                        className={`shrink-0 whitespace-nowrap px-3 py-2 rounded-t-lg text-sm font-semibold transition-colors sm:px-4 ${
+                        className={`relative -mb-px shrink-0 whitespace-nowrap px-3 py-2.5 text-sm font-semibold transition-colors sm:px-4 ${
                           tab === tk
-                            ? 'text-primary border-b-2 border-primary'
-                            : 'text-body hover:text-black dark:text-bodydark dark:hover:text-white'
+                            ? 'text-ink-1 after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-primary after:shadow-glow-cyan'
+                            : 'text-ink-3 hover:text-ink-2'
                         }`}
                       >
                         {t(tk === 'skills' ? 'heroes.tab.skills' : tk === 'counters' ? 'heroes.tab.counters' : 'heroes.tab.builds')}
@@ -253,12 +255,12 @@ export default function HeroDetailModal({
                                   src={mlbbImg(sk.icon, 120)}
                                   alt={sk.name}
                                   referrerPolicy="no-referrer"
-                                  className="h-14 w-14 shrink-0 rounded-full border border-stroke object-cover bg-gray-2 dark:border-strokedark dark:bg-meta-4"
+                                  className="h-14 w-14 shrink-0 rounded cut-corners-sm bg-surface-2 object-cover ring-1 ring-inset ring-line-subtle"
                                 />
                               )}
                               <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <span className="text-base font-semibold text-black dark:text-white">
+                                  <span className="font-display text-base font-bold text-ink-1">
                                     {sk.name}
                                   </span>
                                   {sk.tags?.map((tag: any, j: number) => (
@@ -272,7 +274,7 @@ export default function HeroDetailModal({
                                   ))}
                                 </div>
                                 {sk.description && (
-                                  <p className="text-sm text-body dark:text-bodydark mt-1.5 leading-relaxed whitespace-pre-line">
+                                  <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-ink-2">
                                     {renderRichText(sk.description)}
                                   </p>
                                 )}
@@ -284,16 +286,16 @@ export default function HeroDetailModal({
 
                       {meta?.combos?.length > 0 && (
                         <div className="mt-8">
-                          <h3 className="text-lg font-bold text-black dark:text-white mb-4">
+                          <h3 className="mb-4 font-display text-lg font-bold tracking-tight2 text-ink-1">
                             {t('heroes.combos')}
                           </h3>
                           <div className="space-y-5">
                             {meta.combos.map((c: any, i: number) => (
                               <div
                                 key={i}
-                                className="rounded-sm border border-stroke bg-gray-2 p-4 dark:border-strokedark dark:bg-meta-4"
+                                className="rounded-lg border border-line-subtle bg-surface-2/40 p-4"
                               >
-                                <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-3">
+                                <p className="eyebrow mb-3">
                                   {c.title}
                                 </p>
                                 <div className="flex flex-wrap items-center gap-1.5 mb-3">
@@ -305,17 +307,17 @@ export default function HeroDetailModal({
                                           src={mlbbImg(s.icon, 88)}
                                           alt=""
                                           referrerPolicy="no-referrer"
-                                          className="h-10 w-10 rounded-full border border-stroke object-cover bg-white dark:border-strokedark dark:bg-boxdark-2"
+                                          className="h-10 w-10 rounded cut-corners-sm bg-surface-2 object-cover ring-1 ring-inset ring-line-subtle"
                                         />
                                       )}
                                       {j < c.skills.length - 1 && (
-                                        <ChevronsRight size={16} className="text-bodydark2" />
+                                        <ChevronsRight size={16} className="text-ink-3" />
                                       )}
                                     </div>
                                   ))}
                                 </div>
                                 {c.description && (
-                                  <p className="text-sm text-body dark:text-bodydark leading-relaxed">
+                                  <p className="text-sm leading-relaxed text-ink-2">
                                     {renderRichText(c.description)}
                                   </p>
                                 )}
@@ -327,7 +329,7 @@ export default function HeroDetailModal({
 
                       {hero.skins?.length > 0 && (
                         <div className="mt-8">
-                          <h3 className="text-lg font-bold text-black dark:text-white mb-4">
+                          <h3 className="mb-4 font-display text-lg font-bold tracking-tight2 text-ink-1">
                             {t('heroes.skins')} ({hero.skins.length})
                           </h3>
                           <div className="flex gap-4 overflow-x-auto pb-2">
@@ -339,11 +341,11 @@ export default function HeroDetailModal({
                                     src={mlbbImg(sk.image, 400)}
                                     alt={sk.name || 'Skin'}
                                     referrerPolicy="no-referrer"
-                                    className="h-28 w-48 rounded-sm object-cover bg-gray-2 dark:bg-meta-4"
+                                    className="h-28 w-48 rounded-lg bg-surface-2 object-cover ring-1 ring-inset ring-line-subtle"
                                   />
                                 )}
                                 {sk.name && (
-                                  <p className="text-sm text-body dark:text-bodydark mt-1.5 truncate">
+                                  <p className="mt-1.5 truncate text-sm text-ink-2">
                                     {sk.name}
                                   </p>
                                 )}
@@ -355,10 +357,10 @@ export default function HeroDetailModal({
 
                       {(hero.story || hero.tale) && (
                         <div className="mt-8">
-                          <h3 className="text-lg font-bold text-black dark:text-white mb-3">
+                          <h3 className="mb-3 font-display text-lg font-bold tracking-tight2 text-ink-1">
                             {t('heroes.lore')}
                           </h3>
-                          <p className="text-sm text-body dark:text-bodydark leading-relaxed whitespace-pre-line">
+                          <p className="whitespace-pre-line text-sm leading-relaxed text-ink-2">
                             {renderRichText(hero.story || hero.tale)}
                           </p>
                         </div>
@@ -372,7 +374,7 @@ export default function HeroDetailModal({
                         <Link
                           href={`/ai?tab=counter&enemy=${encodeURIComponent(hero.name)}`}
                           onClick={onClose}
-                          className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20"
+                          className="mb-4 inline-flex items-center gap-1.5 rounded border border-primary/60 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/15"
                         >
                           <Sparkles size={14} />
                           {t('ai.counter.fromHero')}
@@ -380,14 +382,14 @@ export default function HeroDetailModal({
                       )}
                       {(() => {
                         const sections = [
-                          { key: 'heroes.strongAgainst', color: 'text-success', list: meta?.counters?.strong },
-                          { key: 'heroes.weakAgainst', color: 'text-danger', list: meta?.counters?.weak },
-                          { key: 'heroes.bestTeammates', color: 'text-primary', list: meta?.synergy?.best },
-                          { key: 'heroes.worstTeammates', color: 'text-body dark:text-bodydark', list: meta?.synergy?.worst },
+                          { key: 'heroes.strongAgainst', color: 'text-accent-green', list: meta?.counters?.strong },
+                          { key: 'heroes.weakAgainst', color: 'text-accent-red', list: meta?.counters?.weak },
+                          { key: 'heroes.bestTeammates', color: 'text-accent-cyan', list: meta?.synergy?.best },
+                          { key: 'heroes.worstTeammates', color: 'text-ink-2', list: meta?.synergy?.worst },
                         ].filter((s) => s.list?.length);
                         if (!sections.length) {
                           return (
-                            <p className="text-center text-bodydark2 py-10">
+                            <p className="py-10 text-center text-sm text-ink-3">
                               {t('heroes.metaUnavailable')}
                             </p>
                           );
@@ -411,25 +413,25 @@ export default function HeroDetailModal({
                       {builds?.length > 0 ? (
                         <div className="space-y-6">
                           {builds.map((build, i) => (
-                            <div key={build.id || i} className="border border-stroke rounded-sm bg-gray-2 p-4 dark:border-strokedark dark:bg-meta-4">
+                            <div key={build.id || i} className="rounded-lg border border-line-subtle bg-surface-2/40 p-4">
                               <div className="mb-4">
-                                <h4 className="text-base font-bold text-black dark:text-white">
+                                <h4 className="font-display text-base font-bold text-ink-1">
                                   {build.name || t('heroes.builds.unnamed')}
                                 </h4>
                                 {build.description && (
-                                  <p className="text-sm text-body dark:text-bodydark mt-1">{build.description}</p>
+                                  <p className="mt-1 text-sm text-ink-2">{build.description}</p>
                                 )}
                               </div>
 
                               <div className="space-y-3">
                                 {build.items?.length > 0 && (
                                   <div>
-                                    <p className="text-xs font-semibold uppercase text-bodydark2 mb-2">{t('heroes.builds.items')}</p>
+                                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('heroes.builds.items')}</p>
                                     <div className="flex flex-wrap gap-2">
                                       {build.items.map((item: any, j: number) => (
                                         <div
                                           key={item.id || j}
-                                          className="flex items-center gap-1.5 rounded-sm border border-stroke bg-white p-2 dark:border-strokedark dark:bg-boxdark"
+                                          className="flex items-center gap-1.5 rounded border border-line-subtle bg-surface-1 p-2"
                                         >
                                           {item.icon && (
                                             // eslint-disable-next-line @next/next/no-img-element
@@ -440,7 +442,7 @@ export default function HeroDetailModal({
                                               className="h-8 w-8 rounded object-cover"
                                             />
                                           )}
-                                          <span className="text-xs font-medium text-black dark:text-white">{item.name}</span>
+                                          <span className="text-xs font-medium text-ink-1">{item.name}</span>
                                         </div>
                                       ))}
                                     </div>
@@ -450,8 +452,8 @@ export default function HeroDetailModal({
                                 <div className="grid grid-cols-2 gap-3">
                                   {build.emblem && (
                                     <div>
-                                      <p className="text-xs font-semibold uppercase text-bodydark2 mb-2">{t('heroes.builds.emblem')}</p>
-                                      <div className="flex items-center gap-2 rounded-sm border border-stroke bg-white p-2 dark:border-strokedark dark:bg-boxdark">
+                                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('heroes.builds.emblem')}</p>
+                                      <div className="flex items-center gap-2 rounded border border-line-subtle bg-surface-1 p-2">
                                         {build.emblem.icon && (
                                           // eslint-disable-next-line @next/next/no-img-element
                                           <img
@@ -461,15 +463,15 @@ export default function HeroDetailModal({
                                             className="h-8 w-8 rounded object-cover"
                                           />
                                         )}
-                                        <span className="text-xs font-medium text-black dark:text-white">{build.emblem.name}</span>
+                                        <span className="text-xs font-medium text-ink-1">{build.emblem.name}</span>
                                       </div>
                                     </div>
                                   )}
 
                                   {build.battleSpell && (
                                     <div>
-                                      <p className="text-xs font-semibold uppercase text-bodydark2 mb-2">{t('heroes.builds.battleSpell')}</p>
-                                      <div className="flex items-center gap-2 rounded-sm border border-stroke bg-white p-2 dark:border-strokedark dark:bg-boxdark">
+                                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('heroes.builds.battleSpell')}</p>
+                                      <div className="flex items-center gap-2 rounded border border-line-subtle bg-surface-1 p-2">
                                         {build.battleSpell.icon && (
                                           // eslint-disable-next-line @next/next/no-img-element
                                           <img
@@ -479,7 +481,7 @@ export default function HeroDetailModal({
                                             className="h-8 w-8 rounded object-cover"
                                           />
                                         )}
-                                        <span className="text-xs font-medium text-black dark:text-white">{build.battleSpell.name}</span>
+                                        <span className="text-xs font-medium text-ink-1">{build.battleSpell.name}</span>
                                       </div>
                                     </div>
                                   )}
@@ -489,7 +491,7 @@ export default function HeroDetailModal({
                           ))}
                         </div>
                       ) : (
-                        <p className="text-center text-bodydark2 py-10">
+                        <p className="py-10 text-center text-sm text-ink-3">
                           {t('heroes.builds.empty')}
                         </p>
                       )}

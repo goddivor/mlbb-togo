@@ -92,7 +92,7 @@ export function displayStatus(m: Pick<EsportMatch, 'status' | 'scheduledAt'>, no
 }
 
 export const STATUS_VARIANT: Record<DisplayStatus, string> = {
-  live: 'red',
+  live: 'live',
   scheduled: 'blue',
   completed: 'green',
   cancelled: 'default',
@@ -116,12 +116,6 @@ export function MatchStatusBadge({
   const s = displayStatus(match);
   return (
     <Badge variant={STATUS_VARIANT[s]} size={size}>
-      {s === 'live' && (
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-60" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-current" />
-        </span>
-      )}
       {t('matches.status.' + s)}
     </Badge>
   );
@@ -138,7 +132,7 @@ export function StageBadge({ stage, t, size = 'sm' }: { stage: MatchStage; t: TF
 export function FormatBadge({ format, size = 'sm' }: { format: MatchFormat | null; size?: 'sm' | 'md' }) {
   if (!format) return null;
   return (
-    <Badge variant="neon" size={size} className="font-bold tracking-wide">
+    <Badge variant="outline" size={size} className="font-bold uppercase tracking-wide">
       {format.toUpperCase()}
     </Badge>
   );
@@ -170,12 +164,12 @@ export function TeamLogo({
         src={avatarSrc(team.image, 160)}
         alt={name}
         referrerPolicy="no-referrer"
-        className={`${dim} shrink-0 rounded-full border border-stroke bg-white object-cover dark:border-strokedark dark:bg-boxdark ${className}`}
+        className={`${dim} shrink-0 rounded cut-corners-sm bg-surface-2 object-cover ring-1 ring-inset ring-line-subtle ${className}`}
       />
     );
   return (
     <span
-      className={`${dim} flex shrink-0 items-center justify-center rounded-full bg-primary font-bold text-white ${className}`}
+      className={`${dim} flex shrink-0 items-center justify-center rounded cut-corners-sm bg-surface-3 font-display font-bold text-ink-2 ring-1 ring-inset ring-line-subtle ${className}`}
     >
       {name[0]?.toUpperCase() || 'T'}
     </span>
@@ -208,16 +202,16 @@ export function MvpAvatar({
           src={avatarSrc(user.avatar, 64)}
           alt={userLabel(user)}
           referrerPolicy="no-referrer"
-          className={`${dim} rounded-full border-2 border-warning object-cover`}
+          className={`${dim} rounded-full border-2 border-accent-gold object-cover`}
         />
       ) : (
-        <span className={`${dim} flex items-center justify-center rounded-full border-2 border-warning bg-meta-4 font-bold text-white`}>
+        <span className={`${dim} flex items-center justify-center rounded-full border-2 border-accent-gold bg-surface-3 font-bold text-ink-1`}>
           {userLabel(user)[0]?.toUpperCase()}
         </span>
       )}
       <Star
         size={size === 'md' ? 14 : 12}
-        className="absolute -bottom-1 -right-1 rounded-full bg-white p-[1px] text-warning dark:bg-boxdark"
+        className="absolute -bottom-1 -right-1 rounded-full bg-surface-1 p-[1px] text-accent-gold"
         fill="currentColor"
       />
     </span>

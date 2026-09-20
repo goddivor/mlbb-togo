@@ -1,12 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, ListOrdered, Lock, SlidersHorizontal } from 'lucide-react';
+import { Download, ListOrdered, Lock, SlidersHorizontal, Swords, Shield, Trophy, Crown } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { useLangStore } from '@/store/useStore';
 import { useSelectedSeason } from '@/store/useSeasonStore';
-import { Badge, Button, EmptyState, LoadingSpinner, PageHeader, SectionCard, Tabs } from '@/components/ui';
+import { Badge, Button, EmptyState, PageHeader, SectionCard, Skeleton, StatCard, Tabs } from '@/components/ui';
+import { TeamAvatar } from '@/components/standings/bits';
+import { cn } from '@/lib/helpers';
 import SeasonSwitcher from '@/components/seasons/SeasonSwitcher';
 import { SeasonStatusBadge, fmtSeasonDate } from '@/components/seasons/shared';
 import StandingsTable from '@/components/standings/StandingsTable';
@@ -58,6 +60,8 @@ export default function StandingsPage() {
   const qualifyTop = data?.settings.qualifyTop ?? 4;
   const rows = data?.rows ?? [];
   const frozenDate = data?.frozenAt ? fmtSeasonDate(data.frozenAt, lang) : null;
+  const leader = rows.find((r) => r.rank === 1) ?? null;
+  const seasonColor = data?.season.color || season?.color || null;
 
   const exportPdf = () => {
     if (!seasonId) return;
@@ -67,6 +71,9 @@ export default function StandingsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow={season ? season.name : t('nav.section.esport')}
+        icon={<ListOrdered size={20} />}
+        variant="purple"
         title={t('standings.title')}
         subtitle={t('standings.subtitle')}
         action={
@@ -77,6 +84,7 @@ export default function StandingsPage() {
         }
       />
 
+      {/* Season strip + KPIs */}
       <SectionCard className="!p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-2">
@@ -92,6 +100,7 @@ export default function StandingsPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Tabs
+              size="sm"
               tabs={tabs}
               active={type}
               onChange={(id: StandingsType) => {
@@ -99,57 +108,69 @@ export default function StandingsPage() {
                 setType(id);
               }}
             />
-            <div className="inline-flex rounded-sm border border-stroke bg-white p-1 dark:border-strokedark dark:bg-boxdark">
-              {(['d7', 'd30'] as DeltaWindow[]).map((w) => (
-                <button
-                  key={w}
-                  type="button"
-                  onClick={() => setDeltaWindow(w)}
-                  className={`rounded-sm px-3 py-1.5 text-xs font-medium transition-colors ${
-                    deltaWindow === w ? 'bg-primary text-white' : 'text-body hover:bg-gray dark:text-bodydark dark:hover:bg-meta-4'
-                  }`}
-                  title={t('standings.hint.delta')}
-                >
-                  {t(w === 'd7' ? 'standings.delta.7d' : 'standings.delta.30d')}
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
+            <Tabs
+              size="sm"
+              tabs={(['d7', 'd30'] as DeltaWindow[]).map((w) => ({ id: w, label: t(w === 'd7' ? 'standings.delta.7d' : 'standings.delta.30d') }))}
+              active={deltaWindow}
+              onChange={(w: DeltaWindow) => setDeltaWindow(w)}
+            />
+            <Button
+              size="sm"
+              variant={advanced ? 'primary' : 'outline'}
               onClick={() => setAdvanced((v) => !v)}
-              className={`md:hidden inline-flex items-center gap-1.5 rounded-sm border px-3 py-1.5 text-xs font-medium transition-colors ${
-                advanced
-                  ? 'border-primary bg-primary text-white'
-                  : 'border-stroke bg-white text-body dark:border-strokedark dark:bg-boxdark dark:text-bodydark'
-              }`}
+              className="md:hidden"
               aria-pressed={advanced}
             >
               <SlidersHorizontal size={14} />
               {t('standings.advanced')}
-            </button>
+            </Button>
           </div>
         </div>
       </SectionCard>
 
       {!ready || loading ? (
-        <div className="flex items-center justify-center py-24">
-          <LoadingSpinner size="lg" />
+        <div className="space-y-6" aria-busy="true">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
+          </div>
+          <Skeleton className="h-72 w-full rounded-lg" />
         </div>
       ) : !seasonId ? (
         <EmptyState icon={<ListOrdered size={26} />} title={t('standings.noSeason')} />
       ) : rows.length === 0 ? (
         <EmptyState icon={<ListOrdered size={26} />} title={t('standings.empty')} />
       ) : (
-        <SectionCard className="!p-0 overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stroke px-4 py-3 text-xs text-body dark:border-strokedark dark:text-bodydark">
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              icon={<Crown size={18} />}
+              accent="gold"
+              label={t('standings.col.rank') + ' 1'}
+              value={
+                leader ? (
+                  <span className="flex items-center gap-2 text-xl">
+                    <TeamAvatar team={leader.team} size={28} />
+                    <span className="truncate">{leader.team.name}</span>
+                  </span>
+                ) : '—'
+              }
+              hint={leader ? `${leader.points} ${t('standings.col.points')} · ${leader.wins}-${leader.losses}` : undefined}
+            />
+            <StatCard icon={<Shield size={18} />} label={t('standings.col.team')} value={rows.length} />
+            <StatCard icon={<Swords size={18} />} accent="violet" label={t('standings.tab.' + type)} value={data?.meta.matches.scoped ?? 0} hint={t('standings.matchesCount', { n: data?.meta.matches.scoped ?? 0 })} />
+            <StatCard icon={<Trophy size={18} />} accent="green" label={t('standings.qualifyZone', { n: qualifyTop })} value={`${t('standings.col.rank')} 1-${qualifyTop}`} />
+          </div>
+
+        <SectionCard className="!p-0 overflow-hidden" style={seasonColor ? { borderTopColor: seasonColor, borderTopWidth: 2 } : undefined}>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line-subtle px-4 py-3 text-xs text-ink-2">
             <span className="inline-flex items-center gap-2">
-              <span className="inline-block h-3 w-3 rounded-sm bg-success/60" />
+              <span className={cn('inline-block h-3 w-3 rounded-sm bg-accent-green/70')} style={seasonColor ? { backgroundColor: seasonColor } : undefined} />
               {t('standings.qualifyZone', { n: qualifyTop })}
             </span>
             <span className="hidden sm:inline">{t('standings.clickTeam')}</span>
           </div>
           {data?.frozen && (
-            <p className="border-b border-stroke bg-warning/5 px-4 py-2 text-xs text-warning dark:border-strokedark">
+            <p className="border-b border-line-subtle bg-accent-gold/5 px-4 py-2 text-xs text-accent-gold">
               {t('standings.frozenHint')}
             </p>
           )}
@@ -162,13 +183,14 @@ export default function StandingsPage() {
             t={t}
             accent={data?.season.color}
           />
-          <div className="flex flex-col gap-1 border-t border-stroke px-4 py-3 text-[11px] text-bodydark2 dark:border-strokedark sm:flex-row sm:flex-wrap sm:gap-x-4">
+          <div className="flex flex-col gap-1 border-t border-line-subtle px-4 py-3 text-[11px] text-ink-3 sm:flex-row sm:flex-wrap sm:gap-x-4">
             <span>{t('standings.tieBreakers')}</span>
             {data && <span>{t('standings.pointsRule', data.settings.points)}</span>}
             {data && <span>{t('standings.matchesCount', { n: data.meta.matches.scoped })}</span>}
             <span className="md:hidden">{t('standings.sortHint')}</span>
           </div>
         </SectionCard>
+        </>
       )}
 
       {seasonId && (

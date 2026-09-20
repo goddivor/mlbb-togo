@@ -46,14 +46,15 @@ function StatsPageInner() {
   return (
     <div className="space-y-6">
       <PageHeader
-        icon={<BarChart3 size={22} />}
+        eyebrow={scopeLabel}
+        icon={<BarChart3 size={20} />}
         title={t('lstats.title')}
-        subtitle={`${t('lstats.subtitle')} · ${scopeLabel}`}
+        subtitle={t('lstats.subtitle')}
         action={<SeasonSwitcher variant="inline" />}
       />
 
-      <div className="overflow-x-auto pb-1">
-        <Tabs tabs={tabs} active={tab} onChange={(id: TabId) => setTab(id)} />
+      <div className="overflow-x-auto overflow-y-hidden">
+        <Tabs variant="underline" tabs={tabs} active={tab} onChange={(id: TabId) => setTab(id)} className="min-w-max whitespace-nowrap" />
       </div>
 
       {tab === 'teams' && <TeamsTab scope={scope} ready={ready} />}

@@ -2,8 +2,10 @@
 
 import { useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowDown, ArrowUp, ArrowUpDown, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { avatarSrc, mlbbImg } from '@/lib/api';
+import { Table, Td, Th } from '@/components/ui';
+import { cn } from '@/lib/helpers';
 import { useSelectedSeason } from '@/store/useSeasonStore';
 import RoleIcon from '@/components/game/RoleIcon';
 
@@ -44,14 +46,14 @@ export function TeamLogo({ team, size = 32 }: { team: TeamRef; size?: number }) 
         alt={team.name}
         referrerPolicy="no-referrer"
         style={{ width: size, height: size }}
-        className="shrink-0 rounded-md object-cover border border-stroke bg-white dark:border-strokedark dark:bg-boxdark-2"
+        className="shrink-0 rounded cut-corners-sm bg-surface-2 object-cover ring-1 ring-inset ring-line-subtle"
       />
     );
   }
   return (
     <div
       style={{ width: size, height: size }}
-      className="shrink-0 rounded-md bg-primary/15 text-primary flex items-center justify-center text-xs font-bold"
+      className="flex shrink-0 items-center justify-center rounded cut-corners-sm bg-surface-3 text-xs font-bold text-ink-2"
     >
       {team.name?.slice(0, 2).toUpperCase() || '?'}
     </div>
@@ -62,8 +64,8 @@ export function TeamCell({ team, size = 32, muted = false }: { team: TeamRef; si
   return (
     <Link
       href={`/teams/${team.id}`}
-      className={`inline-flex items-center gap-2.5 min-w-0 hover:text-primary transition-colors ${
-        muted ? 'text-body dark:text-bodydark text-xs' : 'font-semibold text-black dark:text-white'
+      className={`inline-flex min-w-0 items-center gap-2.5 transition-colors hover:text-primary ${
+        muted ? 'text-xs text-ink-2' : 'font-semibold text-ink-1'
       }`}
     >
       <TeamLogo team={team} size={size} />
@@ -82,14 +84,14 @@ export function PlayerAvatar({ user, size = 32 }: { user: UserRef; size?: number
         alt={name}
         referrerPolicy="no-referrer"
         style={{ width: size, height: size }}
-        className="shrink-0 rounded-full object-cover border border-stroke dark:border-strokedark"
+        className="shrink-0 rounded cut-corners-sm object-cover ring-1 ring-inset ring-line-subtle"
       />
     );
   }
   return (
     <div
       style={{ width: size, height: size }}
-      className="shrink-0 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-white"
+      className="flex shrink-0 items-center justify-center rounded cut-corners-sm bg-surface-3 text-xs font-bold text-ink-2"
     >
       {name[0]?.toUpperCase() || 'J'}
     </div>
@@ -106,14 +108,14 @@ export function PlayerCell({ user, team, size = 32 }: { user: UserRef; team?: Te
       <div className="min-w-0">
         <Link
           href={`/players/${user.id}`}
-          className="block truncate font-semibold text-black hover:text-primary dark:text-white transition-colors"
+          className="block truncate font-semibold text-ink-1 transition-colors hover:text-primary"
         >
           {name}
         </Link>
         {team && (
           <Link
             href={`/teams/${team.id}`}
-            className="flex items-center gap-1 text-[11px] text-bodydark2 hover:text-primary truncate"
+            className="flex items-center gap-1 truncate text-[11px] text-ink-3 hover:text-primary"
           >
             <TeamLogo team={team} size={14} />
             <span className="truncate">{team.name}</span>
@@ -134,7 +136,7 @@ export function HeroThumb({ hero, size = 28, className = '' }: { hero: HeroRef; 
         title={hero.name}
         referrerPolicy="no-referrer"
         style={{ width: size, height: size }}
-        className={`shrink-0 rounded-full object-cover border border-stroke dark:border-strokedark ${className}`}
+        className={`shrink-0 rounded-full object-cover ring-1 ring-inset ring-line-subtle ${className}`}
       />
     );
   }
@@ -142,7 +144,7 @@ export function HeroThumb({ hero, size = 28, className = '' }: { hero: HeroRef; 
     <div
       title={hero.name}
       style={{ width: size, height: size }}
-      className={`shrink-0 rounded-full bg-gray-2 dark:bg-meta-4 flex items-center justify-center text-[10px] font-bold text-body dark:text-bodydark ${className}`}
+      className={`flex shrink-0 items-center justify-center rounded-full bg-surface-3 text-[10px] font-bold text-ink-2 ${className}`}
     >
       {hero.name?.[0] ?? '?'}
     </div>
@@ -151,14 +153,14 @@ export function HeroThumb({ hero, size = 28, className = '' }: { hero: HeroRef; 
 
 /** Row of hero thumbnails with a pick count badge. */
 export function HeroChips({ heroes }: { heroes: HeroRef[] }) {
-  if (!heroes.length) return <span className="text-bodydark2">–</span>;
+  if (!heroes.length) return <span className="text-ink-3">–</span>;
   return (
     <div className="flex items-center gap-1.5">
       {heroes.map((h) => (
         <span key={h.name} className="relative" title={`${h.name}${h.count ? ` · ${h.count}` : ''}`}>
           <HeroThumb hero={h} size={28} />
           {h.count !== undefined && (
-            <span className="absolute -bottom-1 -right-1 rounded-full bg-boxdark text-white text-[9px] font-bold px-1 leading-4 dark:bg-white dark:text-boxdark">
+            <span className="absolute -bottom-1 -right-1 rounded-full bg-ink-1 px-1 text-[9px] font-bold num leading-4 text-surface-0">
               {h.count}
             </span>
           )}
@@ -169,7 +171,7 @@ export function HeroChips({ heroes }: { heroes: HeroRef[] }) {
 }
 
 export function LaneCell({ role }: { role?: string | null }) {
-  if (!role) return <span className="text-bodydark2">–</span>;
+  if (!role) return <span className="text-ink-3">–</span>;
   return (
     <span className="inline-flex items-center gap-1.5 text-sm">
       <RoleIcon role={role} size={16} />
@@ -179,13 +181,13 @@ export function LaneCell({ role }: { role?: string | null }) {
 }
 
 export function WinRateBar({ value }: { value: number }) {
-  const color = value >= 60 ? 'bg-success' : value >= 45 ? 'bg-primary' : 'bg-danger';
+  const color = value >= 60 ? 'bg-accent-green' : value >= 45 ? 'bg-accent-cyan' : 'bg-accent-red';
   return (
-    <div className="flex items-center gap-2 min-w-[6rem]">
-      <div className="h-1.5 flex-1 rounded-full bg-gray-2 dark:bg-meta-4 overflow-hidden">
+    <div className="flex min-w-[6rem] items-center gap-2">
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-3">
         <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
       </div>
-      <span className="w-12 text-right font-medium tabular-nums">{fmt(value)}%</span>
+      <span className="w-12 text-right font-display font-bold num">{fmt(value)}%</span>
     </div>
   );
 }
@@ -199,13 +201,13 @@ export function InfoTip({ children, label }: { children: ReactNode; label?: stri
         tabIndex={0}
         role="img"
         aria-label={label ?? 'info'}
-        className="inline-flex items-center justify-center rounded-full text-bodydark2 hover:text-primary focus:outline-none focus:text-primary cursor-help"
+        className="inline-flex cursor-help items-center justify-center rounded-full text-ink-3 hover:text-primary focus:text-primary focus:outline-none"
       >
         <Info size={14} />
       </span>
       <span
         role="tooltip"
-        className="pointer-events-none absolute left-1/2 top-full z-30 mt-1.5 w-64 -translate-x-1/2 rounded-sm border border-stroke bg-white p-2.5 text-left text-xs font-normal normal-case tracking-normal text-body shadow-default opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 dark:border-strokedark dark:bg-boxdark dark:text-bodydark"
+        className="pointer-events-none absolute left-1/2 top-full z-30 mt-1.5 w-64 -translate-x-1/2 rounded border border-line-strong bg-surface-1 p-2.5 text-left text-xs font-normal normal-case tracking-normal text-ink-2 shadow-elev-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
       >
         {children}
       </span>
@@ -273,48 +275,29 @@ export function SortableTable<T>({
     });
   };
 
-  const alignCls = (a?: Column<T>['align']) =>
-    a === 'right' ? 'text-right' : a === 'center' ? 'text-center' : 'text-left';
-
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[640px] text-sm">
-        <thead>
-          <tr className="bg-gray-2 text-left dark:bg-meta-4">
+      <Table className="min-w-[640px]">
+        <thead className="bg-surface-2">
+          <tr className="border-b border-line-subtle">
             {columns.map((c) => {
               const active = sort?.key === c.key;
               return (
-                <th
+                <Th
                   key={c.key}
-                  className={`px-3 py-3 text-[11px] font-semibold uppercase tracking-wider text-body dark:text-bodydark whitespace-nowrap ${alignCls(
-                    c.align,
-                  )} ${c.hideOnMobile ? 'hidden md:table-cell' : ''} ${c.className ?? ''} ${
-                    highlight === c.key ? 'text-primary dark:text-primary' : ''
-                  }`}
-                >
-                  {c.value ? (
-                    <button
-                      type="button"
-                      onClick={() => toggle(c)}
-                      className={`inline-flex items-center gap-1 hover:text-primary transition-colors ${
-                        active ? 'text-primary' : ''
-                      }`}
-                    >
-                      {c.label}
-                      {active ? (
-                        sort!.dir === 'desc' ? (
-                          <ArrowDown size={12} />
-                        ) : (
-                          <ArrowUp size={12} />
-                        )
-                      ) : (
-                        <ArrowUpDown size={12} className="opacity-40" />
-                      )}
-                    </button>
-                  ) : (
-                    c.label
+                  align={c.align}
+                  sortable={!!c.value}
+                  sorted={active ? sort!.dir : null}
+                  onSort={() => toggle(c)}
+                  className={cn(
+                    'py-3',
+                    c.hideOnMobile && 'hidden md:table-cell',
+                    c.className,
+                    highlight === c.key && 'text-primary'
                   )}
-                </th>
+                >
+                  {c.label}
+                </Th>
               );
             })}
           </tr>
@@ -323,22 +306,29 @@ export function SortableTable<T>({
           {sorted.map((row, i) => (
             <tr
               key={rowKey(row)}
-              className="border-b border-stroke last:border-0 hover:bg-gray-1 dark:border-strokedark dark:hover:bg-meta-4/40 transition-colors"
+              className={cn(
+                'border-b border-line-subtle last:border-0 transition-colors duration-fast hover:bg-surface-2/60',
+                i % 2 === 1 && 'bg-surface-2/40'
+              )}
             >
               {columns.map((c) => (
-                <td
+                <Td
                   key={c.key}
-                  className={`px-3 py-2.5 text-black dark:text-white tabular-nums ${alignCls(c.align)} ${
-                    c.hideOnMobile ? 'hidden md:table-cell' : ''
-                  } ${c.className ?? ''} ${highlight === c.key ? 'font-bold text-primary dark:text-primary' : ''}`}
+                  align={c.align}
+                  className={cn(
+                    'py-2.5',
+                    c.hideOnMobile && 'hidden md:table-cell',
+                    c.className,
+                    highlight === c.key && 'font-display font-bold text-primary'
+                  )}
                 >
                   {c.render(row, i)}
-                </td>
+                </Td>
               ))}
             </tr>
           ))}
         </tbody>
-      </table>
+      </Table>
     </div>
   );
 }
@@ -346,14 +336,14 @@ export function SortableTable<T>({
 export function RankBubble({ rank }: { rank: number }) {
   const tone =
     rank === 1
-      ? 'bg-[#FFD700] text-black'
+      ? 'tier-gold'
       : rank === 2
-        ? 'bg-[#C0C0C0] text-black'
+        ? 'tier-silver'
         : rank === 3
-          ? 'bg-[#CD7F32] text-white'
-          : 'bg-gray-2 text-body dark:bg-meta-4 dark:text-bodydark';
+          ? 'tier-bronze'
+          : 'bg-surface-3 text-ink-2';
   return (
-    <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${tone}`}>
+    <span className={`inline-flex h-6 w-6 items-center justify-center rounded cut-corners-sm font-display text-xs font-bold num ${tone}`}>
       {rank}
     </span>
   );

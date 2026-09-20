@@ -10,8 +10,10 @@ import {
   Star, CalendarClock,
 } from 'lucide-react';
 import {
-  Badge, Button, Card, SectionCard, EmptyState, LoadingSpinner, Tabs, Input, Textarea, Select,
+  Badge, Button, Card, EmptyState, PageHeader, Skeleton, Tabs, Input, Textarea, Select,
 } from '@/components/ui';
+import { MatchScoreline, RankFrame, teamTag } from '@/components/game';
+import { cn } from '@/lib/helpers';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { api, avatarSrc } from '@/lib/api';
@@ -55,27 +57,32 @@ const RANK_TIERS: { level: number; label: string }[] = [
 const AVAILABILITY = ['casual', 'regular', 'competitive'];
 // Compact field (slot quantity): Input doesn't fit inline
 const numCls =
-  'w-20 px-2 py-1 text-sm rounded-md bg-gray-2 border border-stroke text-black focus:outline-none focus:border-primary dark:bg-meta-4 dark:border-strokedark dark:text-white';
+  'w-20 rounded border border-line-strong bg-surface-1 px-2 py-1 text-sm num text-ink-1 outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60';
 
 function MemberCard({ m, t, highlight = false }: any) {
   const u = m?.user || {};
   const name = u.displayName || u.username || '';
   return (
-    <Link href={`/players/${m.userId}`} className={`flex items-center gap-3 rounded-sm border bg-white p-3 shadow-default transition-colors dark:bg-boxdark ${highlight ? 'border-warning/40 hover:border-warning' : 'border-stroke hover:border-primary dark:border-strokedark'}`}>
-      {u.avatar ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={avatarSrc(u.avatar, 96)} alt={name} referrerPolicy="no-referrer" className="h-12 w-12 rounded-sm border border-stroke object-cover dark:border-strokedark" />
-      ) : (
-        <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-primary text-lg font-bold text-white">{name?.[0]?.toUpperCase() || 'J'}</div>
+    <Link
+      href={`/players/${m.userId}`}
+      className={cn(
+        'group flex items-center gap-3 rounded-lg border bg-surface-1 p-3 shadow-elev-1 transition-[transform,border-color,box-shadow] duration-base ease-out hover:-translate-y-0.5 hover:shadow-elev-2 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1',
+        highlight ? 'border-accent-gold/50 hover:border-accent-gold' : 'border-line-subtle hover:border-primary/40'
       )}
+    >
+      <RankFrame name={name} src={u.avatar ? avatarSrc(u.avatar, 96) : null} rank={u.gameRank} size={52} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          {m.isCaptain && <Crown size={14} className="shrink-0 text-warning" />}
-          <p className="truncate text-sm font-medium text-black dark:text-white">{name}</p>
+          {m.isCaptain && <Crown size={14} className="shrink-0 text-accent-gold" />}
+          <p className="truncate font-display text-sm font-bold text-ink-1">{name}</p>
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
-          {m.role && <Badge variant="purple" size="sm" className="gap-1"><RoleIcon role={m.role} size={14} /> {t('lane.' + m.role)}</Badge>}
-          {hasRankBadge(u.gameRank) && <span className="inline-flex items-center gap-1 text-xs text-body dark:text-bodydark"><RankBadge rank={u.gameRank} size={16} /> {u.gameRank}</span>}
+          {m.role && (
+            <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] font-semibold text-ink-2">
+              <RoleIcon role={m.role} size={12} /> {t('lane.' + m.role)}
+            </span>
+          )}
+          {u.gameRank && <Badge variant="tier-gold" size="sm">{u.gameRank}</Badge>}
         </div>
       </div>
     </Link>
@@ -84,21 +91,19 @@ function MemberCard({ m, t, highlight = false }: any) {
 
 function MatchRow({ m, t, onResult }: any) {
   const completed = m.status === 'completed';
-  const aWin = m.winnerTeamId && m.winnerTeamId === m.teamA?.id;
-  const bWin = m.winnerTeamId && m.winnerTeamId === m.teamB?.id;
   let dateLabel = '';
   if (m.scheduledAt) { const d = new Date(m.scheduledAt); if (!isNaN(d.getTime())) dateLabel = d.toLocaleDateString(); }
   return (
-    <div className="rounded-sm border border-stroke bg-white p-3 shadow-default dark:border-strokedark dark:bg-boxdark">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-sm">
-        <span className={`truncate text-right ${aWin ? 'font-bold text-warning' : 'text-black dark:text-white'}`}>{m.teamA?.name}</span>
-        <span className="shrink-0 px-2 font-semibold text-body dark:text-bodydark">{completed ? `${m.scoreA} - ${m.scoreB}` : 'vs'}</span>
-        <span className={`truncate text-left ${bWin ? 'font-bold text-warning' : 'text-black dark:text-white'}`}>{m.teamB?.name}</span>
-      </div>
-      <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+    <div className="space-y-2">
+      <MatchScoreline
+        match={{ ...m, teamA: m.teamA || { id: '', name: '?' }, teamB: m.teamB || { id: '', name: '?' } }}
+        href={m.id ? `/matches/${m.id}` : null}
+        compact
+      />
+      <div className="flex flex-wrap items-center justify-center gap-2 px-1">
         <Badge variant="purple" size="sm">{t('matchType.' + m.type)}</Badge>
         <Badge variant={completed ? 'green' : 'default'} size="sm">{t('matchStatus.' + m.status)}</Badge>
-        {dateLabel && <span className="text-xs text-bodydark2">{dateLabel}</span>}
+        {dateLabel && <span className="text-xs num text-ink-3">{dateLabel}</span>}
         {onResult && <Button variant="ghost" size="sm" onClick={onResult}>{t('admin.matches.setResult')}</Button>}
       </div>
     </div>
@@ -114,23 +119,18 @@ function ApplicationRow({ a, t, onDecide, onContact, acting }: any) {
   const rank = u.gameRank || a.rankLabel;
   const done = APP_TERMINAL.includes(a.status);
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-sm border border-stroke bg-white p-2.5 shadow-default dark:border-strokedark dark:bg-boxdark">
-      {u.avatar ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={avatarSrc(u.avatar, 64)} alt={name} referrerPolicy="no-referrer" className="h-8 w-8 shrink-0 rounded-full object-cover" />
-      ) : (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">{name[0]?.toUpperCase() || 'J'}</div>
-      )}
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-line-subtle bg-surface-2/40 p-2.5">
+      <RankFrame name={name} src={u.avatar ? avatarSrc(u.avatar, 64) : null} rank={rank} size={36} showBadge={false} />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <Link href={`/players/${a.userId}`} className="truncate text-sm font-medium text-black hover:text-primary dark:text-white">{name}</Link>
+          <Link href={`/players/${a.userId}`} className="truncate text-sm font-semibold text-ink-1 hover:text-primary">{name}</Link>
           {a.role && <Badge variant="purple" size="sm" className="gap-1"><RoleIcon role={a.role} size={13} /> {t('lane.' + a.role)}</Badge>}
           {a.availability && (
             <Badge variant="blue" size="sm" className="gap-1"><CalendarClock size={12} /> {t('recruitment.availability.' + a.availability)}</Badge>
           )}
           <Badge variant={APP_STATUS_VARIANT[a.status] ?? 'default'} size="sm">{t('recruitment.status.' + a.status)}</Badge>
         </div>
-        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-bodydark2">
+        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs num text-ink-3">
           {rank && (
             <span className="inline-flex items-center gap-1">
               {hasRankBadge(rank) && <RankBadge rank={rank} size={13} />}
@@ -139,7 +139,7 @@ function ApplicationRow({ a, t, onDecide, onContact, acting }: any) {
           )}
           {games > 0 && <span>{t('recruitment.candidateStats', { winRate: u.winRate ?? 0, games })}</span>}
         </div>
-        {a.message && <p className="truncate text-xs text-body dark:text-bodydark">{a.message}</p>}
+        {a.message && <p className="truncate text-xs text-ink-2">{a.message}</p>}
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
         {!done && a.status !== 'shortlisted' && (
@@ -356,17 +356,26 @@ export default function TeamDetailPage() {
   const substitutes = others.filter((m) => m.isSubstitute);
   const pendingCandidates = campaigns.reduce((n, c) => n + (c.applicationCount || 0), 0);
 
+  const backLink = (
+    <Link href="/teams" className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-2 transition-colors hover:text-ink-1"><ArrowLeft size={16} /> {t('teams.back')}</Link>
+  );
+
   if (loading) {
     return (
-      <div className="mx-auto flex min-h-[50vh] max-w-4xl items-center justify-center">
-        <LoadingSpinner size="lg" />
+      <div className="mx-auto max-w-5xl space-y-6" aria-busy="true">
+        {backLink}
+        <Skeleton className="h-52 w-full rounded-lg" />
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+        </div>
+        <Skeleton className="h-10 w-full" />
       </div>
     );
   }
   if (!team) {
     return (
-      <div className="mx-auto max-w-4xl space-y-6">
-        <Link href="/teams" className="inline-flex items-center gap-1.5 text-sm text-body hover:text-primary dark:text-bodydark"><ArrowLeft size={16} /> {t('teams.back')}</Link>
+      <div className="mx-auto max-w-5xl space-y-6">
+        {backLink}
         <EmptyState icon={<Users size={28} />} title={t('teams.detail.notFound')} />
       </div>
     );
@@ -388,60 +397,71 @@ export default function TeamDetailPage() {
     {
       id: 'recruitment',
       icon: Megaphone,
-      label: (
-        <span className="flex items-center gap-1.5">
-          {t('teams.tab.recruitment')}
-          {canManage && pendingCandidates > 0 && (
-            <span className="rounded-full bg-primary/10 px-1.5 text-[10px] text-primary">{pendingCandidates}</span>
-          )}
-        </span>
-      ),
+      label: t('teams.tab.recruitment'),
+      count: canManage && pendingCandidates > 0 ? pendingCandidates : undefined,
     },
     { id: 'matches', icon: Swords, label: t('teams.tab.matches') },
   ];
 
-  return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <Link href="/teams" className="inline-flex items-center gap-1.5 text-sm text-body hover:text-primary dark:text-bodydark"><ArrowLeft size={16} /> {t('teams.back')}</Link>
+  const titles = honours.filter((h) => h.placement === 1).length;
+  const crest = (
+    <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md cut-corners bg-surface-2 ring-1 ring-inset ring-line-subtle sm:h-20 sm:w-20">
+      {team.image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={team.image} alt={team.name} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+      ) : (
+        <span className="font-display text-xl font-bold text-ink-1">{teamTag(team)}</span>
+      )}
+    </div>
+  );
 
-      {/* Profile header */}
-      <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
-        <div className="h-24 w-24 shrink-0 overflow-hidden rounded-full border-2 border-stroke bg-gray-2 dark:border-strokedark dark:bg-meta-4 sm:h-28 sm:w-28">
-          {team.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={team.image} alt={team.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-primary text-3xl font-bold text-white">{team.name?.[0]?.toUpperCase() || 'T'}</div>
-          )}
-        </div>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold text-black dark:text-white sm:text-3xl">{team.name}</h1>
-            <Badge variant={team.type === 'esport' ? 'gold' : 'default'} size="sm">{t('admin.esport.badge.' + (team.type || 'community'))}</Badge>
-          </div>
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-body dark:text-bodydark">
-            <span className="inline-flex items-center gap-1.5"><Users size={14} className="text-primary" />{team.memberCount ?? members.length} {t('teams.members')}</span>
-            {foundedLabel && <span className="inline-flex items-center gap-1.5"><Calendar size={14} className="text-primary" />{t('teams.detail.founded')} {foundedLabel}</span>}
+  return (
+    <div className="mx-auto max-w-5xl space-y-6">
+      {backLink}
+
+      {/* Team header: banner art when the team has a crest. */}
+      <PageHeader
+        banner={team.image || undefined}
+        variant={team.type === 'esport' ? 'gold' : 'cyan'}
+        eyebrow={t('admin.esport.badge.' + (team.type || 'community'))}
+        title={
+          <span className="flex items-center gap-3">
+            {crest}
+            <span>{team.name}</span>
+          </span>
+        }
+        subtitle={
+          <span className="flex flex-wrap items-center gap-x-4 gap-y-1 num">
+            <span className="inline-flex items-center gap-1.5"><Users size={14} />{team.memberCount ?? members.length} {t('teams.members')}</span>
+            {foundedLabel && <span className="inline-flex items-center gap-1.5"><Calendar size={14} />{t('teams.detail.founded')} {foundedLabel}</span>}
             {stats.played > 0 && (
               <span className="inline-flex items-center gap-1.5">
-                <Swords size={14} className="text-primary" />
-                <span className="font-semibold text-success">{stats.wins}</span>
-                <span className="text-bodydark2">/</span>
-                <span className="font-semibold text-danger">{stats.losses}</span>
-                <span className="text-bodydark2">·</span>
+                <Swords size={14} />
+                <span className="font-semibold text-accent-green">{stats.wins}</span>
+                <span className="opacity-60">/</span>
+                <span className="font-semibold text-accent-red">{stats.losses}</span>
+                <span className="opacity-60">·</span>
                 {stats.winRate}%
               </span>
             )}
-            {honours.some((h) => h.placement === 1) && (
-              <span className="inline-flex items-center gap-1.5 text-warning"><Trophy size={14} />{honours.filter((h) => h.placement === 1).length}</span>
+            {titles > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-accent-gold"><Trophy size={14} />{titles}</span>
             )}
-          </div>
-          {team.description && <p className="mt-2 whitespace-pre-line text-sm text-body dark:text-bodydark">{team.description}</p>}
-        </div>
-      </Card>
+          </span>
+        }
+        breadcrumb={team.name}
+      />
+
+      {team.description && (
+        <Card className="!p-4 sm:!p-5">
+          <p className="whitespace-pre-line text-sm text-ink-2">{team.description}</p>
+        </Card>
+      )}
 
       {/* Tabs */}
-      <Tabs tabs={TABS} active={tab} onChange={(v: string) => setTab(v as typeof tab)} className="flex-wrap" />
+      <div className="overflow-x-auto overflow-y-hidden">
+        <Tabs variant="underline" tabs={TABS} active={tab} onChange={(v: string) => setTab(v as typeof tab)} className="min-w-max whitespace-nowrap" />
+      </div>
 
       {/* Overview tab */}
       {tab === 'overview' && <TeamOverview stats={teamStats} t={t} />}
@@ -467,9 +487,10 @@ export default function TeamDetailPage() {
                 {members.map((m) => {
                   const u = m.user || {}; const isCap = m.userId === captainId;
                   return (
-                    <div key={m.id ?? m.userId} className="flex flex-col gap-2 rounded-sm border border-stroke bg-white p-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:flex-row sm:items-center">
+                    <div key={m.id ?? m.userId} className="flex flex-col gap-2 rounded-lg border border-line-subtle bg-surface-1 p-2.5 shadow-elev-1 sm:flex-row sm:items-center">
                       <div className="min-w-0 flex-1 flex items-center gap-2">
-                        <span className="truncate text-sm text-black dark:text-white">{u.displayName || u.username}</span>
+                        <RankFrame name={u.displayName || u.username} src={u.avatar ? avatarSrc(u.avatar, 64) : null} rank={u.gameRank} size={32} showBadge={false} />
+                        <span className="truncate text-sm font-medium text-ink-1">{u.displayName || u.username}</span>
                         {isCap && <Badge variant="gold" size="sm" className="gap-1"><Crown size={11} /> {t('teams.detail.captain')}</Badge>}
                         {hasRankBadge(u.gameRank) && <RankBadge rank={u.gameRank} size={16} />}
                       </div>
@@ -489,19 +510,19 @@ export default function TeamDetailPage() {
             <div className="space-y-5">
               {captainMember && (
                 <div>
-                  <div className="flex items-center gap-2 mb-2.5"><Crown size={15} className="text-yellow-400" /><span className="text-xs font-semibold uppercase tracking-wide text-yellow-400">{t('teams.detail.captain')}</span></div>
-                  <MemberCard m={captainMember} t={t} highlight />
+                  <h3 className="eyebrow mb-2.5 flex items-center gap-1.5 !text-accent-gold"><Crown size={12} />{t('teams.detail.captain')}</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"><MemberCard m={captainMember} t={t} highlight /></div>
                 </div>
               )}
               {starters.length > 0 && (
                 <div>
-                  <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-body dark:text-bodydark">{t('teams.detail.starters')}</h3>
+                  <p className="eyebrow mb-2.5">{t('teams.detail.starters')}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{starters.map((m, i) => <MemberCard key={m.id ?? m.userId ?? i} m={m} t={t} />)}</div>
                 </div>
               )}
               {substitutes.length > 0 && (
                 <div>
-                  <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-body dark:text-bodydark">{t('teams.detail.substitutes')}</h3>
+                  <p className="eyebrow mb-2.5">{t('teams.detail.substitutes')}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{substitutes.map((m, i) => <MemberCard key={m.id ?? m.userId ?? i} m={m} t={t} />)}</div>
                 </div>
               )}
@@ -541,7 +562,7 @@ export default function TeamDetailPage() {
             campaigns.map((c) => {
               const applied = myAppliedIds.has(c.id);
               return (
-                <div key={c.id} className="rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
+                <Card key={c.id} className="!p-4" accent={c.status === 'open' ? 'green' : undefined}>
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <Megaphone size={16} className="text-primary" />
@@ -567,16 +588,16 @@ export default function TeamDetailPage() {
                         <Button size="sm" variant="danger" title={t('recruitment.close')} onClick={() => setPendingDel(c)}><Trash2 size={14} /></Button>
                       </div>
                     ) : c.status === 'open' && !isMember && myId ? (
-                      applied ? <span className="text-xs text-body dark:text-bodydark">{t('recruitment.applied')}</span> : <Button size="sm" onClick={() => openApply(c)}><Send size={14} /> {t('recruitment.apply')}</Button>
+                      applied ? <span className="text-xs text-ink-2">{t('recruitment.applied')}</span> : <Button size="sm" onClick={() => openApply(c)}><Send size={14} /> {t('recruitment.apply')}</Button>
                     ) : null}
                   </div>
-                  {c.message && <p className="mb-3 whitespace-pre-line text-sm text-body dark:text-bodydark">{c.message}</p>}
+                  {c.message && <p className="mb-3 whitespace-pre-line text-sm text-ink-2">{c.message}</p>}
 
                   {canManage && (
-                    <div className="border-t border-stroke pt-3 dark:border-strokedark">
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-body dark:text-bodydark">{t('recruitment.candidates')}{c.applicationCount ? ` (${c.applicationCount})` : ''}</p>
+                    <div className="border-t border-line-subtle pt-3">
+                      <p className="eyebrow mb-2">{t('recruitment.candidates')}{c.applicationCount ? ` (${c.applicationCount})` : ''}</p>
                       {(c.applications || []).length === 0 ? (
-                        <p className="text-sm text-bodydark2">{t('recruitment.noCandidates')}</p>
+                        <p className="text-sm text-ink-3">{t('recruitment.noCandidates')}</p>
                       ) : (
                         <div className="space-y-2">
                           {c.applications.map((a: any) => (
@@ -586,7 +607,7 @@ export default function TeamDetailPage() {
                       )}
                     </div>
                   )}
-                </div>
+                </Card>
               );
             })
           )}
@@ -598,7 +619,7 @@ export default function TeamDetailPage() {
         <div>
           {amCaptain && <div className="flex justify-end mb-4"><Button size="sm" onClick={() => setPlanOpen(true)}><Swords size={15} /> {t('teams.planMatch')}</Button></div>}
           {matches.length === 0 ? <EmptyState icon={<Swords size={28} />} title={t('teams.detail.noMatches')} /> : (
-            <div className="space-y-2">{matches.map((m, i) => <MatchRow key={m.id ?? i} m={m} t={t} onResult={amCaptain && m.type !== 'official' ? () => openResult(m) : undefined} />)}</div>
+            <div className="space-y-4">{matches.map((m, i) => <MatchRow key={m.id ?? i} m={m} t={t} onResult={amCaptain && m.type !== 'official' ? () => openResult(m) : undefined} />)}</div>
           )}
         </div>
       )}
@@ -607,13 +628,13 @@ export default function TeamDetailPage() {
       <Modal open={newOpen} onClose={() => setNewOpen(false)} closeLabel={t('common.close')} title={t('recruitment.newTitle')} icon={<Megaphone size={20} />} headerVariant="gradient">
         <form onSubmit={createCampaign} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-black dark:text-white">{t('recruitment.pickRoles')}</label>
-            <p className="mb-2 text-xs text-bodydark2">{t('recruitment.pickRolesHint')}</p>
+            <label className="mb-1 block text-sm font-medium text-ink-1">{t('recruitment.pickRoles')}</label>
+            <p className="mb-2 text-xs text-ink-3">{t('recruitment.pickRolesHint')}</p>
             <div className="space-y-2">
               {LANES.map((l) => (
                 <div key={l} className="flex items-center gap-2">
                   <RoleIcon role={l} size={16} />
-                  <span className="flex-1 text-sm text-body dark:text-bodydark">{t('lane.' + l)}</span>
+                  <span className="flex-1 text-sm text-ink-2">{t('lane.' + l)}</span>
                   <input type="number" min={0} max={20} value={newSlots[l] || 0} onChange={(e) => setNewSlots({ ...newSlots, [l]: Math.max(0, parseInt(e.target.value, 10) || 0) })} className={numCls} />
                 </div>
               ))}
@@ -651,7 +672,7 @@ export default function TeamDetailPage() {
       <Modal open={!!applyCampaign} onClose={() => setApplyCampaign(null)} closeLabel={t('common.close')} title={t('recruitment.applyTitle')} icon={<Send size={20} />} headerVariant="gradient">
         <form onSubmit={submitApply} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-black dark:text-white">{t('recruitment.applyRole')}</label>
+            <label className="block text-sm font-medium text-ink-1">{t('recruitment.applyRole')}</label>
             <RoleSelect value={applyForm.role} onChange={(v) => setApplyForm({ ...applyForm, role: v })} options={(applyCampaign?.slots || []).map((s: any) => s.role)} noneLabel={t('admin.esport.noRole')} labelFor={(l) => t('lane.' + l)} />
           </div>
           <Textarea label={t('recruitment.applyMessage')} value={applyForm.message} onChange={(e: any) => setApplyForm({ ...applyForm, message: e.target.value })} className="min-h-[80px]" />
@@ -685,7 +706,7 @@ export default function TeamDetailPage() {
       <Modal open={!!resultMatch} onClose={() => setResultMatch(null)} closeLabel={t('common.close')} title={t('admin.matches.result')} icon={<Check size={20} />} headerVariant="gradient">
         {resultMatch && (
           <form onSubmit={submitResult} className="space-y-4">
-            <p className="text-center text-sm text-black dark:text-white">{resultMatch.teamA?.name} <span className="text-bodydark2">vs</span> {resultMatch.teamB?.name}</p>
+            <p className="text-center text-sm font-semibold text-ink-1">{resultMatch.teamA?.name} <span className="text-ink-3">vs</span> {resultMatch.teamB?.name}</p>
             <div className="grid grid-cols-2 gap-3">
               <Input label={t('admin.matches.scoreA')} type="number" min={0} value={resultForm.scoreA} onChange={(e: any) => setResultForm({ ...resultForm, scoreA: Number(e.target.value) })} />
               <Input label={t('admin.matches.scoreB')} type="number" min={0} value={resultForm.scoreB} onChange={(e: any) => setResultForm({ ...resultForm, scoreB: Number(e.target.value) })} />

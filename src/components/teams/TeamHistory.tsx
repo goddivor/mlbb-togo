@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { History, ChevronLeft, ChevronRight, Award } from 'lucide-react';
-import { Badge, Button, EmptyState, LoadingSpinner } from '@/components/ui';
+import { Badge, Button, EmptyState, Skeleton } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useLangStore } from '@/store/useStore';
 import { useSelectedSeason } from '@/store/useSeasonStore';
@@ -14,18 +14,18 @@ const PAGE_SIZE = 10;
 export function HistoryRow({ m, t, lang }: { m: any; t: TFn; lang: string }) {
   const border = RESULT_BORDER[m.result] || RESULT_BORDER.D;
   return (
-    <div className={`flex items-center gap-3 rounded-sm border border-l-4 border-stroke bg-white p-3 shadow-default dark:border-strokedark dark:bg-boxdark ${border}`}>
+    <div className={`flex items-center gap-3 rounded-lg border border-l-2 border-line-subtle bg-surface-1 p-3 shadow-elev-1 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1 ${border}`}>
       <ResultBadge result={m.result} t={t} />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="text-sm font-bold tabular-nums text-black dark:text-white">{m.scoreFor} - {m.scoreAgainst}</span>
-          <span className="text-xs text-bodydark2">{t('teams.schedule.vs')}</span>
+          <span className="font-display text-base font-bold num text-ink-1">{m.scoreFor} - {m.scoreAgainst}</span>
+          <span className="text-xs text-ink-3">{t('teams.schedule.vs')}</span>
           <TeamChip team={m.opponent} size={6} />
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-body dark:text-bodydark">
+        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-ink-2">
           <Badge variant="purple" size="sm">{t('matchType.' + (m.type || 'friendly'))}</Badge>
           {m.season && <Badge variant="gold" size="sm" className="gap-1"><Award size={11} /> {m.season}</Badge>}
-          {m.date && <span className="text-bodydark2">{fmtDate(m.date, lang)}</span>}
+          {m.date && <span className="num text-ink-3">{fmtDate(m.date, lang)}</span>}
         </div>
       </div>
     </div>
@@ -57,7 +57,13 @@ export default function TeamHistory({ teamId, t }: { teamId: string; t: TFn }) {
     return () => { alive = false; };
   }, [teamId, page, seasonId, seasonsReady]);
 
-  if ((loading && !data) || !seasonsReady) return <LoadingSpinner size="lg" className="py-12" />;
+  if ((loading && !data) || !seasonsReady) {
+    return (
+      <div className="space-y-2" aria-busy="true">
+        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+      </div>
+    );
+  }
 
   const items: any[] = Array.isArray(data?.items) ? data.items : [];
   const total = data?.total ?? 0;
@@ -65,7 +71,7 @@ export default function TeamHistory({ teamId, t }: { teamId: string; t: TFn }) {
 
   const filterBar = (
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <span className="text-xs text-body dark:text-bodydark">
+      <span className="text-xs text-ink-2">
         {season ? t('teams.history.seasonFilter', { season: season.name }) : t('teams.history.allSeasons')}
       </span>
       <SeasonSwitcher variant="inline" />
@@ -84,7 +90,7 @@ export default function TeamHistory({ teamId, t }: { teamId: string; t: TFn }) {
   return (
     <div className="space-y-3">
       {filterBar}
-      <div className="flex items-center justify-between text-xs text-body dark:text-bodydark">
+      <div className="flex items-center justify-between text-xs num text-ink-2">
         <span>{t('teams.history.total', { n: total })}</span>
         <span>{t('teams.history.page', { page, pages })}</span>
       </div>
