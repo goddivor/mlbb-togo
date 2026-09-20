@@ -1,6 +1,7 @@
 'use client';
 
 import { useThemeStore } from '@/store/useStore';
+import { useT } from '@/lib/i18n';
 
 /**
  * TailAdmin pill switch (see partials/header.html) that toggles the global
@@ -9,6 +10,7 @@ import { useThemeStore } from '@/store/useStore';
  * The sun/moon glyphs are the exact inline SVGs from the TailAdmin header.
  */
 export default function DarkModeToggle() {
+  const t = useT();
   const theme = useThemeStore((s: any) => s.theme);
   const toggleTheme = useThemeStore((s: any) => s.toggleTheme);
   const dark = theme === 'dark';
@@ -16,13 +18,13 @@ export default function DarkModeToggle() {
   return (
     <label
       className={`relative m-0 block h-6 w-11 rounded-full transition-colors duration-base ${dark ? 'bg-primary' : 'bg-surface-3 ring-1 ring-inset ring-line-subtle'}`}
-      title="Dark mode"
+      title={dark ? t('theme.light') : t('theme.dark')}
     >
       <input
         type="checkbox"
         checked={dark}
         onChange={toggleTheme}
-        aria-label="Toggle dark mode"
+        aria-label={dark ? t('theme.light') : t('theme.dark')}
         className="absolute top-0 z-50 m-0 h-full w-full cursor-pointer opacity-0"
       />
       <span

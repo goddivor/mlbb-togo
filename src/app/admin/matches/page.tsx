@@ -379,10 +379,10 @@ export default function AdminMatchesPage() {
                     <div className="flex shrink-0 flex-col items-center px-2">
                       {m.status === 'completed' ? (
                         <span className="font-display text-2xl font-bold leading-none text-ink-1 num">
-                          {m.scoreA} <span className="text-xs font-semibold text-ink-3">VS</span> {m.scoreB}
+                          {m.scoreA} <span className="text-xs font-semibold uppercase text-ink-3">{t('admin.matches.vs')}</span> {m.scoreB}
                         </span>
                       ) : (
-                        <span className="font-display text-xs font-semibold text-ink-3">VS</span>
+                        <span className="font-display text-xs font-semibold uppercase text-ink-3">{t('admin.matches.vs')}</span>
                       )}
                     </div>
 

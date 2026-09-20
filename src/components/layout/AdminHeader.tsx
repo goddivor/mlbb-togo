@@ -59,7 +59,7 @@ export default function AdminHeader({ sidebarOpen, setSidebarOpen }: HeaderProps
     <AppHeader
       sidebarOpen={sidebarOpen}
       setSidebarOpen={setSidebarOpen}
-      homeHref="/admin/esport"
+      homeHref="/admin/league"
       searchLinks={ADMIN_LINKS}
       messagesHref="/admin/messages"
       profile={{
