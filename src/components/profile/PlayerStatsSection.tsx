@@ -26,7 +26,7 @@ import {
   Tooltip,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { Card, Badge, StatCard, Skeleton, SectionTitle, ProgressBar, StatTile } from '@/components/ui';
+import { Card, Badge, ProgressBar, SectionTitle, Skeleton, StatCard } from '@/components/ui';
 import { cn } from '@/lib/helpers';
 import RoleIcon from '@/components/game/RoleIcon';
 import { api, mlbbImg } from '@/lib/api';
@@ -57,9 +57,9 @@ const BADGES: Array<{ key: string; icon: React.ReactNode }> = [
 ];
 
 const RESULT_CLS: Record<string, string> = {
-  win: 'bg-accent-green/15 text-accent-green ring-1 ring-inset ring-accent-green/40',
-  loss: 'bg-accent-red/15 text-accent-red ring-1 ring-inset ring-accent-red/40',
-  draw: 'bg-surface-3 text-ink-2 ring-1 ring-inset ring-line-subtle',
+  win: 'bg-accent-green text-white',
+  loss: 'bg-accent-red text-white',
+  draw: 'bg-surface-3 text-ink-2',
 };
 
 function monthLabel(key: string, lang: string) {
@@ -77,11 +77,11 @@ function useChartTheme() {
   const dark = theme === 'dark';
   return {
     dark,
-    // Single-series lines: one hue each, stepped lighter on the dark surface.
-    blue: dark ? '#00d4ff' : '#0891b2',
-    amber: dark ? '#f2b544' : '#b7791f',
-    grid: dark ? 'rgba(146,160,196,0.12)' : 'rgba(15,23,42,0.1)',
-    tick: dark ? '#a6b0c6' : '#4b5567',
+    // Single-series lines: the design-system accents, readable on both surfaces.
+    blue: dark ? '#22d3ee' : '#0891b2',
+    amber: dark ? '#f2b544' : '#b45309',
+    grid: dark ? 'rgba(174,183,192,0.12)' : 'rgba(100,116,139,0.15)',
+    tick: dark ? '#AEB7C0' : '#64748B',
   };
 }
 
@@ -113,7 +113,7 @@ function TrendChart({
           pointRadius: 4,
           pointHoverRadius: 6,
           pointBackgroundColor: color,
-          pointBorderColor: th.dark ? '#111726' : '#ffffff',
+          pointBorderColor: th.dark ? '#0f1524' : '#ffffff',
           pointBorderWidth: 2,
           fill: true,
           tension: 0.3,
@@ -176,17 +176,10 @@ export default function PlayerStatsSection({ userId }: { userId: string }) {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 rounded-lg" />
-          ))}
-        </div>
-        <Skeleton className="h-28 rounded-lg" />
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <Skeleton className="h-64 rounded-lg" />
-          <Skeleton className="h-64 rounded-lg" />
-        </div>
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4" aria-busy="true">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full rounded-lg" />
+        ))}
       </div>
     );
   }
@@ -198,10 +191,10 @@ export default function PlayerStatsSection({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-6">
-      <SectionTitle size="lg" title={t('stats.title')} description={t('stats.subtitle')} />
+      <SectionTitle eyebrow={t('nav.section.esport')} title={t('stats.title')} description={t('stats.subtitle')} />
 
       {!hasGames ? (
-        <Card className="py-10 text-center text-sm text-ink-3">
+        <Card className="py-8 text-center text-sm text-ink-3">
           {t('stats.none')}
         </Card>
       ) : (
@@ -213,14 +206,13 @@ export default function PlayerStatsSection({ userId }: { userId: string }) {
               value={stats.games}
               label={t('stats.games')}
               hint={t('stats.record', { wins: stats.wins, losses: stats.losses })}
-              accent="violet"
               sparkline={byMonth.length >= 2 ? byMonth.map((p) => p.games) : undefined}
             />
             <StatCard
               icon={<Trophy size={18} />}
               value={`${stats.winRate}%`}
               label={t('stats.winRate')}
-              accent={stats.winRate >= 50 ? 'cyan' : 'red'}
+              accent="green"
               sparkline={byMonth.length >= 2 ? byMonth.map((p) => p.winRate) : undefined}
             />
             <StatCard
@@ -241,35 +233,34 @@ export default function PlayerStatsSection({ userId }: { userId: string }) {
                 d: stats.avgDeaths,
                 a: stats.avgAssists,
               })}
-              accent="green"
+              accent="violet"
               sparkline={byMonth.length >= 2 ? byMonth.map((p) => p.kda) : undefined}
             />
           </div>
 
           {/* Form and streaks */}
           <Card>
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-8">
+            <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
               <div className="flex-1">
                 <SectionTitle size="sm" title={t('stats.form')} description={t('stats.formHint')} />
-                <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                <div className="flex flex-wrap gap-1.5 mt-3">
                   {(stats.form || []).map((r: string, i: number) => (
                     <span
                       key={i}
                       title={t(`stats.result.${r}`)}
-                      className={cn('inline-flex h-7 w-7 items-center justify-center rounded cut-corners-sm font-display text-xs font-bold', RESULT_CLS[r] || RESULT_CLS.draw)}
+                      className={cn('inline-flex h-7 w-7 items-center justify-center rounded cut-corners-sm text-xs font-bold', RESULT_CLS[r] || RESULT_CLS.draw)}
                     >
                       {t(`stats.letter.${r}`)}
                     </span>
                   ))}
-                  <span className="ml-2 self-center text-sm font-semibold text-ink-2 num">{stats.formWinRate}%</span>
+                  <span className="ml-2 self-center font-display text-sm font-bold num text-ink-1">{stats.formWinRate}%</span>
                 </div>
               </div>
-              <div className="flex gap-8 border-t border-line-subtle pt-4 md:border-l md:border-t-0 md:pl-8 md:pt-0">
-                <StatTile
-                  label={t('stats.streak')}
-                  accent={streak > 0 ? 'green' : streak < 0 ? 'red' : undefined}
-                  value={
-                    streak === 1
+              <div className="flex gap-8">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('stats.streak')}</p>
+                  <p className={cn('font-display text-xl font-bold num', streak > 0 ? 'text-accent-green' : streak < 0 ? 'text-accent-red' : 'text-ink-1')}>
+                    {streak === 1
                       ? t('stats.winOne')
                       : streak > 1
                         ? t('stats.winsShort', { n: streak })
@@ -277,18 +268,15 @@ export default function PlayerStatsSection({ userId }: { userId: string }) {
                           ? t('stats.lossOne')
                           : streak < -1
                             ? t('stats.lossesShort', { n: -streak })
-                            : '0'
-                  }
-                />
-                <StatTile
-                  label={t('stats.bestStreak')}
-                  accent="gold"
-                  value={
-                    <span className="inline-flex items-center gap-1">
-                      <Flame size={16} /> {stats.bestStreak}
-                    </span>
-                  }
-                />
+                            : '0'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('stats.bestStreak')}</p>
+                  <p className="inline-flex items-center gap-1 font-display text-xl font-bold num text-ink-1">
+                    <Flame size={18} className="text-accent-gold" /> {stats.bestStreak}
+                  </p>
+                </div>
               </div>
             </div>
           </Card>
@@ -341,7 +329,7 @@ export default function PlayerStatsSection({ userId }: { userId: string }) {
                   {stats.bySeason.map((s: any) => (
                     <li key={s.key} className="flex items-center justify-between gap-3 py-2 text-sm">
                       <span className="truncate font-medium text-ink-1">{s.label || t('stats.noSeason')}</span>
-                      <span className="shrink-0 text-ink-2 num">
+                      <span className="shrink-0 num text-ink-2">
                         {t('stats.gamesCount', { n: s.games })} ·{' '}
                         <span className={cn('font-semibold', s.winRate >= 50 ? 'text-accent-green' : 'text-accent-red')}>{s.winRate}%</span>
                       </span>
@@ -356,7 +344,7 @@ export default function PlayerStatsSection({ userId }: { userId: string }) {
                 {stats.heroes.slice(0, 8).map((h: any) => (
                   <div
                     key={h.key}
-                    className="flex items-center gap-3 overflow-hidden rounded border border-line-subtle bg-surface-2/60"
+                    className="flex items-center gap-3 rounded border border-line-subtle bg-surface-2/40 p-2"
                   >
                     {h.image ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -364,19 +352,19 @@ export default function PlayerStatsSection({ userId }: { userId: string }) {
                         src={mlbbImg(h.image, 80)}
                         alt={h.key}
                         referrerPolicy="no-referrer"
-                        className="h-11 w-11 shrink-0 object-cover"
+                        className="h-10 w-10 shrink-0 rounded cut-corners-sm bg-surface-3 object-cover"
                       />
                     ) : (
-                      <div className="h-11 w-11 shrink-0 bg-surface-3" />
+                      <div className="h-10 w-10 shrink-0 rounded cut-corners-sm bg-surface-3" />
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-ink-1">{h.key}</p>
-                      <p className="text-xs text-ink-2 num">
+                      <p className="text-xs num text-ink-2">
                         {t('stats.gamesCount', { n: h.games })} · KDA {h.kda}
                         {h.mvp > 0 && ` · ${h.mvp} MVP`}
                       </p>
                     </div>
-                    <span className={cn('shrink-0 pr-3 font-display text-sm font-bold num', h.winRate >= 50 ? 'text-accent-green' : 'text-accent-red')}>
+                    <span className={cn('shrink-0 font-display text-sm font-bold num', h.winRate >= 50 ? 'text-accent-green' : 'text-accent-red')}>
                       {h.winRate}%
                     </span>
                   </div>
@@ -395,7 +383,7 @@ export default function PlayerStatsSection({ userId }: { userId: string }) {
                         <span className="inline-flex items-center gap-2 font-medium text-ink-1">
                           <RoleIcon role={r.key} size={16} /> {t(`lane.${r.key}`)}
                         </span>
-                        <span className="text-ink-2 num">
+                        <span className="num text-ink-2">
                           {t('stats.gamesCount', { n: r.games })} ·{' '}
                           <span className={cn('font-semibold', r.winRate >= 50 ? 'text-accent-green' : 'text-accent-red')}>{r.winRate}%</span>
                         </span>
@@ -417,7 +405,7 @@ export default function PlayerStatsSection({ userId }: { userId: string }) {
           title={t('stats.badges')}
           className="mb-4"
           action={
-            <Badge variant="tier-gold" size="sm">
+            <Badge variant="gold" size="sm">
               {t('stats.badgesCount', { n: earned.size, total: BADGES.length })}
             </Badge>
           }
@@ -434,13 +422,13 @@ export default function PlayerStatsSection({ userId }: { userId: string }) {
                 title={t(`stats.badge.${b.key}.desc`)}
                 className={cn(
                   'flex items-start gap-3 rounded border p-3',
-                  ok ? 'border-accent-gold/40 bg-accent-gold/5' : 'border-line-subtle bg-surface-2/60 opacity-60',
+                  ok ? 'tier-gold' : 'border-line-subtle bg-surface-2/40 opacity-60'
                 )}
               >
                 <div
                   className={cn(
                     'flex h-9 w-9 shrink-0 items-center justify-center rounded cut-corners-sm',
-                    ok ? 'bg-accent-gold/15 text-accent-gold' : 'bg-surface-3 text-ink-3',
+                    ok ? 'bg-accent-gold/15 text-accent-gold' : 'bg-surface-3 text-ink-3'
                   )}
                 >
                   {ok ? b.icon : <Lock size={16} />}

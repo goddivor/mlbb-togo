@@ -6,7 +6,8 @@ import {
   Activity, ArrowUpRight, Award, Bell, CalendarDays, Crown, Flame, Gamepad2,
   Megaphone, MessageSquare, Swords, Trophy, UserPlus, Users, Zap,
 } from 'lucide-react';
-import { Badge } from '@/components/ui';
+import { Badge, ProgressBar, SectionTitle, Skeleton, StatTile } from '@/components/ui';
+import { cn } from '@/lib/helpers';
 import { avatarSrc } from '@/lib/api';
 import { notifContent, useT } from '@/lib/i18n';
 import { useLangStore } from '@/store/useStore';
@@ -14,10 +15,6 @@ import { useLangStore } from '@/store/useStore';
 /* ------------------------------------------------------------------ */
 /* Shared helpers                                                      */
 /* ------------------------------------------------------------------ */
-
-function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
-}
 
 function useLocale() {
   const lang = useLangStore((s: any) => s.lang);
@@ -31,6 +28,9 @@ function sameDay(a: Date, b: Date) {
     a.getDate() === b.getDate()
   );
 }
+
+const widgetShell =
+  'flex flex-col overflow-hidden rounded-lg border border-line-subtle bg-surface-1 shadow-elev-1 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1';
 
 /** Widget shell: title row with optional link, then content. */
 export function Widget({
@@ -51,21 +51,21 @@ export function Widget({
   bodyClassName?: string;
 }) {
   return (
-    <section
-      className={cn(
-        'flex flex-col rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark',
-        className,
-      )}
-    >
-      <header className="flex items-center justify-between gap-3 border-b border-stroke px-5 py-4 dark:border-strokedark">
-        <h3 className="flex min-w-0 items-center gap-2 truncate text-sm font-semibold uppercase tracking-wide text-black dark:text-white">
-          {icon && <span className="text-primary">{icon}</span>}
-          {title}
-        </h3>
+    <section className={cn(widgetShell, className)}>
+      <header className="flex items-center justify-between gap-3 border-b border-line-subtle px-5 py-3.5">
+        <SectionTitle
+          size="sm"
+          title={
+            <span className="flex items-center gap-2">
+              {icon && <span className="text-primary">{icon}</span>}
+              {title}
+            </span>
+          }
+        />
         {href && (
           <Link
             href={href}
-            className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-medium text-primary hover:underline"
+            className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-semibold text-primary transition-colors hover:text-ink-1"
           >
             {hrefLabel} <ArrowUpRight size={12} />
           </Link>
@@ -78,28 +78,22 @@ export function Widget({
 
 /** Grey placeholder block used by the skeleton loaders. */
 export function Bone({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse rounded bg-gray dark:bg-meta-4', className)} />;
+  return <Skeleton className={className} />;
 }
 
 export function WidgetSkeleton({ rows = 4, className }: { rows?: number; className?: string }) {
   return (
-    <section
-      className={cn(
-        'rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark',
-        className,
-      )}
-      aria-busy="true"
-    >
-      <div className="border-b border-stroke px-5 py-4 dark:border-strokedark">
-        <Bone className="h-4 w-32" />
+    <section className={cn(widgetShell, className)} aria-busy="true">
+      <div className="border-b border-line-subtle px-5 py-4">
+        <Skeleton className="h-4 w-32" />
       </div>
       <div className="space-y-3 p-5">
         {Array.from({ length: rows }).map((_, i) => (
           <div key={i} className="flex items-center gap-3">
-            <Bone className="h-9 w-9 shrink-0 rounded-full" />
+            <Skeleton circle className="h-9 w-9 shrink-0" />
             <div className="flex-1 space-y-2">
-              <Bone className="h-3 w-3/4" />
-              <Bone className="h-3 w-1/2" />
+              <Skeleton className="h-3 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
             </div>
           </div>
         ))}
@@ -112,10 +106,10 @@ export function WidgetSkeleton({ rows = 4, className }: { rows?: number; classNa
 function WidgetEmpty({ icon, text, action }: { icon: ReactNode; text: string; action?: ReactNode }) {
   return (
     <div className="flex h-full min-h-[120px] flex-col items-center justify-center gap-2 py-4 text-center">
-      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray text-body dark:bg-meta-4 dark:text-bodydark">
+      <span className="flex h-10 w-10 items-center justify-center rounded cut-corners-sm bg-surface-2 text-ink-3 ring-1 ring-inset ring-line-subtle">
         {icon}
       </span>
-      <p className="max-w-xs text-sm text-body dark:text-bodydark">{text}</p>
+      <p className="max-w-xs text-sm text-ink-2">{text}</p>
       {action}
     </div>
   );
@@ -132,14 +126,14 @@ function TeamAvatar({ team, size = 32 }: { team: any; size?: number }) {
         alt={name}
         referrerPolicy="no-referrer"
         style={{ width: size, height: size }}
-        className="shrink-0 rounded-full border border-stroke object-cover dark:border-strokedark"
+        className="shrink-0 rounded cut-corners-sm object-cover ring-1 ring-inset ring-line-subtle"
       />
     );
   }
   return (
     <span
       style={{ width: size, height: size }}
-      className="flex shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary"
+      className="flex shrink-0 items-center justify-center rounded cut-corners-sm bg-surface-2 text-xs font-bold text-ink-2 ring-1 ring-inset ring-line-subtle"
     >
       {name[0]?.toUpperCase() || '?'}
     </span>
@@ -147,9 +141,9 @@ function TeamAvatar({ team, size = 32 }: { team: any; size?: number }) {
 }
 
 const RESULT_STYLE: Record<string, { badge: string; bar: string }> = {
-  win: { badge: 'green', bar: 'bg-success' },
-  loss: { badge: 'red', bar: 'bg-danger' },
-  draw: { badge: 'default', bar: 'bg-body' },
+  win: { badge: 'green', bar: 'bg-accent-green' },
+  loss: { badge: 'red', bar: 'bg-accent-red' },
+  draw: { badge: 'default', bar: 'bg-ink-3' },
 };
 
 /* ------------------------------------------------------------------ */
@@ -167,61 +161,66 @@ export function QuickStatsWidget({ stats, className }: { stats: any; className?:
       : streak < 0
         ? t(abs === 1 ? 'dashboard.quick.streakLossOne' : 'dashboard.quick.streakLoss', { n: abs })
         : t('dashboard.quick.streakNone');
-  const tiles = [
+  const tiles: Array<{ key: string; icon: ReactNode; value: ReactNode; label: string; hint: string; accent: 'cyan' | 'violet' | 'gold' | 'red' | 'green' }> = [
     {
       key: 'games',
-      icon: <Swords size={18} />,
+      icon: <Swords size={16} />,
       value: s.games ?? 0,
       label: t('dashboard.quick.games'),
       hint: t('dashboard.quick.record', { wins: s.wins ?? 0, losses: s.losses ?? 0 }),
+      accent: 'cyan',
     },
     {
       key: 'winRate',
-      icon: <Trophy size={18} />,
+      icon: <Trophy size={16} />,
       value: `${s.winRate ?? 0}%`,
       label: t('dashboard.quick.winRate'),
       hint: `${t('dashboard.quick.kda')} ${s.kda ?? 0}`,
+      accent: 'green',
     },
     {
       key: 'streak',
-      icon: <Flame size={18} />,
+      icon: <Flame size={16} />,
       value: streak > 0 ? `+${streak}` : String(streak),
       label: t('dashboard.quick.streak'),
       hint: streakLabel,
+      accent: streak < 0 ? 'red' : 'violet',
     },
     {
       key: 'mvp',
-      icon: <Crown size={18} />,
+      icon: <Crown size={16} />,
       value: s.mvpCount ?? 0,
       label: t('dashboard.quick.mvp'),
       hint: `${t('dashboard.stats.bestStreak')} ${s.bestStreak ?? 0}`,
+      accent: 'gold',
     },
   ];
   const form: string[] = Array.isArray(s.form) ? s.form : [];
 
   return (
     <Widget title={t('dashboard.widgets.quickStats')} icon={<Zap size={16} />} className={className}>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {tiles.map((tile) => (
-          <div key={tile.key} className="rounded-sm border border-stroke p-4 dark:border-strokedark">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-meta-2 text-primary dark:bg-meta-4">
-              {tile.icon}
-            </span>
-            <p className="mt-3 text-2xl font-bold text-black dark:text-white">{tile.value}</p>
-            <p className="text-xs font-medium text-body dark:text-bodydark">{tile.label}</p>
-            <p className="mt-1 truncate text-[11px] text-bodydark2">{tile.hint}</p>
+          <div key={tile.key} className="rounded border border-line-subtle bg-surface-2/40 p-3.5">
+            <div className="flex items-center justify-between gap-2">
+              <StatTile label={tile.label} value={tile.value} accent={tile.accent} />
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded cut-corners-sm bg-surface-3 text-ink-2">
+                {tile.icon}
+              </span>
+            </div>
+            <p className="mt-2 truncate text-[11px] text-ink-3">{tile.hint}</p>
           </div>
         ))}
       </div>
       {form.length > 0 && (
         <div className="mt-4 flex items-center gap-2">
-          <span className="text-xs text-body dark:text-bodydark">{t('dashboard.quick.form')}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('dashboard.quick.form')}</span>
           <div className="flex gap-1">
             {form.map((r, i) => (
               <span
                 key={i}
                 title={t(`dashboard.matches.result.${r}`)}
-                className={cn('h-2.5 w-4 rounded-sm', RESULT_STYLE[r]?.bar || 'bg-body')}
+                className={cn('h-2.5 w-4 rounded-sm', RESULT_STYLE[r]?.bar || 'bg-ink-3')}
               />
             ))}
           </div>
@@ -236,21 +235,21 @@ export function QuickStatsWidget({ stats, className }: { stats: any; className?:
 /* ------------------------------------------------------------------ */
 
 const ACTIVITY_ICON: Record<string, ReactNode> = {
-  match: <Swords size={14} />,
-  draft_registration: <Gamepad2 size={14} />,
-  friend_accepted: <UserPlus size={14} />,
-  badge: <Award size={14} />,
-  post: <MessageSquare size={14} />,
-  comment: <MessageSquare size={14} />,
+  match: <Swords size={13} />,
+  draft_registration: <Gamepad2 size={13} />,
+  friend_accepted: <UserPlus size={13} />,
+  badge: <Award size={13} />,
+  post: <MessageSquare size={13} />,
+  comment: <MessageSquare size={13} />,
 };
 
 const ACTIVITY_TONE: Record<string, string> = {
-  match: 'bg-primary/10 text-primary',
-  draft_registration: 'bg-meta-5/10 text-meta-5',
-  friend_accepted: 'bg-success/10 text-success',
-  badge: 'bg-warning/10 text-warning',
-  post: 'bg-meta-6/10 text-meta-6',
-  comment: 'bg-meta-6/10 text-meta-6',
+  match: 'bg-accent-cyan/10 text-accent-cyan',
+  draft_registration: 'bg-accent-violet/10 text-accent-violet',
+  friend_accepted: 'bg-accent-green/10 text-accent-green',
+  badge: 'bg-accent-gold/15 text-accent-gold',
+  post: 'bg-accent-violet/10 text-accent-violet',
+  comment: 'bg-accent-violet/10 text-accent-violet',
 };
 
 function useActivityText() {
@@ -298,27 +297,27 @@ export function ActivityWidget({ events, className }: { events: any[]; className
       {list.length === 0 ? (
         <WidgetEmpty icon={<Activity size={18} />} text={t('dashboard.activity.empty')} />
       ) : (
-        <ol className="relative space-y-4 border-l border-stroke pl-5 dark:border-strokedark">
+        <ol className="relative space-y-4 border-l border-line-subtle pl-5">
           {list.map((e) => {
             const { title, detail } = text(e);
             const inner = (
               <>
                 <span
                   className={cn(
-                    'absolute -left-[31px] top-0.5 flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-white dark:ring-boxdark',
-                    ACTIVITY_TONE[e.type] || 'bg-gray text-body',
+                    'absolute -left-[31px] top-0.5 flex h-6 w-6 items-center justify-center rounded cut-corners-sm ring-4 ring-surface-1',
+                    ACTIVITY_TONE[e.type] || 'bg-surface-3 text-ink-2',
                   )}
                 >
-                  {ACTIVITY_ICON[e.type] || <Activity size={14} />}
+                  {ACTIVITY_ICON[e.type] || <Activity size={13} />}
                 </span>
-                <p className="text-sm font-medium text-black dark:text-white">
+                <p className="text-sm font-medium text-ink-1">
                   {title}
                   {e.type === 'match' && e.data?.isMvp && (
                     <Badge variant="gold" size="sm" className="ml-2">{t('dashboard.activity.match.mvp')}</Badge>
                   )}
                 </p>
-                {detail && <p className="text-xs text-body dark:text-bodydark">{detail}</p>}
-                <time className="text-[11px] text-bodydark2" dateTime={e.date}>
+                {detail && <p className="text-xs text-ink-2">{detail}</p>}
+                <time className="text-[11px] num text-ink-3" dateTime={e.date}>
                   {fmt.format(new Date(e.date))}
                 </time>
               </>
@@ -326,7 +325,7 @@ export function ActivityWidget({ events, className }: { events: any[]; className
             return (
               <li key={e.id} className="relative">
                 {e.link ? (
-                  <Link href={e.link} className="block rounded-sm transition-colors hover:text-primary">
+                  <Link href={e.link} className="block rounded transition-colors hover:text-primary">
                     {inner}
                   </Link>
                 ) : (
@@ -364,21 +363,19 @@ export function RankWidget({ rank, className }: { rank: any; className?: string 
       {position ? (
         <div className="flex h-full flex-col justify-between gap-4">
           <div className="flex items-end gap-3">
-            <span className="text-5xl font-black leading-none text-primary">#{position}</span>
+            <span className="font-display text-6xl font-bold leading-none tracking-tight2 num text-primary">#{position}</span>
             <div className="pb-1">
-              <p className="text-xs uppercase tracking-wide text-bodydark2">{t('dashboard.rank.position')}</p>
-              <p className="text-sm text-body dark:text-bodydark">{t('dashboard.rank.of', { total })}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('dashboard.rank.position')}</p>
+              <p className="text-sm text-ink-2">{t('dashboard.rank.of', { total })}</p>
             </div>
           </div>
           <div>
-            <div className="mb-1 flex items-center justify-between text-xs text-body dark:text-bodydark">
+            <div className="mb-1.5 flex items-center justify-between text-xs text-ink-2">
               <span>{t('dashboard.rank.metric.winRate')}</span>
-              <span className="font-semibold text-black dark:text-white">{rank.value ?? 0}%</span>
+              <span className="font-semibold num text-ink-1">{rank.value ?? 0}%</span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-gray dark:bg-meta-4">
-              <div className="h-full rounded-full bg-primary" style={{ width: `${percentile}%` }} />
-            </div>
-            <p className="mt-1 text-[11px] text-bodydark2">Top {topPct}%</p>
+            <ProgressBar value={percentile} label={t('dashboard.rank.position')} />
+            <p className="mt-1.5 text-[11px] num text-ink-3">Top {topPct}%</p>
           </div>
         </div>
       ) : (
@@ -423,27 +420,27 @@ export function LastMatchesWidget({
           <WidgetEmpty icon={<Swords size={18} />} text={t('dashboard.matches.empty')} />
         </div>
       ) : (
-        <ul className="divide-y divide-stroke dark:divide-strokedark">
+        <ul className="divide-y divide-line-subtle">
           {list.map((m) => {
             const style = RESULT_STYLE[m.result] || RESULT_STYLE.draw;
             return (
-              <li key={m.id || m.matchId} className="flex items-center gap-3 px-5 py-3">
-                <span className={cn('h-8 w-1 shrink-0 rounded-full', style.bar)} />
+              <li key={m.id || m.matchId} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-surface-2/60">
+                <span className={cn('h-8 w-1 shrink-0 -skew-x-12 rounded-sm', style.bar)} />
                 <TeamAvatar team={m.opponent} size={32} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-black dark:text-white">
-                    <span className="text-bodydark2">{t('dashboard.matches.vs')}</span> {m.opponent?.name ?? '?'}
+                  <p className="truncate text-sm font-medium text-ink-1">
+                    <span className="text-ink-3">{t('dashboard.matches.vs')}</span> {m.opponent?.name ?? '?'}
                   </p>
-                  <p className="truncate text-xs text-body dark:text-bodydark">
+                  <p className="truncate text-xs num text-ink-2">
                     {m.hero || '—'} · {m.kills}/{m.deaths}/{m.assists}
-                    {m.isMvp && <span className="ml-1 font-semibold text-warning">MVP</span>}
+                    {m.isMvp && <span className="ml-1 font-semibold text-accent-gold">MVP</span>}
                   </p>
                 </div>
                 <div className="text-right">
                   <Badge variant={style.badge} size="sm">
                     {m.scoreFor}-{m.scoreAgainst}
                   </Badge>
-                  <p className="mt-0.5 text-[11px] text-bodydark2">{fmt.format(new Date(m.date))}</p>
+                  <p className="mt-0.5 text-[11px] num text-ink-3">{fmt.format(new Date(m.date))}</p>
                 </div>
               </li>
             );
@@ -554,7 +551,7 @@ export function UpcomingWidget({ items, className }: { items: any[]; className?:
           icon={<CalendarDays size={18} />}
           text={t('dashboard.upcoming.empty')}
           action={
-            <Link href="/draft" className="text-xs font-medium text-primary hover:underline">
+            <Link href="/draft" className="text-xs font-semibold text-primary hover:underline">
               {t('header.draft')}
             </Link>
           }
@@ -563,21 +560,21 @@ export function UpcomingWidget({ items, className }: { items: any[]; className?:
         <div className="space-y-5">
           {groups.map((g) => (
             <div key={g.key}>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-bodydark2">{g.label}</p>
+              <p className="eyebrow mb-2.5">{g.label}</p>
               <ul className="space-y-2">
                 {g.items.map((u) => {
                   const { title, detail } = text(u);
                   const date = u.date ? new Date(u.date) : null;
                   const row = (
-                    <div className="flex items-center gap-3 rounded-sm border border-stroke px-3 py-2.5 transition-colors hover:border-primary dark:border-strokedark">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <div className="flex items-center gap-3 rounded border border-line-subtle bg-surface-2/40 px-3 py-2.5 transition-colors hover:border-primary/50">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded cut-corners-sm bg-accent-cyan/10 text-accent-cyan">
                         {UPCOMING_ICON[u.kind] || <CalendarDays size={14} />}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-black dark:text-white">{title}</p>
-                        {detail && <p className="truncate text-xs text-body dark:text-bodydark">{detail}</p>}
+                        <p className="truncate text-sm font-medium text-ink-1">{title}</p>
+                        {detail && <p className="truncate text-xs text-ink-2">{detail}</p>}
                       </div>
-                      <span className="shrink-0 text-xs font-semibold text-black dark:text-white">
+                      <span className="shrink-0 font-display text-sm font-bold num text-ink-1">
                         {/* Tournament start dates carry no time of day. */}
                         {date && u.kind !== 'tournament' ? timeFmt.format(date) : '—'}
                       </span>
@@ -628,7 +625,7 @@ export function NotificationsWidget({
       bodyClassName="p-0"
     >
       <div className="flex items-center gap-2 px-5 py-3">
-        <Badge variant={unread > 0 ? 'red' : 'green'} size="sm">
+        <Badge variant={unread > 0 ? 'red' : 'green'} size="sm" dot>
           {unread > 0 ? t('dashboard.notifications.unread', { n: unread }) : t('dashboard.notifications.allRead')}
         </Badge>
       </div>
@@ -637,7 +634,7 @@ export function NotificationsWidget({
           <WidgetEmpty icon={<Bell size={18} />} text={t('dashboard.notifications.empty')} />
         </div>
       ) : (
-        <ul className="divide-y divide-stroke border-t border-stroke dark:divide-strokedark dark:border-strokedark">
+        <ul className="divide-y divide-line-subtle border-t border-line-subtle">
           {list.map((n) => {
             const { title, message } = notifContent(n, t);
             return (
@@ -646,20 +643,20 @@ export function NotificationsWidget({
                   type="button"
                   onClick={() => onOpen(n)}
                   className={cn(
-                    'flex w-full items-start gap-3 px-5 py-3 text-left transition-colors hover:bg-gray dark:hover:bg-meta-4',
+                    'flex w-full items-start gap-3 px-5 py-3 text-left transition-colors hover:bg-surface-2/60',
                     !n.read && 'bg-primary/5',
                   )}
                 >
                   <span
                     className={cn(
                       'mt-1.5 h-2 w-2 shrink-0 rounded-full',
-                      n.read ? 'bg-stroke dark:bg-strokedark' : 'bg-primary',
+                      n.read ? 'bg-line-strong' : 'bg-primary shadow-glow-cyan',
                     )}
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-black dark:text-white">{title}</span>
-                    <span className="block truncate text-xs text-body dark:text-bodydark">{message}</span>
-                    <span className="block text-[11px] text-bodydark2">{fmt.format(new Date(n.createdAt))}</span>
+                    <span className="block truncate text-sm font-medium text-ink-1">{title}</span>
+                    <span className="block truncate text-xs text-ink-2">{message}</span>
+                    <span className="block text-[11px] num text-ink-3">{fmt.format(new Date(n.createdAt))}</span>
                   </span>
                 </button>
               </li>
@@ -678,10 +675,10 @@ export function NotificationsWidget({
 export function ShortcutsWidget({ className }: { className?: string }) {
   const t = useT();
   const items = [
-    { href: '/draft', icon: <Gamepad2 size={20} />, label: t('dashboard.shortcuts.draft'), desc: t('dashboard.shortcuts.draftDesc') },
-    { href: '/tournaments', icon: <Trophy size={20} />, label: t('dashboard.shortcuts.tournaments'), desc: t('dashboard.shortcuts.tournamentsDesc') },
-    { href: '/recruitment', icon: <Megaphone size={20} />, label: t('dashboard.shortcuts.recruitment'), desc: t('dashboard.shortcuts.recruitmentDesc') },
-    { href: '/leaderboard', icon: <Users size={20} />, label: t('dashboard.shortcuts.leaderboard'), desc: t('dashboard.shortcuts.leaderboardDesc') },
+    { href: '/draft', icon: <Gamepad2 size={18} />, label: t('dashboard.shortcuts.draft'), desc: t('dashboard.shortcuts.draftDesc') },
+    { href: '/tournaments', icon: <Trophy size={18} />, label: t('dashboard.shortcuts.tournaments'), desc: t('dashboard.shortcuts.tournamentsDesc') },
+    { href: '/recruitment', icon: <Megaphone size={18} />, label: t('dashboard.shortcuts.recruitment'), desc: t('dashboard.shortcuts.recruitmentDesc') },
+    { href: '/leaderboard', icon: <Users size={18} />, label: t('dashboard.shortcuts.leaderboard'), desc: t('dashboard.shortcuts.leaderboardDesc') },
   ];
   return (
     <Widget title={t('dashboard.widgets.shortcuts')} icon={<Zap size={16} />} className={className}>
@@ -690,14 +687,14 @@ export function ShortcutsWidget({ className }: { className?: string }) {
           <Link
             key={it.href}
             href={it.href}
-            className="group flex items-center gap-3 rounded-sm border border-stroke p-3 transition-colors hover:border-primary dark:border-strokedark"
+            className="group flex items-center gap-3 rounded border border-line-subtle bg-surface-2/40 p-3 transition-[border-color,transform] duration-base ease-out hover:-translate-y-0.5 hover:border-primary/50"
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded cut-corners-sm bg-accent-cyan/10 text-accent-cyan transition-colors group-hover:bg-primary group-hover:text-on-primary">
               {it.icon}
             </span>
             <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold text-black dark:text-white">{it.label}</span>
-              <span className="block truncate text-xs text-body dark:text-bodydark">{it.desc}</span>
+              <span className="block truncate text-sm font-semibold text-ink-1">{it.label}</span>
+              <span className="block truncate text-xs text-ink-2">{it.desc}</span>
             </span>
           </Link>
         ))}

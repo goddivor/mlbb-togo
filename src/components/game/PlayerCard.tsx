@@ -36,6 +36,7 @@ export default function PlayerCard({
   stats,
   href,
   compact = false,
+  showStats = true,
   className,
   action,
 }: {
@@ -44,6 +45,8 @@ export default function PlayerCard({
   /** Link target (defaults to the public profile). */
   href?: string | null;
   compact?: boolean;
+  /** Hide the games / KDA / MVP row (e.g. directory lists without per-player stats). */
+  showStats?: boolean;
   className?: string;
   /** Optional slot at the bottom-right (buttons). */
   action?: React.ReactNode;
@@ -107,12 +110,14 @@ export default function PlayerCard({
         )}
       </div>
 
-      <div className={cn('mt-4 grid grid-cols-3 gap-2 border-t border-line-subtle pt-3', compact && 'mt-3 pt-2.5')}>
-        <StatTile label={t('stats.games')} value={stats?.games ?? '—'} />
-        <StatTile label={t('stats.kda')} value={stats?.kda ?? '—'} accent="cyan" align="center" />
-        <StatTile label={t('stats.mvp')} value={stats?.mvpCount ?? '—'} accent="gold" align="right" />
-      </div>
-      {action && <div className="mt-3 flex justify-end">{action}</div>}
+      {showStats && (
+        <div className={cn('mt-4 grid grid-cols-3 gap-2 border-t border-line-subtle pt-3', compact && 'mt-3 pt-2.5')}>
+          <StatTile label={t('stats.games')} value={stats?.games ?? '—'} />
+          <StatTile label={t('stats.kda')} value={stats?.kda ?? '—'} accent="cyan" align="center" />
+          <StatTile label={t('stats.mvp')} value={stats?.mvpCount ?? '—'} accent="gold" align="right" />
+        </div>
+      )}
+      {action && <div className={cn('flex justify-end', showStats ? 'mt-3' : 'mt-4 border-t border-line-subtle pt-3')}>{action}</div>}
     </div>
   );
 

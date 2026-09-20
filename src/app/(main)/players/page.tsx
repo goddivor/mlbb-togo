@@ -1,17 +1,18 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Search, MapPin, Users } from 'lucide-react';
-import { api, avatarSrc } from '@/lib/api';
-import { PageHeader, SectionCard, Badge, EmptyState, LoadingSpinner } from '@/components/ui';
-import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
+import { motion, useReducedMotion } from 'framer-motion';
+import { MapPin, Search, Users } from 'lucide-react';
+import { api } from '@/lib/api';
+import { PageHeader, SectionCard, Badge, EmptyState, Skeleton, StatTile } from '@/components/ui';
+import { PlayerCard } from '@/components/game';
 import LevelBadge from '@/components/gamification/LevelBadge';
 import { useT } from '@/lib/i18n';
+import { fadeUp, stagger, still } from '@/lib/motion';
 
 export default function PlayersPage() {
   const t = useT();
+  const reduce = useReducedMotion();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -34,88 +35,90 @@ export default function PlayersPage() {
     );
   }, [users, query]);
 
+  const linked = users.filter((u) => u.hasGame).length;
+
   return (
     <div className="space-y-6">
       <PageHeader
-        variant="default"
-        icon={<Users size={28} className="text-white" />}
+        eyebrow={t('nav.section.community')}
+        icon={<Users size={20} />}
         title={t('users.title')}
         subtitle={loading ? '…' : `${users.length} ${t('users.count')}`}
       />
 
-      {/* Recherche */}
+      {/* Search + counters */}
       <SectionCard className="!p-4">
-        <div className="relative w-full">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-bodydark2" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t('users.search')}
-            className="pl-9 pr-3 py-2 w-full text-sm rounded-sm bg-gray-2 border border-stroke text-black placeholder-bodydark2 focus:outline-none focus:border-primary dark:bg-meta-4 dark:border-strokedark dark:text-white"
-          />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-sm">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t('users.search')}
+              className="w-full rounded border border-line-strong bg-surface-1 py-2.5 pl-9 pr-3 text-sm text-ink-1 placeholder:text-ink-3 outline-none transition-[border-color,box-shadow] duration-base focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60"
+            />
+          </div>
+          <div className="flex items-center gap-6">
+            <StatTile label={t('users.title')} value={loading ? '—' : users.length} />
+            <StatTile label={t('nav.section.esport')} value={loading ? '—' : linked} accent="cyan" />
+            {query.trim() && <StatTile label={t('users.search').replace(/…$/, '')} value={filtered.length} accent="violet" />}
+          </div>
         </div>
       </SectionCard>
 
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <LoadingSpinner size="lg" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="rounded-lg border border-line-subtle bg-surface-1 p-5">
+              <div className="flex items-start gap-4">
+                <Skeleton className="h-[72px] w-[72px] rounded-md" />
+                <div className="flex-1 space-y-2 pt-1">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-1/3" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
+              <Skeleton className="mt-4 h-8 w-full" />
+            </div>
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState icon={<Users size={26} />} title={t('users.none')} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filtered.map((u, i) => (
-            <motion.div
-              key={u.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.02, 0.4) }}
-            >
-              <Link
-                href={`/players/${u.id}`}
-                className="flex items-center gap-3 rounded-sm border border-stroke bg-white shadow-default hover:border-primary transition-colors p-3 dark:border-strokedark dark:bg-boxdark"
-              >
-                {u.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={avatarSrc(u.avatar, 96)}
-                    alt={u.displayName}
-                    referrerPolicy="no-referrer"
-                    className="w-12 h-12 rounded-full object-cover border border-stroke dark:border-strokedark"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-lg font-bold text-white">
-                    {(u.displayName || u.username)?.[0]?.toUpperCase() || 'J'}
-                  </div>
-                )}
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-black dark:text-white truncate">{u.displayName || u.username}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {u.hasGame ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-body dark:text-bodydark">
-                        {hasRankBadge(u.gameRank) && <RankBadge rank={u.gameRank} size={16} />}
-                        {u.gameRank || `${t('dashboard.level')} ${u.gameLevel ?? '?'}`}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-bodydark2">{t('users.noGame')}</span>
-                    )}
-                    {u.country && (
-                      <span className="inline-flex items-center gap-0.5 text-xs text-bodydark2">
+        <motion.div
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
+          variants={reduce ? still : stagger(0.03)}
+          initial="hidden"
+          animate="visible"
+        >
+          {filtered.map((u) => (
+            <motion.div key={u.id} variants={reduce ? still : fadeUp}>
+              <PlayerCard
+                player={u}
+                stats={u.hasGame ? { winRate: u.winRate ?? 0 } : null}
+                showStats={false}
+                action={
+                  <span className="flex w-full items-center justify-between gap-2">
+                    {u.country ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-ink-3">
                         <MapPin size={11} /> {u.country}
                       </span>
+                    ) : (
+                      <span />
                     )}
-                  </div>
-                </div>
-
-                <LevelBadge level={u.level} size="xs" />
-                {u.roleUser && u.roleUser !== 'user' && (
-                  <Badge variant="purple" size="sm" className="uppercase">{u.roleUser}</Badge>
-                )}
-              </Link>
+                    <span className="flex items-center gap-2">
+                      {!u.hasGame && <span className="text-xs text-ink-3">{t('users.noGame')}</span>}
+                      {u.roleUser && u.roleUser !== 'user' && (
+                        <Badge variant="purple" size="sm" className="uppercase">{u.roleUser}</Badge>
+                      )}
+                      <LevelBadge level={u.level} size="xs" />
+                    </span>
+                  </span>
+                }
+              />
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
     </div>
   );
