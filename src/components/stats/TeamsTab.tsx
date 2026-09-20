@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Shield } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { EmptyState, LoadingSpinner, SectionCard } from '@/components/ui';
+import { EmptyState, SectionCard, Skeleton } from '@/components/ui';
 import {
   HeroChips,
   RankBubble,
@@ -57,11 +57,7 @@ export default function TeamsTab({ scope, ready }: { scope: string; ready: boole
   }, [scope, ready]);
 
   if (loading || !data) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <Skeleton className="h-72 w-full rounded-lg" />;
   }
 
   if (!data.items.length) {
@@ -78,10 +74,10 @@ export default function TeamsTab({ scope, ready }: { scope: string; ready: boole
       value: (r) => r.wins,
       render: (r) => (
         <span>
-          <span className="text-success font-semibold">{r.wins}</span>
-          <span className="text-bodydark2"> / </span>
-          <span className="text-danger font-semibold">{r.losses}</span>
-          {r.draws > 0 && <span className="text-bodydark2"> ({r.draws})</span>}
+          <span className="font-semibold text-accent-green">{r.wins}</span>
+          <span className="text-ink-3"> / </span>
+          <span className="font-semibold text-accent-red">{r.losses}</span>
+          {r.draws > 0 && <span className="text-ink-3"> ({r.draws})</span>}
         </span>
       ),
       align: 'right',
@@ -109,7 +105,7 @@ export default function TeamsTab({ scope, ready }: { scope: string; ready: boole
       value: (r) => r.avgDurationMin,
       render: (r) =>
         r.avgDurationMin === null ? (
-          <span className="text-bodydark2 text-xs" title={t('lstats.durationNA')}>
+          <span className="text-xs text-ink-3" title={t('lstats.durationNA')}>
             –
           </span>
         ) : (
@@ -125,7 +121,7 @@ export default function TeamsTab({ scope, ready }: { scope: string; ready: boole
   return (
     <div className="space-y-3">
       {!data.hasPlayerStats && (
-        <p className="rounded-sm border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-body dark:text-bodydark">
+        <p className="rounded-lg border border-accent-gold/40 bg-accent-gold/10 px-3 py-2 text-xs text-ink-2">
           {t('lstats.noPlayerStats')}
         </p>
       )}

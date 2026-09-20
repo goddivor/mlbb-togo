@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Users } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { EmptyState, LoadingSpinner, SectionCard } from '@/components/ui';
+import { EmptyState, SectionCard, Skeleton, Tabs } from '@/components/ui';
 import {
   HeroChips,
   LaneCell,
@@ -45,7 +45,7 @@ type PlayerRow = {
 };
 
 const selectClass =
-  'py-2 pl-3 pr-8 text-sm rounded-sm bg-gray-2 border border-stroke text-black focus:outline-none focus:border-primary dark:bg-meta-4 dark:border-strokedark dark:text-white';
+  'rounded border border-line-strong bg-surface-1 py-2 pl-3 pr-8 text-sm text-ink-1 outline-none transition-[border-color,box-shadow] duration-base focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60';
 
 export default function PlayersTab({ scope, ready }: { scope: string; ready: boolean }) {
   const t = useT();
@@ -70,12 +70,12 @@ export default function PlayersTab({ scope, ready }: { scope: string; ready: boo
 
   const kdaCell = (r: PlayerRow) => (
     <span className="whitespace-nowrap">
-      <span className="text-success">{r.kills}</span>
-      <span className="text-bodydark2"> / </span>
-      <span className="text-danger">{r.deaths}</span>
-      <span className="text-bodydark2"> / </span>
-      <span className="text-primary">{r.assists}</span>
-      <span className="block text-[11px] text-bodydark2">
+      <span className="text-accent-green">{r.kills}</span>
+      <span className="text-ink-3"> / </span>
+      <span className="text-accent-red">{r.deaths}</span>
+      <span className="text-ink-3"> / </span>
+      <span className="text-accent-cyan">{r.assists}</span>
+      <span className="block text-[11px] text-ink-3">
         {fmt(r.avgKills)} / {fmt(r.avgDeaths)} / {fmt(r.avgAssists)} {t('lstats.avg')}
       </span>
     </span>
@@ -103,21 +103,14 @@ export default function PlayersTab({ scope, ready }: { scope: string; ready: boo
     <div className="space-y-3">
       <SectionCard className="!p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-1.5">
-            {SORTS.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setSort(s)}
-                className={`px-3 py-1.5 text-sm rounded-sm border transition-colors ${
-                  sort === s
-                    ? 'bg-primary border-primary text-white'
-                    : 'bg-gray-2 border-stroke text-body hover:border-primary dark:bg-meta-4 dark:border-strokedark dark:text-bodydark'
-                }`}
-              >
-                {t(`lstats.sort.${s}`)}
-              </button>
-            ))}
+          <div className="overflow-x-auto overflow-y-hidden">
+            <Tabs
+              size="sm"
+              tabs={SORTS.map((s) => ({ id: s, label: t(`lstats.sort.${s}`) }))}
+              active={sort}
+              onChange={(s: Sort) => setSort(s)}
+              className="whitespace-nowrap"
+            />
           </div>
           <select value={role} onChange={(e) => setRole(e.target.value)} className={selectClass} aria-label={t('lstats.col.role')}>
             <option value="">{t('lstats.players.allRoles')}</option>
@@ -128,13 +121,11 @@ export default function PlayersTab({ scope, ready }: { scope: string; ready: boo
             ))}
           </select>
         </div>
-        <p className="mt-2 text-xs text-bodydark2">{t('lstats.players.minGames')}</p>
+        <p className="mt-2 text-xs text-ink-3">{t('lstats.players.minGames')}</p>
       </SectionCard>
 
       {loading || !rows ? (
-        <div className="flex items-center justify-center py-24">
-          <LoadingSpinner size="lg" />
-        </div>
+        <Skeleton className="h-72 w-full rounded-lg" />
       ) : rows.length === 0 ? (
         <EmptyState icon={<Users size={26} />} title={t('lstats.empty.title')} description={t('lstats.empty.desc')} />
       ) : (
