@@ -417,6 +417,16 @@ export const api = {
       }),
     logs: () => request('/admin/logs', { fallback: [] }),
     addLog: (data: any) => request('/admin/logs', { method: 'POST', body: data }),
+
+    // League control room (#56): aggregated season overview + quick actions.
+    league: {
+      overview: (seasonId?: string | null) =>
+        request(`/admin/league/overview${seasonId ? `?seasonId=${encodeURIComponent(seasonId)}` : ''}`),
+      announce: (data: { title: string; content: string; contentFormat?: string; images?: string[]; pin?: boolean }) =>
+        request('/admin/league/announce', { method: 'POST', body: data }),
+      recompute: (seasonId?: string | null) =>
+        request(`/admin/league/recompute${seasonId ? `?seasonId=${encodeURIComponent(seasonId)}` : ''}`, { method: 'POST' }),
+    },
   },
 
   mlbb: {

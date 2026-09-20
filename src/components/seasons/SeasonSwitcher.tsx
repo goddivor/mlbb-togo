@@ -9,24 +9,31 @@ import { useSelectedSeason, isLiveSeason, type Season } from '@/store/useSeasonS
 import { seasonShortLabel } from './shared';
 
 /**
- * Global season selector. Drop it in a header (`variant="header"`) or inline
- * in a filter bar (`variant="inline"`). Pages read the choice through
- * `useSelectedSeason()`.
+ * Global season selector. Drop it in a header (`variant="header"`), inline
+ * in a filter bar (`variant="inline"`) or in the admin control room
+ * (`variant="admin"`: no "all seasons" entry, browse link to /admin/seasons).
+ * Pages read the choice through `useSelectedSeason()`.
  */
 export default function SeasonSwitcher({
   variant = 'header',
-  allowAll = true,
+  allowAll,
   className = '',
 }: {
-  variant?: 'header' | 'inline';
-  /** Offer the "all seasons" (no filter) entry. */
+  variant?: 'header' | 'inline' | 'admin';
+  /** Offer the "all seasons" (no filter) entry (never for the admin variant). */
   allowAll?: boolean;
   className?: string;
 }) {
   const t = useT();
+  const isAdmin = variant === 'admin';
+  const offerAll = isAdmin ? false : allowAll ?? true;
+  const browseHref = isAdmin ? '/admin/seasons' : '/seasons';
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const { selection, setSelection, season, seasons, current, ready } = useSelectedSeason();
+  const selected = useSelectedSeason();
+  const { selection, setSelection, seasons, current, ready } = selected;
+  // The admin variant has no "all" entry: a persisted "all" falls back to the current season.
+  const season = isAdmin && selection === 'all' ? current : selected.season;
 
   useEffect(() => {
     if (!open) return;
@@ -39,7 +46,7 @@ export default function SeasonSwitcher({
 
   const label = !ready
     ? '…'
-    : selection === 'all'
+    : selection === 'all' && !isAdmin
       ? t('seasons.switcher.all')
       : season
         ? seasonShortLabel(season)
@@ -98,15 +105,19 @@ export default function SeasonSwitcher({
               {t('seasons.switcher.label')}
             </div>
             <div className="max-h-72 overflow-y-auto">
-              <button type="button" onClick={() => choose('current')} className={rowCls(selection === 'current')}>
+              <button
+                type="button"
+                onClick={() => choose('current')}
+                className={rowCls(selection === 'current' || (isAdmin && selection === 'all'))}
+              >
                 {dot(current)}
                 <span className="flex-1 truncate">
                   {t('seasons.switcher.current')}
                   {current && <span className="text-bodydark2"> · {seasonShortLabel(current)}</span>}
                 </span>
-                {selection === 'current' && <Check size={14} />}
+                {(selection === 'current' || (isAdmin && selection === 'all')) && <Check size={14} />}
               </button>
-              {allowAll && (
+              {offerAll && (
                 <button type="button" onClick={() => choose('all')} className={rowCls(selection === 'all')}>
                   <Layers size={12} className="text-bodydark2" />
                   <span className="flex-1">{t('seasons.switcher.all')}</span>
@@ -129,11 +140,11 @@ export default function SeasonSwitcher({
               ))}
             </div>
             <Link
-              href="/seasons"
+              href={browseHref}
               onClick={() => setOpen(false)}
               className="block px-3 py-2 text-xs font-medium text-primary border-t border-stroke hover:bg-primary/5 dark:border-strokedark"
             >
-              {t('seasons.switcher.browse')}
+              {t(isAdmin ? 'seasons.switcher.manage' : 'seasons.switcher.browse')}
             </Link>
           </motion.div>
         )}

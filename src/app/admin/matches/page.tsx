@@ -68,6 +68,18 @@ const emptyMatchForm: MatchForm = {
   notes: '',
 };
 
+/** List filters (deep-linked from /admin/league: ?season=<id>&status=scheduled|completed|pending|cancelled). */
+type StatusFilter = 'all' | 'scheduled' | 'completed' | 'pending' | 'cancelled';
+const STATUS_FILTERS: StatusFilter[] = ['all', 'scheduled', 'completed', 'pending', 'cancelled'];
+
+/** `pending` = completed without a scoresheet (neither game details nor player rows). */
+function matchesFilter(m: any, season: string, status: StatusFilter) {
+  if (season && m.seasonId !== season) return false;
+  if (status === 'all') return true;
+  if (status === 'pending') return m.status === 'completed' && !(m.gamesCount > 0) && !(m.playersCount > 0);
+  return m.status === status;
+}
+
 /** Number of games of a series format (bo3 -> 3). */
 const maxGames = (format: string) => (format ? Number(format.slice(2)) || 1 : 1);
 
@@ -115,8 +127,24 @@ export default function AdminMatchesPage() {
   const [matches, setMatches] = useState<any[]>([]);
   const [teams, setTeams] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<any[]>([]);
+  const [filterSeason, setFilterSeason] = useState('');
+  const [filterStatus, setFilterStatus] = useState<StatusFilter>('all');
 
   const errMsg = (e: any) => e?.message || t('admin.esport.errorGeneric');
+
+  useEffect(() => {
+    // Deep link from the league control room.
+    const params = new URLSearchParams(window.location.search);
+    const season = params.get('season');
+    const status = params.get('status') as StatusFilter | null;
+    if (season) setFilterSeason(season);
+    if (status && STATUS_FILTERS.includes(status)) setFilterStatus(status);
+  }, []);
+
+  const visible = useMemo(
+    () => matches.filter((m) => matchesFilter(m, filterSeason, filterStatus)),
+    [matches, filterSeason, filterStatus],
+  );
 
   const loadMatches = async () => {
     try {
@@ -197,13 +225,44 @@ export default function AdminMatchesPage() {
         }
       />
 
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          className="rounded-lg border border-stroke bg-gray-2 px-3 py-2 text-sm text-black focus:border-primary focus:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white"
+          value={filterSeason}
+          onChange={(e) => setFilterSeason(e.target.value)}
+          aria-label={t('admin.matches.season')}
+        >
+          <option value="">{t('admin.matches.filter.allSeasons')}</option>
+          {seasons.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        <select
+          className="rounded-lg border border-stroke bg-gray-2 px-3 py-2 text-sm text-black focus:border-primary focus:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white"
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value as StatusFilter)}
+          aria-label={t('admin.matches.filter.status')}
+        >
+          {STATUS_FILTERS.map((s) => (
+            <option key={s} value={s}>
+              {t('admin.matches.filter.' + s)}
+            </option>
+          ))}
+        </select>
+        {!loading && (
+          <span className="text-xs text-bodydark2">{t('admin.matches.filter.count', { n: visible.length, total: matches.length })}</span>
+        )}
+      </div>
+
       {loading ? (
         <LoadingSpinner size="lg" className="py-24" />
-      ) : matches.length === 0 ? (
+      ) : visible.length === 0 ? (
         <EmptyState icon={<Swords size={28} />} title={t('admin.matches.none')} />
       ) : (
         <div className="space-y-3">
-          {matches.map((m) => (
+          {visible.map((m) => (
             <div
               key={m.id}
               className="rounded-sm border border-stroke bg-white shadow-default p-3 sm:p-4 dark:border-strokedark dark:bg-boxdark"

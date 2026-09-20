@@ -8,12 +8,9 @@ import {
   Trash2,
   Check,
   CalendarDays,
-  Play,
   Flag,
   Lock,
-  RotateCcw,
   Trophy,
-  SlidersHorizontal,
   Sparkles,
   ExternalLink,
 } from 'lucide-react';
@@ -21,10 +18,13 @@ import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { useLangStore } from '@/store/useStore';
 import { useSeasonStore, type Season, type SeasonSummary } from '@/store/useSeasonStore';
-import { Card, Button, PageHeader, EmptyState, LoadingSpinner, Badge } from '@/components/ui';
+import { Card, Button, PageHeader, EmptyState, LoadingSpinner } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { SeasonStatusBadge, SeasonPodium, seasonPeriod, fmtSeasonDate } from '@/components/seasons/shared';
+import { useSeasonLifecycle } from '@/components/admin/seasons/useSeasonLifecycle';
+import SeasonLifecycleButtons from '@/components/admin/seasons/SeasonLifecycleButtons';
+import SeasonLifecycleModals from '@/components/admin/seasons/SeasonLifecycleModals';
 import toast from 'react-hot-toast';
 
 type SeasonForm = {
@@ -54,8 +54,6 @@ const emptyForm: SeasonForm = {
   color: '',
 };
 
-type Action = 'activate' | 'playoffs' | 'reopen' | 'delete';
-
 const inputCls =
   'w-full px-3 py-2 text-sm rounded-lg border border-stroke bg-gray-2 text-black placeholder-bodydark2 focus:outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white';
 
@@ -71,57 +69,12 @@ export default function AdminSeasonsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<SeasonForm>(emptyForm);
   const [saving, setSaving] = useState(false);
-  const [pending, setPending] = useState<{ action: Action; season: Season } | null>(null);
+  const [deleting, setDeleting] = useState<Season | null>(null);
   const [confirming, setConfirming] = useState(false);
-  // Closing flow: preview of the frozen summary before confirming.
-  const [closing, setClosing] = useState<Season | null>(null);
-  const [preview, setPreview] = useState<SeasonSummary | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [force, setForce] = useState(false);
   // Frozen summary viewer for closed seasons.
   const [viewing, setViewing] = useState<Season | null>(null);
-  // Standings settings (qualification threshold + points rule) per season.
-  const [settingsFor, setSettingsFor] = useState<Season | null>(null);
-  const [settings, setSettings] = useState({ qualifyTop: 4, win: 3, draw: 1, loss: 0 });
-  const [settingsLoading, setSettingsLoading] = useState(false);
-  const [settingsSaving, setSettingsSaving] = useState(false);
 
   const errMsg = (e: any) => e?.message || t('admin.esport.errorGeneric');
-
-  const openSettings = async (season: Season) => {
-    setSettingsFor(season);
-    setSettingsLoading(true);
-    try {
-      const data = await api.standings.settings(season.id);
-      setSettings({
-        qualifyTop: data?.qualifyTop ?? 4,
-        win: data?.points?.win ?? 3,
-        draw: data?.points?.draw ?? 1,
-        loss: data?.points?.loss ?? 0,
-      });
-    } catch (e: any) {
-      toast.error(errMsg(e));
-    } finally {
-      setSettingsLoading(false);
-    }
-  };
-
-  const saveSettings = async () => {
-    if (!settingsFor) return;
-    setSettingsSaving(true);
-    try {
-      await api.standings.updateSettings(settingsFor.id, {
-        qualifyTop: settings.qualifyTop,
-        points: { win: settings.win, draw: settings.draw, loss: settings.loss },
-      });
-      toast.success(t('admin.seasons.settings.saved'));
-      setSettingsFor(null);
-    } catch (e: any) {
-      toast.error(errMsg(e));
-    } finally {
-      setSettingsSaving(false);
-    }
-  };
 
   const load = async () => {
     try {
@@ -132,6 +85,9 @@ export default function AdminSeasonsPage() {
       toast.error(errMsg(e));
     }
   };
+
+  // Lifecycle actions (activate / playoffs / close / reopen / settings) shared with /admin/league.
+  const lifecycle = useSeasonLifecycle(load);
 
   useEffect(() => {
     (async () => {
@@ -207,80 +163,19 @@ export default function AdminSeasonsPage() {
     }
   };
 
-  const runPending = async () => {
-    if (!pending) return;
+  const confirmDelete = async () => {
+    if (!deleting) return;
     setConfirming(true);
     try {
-      const { action, season } = pending;
-      if (action === 'activate') await api.esport.activateSeason(season.id);
-      else if (action === 'playoffs') await api.esport.startSeasonPlayoffs(season.id);
-      else if (action === 'reopen') await api.esport.reopenSeason(season.id);
-      else if (action === 'delete') await api.esport.deleteSeason(season.id);
-      toast.success(action === 'delete' ? t('admin.esport.deleted') : t('admin.seasons.lifecycle.done'));
+      await api.esport.deleteSeason(deleting.id);
+      toast.success(t('admin.esport.deleted'));
       await load();
     } catch (err: any) {
       toast.error(errMsg(err));
     } finally {
       setConfirming(false);
-      setPending(null);
+      setDeleting(null);
     }
-  };
-
-  const openClose = async (s: Season) => {
-    setClosing(s);
-    setPreview(null);
-    setForce(false);
-    setPreviewLoading(true);
-    try {
-      const p = (await api.esport.seasonSummaryPreview(s.id)) as SeasonSummary | null;
-      setPreview(p);
-    } catch (err: any) {
-      toast.error(errMsg(err));
-    } finally {
-      setPreviewLoading(false);
-    }
-  };
-
-  const confirmClose = async () => {
-    if (!closing) return;
-    setConfirming(true);
-    try {
-      await api.esport.closeSeason(closing.id, force);
-      toast.success(t('admin.seasons.lifecycle.closed'));
-      setClosing(null);
-      await load();
-    } catch (err: any) {
-      toast.error(errMsg(err));
-    } finally {
-      setConfirming(false);
-    }
-  };
-
-  const pendingCopy: Record<Action, { title: string; message: string; confirm: string; variant: any }> = {
-    activate: {
-      title: t('admin.seasons.lifecycle.activate'),
-      message: t('admin.seasons.lifecycle.activateConfirm'),
-      confirm: t('admin.seasons.lifecycle.activate'),
-      variant: 'success',
-    },
-    playoffs: {
-      title: t('admin.seasons.lifecycle.playoffs'),
-      message: t('admin.seasons.lifecycle.playoffsConfirm'),
-      confirm: t('admin.seasons.lifecycle.playoffs'),
-      variant: 'warning',
-    },
-    reopen: {
-      title: t('admin.seasons.lifecycle.reopen'),
-      message: t('admin.seasons.lifecycle.reopenConfirm'),
-      confirm: t('admin.seasons.lifecycle.reopen'),
-      variant: 'warning',
-    },
-    delete: {
-      title: t('admin.confirm.title'),
-      message: t('admin.seasons.deleteConfirm'),
-      confirm: t('admin.esport.delete'),
-      variant: 'danger',
-    },
   };
 
   const field = (label: string, node: React.ReactNode, hint?: string) => (
@@ -381,34 +276,12 @@ export default function AdminSeasonsPage() {
 
                   {/* Lifecycle actions */}
                   <div className="mt-auto pt-2 flex flex-wrap gap-1.5 border-t border-stroke dark:border-strokedark">
-                    {s.status === 'upcoming' && (
-                      <Button size="sm" variant="success" onClick={() => setPending({ action: 'activate', season: s })}>
-                        <Play size={14} /> {t('admin.seasons.lifecycle.activate')}
-                      </Button>
-                    )}
-                    {s.status === 'active' && (
-                      <Button size="sm" variant="secondary" onClick={() => setPending({ action: 'playoffs', season: s })}>
-                        <Flag size={14} /> {t('admin.seasons.lifecycle.playoffs')}
-                      </Button>
-                    )}
-                    {(s.status === 'active' || s.status === 'playoffs') && (
-                      <Button size="sm" variant="outline" onClick={() => openClose(s)}>
-                        <Lock size={14} /> {t('admin.seasons.lifecycle.close')}
-                      </Button>
-                    )}
+                    <SeasonLifecycleButtons season={s} lifecycle={lifecycle} />
                     {s.status === 'closed' && (
-                      <>
-                        <Button size="sm" variant="outline" onClick={() => setViewing(s)}>
-                          <Trophy size={14} /> {t('admin.seasons.summary.view')}
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setPending({ action: 'reopen', season: s })}>
-                          <RotateCcw size={14} /> {t('admin.seasons.lifecycle.reopen')}
-                        </Button>
-                      </>
+                      <Button size="sm" variant="outline" onClick={() => setViewing(s)}>
+                        <Trophy size={14} /> {t('admin.seasons.summary.view')}
+                      </Button>
                     )}
-                    <Button size="sm" variant="ghost" onClick={() => openSettings(s)}>
-                      <SlidersHorizontal size={14} /> {t('admin.seasons.settings.action')}
-                    </Button>
                     <span className="flex-1" />
                     {s.slug && (
                       <Link
@@ -427,7 +300,7 @@ export default function AdminSeasonsPage() {
                       size="sm"
                       variant="danger"
                       disabled={s.status === 'active' || s.status === 'playoffs'}
-                      onClick={() => setPending({ action: 'delete', season: s })}
+                      onClick={() => setDeleting(s)}
                     >
                       <Trash2 size={14} />
                     </Button>
@@ -570,87 +443,6 @@ export default function AdminSeasonsPage() {
         </form>
       </Modal>
 
-      {/* Close with preview of the frozen podium */}
-      <Modal
-        open={!!closing}
-        onClose={() => (confirming ? undefined : setClosing(null))}
-        closeLabel={t('common.close')}
-        title={t('admin.seasons.lifecycle.close')}
-        subtitle={closing?.name}
-        icon={<Lock size={20} />}
-        size="lg"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-body dark:text-bodydark">{t('admin.seasons.lifecycle.closeIntro')}</p>
-          {previewLoading ? (
-            <LoadingSpinner size="md" className="py-8" />
-          ) : preview ? (
-            <>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <Badge variant="blue">{t('admin.seasons.summary.matches', { n: preview.matches.completed, total: preview.matches.total })}</Badge>
-                <Badge variant="purple">{t('admin.seasons.summary.teams', { n: preview.standings.length })}</Badge>
-              </div>
-              <div className="rounded-lg border border-stroke bg-gray-2 p-4 dark:border-strokedark dark:bg-meta-4">
-                <p className="mb-3 text-center text-xs font-semibold uppercase tracking-wider text-bodydark2">
-                  {t('admin.seasons.summary.podiumPreview')}
-                </p>
-                <SeasonPodium podium={preview.podium} t={t} compact />
-              </div>
-              {preview.standings.length > 0 && (
-                <div className="max-h-48 overflow-y-auto rounded-lg border border-stroke dark:border-strokedark">
-                  <table className="w-full text-xs">
-                    <thead className="bg-gray-2 dark:bg-meta-4 text-bodydark2">
-                      <tr>
-                        <th className="px-2 py-1.5 text-left">#</th>
-                        <th className="px-2 py-1.5 text-left">{t('seasons.standings.team')}</th>
-                        <th className="px-2 py-1.5 text-right">{t('seasons.standings.played')}</th>
-                        <th className="px-2 py-1.5 text-right">{t('seasons.standings.wins')}</th>
-                        <th className="px-2 py-1.5 text-right">{t('seasons.standings.losses')}</th>
-                        <th className="px-2 py-1.5 text-right">{t('seasons.standings.diff')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {preview.standings.map((r) => (
-                        <tr key={r.teamId} className="border-t border-stroke dark:border-strokedark">
-                          <td className="px-2 py-1.5">{r.rank}</td>
-                          <td className="px-2 py-1.5 font-medium text-black dark:text-white">{r.team.name}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums">{r.played}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-success">{r.wins}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-danger">{r.losses}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums">{r.scoreDiff > 0 ? `+${r.scoreDiff}` : r.scoreDiff}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-              {preview.matches.completed === 0 && (
-                <label className="flex items-start gap-2 text-sm text-warning cursor-pointer">
-                  <input type="checkbox" className="mt-0.5 accent-primary" checked={force} onChange={(e) => setForce(e.target.checked)} />
-                  {t('admin.seasons.lifecycle.forceClose')}
-                </label>
-              )}
-            </>
-          ) : (
-            <p className="text-sm text-danger">{t('admin.esport.errorGeneric')}</p>
-          )}
-          <div className="flex gap-2 pt-1">
-            <Button
-              size="sm"
-              variant="danger"
-              onClick={confirmClose}
-              disabled={confirming || !preview || (preview.matches.completed === 0 && !force)}
-              loading={confirming}
-            >
-              <Lock size={14} /> {t('admin.seasons.lifecycle.closeConfirm')}
-            </Button>
-            <Button size="sm" variant="ghost" type="button" disabled={confirming} onClick={() => setClosing(null)}>
-              {t('admin.esport.cancel')}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
       {/* Frozen summary viewer */}
       <Modal
         open={!!viewing}
@@ -674,73 +466,17 @@ export default function AdminSeasonsPage() {
         )}
       </Modal>
 
-      <Modal
-        open={!!settingsFor}
-        onClose={() => setSettingsFor(null)}
-        closeLabel={t('common.close')}
-        title={t('admin.seasons.settings.title')}
-        subtitle={settingsFor?.name}
-        icon={<SlidersHorizontal size={20} />}
-      >
-        {settingsLoading ? (
-          <LoadingSpinner />
-        ) : (
-          <div className="space-y-4">
-            <p className="text-xs text-bodydark2">{t('admin.seasons.settings.hint')}</p>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">
-                {t('admin.seasons.settings.qualifyTop')}
-              </label>
-              <select
-                value={settings.qualifyTop}
-                onChange={(e) => setSettings((v) => ({ ...v, qualifyTop: Number(e.target.value) }))}
-                className="w-full rounded-sm border border-stroke bg-transparent px-3 py-2 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:text-white dark:bg-meta-4"
-              >
-                {[1, 2, 3, 4, 6, 8].map((n) => (
-                  <option key={n} value={n}>
-                    {t('admin.seasons.settings.topN', { n })}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              {(['win', 'draw', 'loss'] as const).map((key) => (
-                <div key={key}>
-                  <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">
-                    {t(`admin.seasons.settings.${key}`)}
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={settings[key]}
-                    onChange={(e) => setSettings((v) => ({ ...v, [key]: Number(e.target.value) }))}
-                    className="w-full rounded-sm border border-stroke bg-transparent px-3 py-2 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:text-white dark:bg-meta-4"
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setSettingsFor(null)}>
-                {t('admin.esport.cancel')}
-              </Button>
-              <Button onClick={saveSettings} loading={settingsSaving}>
-                {t('admin.esport.save')}
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      <SeasonLifecycleModals lifecycle={lifecycle} />
 
       <ConfirmModal
-        open={!!pending}
-        onClose={() => setPending(null)}
-        onConfirm={runPending}
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        onConfirm={confirmDelete}
         loading={confirming}
-        variant={pending ? pendingCopy[pending.action].variant : 'info'}
-        title={pending ? `${pendingCopy[pending.action].title} · ${pending.season.name}` : ''}
-        message={pending ? pendingCopy[pending.action].message : ''}
-        confirmLabel={pending ? pendingCopy[pending.action].confirm : ''}
+        variant="danger"
+        title={deleting ? `${t('admin.confirm.title')} · ${deleting.name}` : ''}
+        message={t('admin.seasons.deleteConfirm')}
+        confirmLabel={t('admin.esport.delete')}
         cancelLabel={t('admin.esport.cancel')}
         closeLabel={t('common.close')}
       />
