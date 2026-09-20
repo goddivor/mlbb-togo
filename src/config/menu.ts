@@ -82,6 +82,7 @@ export const adminMenuGroups: MenuGroupConfig[] = [
     id: 'esport',
     titleKey: 'nav.section.esport',
     items: [
+      { href: '/admin/league', labelKey: 'admin.league.title', icon: Flag },
       { href: '/admin/esport', labelKey: 'admin.esport.title', icon: Trophy },
       { href: '/admin/tournaments', labelKey: 'admin.tournaments.title', icon: Medal },
       { href: '/admin/seasons', labelKey: 'admin.seasons.title', icon: CalendarDays },
