@@ -58,6 +58,42 @@
     --gaming-surface: 26 26 62;
     --page-bg: #0a0a1a;
     --page-text: #e2e8f0;
+
+    /* ---------------------------------------------------------------
+       Esport design system tokens (issue #61). RGB triplets so Tailwind
+       alpha modifiers work (bg-surface-1/80). Dark values by default;
+       the light block below overrides them.
+       --------------------------------------------------------------- */
+    --surface-0: 10 14 25;
+    --surface-1: 17 23 38;
+    --surface-2: 24 32 52;
+    --surface-3: 32 43 68;
+    --line-subtle: 146 160 196;
+    --line-subtle-a: 0.14;
+    --line-strong-a: 0.3;
+    --ink-1: 238 242 248;
+    --ink-2: 166 176 198;
+    --ink-3: 110 122 149;
+    --accent-cyan: 0 212 255;
+    --accent-violet: 168 85 247;
+    --accent-gold: 242 181 68;
+    --accent-red: 255 70 85;
+    --accent-green: 34 197 94;
+    --primary: 0 212 255;
+    --on-primary: 6 12 24;
+    --glow-cyan: 0 0 0 1px rgb(0 212 255 / 0.35), 0 0 24px rgb(0 212 255 / 0.25);
+    --glow-violet: 0 0 0 1px rgb(168 85 247 / 0.35), 0 0 24px rgb(168 85 247 / 0.25);
+    --glow-gold: 0 0 0 1px rgb(242 181 68 / 0.4), 0 0 24px rgb(242 181 68 / 0.25);
+    --elev-1: 0 1px 2px rgb(0 0 0 / 0.35), 0 0 0 1px rgb(146 160 196 / 0.08);
+    --elev-2: 0 8px 24px -8px rgb(0 0 0 / 0.55), 0 0 0 1px rgb(146 160 196 / 0.1);
+    --elev-3: 0 20px 48px -12px rgb(0 0 0 / 0.65), 0 0 0 1px rgb(146 160 196 / 0.12);
+    --dur-fast: 150ms;
+    --dur-base: 220ms;
+    --dur-slow: 320ms;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
   /* DARK theme (.dark class present on <html>). */
@@ -80,6 +116,30 @@
     --gaming-surface: 241 245 249;
     --page-bg: #f3f4f8;
     --page-text: #0f172a;
+
+    --surface-0: 238 241 247;
+    --surface-1: 255 255 255;
+    --surface-2: 245 247 251;
+    --surface-3: 232 236 244;
+    --line-subtle: 15 23 42;
+    --line-subtle-a: 0.1;
+    --line-strong-a: 0.22;
+    --ink-1: 15 23 42;
+    --ink-2: 75 85 103;
+    --ink-3: 125 135 153;
+    --accent-cyan: 8 145 178;
+    --accent-violet: 124 58 237;
+    --accent-gold: 183 121 31;
+    --accent-red: 225 29 72;
+    --accent-green: 21 128 61;
+    --primary: 8 145 178;
+    --on-primary: 255 255 255;
+    --glow-cyan: 0 0 0 1px rgb(8 145 178 / 0.35), 0 0 20px rgb(8 145 178 / 0.18);
+    --glow-violet: 0 0 0 1px rgb(124 58 237 / 0.35), 0 0 20px rgb(124 58 237 / 0.18);
+    --glow-gold: 0 0 0 1px rgb(183 121 31 / 0.4), 0 0 20px rgb(183 121 31 / 0.18);
+    --elev-1: 0 1px 2px rgb(15 23 42 / 0.06), 0 0 0 1px rgb(15 23 42 / 0.05);
+    --elev-2: 0 8px 24px -8px rgb(15 23 42 / 0.16), 0 0 0 1px rgb(15 23 42 / 0.06);
+    --elev-3: 0 20px 48px -12px rgb(15 23 42 / 0.22), 0 0 0 1px rgb(15 23 42 / 0.06);
   }
 
   * {
@@ -115,6 +175,21 @@
   ::selection {
     background: rgba(0, 212, 255, 0.3);
     color: white;
+  }
+
+  /* Motion: honour the OS preference everywhere. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
@@ -256,6 +331,170 @@
   .backdrop-gaming {
     backdrop-filter: blur(20px) saturate(180%);
     background: rgba(10, 10, 26, 0.8);
+  }
+}
+
+
+@layer components {
+  /* Display typography: esport headline face, tight tracking. */
+  .font-display-tight {
+    font-family: 'Chakra Petch', 'Space Grotesk', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  /* Uppercase eyebrow label above headings. */
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase leading-none;
+    letter-spacing: 0.18em;
+    color: rgb(var(--accent-cyan));
+  }
+
+  /* Tabular numerals for stats and tables. */
+  .num {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+  }
+
+  /* Chamfered corners (top-right + bottom-left): the design system's signature cut. */
+  .cut-corners {
+    --cut: 10px;
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--cut)) 0,
+      100% var(--cut),
+      100% 100%,
+      var(--cut) 100%,
+      0 calc(100% - var(--cut))
+    );
+  }
+  .cut-corners-sm {
+    --cut: 6px;
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--cut)) 0,
+      100% var(--cut),
+      100% 100%,
+      var(--cut) 100%,
+      0 calc(100% - var(--cut))
+    );
+  }
+  /* Angled bottom edge for banners. */
+  .cut-banner {
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 48px) 100%, 0 100%);
+  }
+
+  /* Page background: navy gradient + subtle noise (dark) or soft gradient (light). */
+  .app-surface {
+    position: relative;
+    isolation: isolate;
+    background-color: rgb(var(--surface-0));
+    background-image:
+      radial-gradient(1200px 600px at 10% -10%, rgb(var(--accent-cyan) / 0.08), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgb(var(--accent-violet) / 0.07), transparent 55%);
+    background-attachment: fixed;
+  }
+  .dark .app-surface::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background-image: var(--noise);
+    opacity: 0.35;
+    mix-blend-mode: overlay;
+  }
+
+  /* Elevation + glow helpers driven by tokens. */
+  .elev-1 { box-shadow: var(--elev-1); }
+  .elev-2 { box-shadow: var(--elev-2); }
+  .elev-3 { box-shadow: var(--elev-3); }
+  .glow-cyan { box-shadow: var(--glow-cyan); }
+  .glow-violet { box-shadow: var(--glow-violet); }
+  .glow-gold { box-shadow: var(--glow-gold); }
+
+  /* Chamfered button: the fill lives on a clipped pseudo-element so the focus
+     ring and hover glow (box-shadow) stay visible around the cut shape. */
+  .btn-cut {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: transparent;
+  }
+  .btn-cut::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--btn-bg, rgb(var(--primary)));
+    clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+    transition: filter var(--dur-base) var(--ease-out);
+  }
+  .btn-cut:hover::before {
+    filter: brightness(1.08);
+  }
+  .btn-cut::after {
+    /* Sheen that sweeps on hover. */
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+    background: linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.22) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform var(--dur-slow) var(--ease-out);
+  }
+  .btn-cut:hover::after {
+    transform: translateX(100%);
+  }
+
+  /* Primary fills use the accent with a readable foreground in both themes. */
+  .text-on-primary { color: rgb(var(--on-primary)); }
+
+  /* Live pulse dot. */
+  .live-dot {
+    @apply relative inline-flex h-2 w-2;
+  }
+  .live-dot::before {
+    content: '';
+    @apply absolute inline-flex h-full w-full rounded-full opacity-60;
+    background: currentColor;
+    animation: ping 1.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  .live-dot::after {
+    content: '';
+    @apply relative inline-flex h-2 w-2 rounded-full;
+    background: currentColor;
+  }
+
+  /* Rank tier metallic surfaces (badges, frames). */
+  .tier-gold {
+    color: #fde68a;
+    background: linear-gradient(135deg, rgba(242, 181, 68, 0.28), rgba(242, 181, 68, 0.08));
+    border: 1px solid rgba(242, 181, 68, 0.55);
+  }
+  .tier-silver {
+    color: #e5e7eb;
+    background: linear-gradient(135deg, rgba(203, 213, 225, 0.28), rgba(203, 213, 225, 0.06));
+    border: 1px solid rgba(203, 213, 225, 0.5);
+  }
+  .tier-bronze {
+    color: #fdba74;
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.3), rgba(205, 127, 50, 0.08));
+    border: 1px solid rgba(205, 127, 50, 0.55);
+  }
+  html:not(.dark) .tier-gold { color: #92400e; }
+  html:not(.dark) .tier-silver { color: #475569; }
+  html:not(.dark) .tier-bronze { color: #9a3412; }
+
+  /* Dark mode: cyan fills paired with a bare `text-white` get the dark foreground
+     instead. Covers the same element, a white child inside a primary fill
+     (chat bubbles, team-colour headers, avatar initials) and primary gradients
+     (level badge, XP ring, achievements). */
+  html.dark .bg-primary.text-white,
+  html.dark .from-primary.text-white,
+  html.dark .bg-primary .text-white,
+  html.dark .from-primary .text-white {
+    color: rgb(var(--on-primary));
   }
 }
 
@@ -428,23 +667,31 @@ html[class*="theme-"].dark .bg-gaming-darker { background: var(--t-page-bg) !imp
 html[class*="theme-"].dark .bg-boxdark,
 html[class*="theme-"].dark .dark\:bg-boxdark,
 html[class*="theme-"].dark .bg-white.dark\:bg-boxdark,
-html[class*="theme-"].dark .bg-gaming-card { background: var(--t-card-bg) !important; }
+html[class*="theme-"].dark .bg-gaming-card,
+html[class*="theme-"].dark .bg-surface-1,
+html[class*="theme-"].dark .dark\:bg-surface-1 { background: var(--t-card-bg) !important; }
 html[class*="theme-"].dark .bg-boxdark-2,
 html[class*="theme-"].dark .dark\:bg-boxdark-2,
 html[class*="theme-"].dark .bg-gray-2,
 html[class*="theme-"].dark .bg-gray,
 html[class*="theme-"].dark .bg-meta-4,
 html[class*="theme-"].dark .dark\:bg-meta-4,
-html[class*="theme-"].dark .bg-gaming-surface { background: var(--t-surface-bg) !important; }
+html[class*="theme-"].dark .bg-gaming-surface,
+html[class*="theme-"].dark .bg-surface-2,
+html[class*="theme-"].dark .bg-surface-3 { background: var(--t-surface-bg) !important; }
+html[class*="theme-"].dark .app-surface { background-image: none !important; }
 html[class*="theme-"].dark .border-stroke,
 html[class*="theme-"].dark .dark\:border-strokedark,
-html[class*="theme-"].dark .border-gaming-border { border-color: var(--t-card-border) !important; }
+html[class*="theme-"].dark .border-gaming-border,
+html[class*="theme-"].dark .border-line-subtle { border-color: var(--t-card-border) !important; }
 html[class*="theme-"].dark .text-black.dark\:text-white,
 html[class*="theme-"].dark .dark\:text-white { color: var(--t-page-text) !important; }
 html[class*="theme-"].dark .text-body,
 html[class*="theme-"].dark .dark\:text-bodydark,
 html[class*="theme-"].dark .text-bodydark2 { color: var(--t-muted-text) !important; }
 html[class*="theme-"].dark .text-primary,
-html[class*="theme-"].dark .text-neon-blue { color: var(--t-accent) !important; }
+html[class*="theme-"].dark .text-neon-blue,
+html[class*="theme-"].dark .text-accent-cyan,
+html[class*="theme-"].dark .eyebrow { color: var(--t-accent) !important; }
 html[class*="theme-"].dark .dark\:hover\:bg-meta-4:hover { background: var(--t-surface-bg) !important; }
 html[class*="theme-"].dark .dark\:hover\:text-white:hover { color: var(--t-page-text) !important; }

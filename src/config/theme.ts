@@ -45,8 +45,47 @@ export const colors = {
   textMuted: '#64748b',
 };
 
-export const radius = { sm: '6px', md: '8px', lg: '12px', xl: '16px', full: '9999px' };
-export const shadows = { sm: 'shadow-sm', md: 'shadow-md', lg: 'shadow-lg', xl: 'shadow-xl' };
+export const radius = { sm: '4px', md: '8px', lg: '10px', xl: '14px', full: '9999px' };
+export const shadows = { sm: 'shadow-elev-1', md: 'shadow-elev-2', lg: 'shadow-elev-3', xl: 'shadow-elev-3' };
+
+/**
+ * Esport design system tokens (issue #61). The values live as CSS variables in
+ * globals.css (theme-aware); this map documents them and exposes the Tailwind
+ * class names so components share one vocabulary.
+ */
+export const ds = {
+  surface: { 0: 'bg-surface-0', 1: 'bg-surface-1', 2: 'bg-surface-2', 3: 'bg-surface-3' },
+  line: { subtle: 'border-line-subtle', strong: 'border-line-strong' },
+  ink: { 1: 'text-ink-1', 2: 'text-ink-2', 3: 'text-ink-3' },
+  accent: {
+    cyan: 'text-accent-cyan',
+    violet: 'text-accent-violet',
+    gold: 'text-accent-gold',
+    red: 'text-accent-red',
+    green: 'text-accent-green',
+  },
+  glow: { cyan: 'shadow-glow-cyan', violet: 'shadow-glow-violet', gold: 'shadow-glow-gold' },
+  motion: {
+    fast: 150,
+    base: 220,
+    slow: 320,
+    easeOut: [0.16, 1, 0.3, 1] as [number, number, number, number],
+    easeInOut: [0.65, 0, 0.35, 1] as [number, number, number, number],
+  },
+} as const;
+
+/** Rank tier used by badges and avatar frames. */
+export type RankTier = 'gold' | 'silver' | 'bronze' | 'mythic' | 'none';
+
+/** Map an in-game rank label to a tier (drives RankFrame / Badge tier styles). */
+export function rankTier(rank?: string | null): RankTier {
+  const r = (rank || '').toLowerCase();
+  if (!r) return 'none';
+  if (r.includes('immortal') || r.includes('glory')) return 'mythic';
+  if (r.includes('mythic') || r.includes('legend')) return 'gold';
+  if (r.includes('epic') || r.includes('grandmaster') || r.includes('master')) return 'silver';
+  return 'bronze';
+}
 
 /**
  * Page header banner gradients. Chosen to keep good contrast with white
