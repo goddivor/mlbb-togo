@@ -3,16 +3,16 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Award, ChevronDown, Crown, Presentation, Trophy, ExternalLink } from 'lucide-react';
-import LandingHeader from '@/components/landing/LandingHeader';
-import LandingFooter from '@/components/landing/LandingFooter';
-import BackToTop from '@/components/landing/BackToTop';
-import { LoadingSpinner, EmptyState } from '@/components/ui';
+import PublicShell from '@/components/landing/PublicShell';
+import { Button, Card, EmptyState, SectionTitle, Skeleton, Tabs } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { useLangStore } from '@/store/useStore';
 import { useSeasonStore, isLiveSeason, type Season } from '@/store/useSeasonStore';
-import { SeasonStatusBadge, seasonShortLabel } from '@/components/seasons/shared';
+import { fadeUp, stagger, still } from '@/lib/motion';
+import { SeasonHero, seasonAccent, seasonShortLabel } from '@/components/seasons/shared';
 import {
   AwardCard,
   MvpHero,
@@ -40,6 +40,8 @@ export default function AwardsPage() {
 
 function AwardsContent() {
   const t = useT();
+  const lang = useLangStore((s: any) => s.lang);
+  const reduce = useReducedMotion();
   const search = useSearchParams();
   const seasons = useSeasonStore((s) => s.seasons);
   const loaded = useSeasonStore((s) => s.loaded);
@@ -91,134 +93,124 @@ function AwardsContent() {
   }, []);
 
   const season: Season | null = data?.season ?? options.find((s) => s.id === selected) ?? null;
-  const accent = season?.color || '#3c50e0';
+  const accent = season ? seasonAccent(season.color) : undefined;
   const roleAwards = data?.awards.filter((a) => a.category !== 'mvp') ?? [];
+  const listVariants = reduce ? still : stagger(0.05);
+  const itemVariants = reduce ? still : fadeUp;
 
   return (
-    <div className="relative min-h-screen">
-      <LandingHeader />
-      <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-28 pb-20 space-y-12">
-        <div className="text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-500 mb-3">{t('awards.kicker')}</p>
-          <h1 className="text-3xl sm:text-5xl font-bold text-white">{t('awards.title')}</h1>
-          <p className="text-gray-400 mt-3 max-w-2xl mx-auto">{t('awards.intro')}</p>
-        </div>
+    <PublicShell>
+      <div className="mx-auto max-w-7xl space-y-12 px-4 pb-20 sm:px-6">
+        <header className="max-w-2xl">
+          <p className="eyebrow mb-3">{t('awards.kicker')}</p>
+          <h1 className="font-display text-4xl font-bold uppercase leading-none tracking-tight2 text-ink-1 sm:text-6xl">{t('awards.title')}</h1>
+          <p className="mt-4 text-base text-ink-2">{t('awards.intro')}</p>
+        </header>
 
         {/* Season selector */}
         {options.length > 0 && (
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {options.map((s) => {
-              const active = s.id === selected;
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => setSelected(s.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
-                    active ? 'text-black border-transparent' : 'text-gray-300 border-white/15 hover:border-white/40'
-                  }`}
-                  style={active ? { background: s.color || '#3c50e0', color: '#fff' } : undefined}
-                >
-                  {seasonShortLabel(s)}
-                  {isLiveSeason(s) && <span className="ml-2 inline-block h-2 w-2 rounded-full bg-green-400 animate-pulse" />}
-                </button>
-              );
-            })}
+          <div className="overflow-x-auto whitespace-nowrap">
+            <Tabs
+              variant="underline"
+              tabs={options.map((s) => ({
+                id: s.id,
+                label: (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="inline-block h-2 w-2 rounded-full" style={{ background: seasonAccent(s.color) }} />
+                    {seasonShortLabel(s)}
+                    {isLiveSeason(s) && <span className="live-dot text-accent-green" aria-hidden="true" />}
+                  </span>
+                ),
+              }))}
+              active={selected ?? ''}
+              onChange={(id) => setSelected(id)}
+            />
           </div>
         )}
 
         {loading || !loaded ? (
-          <LoadingSpinner size="lg" className="py-24" />
+          <div className="space-y-6">
+            <Skeleton className="h-64 w-full rounded-lg" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-56 w-full rounded-lg" />
+              ))}
+            </div>
+          </div>
         ) : !season || !data ? (
           <EmptyState icon={<Award size={28} />} title={t('awards.none')} />
         ) : (
           <AnimatePresence mode="wait">
             <motion.div
               key={season.id}
-              initial={{ opacity: 0, y: 12 }}
+              initial={reduce ? false : { opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.25 }}
               className="space-y-10"
             >
               {/* Season banner */}
-              <section className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <SeasonStatusBadge status={season.status} t={t} />
-                    {season.number != null && (
-                      <span className="text-xs uppercase tracking-[0.2em] text-gray-500">{t('seasons.numberLabel', { n: season.number })}</span>
-                    )}
-                  </div>
-                  <h2 className="text-2xl font-black text-white mt-1 break-words">{season.name}</h2>
-                  {season.theme && (
-                    <p className="text-sm font-semibold" style={{ color: accent }}>
-                      {season.theme}
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-500 mt-1">
+              <SeasonHero
+                season={season}
+                t={t}
+                lang={lang}
+                size="md"
+                meta={
+                  <span className="num">
                     {t('awards.count', { n: data.awards.length })} · {t('awards.matches', { n: data.matches.completed })}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2 shrink-0">
-                  {season.slug && (
-                    <Link
-                      href={`/seasons/${season.slug}`}
-                      className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border border-white/15 text-gray-200 hover:border-white/40 transition-colors"
-                    >
-                      <ExternalLink size={14} /> {t('awards.viewSeason')}
-                    </Link>
-                  )}
-                  {season.slug && (
-                    <Link
-                      href={`/ceremony/${season.slug}`}
-                      className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg text-black font-semibold bg-gradient-to-r from-yellow-300 to-amber-500 hover:brightness-110 transition"
-                    >
-                      <Presentation size={14} /> {t('awards.ceremony')}
-                    </Link>
-                  )}
-                </div>
-              </section>
+                  </span>
+                }
+                actions={
+                  season.slug ? (
+                    <>
+                      <Link href={`/ceremony/${season.slug}`}>
+                        <Button variant="primary">
+                          <Presentation size={16} /> {t('awards.ceremony')}
+                        </Button>
+                      </Link>
+                      <Link href={`/seasons/${season.slug}`}>
+                        <Button variant="outline" className="!border-white/30 !text-white hover:!border-white">
+                          <ExternalLink size={16} /> {t('awards.viewSeason')}
+                        </Button>
+                      </Link>
+                    </>
+                  ) : undefined
+                }
+              />
 
               {/* MVP */}
               {data.mvp ? (
                 <MvpHero award={data.mvp} t={t} accent={accent} />
               ) : (
-                <div className="rounded-2xl border border-dashed border-white/15 p-6 text-center text-gray-500 text-sm">
+                <Card className="border-dashed text-center text-sm text-ink-3">
                   {isLiveSeason(season) ? t('awards.noneYet') : t('awards.none')}
-                </div>
+                </Card>
               )}
 
               {/* Role awards */}
               {roleAwards.length > 0 && (
-                <section className="space-y-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <h2 className="text-xl font-bold text-white inline-flex items-center gap-2">
-                      <Award size={20} className="text-yellow-400" /> {t('awards.kicker')}
-                    </h2>
-                    <p className="text-xs text-gray-500 hidden sm:block">{t('awards.transparency')}</p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {roleAwards.map((a, i) => (
-                      <motion.div
-                        key={a.id}
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.05 * i, duration: 0.3 }}
-                      >
+                <section>
+                  <SectionTitle
+                    title={<span className="inline-flex items-center gap-2"><Award size={20} className="text-accent-gold" /> {t('awards.kicker')}</span>}
+                    description={t('awards.transparency')}
+                    className="mb-5"
+                  />
+                  <motion.div variants={listVariants} initial="hidden" animate="visible" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {roleAwards.map((a) => (
+                      <motion.div key={a.id} variants={itemVariants} className="h-full">
                         <AwardCard award={a} t={t} accent={accent} />
                       </motion.div>
                     ))}
-                  </div>
-                  <p className="text-xs text-gray-500 sm:hidden">{t('awards.transparency')}</p>
+                  </motion.div>
                 </section>
               )}
 
               {/* Podiums */}
-              <section className="space-y-4">
-                <h2 className="text-xl font-bold text-white inline-flex items-center gap-2">
-                  <Trophy size={20} className="text-yellow-400" /> {t('seasons.summary.podium')}
-                </h2>
+              <section>
+                <SectionTitle
+                  title={<span className="inline-flex items-center gap-2"><Trophy size={20} className="text-accent-gold" /> {t('seasons.summary.podium')}</span>}
+                  className="mb-5"
+                />
                 <PodiumsBlock podiums={data.podiums} t={t} compact />
               </section>
 
@@ -228,40 +220,41 @@ function AwardsContent() {
         )}
 
         {/* History accordion */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold text-white inline-flex items-center gap-2">
-            <Crown size={20} className="text-yellow-400" /> {t('awards.history')}
-          </h2>
+        <section>
+          <SectionTitle
+            title={<span className="inline-flex items-center gap-2"><Crown size={20} className="text-accent-gold" /> {t('awards.history')}</span>}
+            className="mb-5"
+          />
           {history === null ? (
-            <LoadingSpinner size="md" className="py-6" />
+            <Skeleton lines={3} />
           ) : history.length === 0 ? (
-            <p className="text-sm text-gray-500">{t('awards.historyEmpty')}</p>
+            <p className="text-sm text-ink-3">{t('awards.historyEmpty')}</p>
           ) : (
-            <div className="divide-y divide-white/10 rounded-2xl border border-white/10 overflow-hidden">
+            <Card className="divide-y divide-line-subtle overflow-hidden !p-0">
               {history.map((h) => {
                 const open = openHistory === h.season.id;
                 return (
-                  <div key={h.season.id} className="bg-white/[0.02]">
+                  <div key={h.season.id}>
                     <button
                       type="button"
                       onClick={() => setOpenHistory(open ? null : h.season.id)}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/[0.04] transition-colors"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-2/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50"
                       aria-expanded={open}
                     >
-                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: h.season.color || '#3c50e0' }} />
-                      <span className="font-semibold text-white truncate">{h.season.name}</span>
+                      <span className="h-6 w-1 shrink-0 -skew-x-12 rounded-sm" style={{ background: seasonAccent(h.season.color) }} />
+                      <span className="truncate font-display font-bold text-ink-1">{h.season.name}</span>
                       {h.champion && (
-                        <span className="hidden sm:inline-flex items-center gap-1 text-xs text-yellow-400 ml-2">
+                        <span className="ml-2 hidden items-center gap-1 text-xs text-accent-gold sm:inline-flex">
                           <Trophy size={12} /> {h.champion.name}
                         </span>
                       )}
                       {h.mvp?.user && (
-                        <span className="hidden md:inline-flex items-center gap-1.5 text-xs text-gray-400 ml-2">
-                          <Crown size={12} className="text-yellow-400" /> {h.mvp.user.displayName || h.mvp.user.username}
+                        <span className="ml-2 hidden items-center gap-1.5 text-xs text-ink-2 md:inline-flex">
+                          <Crown size={12} className="text-accent-gold" /> {h.mvp.user.displayName || h.mvp.user.username}
                         </span>
                       )}
-                      <span className="ml-auto text-xs text-gray-500 shrink-0">{t('awards.count', { n: h.awardsCount })}</span>
-                      <ChevronDown size={16} className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+                      <span className="ml-auto shrink-0 text-xs text-ink-3 num">{t('awards.count', { n: h.awardsCount })}</span>
+                      <ChevronDown size={16} className={`text-ink-3 transition-transform duration-fast ${open ? 'rotate-180' : ''}`} />
                     </button>
                     <AnimatePresence initial={false}>
                       {open && (
@@ -269,20 +262,20 @@ function AwardsContent() {
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.25 }}
+                          transition={{ duration: 0.22 }}
                           className="overflow-hidden"
                         >
-                          <div className="px-4 pb-4 space-y-3">
+                          <div className="space-y-3 px-4 pb-4">
                             {h.awards.length === 0 ? (
-                              <p className="text-sm text-gray-500">{t('hof.noAwards')}</p>
+                              <p className="text-sm text-ink-3">{t('hof.noAwards')}</p>
                             ) : (
-                              <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                              <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                                 {h.awards.map((a) => (
-                                  <li key={a.id} className="flex items-center gap-3 rounded-xl bg-white/[0.03] border border-white/10 px-3 py-2 min-w-0">
+                                  <li key={a.id} className="flex min-w-0 items-center gap-3 rounded border border-line-subtle bg-surface-2/60 px-3 py-2">
                                     <PlayerAvatar user={a.user} size="sm" />
                                     <div className="min-w-0">
-                                      <p className="text-[11px] uppercase tracking-wider text-gray-500 truncate">{categoryLabel(t, a)}</p>
-                                      <p className="text-sm font-semibold text-white truncate">
+                                      <p className="truncate text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{categoryLabel(t, a)}</p>
+                                      <p className="truncate text-sm font-semibold text-ink-1">
                                         {a.user ? a.user.displayName || a.user.username : t('awards.noPlayer')}
                                       </p>
                                     </div>
@@ -290,12 +283,12 @@ function AwardsContent() {
                                 ))}
                               </ul>
                             )}
-                            <div className="flex flex-wrap gap-3 text-sm">
-                              <button type="button" onClick={() => setSelected(h.season.id)} className="text-primary hover:underline">
+                            <div className="flex flex-wrap gap-4 text-sm">
+                              <button type="button" onClick={() => setSelected(h.season.id)} className="font-medium text-primary hover:underline">
                                 {t('awards.title')}
                               </button>
                               {h.season.slug && (
-                                <Link href={`/ceremony/${h.season.slug}`} className="text-yellow-400 hover:underline">
+                                <Link href={`/ceremony/${h.season.slug}`} className="font-medium text-accent-gold hover:underline">
                                   {t('awards.ceremony')}
                                 </Link>
                               )}
@@ -307,12 +300,10 @@ function AwardsContent() {
                   </div>
                 );
               })}
-            </div>
+            </Card>
           )}
         </section>
-      </main>
-      <LandingFooter />
-      <BackToTop />
-    </div>
+      </div>
+    </PublicShell>
   );
 }

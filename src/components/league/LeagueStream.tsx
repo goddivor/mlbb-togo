@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Radio, WifiOff, Youtube, PlayCircle } from 'lucide-react';
 import { api } from '@/lib/api';
-import { Badge, Button } from '@/components/ui';
+import { Badge, Button, Card } from '@/components/ui';
 import type { TFn } from '@/components/matches/shared';
 
 type LiveState = { live: boolean; videoId: string | null; title?: string | null };
@@ -45,19 +45,19 @@ export default function LeagueStream({ seasonId, t }: { seasonId: string | null;
   const channel = config?.youtubeChannel || 'eternumesports';
 
   return (
-    <div className="card-gaming overflow-hidden !p-0">
-      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gaming-border">
+    <Card className="overflow-hidden !p-0">
+      <div className="flex items-center justify-between gap-3 border-b border-line-subtle px-4 py-3">
         <div className="flex items-center gap-2 min-w-0">
           {live?.live ? (
-            <Badge variant="red" size="sm" className="animate-pulse">
-              <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-red-500" /> {t('stream.live')}
+            <Badge variant="live" size="sm">
+              {t('stream.live')}
             </Badge>
           ) : (
             <Badge variant="default" size="sm">
               <Radio size={12} /> {t('league.stream.offline')}
             </Badge>
           )}
-          <span className="truncate text-sm font-semibold text-white">{title}</span>
+          <span className="truncate text-sm font-semibold text-ink-1">{title}</span>
         </div>
         <a
           href={featuredId ? watch(featuredId) : `https://www.youtube.com/@${channel}`}
@@ -81,17 +81,19 @@ export default function LeagueStream({ seasonId, t }: { seasonId: string | null;
           />
         </div>
       ) : (
-        <div className="flex aspect-video w-full flex-col items-center justify-center bg-gaming-darker text-center px-6">
-          <WifiOff size={40} className="mb-3 text-gray-500" />
-          <p className="font-semibold text-gray-300">{t('stream.noLive')}</p>
-          <p className="mt-1 text-sm text-gray-500">{t('stream.noLiveDesc')}</p>
+        <div className="flex aspect-video w-full flex-col items-center justify-center bg-surface-0 px-6 text-center">
+          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded cut-corners bg-surface-2 text-ink-3 ring-1 ring-inset ring-line-subtle">
+            <WifiOff size={24} />
+          </div>
+          <p className="font-display font-bold text-ink-1">{t('stream.noLive')}</p>
+          <p className="mt-1 text-sm text-ink-2">{t('stream.noLiveDesc')}</p>
         </div>
       )}
       <div className="px-4 py-3 text-sm">
-        <Link href="/stream" className="inline-flex items-center gap-1.5 text-neon-blue hover:underline">
+        <Link href="/stream" className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline">
           <PlayCircle size={14} /> {t('league.stream.all')}
         </Link>
       </div>
-    </div>
+    </Card>
   );
 }

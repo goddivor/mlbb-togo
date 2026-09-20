@@ -2,64 +2,42 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   ListOrdered,
   CalendarDays,
   Megaphone,
   Trophy,
-  Sparkles,
   ChevronRight,
-  Flag,
   Handshake,
   History,
   Clock,
   Radio,
+  Shield,
+  Swords,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { useLangStore } from '@/store/useStore';
-import { Badge, Button, EmptyState, LoadingSpinner } from '@/components/ui';
+import { Badge, Button, Card, EmptyState, SectionTitle, Skeleton, StatCard } from '@/components/ui';
+import { MatchScoreline } from '@/components/game';
 import PublicShell from '@/components/landing/PublicShell';
-import { SeasonStatusBadge, seasonPeriod, fmtSeasonDate } from '@/components/seasons/shared';
+import { SeasonHero } from '@/components/seasons/shared';
 import type { Season } from '@/store/useSeasonStore';
-import MatchCard from '@/components/matches/MatchCard';
 import { displayStatus, type EsportMatch } from '@/components/matches/shared';
 import { SponsorBadge, type FeedPost } from '@/components/forum/PostCard';
 import { markdownToText } from '@/lib/markdown';
 import { timeAgo } from '@/lib/helpers';
+import { fadeUp, stagger, still } from '@/lib/motion';
 import LeaguePodium, { type PodiumRow } from '@/components/league/LeaguePodium';
 import LeagueStream from '@/components/league/LeagueStream';
 import SponsorTiers, { useSponsors } from '@/components/sponsors/SponsorTiers';
 
-const fadeUp = {
-  initial: { opacity: 0, y: 24 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true },
-};
-
-function SectionTitle({
-  icon,
-  children,
-  href,
-  linkLabel,
-}: {
-  icon: React.ReactNode;
-  children: React.ReactNode;
-  href?: string;
-  linkLabel?: string;
-}) {
+function MoreLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <div className="mb-4 flex items-center justify-between gap-3">
-      <h2 className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-gray-400">
-        {icon} {children}
-      </h2>
-      {href && linkLabel && (
-        <Link href={href} className="inline-flex items-center gap-1 text-sm text-neon-blue hover:underline">
-          {linkLabel} <ChevronRight size={14} />
-        </Link>
-      )}
-    </div>
+    <Link href={href} className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+      {children} <ChevronRight size={14} />
+    </Link>
   );
 }
 
@@ -67,6 +45,7 @@ function SectionTitle({
 export default function LeaguePage() {
   const t = useT();
   const lang = useLangStore((s: any) => s.lang);
+  const reduce = useReducedMotion();
   const [season, setSeason] = useState<Season | null>(null);
   const [ready, setReady] = useState(false);
   const [rows, setRows] = useState<PodiumRow[]>([]);
@@ -115,12 +94,11 @@ export default function LeaguePage() {
     };
   }, []);
 
-  const { lastResults, nextMatches } = useMemo(() => {
+  const { lastResults, nextMatches, completed, live } = useMemo(() => {
     const now = Date.now();
     const done = matches
       .filter((m) => m.status === 'completed')
-      .sort((a, b) => new Date(b.scheduledAt ?? 0).getTime() - new Date(a.scheduledAt ?? 0).getTime())
-      .slice(0, 5);
+      .sort((a, b) => new Date(b.scheduledAt ?? 0).getTime() - new Date(a.scheduledAt ?? 0).getTime());
     const next = matches
       .filter((m) => {
         const st = displayStatus(m, now);
@@ -130,192 +108,200 @@ export default function LeaguePage() {
         const ta = a.scheduledAt ? new Date(a.scheduledAt).getTime() : Infinity;
         const tb = b.scheduledAt ? new Date(b.scheduledAt).getTime() : Infinity;
         return ta - tb;
-      })
-      .slice(0, 5);
-    return { lastResults: done, nextMatches: next };
+      });
+    return {
+      lastResults: done.slice(0, 5),
+      nextMatches: next.slice(0, 5),
+      completed: done.length,
+      live: matches.filter((m) => displayStatus(m, now) === 'live').length,
+    };
   }, [matches]);
 
-  const accent = season?.color || '#3c50e0';
-  const period = season ? seasonPeriod(season, lang) : null;
   const news = sponsored && !posts.some((p) => p.id === sponsored.id) ? [...posts.slice(0, 3), sponsored] : posts.slice(0, 3);
+  const leader = rows.find((r) => r.rank === 1) ?? null;
+  const listVariants = reduce ? still : stagger(0.05);
+  const itemVariants = reduce ? still : fadeUp;
 
   return (
     <PublicShell>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20 space-y-14">
+      <div className="mx-auto max-w-7xl space-y-14 px-4 pb-20 sm:px-6">
         {/* Season theme header */}
         {!ready ? (
-          <LoadingSpinner size="lg" className="py-24" />
+          <Skeleton className="h-[22rem] w-full rounded-lg md:h-[26rem]" />
         ) : !season ? (
           <EmptyState icon={<CalendarDays size={28} />} title={t('seasons.none')} />
         ) : (
-          <motion.section
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden rounded-3xl border border-white/10"
-            style={{ boxShadow: `0 0 90px -20px ${accent}` }}
-          >
-            {season.banner ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={season.banner} alt="" className="absolute inset-0 h-full w-full object-cover" />
-            ) : (
-              <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${accent}, #0b0f1a 70%)` }} />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/55 to-black/25" />
-            <div className="relative p-6 sm:p-10 md:p-14 flex flex-col gap-4 min-h-[20rem] justify-end">
-              <div className="flex flex-wrap items-center gap-2">
-                <SeasonStatusBadge status={season.status} t={t} size="md" className="bg-white/10 backdrop-blur" />
-                {season.number != null && (
-                  <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/70">
-                    {t('seasons.numberLabel', { n: season.number })}
-                  </span>
-                )}
-                <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/50">{t('league.kicker')}</span>
-              </div>
-              <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white drop-shadow">{season.name}</h1>
-              {season.theme && (
-                <p className="inline-flex items-center gap-2 text-lg sm:text-2xl font-semibold" style={{ color: accent }}>
-                  <Sparkles size={20} /> {season.theme}
-                </p>
-              )}
-              {season.slogan && <p className="text-white/80 italic text-base sm:text-lg max-w-2xl">« {season.slogan} »</p>}
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-white/70">
-                {period && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <CalendarDays size={14} /> {period}
-                  </span>
-                )}
-                {season.playoffsStartDate && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Flag size={14} /> {t('seasons.playoffsFrom', { date: fmtSeasonDate(season.playoffsStartDate, lang) || '' })}
-                  </span>
-                )}
-              </div>
-              <div className="mt-3 flex flex-wrap gap-3">
-                <Link href="/standings">
-                  <Button variant="primary" size="md">
-                    <ListOrdered size={16} /> {t('league.cta.standings')}
-                  </Button>
-                </Link>
-                <Link href="/matches">
-                  <Button variant="outline" size="md">
-                    <CalendarDays size={16} /> {t('league.cta.calendar')}
-                  </Button>
-                </Link>
-                <Link href="/forum">
-                  <Button variant="outline" size="md">
-                    <Megaphone size={16} /> {t('league.cta.news')}
-                  </Button>
-                </Link>
-                {season.slug && (
-                  <Link
-                    href={`/seasons/${season.slug}`}
-                    className="inline-flex items-center gap-1 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white hover:bg-white/20 transition-colors"
-                  >
-                    {t('seasons.details')} <ChevronRight size={16} />
+          <motion.div initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.32 }}>
+            <SeasonHero
+              season={season}
+              t={t}
+              lang={lang}
+              eyebrow={`${t('league.kicker')}${season.number != null ? ` · ${t('seasons.numberLabel', { n: season.number })}` : ''}`}
+              actions={
+                <>
+                  <Link href="/standings">
+                    <Button variant="primary" size="md">
+                      <ListOrdered size={16} /> {t('league.cta.standings')}
+                    </Button>
                   </Link>
-                )}
-              </div>
+                  <Link href="/matches">
+                    <Button variant="outline" size="md" className="!border-white/30 !text-white hover:!border-white">
+                      <CalendarDays size={16} /> {t('league.cta.calendar')}
+                    </Button>
+                  </Link>
+                  <Link href="/forum">
+                    <Button variant="outline" size="md" className="!border-white/30 !text-white hover:!border-white">
+                      <Megaphone size={16} /> {t('league.cta.news')}
+                    </Button>
+                  </Link>
+                  {season.slug && (
+                    <Link href={`/seasons/${season.slug}`}>
+                      <Button variant="ghost" size="md" className="!text-white/80 hover:!bg-white/10 hover:!text-white">
+                        {t('seasons.details')} <ChevronRight size={16} />
+                      </Button>
+                    </Link>
+                  )}
+                </>
+              }
+            />
+            {/* Season pulse */}
+            <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+              <StatCard label={t('league.kpi.teams')} value={rows.length} icon={<Shield size={18} />} accent="cyan" />
+              <StatCard
+                label={t('league.kpi.played')}
+                value={completed}
+                hint={t('league.kpi.of', { n: matches.length })}
+                icon={<Swords size={18} />}
+                accent="violet"
+              />
+              <StatCard label={t('league.kpi.upcoming')} value={Math.max(matches.length - completed, 0)} icon={<Clock size={18} />} accent="green" />
+              <StatCard
+                label={t('league.kpi.leader')}
+                value={<span className="block whitespace-normal break-words text-lg leading-tight sm:text-2xl">{leader ? leader.team.name : '—'}</span>}
+                hint={leader ? `${leader.points} pts` : undefined}
+                icon={<Trophy size={18} />}
+                accent="gold"
+              />
             </div>
-          </motion.section>
+          </motion.div>
         )}
 
         {/* Podium */}
         {ready && season && (
-          <motion.section {...fadeUp}>
-            <SectionTitle icon={<Trophy size={16} />} href="/standings" linkLabel={t('league.seeStandings')}>
-              {t('league.podium.title')}
-            </SectionTitle>
-            <div className="card-gaming p-6 sm:p-10">
+          <section>
+            <SectionTitle
+              title={<span className="inline-flex items-center gap-2"><Trophy size={18} className="text-accent-gold" /> {t('league.podium.title')}</span>}
+              action={<MoreLink href="/standings">{t('league.seeStandings')}</MoreLink>}
+              className="mb-5"
+            />
+            <Card glow className="p-6 sm:p-10">
               <LeaguePodium rows={rows} t={t} />
-            </div>
-          </motion.section>
+            </Card>
+          </section>
         )}
 
         {/* Results + upcoming */}
         {ready && season && (
-          <div className="grid lg:grid-cols-2 gap-8">
-            <motion.section {...fadeUp}>
-              <SectionTitle icon={<History size={16} />} href="/matches" linkLabel={t('league.seeCalendar')}>
-                {t('league.lastResults')}
-              </SectionTitle>
+          <div className="grid gap-8 lg:grid-cols-2">
+            <section className="min-w-0">
+              <SectionTitle
+                title={<span className="inline-flex items-center gap-2"><History size={18} className="text-ink-3" /> {t('league.lastResults')}</span>}
+                action={<MoreLink href="/matches">{t('league.seeCalendar')}</MoreLink>}
+                className="mb-4"
+              />
               {lastResults.length === 0 ? (
-                <p className="card-gaming p-6 text-sm text-gray-400">{t('league.noResults')}</p>
+                <Card className="text-sm text-ink-2">{t('league.noResults')}</Card>
               ) : (
-                <div className="space-y-3">
+                <motion.div variants={listVariants} initial="hidden" animate="visible" className="space-y-3">
                   {lastResults.map((m) => (
-                    <MatchCard key={m.id} match={m} t={t} lang={lang} compact />
+                    <motion.div key={m.id} variants={itemVariants}>
+                      <MatchScoreline match={m} />
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               )}
-            </motion.section>
-            <motion.section {...fadeUp} transition={{ delay: 0.08 }}>
-              <SectionTitle icon={<Clock size={16} />} href="/matches" linkLabel={t('league.seeCalendar')}>
-                {t('league.nextMatches')}
-              </SectionTitle>
+            </section>
+            <section className="min-w-0">
+              <SectionTitle
+                title={
+                  <span className="inline-flex items-center gap-2">
+                    <Clock size={18} className="text-ink-3" /> {t('league.nextMatches')}
+                    {live > 0 && <Badge variant="live" size="sm">{t('matches.status.live')}</Badge>}
+                  </span>
+                }
+                action={<MoreLink href="/matches">{t('league.seeCalendar')}</MoreLink>}
+                className="mb-4"
+              />
               {nextMatches.length === 0 ? (
-                <p className="card-gaming p-6 text-sm text-gray-400">{t('league.noUpcoming')}</p>
+                <Card className="text-sm text-ink-2">{t('league.noUpcoming')}</Card>
               ) : (
-                <div className="space-y-3">
+                <motion.div variants={listVariants} initial="hidden" animate="visible" className="space-y-3">
                   {nextMatches.map((m) => (
-                    <MatchCard key={m.id} match={m} t={t} lang={lang} compact />
+                    <motion.div key={m.id} variants={itemVariants}>
+                      <MatchScoreline match={m} />
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               )}
-            </motion.section>
+            </section>
           </div>
         )}
 
         {/* News + stream */}
-        <div className="grid lg:grid-cols-5 gap-8">
-          <motion.section {...fadeUp} className="lg:col-span-2">
-            <SectionTitle icon={<Megaphone size={16} />} href="/forum" linkLabel={t('league.seeNews')}>
-              {t('league.news')}
-            </SectionTitle>
+        <div className="grid gap-8 lg:grid-cols-5">
+          <section className="min-w-0 lg:col-span-2">
+            <SectionTitle
+              title={<span className="inline-flex items-center gap-2"><Megaphone size={18} className="text-ink-3" /> {t('league.news')}</span>}
+              action={<MoreLink href="/forum">{t('league.seeNews')}</MoreLink>}
+              className="mb-4"
+            />
             {news.length === 0 ? (
-              <p className="card-gaming p-6 text-sm text-gray-400">{t('league.noNews')}</p>
+              <Card className="text-sm text-ink-2">{t('league.noNews')}</Card>
             ) : (
-              <div className="space-y-3">
+              <motion.div variants={listVariants} initial="hidden" animate="visible" className="space-y-3">
                 {news.map((p) => (
-                  <Link
-                    key={p.id}
-                    href={`/forum?post=${p.id}`}
-                    className={`block card-gaming p-4 transition-colors hover:border-neon-blue/50 ${
-                      p.isSponsored ? '!border-warning/40' : ''
-                    }`}
-                  >
-                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      {p.isSponsored ? (
-                        <SponsorBadge sponsor={p.sponsor} t={t} />
-                      ) : (
-                        <Badge variant="neon" size="sm">{t('league.announcement')}</Badge>
-                      )}
-                      <span className="text-xs text-gray-500">{timeAgo(p.createdAt)}</span>
-                    </div>
-                    <h3 className="font-semibold text-white line-clamp-1">{p.title}</h3>
-                    <p className="text-sm text-gray-400 line-clamp-2 mt-1">{markdownToText(p.content)}</p>
-                  </Link>
+                  <motion.div key={p.id} variants={itemVariants}>
+                    <Link href={`/forum?post=${p.id}`} className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+                      <Card hover accent={p.isSponsored ? 'gold' : 'cyan'} className="p-4">
+                        <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                          {p.isSponsored ? (
+                            <SponsorBadge sponsor={p.sponsor} t={t} />
+                          ) : (
+                            <Badge variant="neon" size="sm">{t('league.announcement')}</Badge>
+                          )}
+                          <span className="text-xs text-ink-3">{timeAgo(p.createdAt)}</span>
+                        </div>
+                        <h3 className="line-clamp-1 font-display font-bold text-ink-1">{p.title}</h3>
+                        <p className="mt-1 line-clamp-2 text-sm text-ink-2">{markdownToText(p.content)}</p>
+                      </Card>
+                    </Link>
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             )}
-          </motion.section>
-          <motion.section {...fadeUp} transition={{ delay: 0.08 }} className="lg:col-span-3">
-            <SectionTitle icon={<Radio size={16} />} href="/stream" linkLabel={t('league.stream.all')}>
-              {t('league.stream.title')}
-            </SectionTitle>
+          </section>
+          <section className="min-w-0 lg:col-span-3">
+            <SectionTitle
+              title={<span className="inline-flex items-center gap-2"><Radio size={18} className="text-ink-3" /> {t('league.stream.title')}</span>}
+              action={<MoreLink href="/stream">{t('league.stream.all')}</MoreLink>}
+              className="mb-4"
+            />
             <LeagueStream seasonId={season?.id ?? null} t={t} />
-          </motion.section>
+          </section>
         </div>
 
         {/* Sponsors banner */}
         {sponsors && sponsors.items.length > 0 && (
-          <motion.section {...fadeUp}>
-            <SectionTitle icon={<Handshake size={16} />} href="/sponsors" linkLabel={t('sponsors.becomeSponsor')}>
-              {t('league.sponsors')}
-            </SectionTitle>
-            <div className="card-gaming p-6 sm:p-8">
+          <section>
+            <SectionTitle
+              title={<span className="inline-flex items-center gap-2"><Handshake size={18} className="text-ink-3" /> {t('league.sponsors')}</span>}
+              action={<MoreLink href="/sponsors">{t('sponsors.becomeSponsor')}</MoreLink>}
+              className="mb-4"
+            />
+            <Card className="p-6 sm:p-8">
               <SponsorTiers data={sponsors} compact showCta={false} />
-            </div>
-          </motion.section>
+            </Card>
+          </section>
         )}
       </div>
     </PublicShell>
