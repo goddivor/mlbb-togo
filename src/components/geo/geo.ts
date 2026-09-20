@@ -27,6 +27,9 @@ export const TOGO_GEO_SOURCE = {
   name: 'geoBoundaries (gbOpen, TGO ADM1)',
   url: 'https://www.geoboundaries.org/',
   license: 'ODbL 1.0',
+  /** ODbL requires crediting the upstream data producer. */
+  data: '© OpenStreetMap contributors',
+  dataUrl: 'https://www.openstreetmap.org/copyright',
 };
 
 export type TogoRegionFeature = {

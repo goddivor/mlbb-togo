@@ -253,7 +253,10 @@ export default function TogoMap({
         <a href={TOGO_GEO_SOURCE.url} target="_blank" rel="noreferrer" className="underline hover:text-primary">
           {TOGO_GEO_SOURCE.name}
         </a>{' '}
-        ({TOGO_GEO_SOURCE.license})
+        ({TOGO_GEO_SOURCE.license}) ·{' '}
+        <a href={TOGO_GEO_SOURCE.dataUrl} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+          {TOGO_GEO_SOURCE.data}
+        </a>
       </p>
 
       {tooltip && (
