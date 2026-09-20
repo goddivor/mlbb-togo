@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Badge, Button, Input, Select, Textarea } from '@/components/ui';
+import { Button, Input, Select, Textarea, SectionTitle } from '@/components/ui';
 
 export interface OfferOption {
   id: string;
@@ -70,15 +69,8 @@ export default function PartnershipForm({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      className="rounded-xl border border-gaming-border bg-gaming-card shadow-gaming p-6 sm:p-10 max-w-3xl mx-auto"
-    >
-      <Badge variant="neon" size="sm" className="mb-3 uppercase tracking-[0.2em]">{eyebrow}</Badge>
-      <h2 className="text-2xl sm:text-3xl font-bold text-white">{title}</h2>
-      <p className="text-gray-400 mt-2">{subtitle}</p>
+    <div className="cut-corners mx-auto max-w-3xl border border-line-subtle bg-surface-1 p-6 shadow-elev-2 sm:p-10">
+      <SectionTitle size="lg" eyebrow={eyebrow} title={<span className="uppercase">{title}</span>} description={subtitle} />
 
       <form onSubmit={submit} className="mt-6 space-y-4">
         <div className="grid sm:grid-cols-2 gap-4">
@@ -110,6 +102,6 @@ export default function PartnershipForm({
           {t('sponsors.form.send')} <Send size={16} />
         </Button>
       </form>
-    </motion.div>
+    </div>
   );
 }

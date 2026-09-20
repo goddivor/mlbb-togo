@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { CalendarClock, List } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { useLangStore } from '@/store/useStore';
-import { Badge } from '@/components/ui';
 import PublicShell from '@/components/landing/PublicShell';
 import { getLegalCatalogue, LEGAL_SLUGS, type LegalSlug } from '@/content/legal';
 import { ORGANISATION } from '@/content/organisation';
@@ -54,12 +53,10 @@ export default function LegalLayout({ slug }: { slug: LegalSlug }) {
     <PublicShell>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
         <header className="max-w-3xl mb-10">
-          <Badge variant="neon" size="sm" className="mb-3 uppercase tracking-[0.2em]">
-            {t('legal.eyebrow')}
-          </Badge>
-          <h1 className="text-3xl sm:text-5xl font-bold text-white leading-tight">{page.title}</h1>
-          <p className="text-gray-400 mt-4 leading-relaxed">{page.intro}</p>
-          <p className="mt-4 inline-flex items-center gap-2 text-xs text-gray-500">
+          <p className="eyebrow mb-3">{t('legal.eyebrow')}</p>
+          <h1 className="font-display text-3xl sm:text-5xl font-bold uppercase tracking-tight2 text-ink-1 leading-[0.95]">{page.title}</h1>
+          <p className="text-ink-2 mt-4 leading-relaxed">{page.intro}</p>
+          <p className="mt-4 inline-flex items-center gap-2 text-xs text-ink-3">
             <CalendarClock size={14} />
             {t('legal.updated')} {updated}
           </p>
@@ -67,8 +64,8 @@ export default function LegalLayout({ slug }: { slug: LegalSlug }) {
 
         <div className="grid lg:grid-cols-[260px_1fr] gap-8 lg:gap-12">
           <aside className="lg:sticky lg:top-28 self-start space-y-6">
-            <nav aria-label={t('legal.toc')} className="rounded-xl border border-gaming-border bg-gaming-card/70 p-5">
-              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 mb-3">
+            <nav aria-label={t('legal.toc')} className="rounded-lg border border-line-subtle bg-surface-1 p-5 shadow-elev-1">
+              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-eyebrow text-ink-3 mb-3">
                 <List size={14} /> {t('legal.toc')}
               </p>
               <ol className="space-y-1.5">
@@ -79,11 +76,11 @@ export default function LegalLayout({ slug }: { slug: LegalSlug }) {
                       aria-current={active === s.id ? 'location' : undefined}
                       className={`block text-sm rounded-md px-2 py-1 transition-colors ${
                         active === s.id
-                          ? 'text-neon-blue bg-neon-blue/10'
-                          : 'text-gray-400 hover:text-white hover:bg-white/5'
+                          ? 'text-primary bg-primary/10'
+                          : 'text-ink-2 hover:text-ink-1 hover:bg-surface-2'
                       }`}
                     >
-                      <span className="text-gray-600 mr-2 tabular-nums">{i + 1}.</span>
+                      <span className="text-ink-3 mr-2 num">{i + 1}.</span>
                       {s.title}
                     </a>
                   </li>
@@ -91,8 +88,8 @@ export default function LegalLayout({ slug }: { slug: LegalSlug }) {
               </ol>
             </nav>
 
-            <nav aria-label={t('legal.otherPages')} className="rounded-xl border border-gaming-border bg-gaming-card/70 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 mb-3">
+            <nav aria-label={t('legal.otherPages')} className="rounded-lg border border-line-subtle bg-surface-1 p-5 shadow-elev-1">
+              <p className="text-[11px] font-semibold uppercase tracking-eyebrow text-ink-3 mb-3">
                 {t('legal.otherPages')}
               </p>
               <ul className="space-y-1.5">
@@ -102,7 +99,7 @@ export default function LegalLayout({ slug }: { slug: LegalSlug }) {
                       href={`/legal/${s}`}
                       aria-current={s === slug ? 'page' : undefined}
                       className={`block text-sm rounded-md px-2 py-1 transition-colors ${
-                        s === slug ? 'text-white font-semibold' : 'text-gray-400 hover:text-neon-blue'
+                        s === slug ? 'text-ink-1 font-semibold' : 'text-ink-2 hover:text-primary'
                       }`}
                     >
                       {catalogue[s].label}
@@ -113,19 +110,19 @@ export default function LegalLayout({ slug }: { slug: LegalSlug }) {
             </nav>
           </aside>
 
-          <article className="min-w-0 rounded-2xl border border-gaming-border bg-gaming-card/70 backdrop-blur p-6 sm:p-10">
+          <article className="min-w-0 rounded-lg border border-line-subtle bg-surface-1 shadow-elev-1 p-6 sm:p-10">
             {page.sections.map((s, i) => (
-              <section key={s.id} id={s.id} className={`scroll-mt-28 ${i > 0 ? 'mt-10 pt-10 border-t border-gaming-border' : ''}`}>
-                <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-                  <span className="text-neon-blue mr-2 tabular-nums">{i + 1}.</span>
+              <section key={s.id} id={s.id} className={`scroll-mt-28 ${i > 0 ? 'mt-10 pt-10 border-t border-line-subtle' : ''}`}>
+                <h2 className="font-display text-xl sm:text-2xl font-bold tracking-tight2 text-ink-1 mb-4">
+                  <span className="text-primary mr-2 num">{i + 1}.</span>
                   {s.title}
                 </h2>
-                <div className="space-y-4 text-sm sm:text-base text-gray-400 leading-relaxed">
+                <div className="space-y-4 text-sm sm:text-base text-ink-2 leading-relaxed">
                   {s.paragraphs.map((p) => (
                     <p key={p}>{p}</p>
                   ))}
                   {s.bullets && (
-                    <ul className="list-disc pl-5 space-y-2 marker:text-neon-blue">
+                    <ul className="list-disc pl-5 space-y-2 marker:text-primary">
                       {s.bullets.map((b) => (
                         <li key={b}>{b}</li>
                       ))}
@@ -135,9 +132,9 @@ export default function LegalLayout({ slug }: { slug: LegalSlug }) {
               </section>
             ))}
 
-            <footer className="mt-10 pt-6 border-t border-gaming-border text-xs text-gray-500">
+            <footer className="mt-10 pt-6 border-t border-line-subtle text-xs text-ink-3">
               {t('legal.contactHint')}{' '}
-              <a href={`mailto:${ORGANISATION.contactEmail}`} className="text-neon-blue hover:underline">
+              <a href={`mailto:${ORGANISATION.contactEmail}`} className="text-primary hover:underline">
                 {ORGANISATION.contactEmail}
               </a>
             </footer>

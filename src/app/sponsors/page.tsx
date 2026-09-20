@@ -1,34 +1,29 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
 import {
   ArrowRight,
   Check,
   Radio,
-  Share2,
-  Shield,
   MapPin,
   Shirt,
   Megaphone,
   Clapperboard,
   Gift,
-  Star,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { useLangStore } from '@/store/useStore';
-import { Badge, Button } from '@/components/ui';
+import { cn } from '@/lib/helpers';
+import { Badge, Button, type Accent } from '@/components/ui';
 import PublicShell from '@/components/landing/PublicShell';
-import CountUp from '@/components/about/CountUp';
 import FaqAccordion from '@/components/about/FaqAccordion';
+import PublicHero from '@/components/about/PublicHero';
+import { FigureGrid, IconCard, SectionHeading, type Figures } from '@/components/about/PublicBlocks';
 import SponsorTiers, { useSponsors, type SponsorTier } from '@/components/sponsors/SponsorTiers';
 import PartnershipForm from '@/components/sponsors/PartnershipForm';
 import { getAboutContent } from '@/content/about';
 import { getSponsorsContent, type SponsorActivation } from '@/content/sponsors';
-
-type FigureKey = 'streamAudience' | 'socialReach' | 'teams' | 'offlineEvents';
-type Figures = Record<FigureKey, number>;
 
 interface Offer {
   id: string;
@@ -39,42 +34,21 @@ interface Offer {
   highlight: boolean;
 }
 
-const FIGURE_ICONS: Record<FigureKey, { icon: any; color: string }> = {
-  streamAudience: { icon: Radio, color: 'text-neon-pink' },
-  socialReach: { icon: Share2, color: 'text-neon-blue' },
-  teams: { icon: Shield, color: 'text-neon-purple' },
-  offlineEvents: { icon: MapPin, color: 'text-neon-gold' },
-};
-
-const ACTIVATION_ICONS: Record<SponsorActivation['key'], { icon: any; color: string; ring: string }> = {
-  stream: { icon: Radio, color: 'text-neon-pink', ring: 'bg-neon-pink/10' },
-  jersey: { icon: Shirt, color: 'text-neon-blue', ring: 'bg-neon-blue/10' },
-  events: { icon: MapPin, color: 'text-neon-gold', ring: 'bg-neon-gold/10' },
-  feed: { icon: Megaphone, color: 'text-neon-purple', ring: 'bg-neon-purple/10' },
-  content: { icon: Clapperboard, color: 'text-neon-green', ring: 'bg-neon-green/10' },
-  prizes: { icon: Gift, color: 'text-orange-400', ring: 'bg-orange-400/10' },
+const ACTIVATION_ICONS: Record<SponsorActivation['key'], { icon: any; accent: Accent }> = {
+  stream: { icon: Radio, accent: 'red' },
+  jersey: { icon: Shirt, accent: 'cyan' },
+  events: { icon: MapPin, accent: 'gold' },
+  feed: { icon: Megaphone, accent: 'violet' },
+  content: { icon: Clapperboard, accent: 'green' },
+  prizes: { icon: Gift, accent: 'gold' },
 };
 
 const TIER_BADGE: Record<SponsorTier, string> = {
-  title: 'gold',
-  gold: 'gold',
-  silver: 'default',
-  partner: 'blue',
+  title: 'tier-gold',
+  gold: 'tier-gold',
+  silver: 'tier-silver',
+  partner: 'tier-bronze',
 };
-
-const fadeUp = {
-  initial: { opacity: 0, y: 24 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true },
-};
-
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <Badge variant="neon" size="sm" className="mb-3 uppercase tracking-[0.2em]">
-      {children}
-    </Badge>
-  );
-}
 
 export default function SponsorsPage() {
   const t = useT();
@@ -123,113 +97,77 @@ export default function SponsorsPage() {
 
   return (
     <PublicShell>
-      {/* Hero */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-16 sm:pb-20">
-        <motion.div {...fadeUp} className="max-w-3xl">
-          <Eyebrow>{c.hero.eyebrow}</Eyebrow>
-          <h1 className="text-4xl sm:text-6xl font-bold text-white leading-tight">
-            {c.hero.title.split(' ').slice(0, -2).join(' ')}{' '}
-            <span className="text-gradient">{c.hero.title.split(' ').slice(-2).join(' ')}</span>
-          </h1>
-          <p className="text-gray-400 mt-5 text-lg leading-relaxed">{c.hero.subtitle}</p>
-          <div className="flex flex-wrap items-center gap-3 mt-8">
+      <PublicHero
+        accent="gold"
+        eyebrow={c.hero.eyebrow}
+        title={c.hero.title}
+        subtitle={c.hero.subtitle}
+        actions={
+          <>
             <Button variant="primary" size="lg" onClick={() => scrollTo('offers')}>
               {c.hero.ctaPrimary} <ArrowRight size={18} />
             </Button>
             <Button variant="outline" size="lg" onClick={() => scrollTo('partnership')}>
               {c.hero.ctaSecondary}
             </Button>
-          </div>
-        </motion.div>
-      </section>
+          </>
+        }
+      />
 
       {/* Pitch */}
-      <section id="pitch" className="max-w-7xl mx-auto px-4 sm:px-6 pb-16 sm:pb-20 scroll-mt-24">
-        <div className="grid lg:grid-cols-5 gap-6 lg:gap-10">
-          <motion.article {...fadeUp} className="lg:col-span-3 card-gaming p-7 sm:p-10">
-            <Eyebrow>{c.pitch.eyebrow}</Eyebrow>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white">{c.pitch.title}</h2>
-            <div className="mt-5 space-y-4 text-gray-400 leading-relaxed">
+      <section id="pitch" className="mx-auto max-w-7xl scroll-mt-24 px-4 pb-20 pt-16 sm:px-6 sm:pt-24">
+        <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
+          <article className="rounded-lg border border-line-subtle bg-surface-1 p-7 shadow-elev-1 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1 sm:p-10 lg:col-span-3">
+            <p className="eyebrow mb-3">{c.pitch.eyebrow}</p>
+            <h2 className="font-display text-2xl font-bold uppercase tracking-tight2 text-ink-1 sm:text-3xl">{c.pitch.title}</h2>
+            <div className="mt-5 space-y-4 leading-relaxed text-ink-2">
               {c.pitch.paragraphs.map((p) => (
                 <p key={p}>{p}</p>
               ))}
             </div>
-          </motion.article>
-          <motion.aside
-            {...fadeUp}
-            transition={{ delay: 0.1 }}
-            className="lg:col-span-2 rounded-xl border border-neon-gold/30 bg-gradient-to-br from-neon-gold/10 via-gaming-card to-neon-purple/10 p-7 sm:p-10 flex flex-col justify-center"
-          >
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-neon-gold mb-4">{t('sponsors.tiersTitle')}</p>
-            <ul className="space-y-3">
+          </article>
+          <aside className="cut-corners relative flex flex-col justify-center overflow-hidden border border-accent-gold/30 bg-surface-1 p-7 sm:p-10 lg:col-span-2">
+            <div aria-hidden="true" className="absolute -right-16 -top-16 h-48 w-48 rotate-45 bg-accent-gold/10" />
+            <p className="eyebrow mb-5 !text-accent-gold">{t('sponsors.tiersTitle')}</p>
+            <ul className="space-y-4">
               {(['title', 'gold', 'silver', 'partner'] as SponsorTier[]).map((tier) => (
-                <li key={tier} className="flex gap-3">
-                  <Star size={16} className="mt-1 shrink-0 text-neon-gold" />
+                <li key={tier} className="flex items-start gap-3">
+                  <Badge variant={TIER_BADGE[tier]} size="sm" className="mt-0.5 w-24 shrink-0 justify-center uppercase">
+                    {t(`sponsors.tier.${tier}`)}
+                  </Badge>
                   <div>
-                    <p className="text-sm font-semibold text-white">{c.tiers[tier].label}</p>
-                    <p className="text-xs text-gray-400">{c.tiers[tier].desc}</p>
+                    <p className="text-sm font-semibold text-ink-1">{c.tiers[tier].label}</p>
+                    <p className="text-xs text-ink-3">{c.tiers[tier].desc}</p>
                   </div>
                 </li>
               ))}
             </ul>
-          </motion.aside>
+          </aside>
         </div>
       </section>
 
       {/* Target figures (same counters as the About page) */}
       {figures && (
-        <section id="figures" className="max-w-7xl mx-auto px-4 sm:px-6 pb-16 sm:pb-20 scroll-mt-24">
-          <div className="text-center mb-10">
-            <Eyebrow>{c.figures.eyebrow}</Eyebrow>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white">{c.figures.title}</h2>
-            <p className="text-gray-400 mt-3 max-w-2xl mx-auto">{c.figures.subtitle}</p>
-          </div>
-          <dl className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {about.figures.items.map((f, i) => {
-              const meta = FIGURE_ICONS[f.key];
-              const Icon = meta.icon;
-              return (
-                <motion.div
-                  key={f.key}
-                  {...fadeUp}
-                  transition={{ delay: i * 0.08 }}
-                  className="card-gaming p-5 sm:p-7 text-center flex flex-col"
-                >
-                  <Icon size={24} className={`${meta.color} mx-auto mb-3`} />
-                  <dt className="order-2 mt-2 text-sm font-semibold text-gray-200">{f.label}</dt>
-                  <dd className="order-1 text-3xl sm:text-4xl font-bold text-white tabular-nums">
-                    <CountUp value={figures[f.key] ?? 0} locale={numberLocale} />
-                    <span className={meta.color}>+</span>
-                  </dd>
-                  <dd className="order-3 mt-1 text-xs text-gray-500">{f.hint}</dd>
-                </motion.div>
-              );
-            })}
-          </dl>
+        <section id="figures" className="mx-auto max-w-7xl scroll-mt-24 px-4 pb-20 sm:px-6">
+          <SectionHeading eyebrow={c.figures.eyebrow} title={c.figures.title} subtitle={c.figures.subtitle} />
+          <FigureGrid figures={figures} items={about.figures.items} locale={numberLocale} />
         </section>
       )}
 
       {/* Offers */}
-      <section id="offers" className="max-w-7xl mx-auto px-4 sm:px-6 pb-16 sm:pb-20 scroll-mt-24">
-        <div className="text-center mb-10">
-          <Eyebrow>{c.offers.eyebrow}</Eyebrow>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white">{c.offers.title}</h2>
-          <p className="text-gray-400 mt-3 max-w-2xl mx-auto">{c.offers.subtitle}</p>
-        </div>
+      <section id="offers" className="mx-auto max-w-7xl scroll-mt-24 px-4 pb-20 sm:px-6">
+        <SectionHeading eyebrow={c.offers.eyebrow} title={c.offers.title} subtitle={c.offers.subtitle} />
         {offers.length === 0 ? (
-          <p className="text-center text-gray-400 card-gaming p-8 max-w-2xl mx-auto">{c.offers.empty}</p>
+          <p className="mx-auto max-w-2xl rounded-lg border border-line-subtle bg-surface-1 p-8 text-center text-ink-2">{c.offers.empty}</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch">
-            {offers.map((o, i) => (
-              <motion.div
+          <div className="flex flex-wrap justify-center gap-4">
+            {offers.map((o) => (
+              <div
                 key={o.id}
-                {...fadeUp}
-                transition={{ delay: i * 0.06 }}
-                className={`relative flex flex-col rounded-2xl border p-6 ${
-                  o.highlight
-                    ? 'border-neon-gold/60 bg-gradient-to-b from-neon-gold/10 to-gaming-card shadow-[0_0_40px_-12px_rgba(250,204,21,0.5)]'
-                    : 'border-gaming-border bg-gaming-card/70'
-                }`}
+                className={cn(
+                  'relative flex w-full flex-col rounded-lg border bg-surface-1 p-6 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1 sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]',
+                  o.highlight ? 'border-accent-gold/60 shadow-glow-gold' : 'border-line-subtle shadow-elev-1'
+                )}
               >
                 {o.highlight && (
                   <Badge variant="gold" size="sm" className="absolute -top-3 left-6 uppercase tracking-wider">
@@ -237,16 +175,16 @@ export default function SponsorsPage() {
                   </Badge>
                 )}
                 {o.tier && (
-                  <Badge variant={TIER_BADGE[o.tier]} size="sm" className="w-fit mb-3">
+                  <Badge variant={TIER_BADGE[o.tier]} size="sm" className="mb-3 w-fit uppercase">
                     {t(`sponsors.tier.${o.tier}`)}
                   </Badge>
                 )}
-                <h3 className="text-xl font-bold text-white">{o.name}</h3>
-                <p className="text-neon-blue font-semibold mt-1">{o.priceLabel || t('sponsors.offer.onQuote')}</p>
-                <ul className="mt-5 space-y-2 flex-1">
+                <h3 className="font-display text-xl font-bold uppercase tracking-tight2 text-ink-1">{o.name}</h3>
+                <p className="num mt-1 font-display text-lg font-bold text-primary">{o.priceLabel || t('sponsors.offer.onQuote')}</p>
+                <ul className="mt-5 flex-1 space-y-2">
                   {o.benefits.map((b) => (
-                    <li key={b} className="flex gap-2 text-sm text-gray-300">
-                      <Check size={16} className="mt-0.5 shrink-0 text-neon-green" /> <span>{b}</span>
+                    <li key={b} className="flex gap-2 text-sm text-ink-2">
+                      <Check size={16} className="mt-0.5 shrink-0 text-accent-green" /> <span>{b}</span>
                     </li>
                   ))}
                 </ul>
@@ -258,67 +196,51 @@ export default function SponsorsPage() {
                 >
                   {c.offers.cta}
                 </Button>
-              </motion.div>
+              </div>
             ))}
           </div>
         )}
-        <p className="text-center text-sm text-gray-500 mt-8">{c.offers.custom}</p>
+        <p className="mt-8 text-center text-sm text-ink-3">{c.offers.custom}</p>
       </section>
 
       {/* Activations */}
-      <section id="activations" className="max-w-7xl mx-auto px-4 sm:px-6 pb-16 sm:pb-20 scroll-mt-24">
-        <div className="text-center mb-10">
-          <Eyebrow>{c.activations.eyebrow}</Eyebrow>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white">{c.activations.title}</h2>
-          <p className="text-gray-400 mt-3 max-w-2xl mx-auto">{c.activations.subtitle}</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {c.activations.items.map((a, i) => {
+      <section id="activations" className="mx-auto max-w-7xl scroll-mt-24 px-4 pb-20 sm:px-6">
+        <SectionHeading eyebrow={c.activations.eyebrow} title={c.activations.title} subtitle={c.activations.subtitle} />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {c.activations.items.map((a) => {
             const meta = ACTIVATION_ICONS[a.key];
-            const Icon = meta.icon;
-            return (
-              <motion.div key={a.key} {...fadeUp} transition={{ delay: i * 0.06 }} className="card-gaming p-7 flex gap-5">
-                <div className={`shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center ${meta.ring}`}>
-                  <Icon size={26} className={meta.color} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white mb-1.5">{a.title}</h3>
-                  <p className="text-sm text-gray-400 leading-relaxed">{a.desc}</p>
-                </div>
-              </motion.div>
-            );
+            return <IconCard key={a.key} horizontal icon={meta.icon} accent={meta.accent} title={a.title} desc={a.desc} />;
           })}
         </div>
       </section>
 
       {/* Current season sponsors */}
       {sponsors && sponsors.items.length > 0 && (
-        <section id="current" className="max-w-7xl mx-auto px-4 sm:px-6 pb-16 sm:pb-20 scroll-mt-24">
-          <div className="text-center mb-10">
-            <Eyebrow>{c.current.eyebrow}</Eyebrow>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white">
-              {c.current.title}
-              {sponsors.season && <span className="text-gradient"> · {sponsors.season.name}</span>}
-            </h2>
-            <p className="text-gray-400 mt-3">{c.current.subtitle}</p>
-          </div>
+        <section id="current" className="mx-auto max-w-7xl scroll-mt-24 px-4 pb-20 sm:px-6">
+          <SectionHeading
+            eyebrow={c.current.eyebrow}
+            title={
+              <>
+                {c.current.title}
+                {sponsors.season && <span className="text-accent-gold"> {sponsors.season.name}</span>}
+              </>
+            }
+            subtitle={c.current.subtitle}
+          />
           <SponsorTiers data={sponsors} showCta={false} />
         </section>
       )}
 
       {/* FAQ */}
       {faq.length > 0 && (
-        <section id="faq" className="max-w-3xl mx-auto px-4 sm:px-6 pb-16 sm:pb-20 scroll-mt-24">
-          <div className="text-center mb-8">
-            <Eyebrow>{c.faq.eyebrow}</Eyebrow>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white">{c.faq.title}</h2>
-          </div>
+        <section id="faq" className="mx-auto max-w-3xl scroll-mt-24 px-4 pb-20 sm:px-6">
+          <SectionHeading eyebrow={c.faq.eyebrow} title={c.faq.title} className="mb-8" />
           <FaqAccordion items={faq} idPrefix="sponsor-faq" />
         </section>
       )}
 
       {/* Partnership form */}
-      <section id="partnership" className="px-4 sm:px-6 pb-20 pt-4 max-w-7xl mx-auto scroll-mt-24">
+      <section id="partnership" className="mx-auto max-w-7xl scroll-mt-24 px-4 pb-20 pt-4 sm:px-6">
         <PartnershipForm
           offers={offers}
           selectedOfferId={selectedOffer}

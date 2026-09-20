@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { Badge } from '@/components/ui';
 
 export type SponsorTier = 'title' | 'gold' | 'silver' | 'partner';
 
@@ -26,11 +27,11 @@ export interface SponsorsPayload {
 export const TIER_ORDER: SponsorTier[] = ['title', 'gold', 'silver', 'partner'];
 
 /** Logo size and accent per tier (title sponsors are the most prominent). */
-const TIER_STYLE: Record<SponsorTier, { logo: string; ring: string; label: string }> = {
-  title: { logo: 'h-24 sm:h-32', ring: 'border-neon-gold/40 bg-neon-gold/5', label: 'text-neon-gold' },
-  gold: { logo: 'h-20 sm:h-24', ring: 'border-yellow-500/30 bg-yellow-500/5', label: 'text-yellow-400' },
-  silver: { logo: 'h-16 sm:h-20', ring: 'border-slate-300/30 bg-slate-300/5', label: 'text-slate-300' },
-  partner: { logo: 'h-12 sm:h-16', ring: 'border-gaming-border bg-gaming-card/60', label: 'text-gray-400' },
+const TIER_STYLE: Record<SponsorTier, { logo: string; ring: string; badge: string }> = {
+  title: { logo: 'h-24 sm:h-32', ring: 'border-accent-gold/40 bg-accent-gold/5', badge: 'tier-gold' },
+  gold: { logo: 'h-20 sm:h-24', ring: 'border-accent-gold/25 bg-surface-1', badge: 'tier-gold' },
+  silver: { logo: 'h-16 sm:h-20', ring: 'border-line-strong bg-surface-1', badge: 'tier-silver' },
+  partner: { logo: 'h-12 sm:h-16', ring: 'border-line-subtle bg-surface-1', badge: 'tier-bronze' },
 };
 
 /** Fetches the sponsors of a season (or every active one) and caches them per key. */
@@ -104,16 +105,18 @@ export default function SponsorTiers({
       {tiers.map((tier) => {
         const style = TIER_STYLE[tier];
         return (
-          <div key={tier} className={`rounded-2xl border p-5 sm:p-7 ${style.ring}`}>
-            <p className={`text-xs font-semibold uppercase tracking-[0.25em] mb-5 text-center ${style.label}`}>
-              {t(`sponsors.tier.${tier}`)}
-            </p>
+          <div key={tier} className={`cut-corners border p-5 sm:p-7 ${style.ring}`}>
+            <div className="mb-6 flex justify-center">
+              <Badge variant={style.badge} className="uppercase tracking-eyebrow">
+                {t(`sponsors.tier.${tier}`)}
+              </Badge>
+            </div>
             <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14">
               {(data.byTier[tier] ?? []).map((s) => (
                 <div key={s.id} className="flex flex-col items-center gap-2 max-w-[14rem]">
                   <SponsorLogo sponsor={s} cls={style.logo} />
-                  {s.name && <p className="text-sm font-medium text-gray-200 text-center">{s.name}</p>}
-                  {s.description && <p className="text-xs text-gray-500 text-center line-clamp-2">{s.description}</p>}
+                  {s.name && <p className="text-sm font-semibold text-ink-1 text-center">{s.name}</p>}
+                  {s.description && <p className="text-xs text-ink-3 text-center line-clamp-2">{s.description}</p>}
                 </div>
               ))}
             </div>
@@ -121,8 +124,8 @@ export default function SponsorTiers({
         );
       })}
       {showCta && (
-        <p className="text-center text-sm text-gray-400">
-          <Link href="/sponsors" className="inline-flex items-center gap-1 text-neon-blue hover:underline">
+        <p className="text-center text-sm">
+          <Link href="/sponsors" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary transition-colors hover:text-ink-1">
             {t('sponsors.becomeSponsor')} <ArrowRight size={14} />
           </Link>
         </p>

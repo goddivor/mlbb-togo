@@ -37,23 +37,23 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gaming-dark px-4">
+    <div className="app-surface flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-6"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm text-ink-2 transition-colors hover:text-ink-1"
         >
           <ArrowLeft size={16} /> {t('adminLogin.back')}
         </Link>
 
-        <div className="rounded-2xl border border-gaming-border bg-gaming-card shadow-2xl p-6">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center">
-              <ShieldCheck className="text-white" size={20} />
-            </div>
-            <h1 className="text-xl font-bold text-white">{t('adminLogin.title')}</h1>
+        <div className="cut-corners relative overflow-hidden border border-line-subtle bg-surface-1 p-7 shadow-elev-3 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1">
+          <div aria-hidden="true" className="absolute -right-12 -top-12 h-32 w-32 rotate-45 bg-primary/10" />
+          <div className="mb-5 flex h-11 w-11 items-center justify-center cut-corners-sm bg-primary/10 text-primary">
+            <ShieldCheck size={22} />
           </div>
-          <p className="text-sm text-gray-400 mb-5">{t('adminLogin.subtitle')}</p>
+          <p className="eyebrow mb-2">{t('adminLogin.eyebrow')}</p>
+          <h1 className="font-display text-2xl font-bold uppercase tracking-tight2 text-ink-1">{t('adminLogin.title')}</h1>
+          <p className="mb-6 mt-1.5 text-sm text-ink-2">{t('adminLogin.subtitle')}</p>
 
           <form onSubmit={submit} className="space-y-4">
             <Input
@@ -70,7 +70,7 @@ export default function AdminLoginPage() {
               autoComplete="current-password"
             />
 
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-accent-red">{error}</p>}
 
             <Button
               type="submit"

@@ -14,6 +14,7 @@ import { useT } from '@/lib/i18n';
 import { api, getToken, setToken, avatarSrc } from '@/lib/api';
 import { Button } from '@/components/ui';
 import SignInModal from './SignInModal';
+import { SIGN_IN_EVENT } from './HeroSection';
 
 const LANGS = [
   { code: 'fr', label: 'FR' },
@@ -77,6 +78,13 @@ export default function LandingHeader() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The landing hero CTA opens the same sign-in modal.
+  useEffect(() => {
+    const onOpen = () => setSignInOpen(true);
+    window.addEventListener(SIGN_IN_EVENT, onOpen);
+    return () => window.removeEventListener(SIGN_IN_EVENT, onOpen);
+  }, []);
+
   useEffect(() => {
     if (!openMenu) return;
     const onDown = (e: MouseEvent) => {
@@ -119,7 +127,7 @@ export default function LandingHeader() {
     <header
       className={`fixed top-0 inset-x-0 z-40 h-20 transition-colors duration-300 ${
         scrolled
-          ? 'bg-gaming-dark/90 backdrop-blur border-b border-gaming-border'
+          ? 'bg-surface-0/85 backdrop-blur-md border-b border-line-subtle'
           : 'bg-gradient-to-b from-black/70 via-black/30 to-transparent'
       }`}
     >
@@ -136,10 +144,10 @@ export default function LandingHeader() {
               key={s.key}
               onClick={() => goTo(s)}
               aria-current={s.href && pathname === s.href ? 'page' : undefined}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`relative px-3 py-2 rounded text-sm font-medium transition-colors ${
                 s.href && pathname === s.href
-                  ? 'text-white bg-white/10'
-                  : 'text-white/80 hover:text-white hover:bg-white/10'
+                  ? 'text-white after:absolute after:inset-x-3 after:-bottom-0.5 after:h-0.5 after:bg-primary'
+                  : 'text-white/75 hover:text-white'
               }`}
             >
               {t(s.key)}
@@ -165,7 +173,7 @@ export default function LandingHeader() {
                   initial={{ opacity: 0, y: -8, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                  className="absolute right-0 top-10 w-32 rounded-xl border border-gaming-border bg-gaming-card shadow-gaming overflow-hidden"
+                  className="absolute right-0 top-10 w-32 rounded-md border border-line-strong bg-surface-1 shadow-elev-3 overflow-hidden"
                 >
                   {LANGS.map((l) => (
                     <button
@@ -176,8 +184,8 @@ export default function LandingHeader() {
                       }}
                       className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
                         lang === l.code
-                          ? 'text-neon-blue bg-neon-blue/10'
-                          : 'text-gray-300 hover:bg-gaming-surface hover:text-white'
+                          ? 'text-primary bg-primary/10'
+                          : 'text-ink-2 hover:bg-surface-2 hover:text-ink-1'
                       }`}
                     >
                       {l.label}
@@ -202,10 +210,10 @@ export default function LandingHeader() {
                     src={avatarSrc(userProfile.avatar)}
                     alt={userProfile.displayName || userProfile.username || 'Profil'}
                     referrerPolicy="no-referrer"
-                    className="w-9 h-9 rounded-lg object-cover border border-white/20"
+                    className="w-9 h-9 rounded object-cover border border-white/20"
                   />
                 ) : (
-                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-sm font-bold text-white">
+                  <div className="w-9 h-9 rounded bg-gradient-to-br from-accent-cyan to-accent-violet flex items-center justify-center text-sm font-bold text-on-primary">
                     {(userProfile.displayName || userProfile.username)?.[0]?.toUpperCase() || 'U'}
                   </div>
                 )}
@@ -218,24 +226,24 @@ export default function LandingHeader() {
                     initial={{ opacity: 0, y: -8, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                    className="absolute right-0 top-12 w-52 rounded-xl border border-gaming-border bg-gaming-card shadow-gaming overflow-hidden py-1"
+                    className="absolute right-0 top-12 w-52 rounded-md border border-line-strong bg-surface-1 shadow-elev-3 overflow-hidden py-1"
                   >
-                    <div className="px-4 py-2.5 border-b border-gaming-border">
-                      <p className="text-sm font-semibold text-white truncate">{userProfile.displayName || userProfile.username || 'Joueur'}</p>
+                    <div className="px-4 py-2.5 border-b border-line-subtle">
+                      <p className="text-sm font-semibold text-ink-1 truncate">{userProfile.displayName || userProfile.username || 'Joueur'}</p>
                       {userProfile.email && (
-                        <p className="text-xs text-gray-400 truncate">{userProfile.email}</p>
+                        <p className="text-xs text-ink-3 truncate">{userProfile.email}</p>
                       )}
                     </div>
                     <Link
                       href="/dashboard"
                       onClick={() => setOpenMenu(null)}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-300 hover:bg-gaming-surface hover:text-white transition-colors"
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-ink-2 hover:bg-surface-2 hover:text-ink-1 transition-colors"
                     >
                       <LayoutDashboard size={16} /> {t('header.dashboard')}
                     </Link>
                     <button
                       onClick={logout}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors text-left"
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-accent-red hover:bg-accent-red/10 transition-colors text-left"
                     >
                       <LogOut size={16} /> {t('header.logout')}
                     </button>
@@ -264,7 +272,7 @@ export default function LandingHeader() {
                   initial={{ opacity: 0, y: -8, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                  className="absolute right-0 top-12 w-56 rounded-xl border border-gaming-border bg-gaming-card shadow-gaming overflow-hidden py-1"
+                  className="absolute right-0 top-12 w-56 rounded-md border border-line-strong bg-surface-1 shadow-elev-3 overflow-hidden py-1"
                 >
 
                   {SECTIONS.map((s) => {
@@ -273,7 +281,7 @@ export default function LandingHeader() {
                       <button
                         key={s.key}
                         onClick={() => goTo(s)}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-300 hover:bg-gaming-surface hover:text-white transition-colors text-left"
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-ink-2 hover:bg-surface-2 hover:text-ink-1 transition-colors text-left"
                       >
                         <Icon size={16} /> {t(s.key)}
                       </button>
