@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import DashboardHeader from './DashboardHeader';
 import DashboardSidebar from './DashboardSidebar';
+import PageTransition from './PageTransition';
 
 /** Player dashboard shell: fixed sidebar + sticky header + content wrapper. */
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -10,7 +11,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="font-satoshi bg-whiten text-body dark:bg-boxdark-2 dark:text-bodydark">
+    <div className="app-surface font-satoshi text-body dark:text-bodydark">
       <div className="flex h-screen overflow-hidden">
         {/* Sidebar */}
         <DashboardSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
@@ -28,7 +29,9 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         <div className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
           <DashboardHeader sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
           <main>
-            <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">{children}</div>
+            <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
+              <PageTransition>{children}</PageTransition>
+            </div>
           </main>
         </div>
       </div>
