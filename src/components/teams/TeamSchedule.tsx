@@ -40,18 +40,18 @@ export default function TeamSchedule({ schedule, t }: { schedule: any[]; t: TFn 
         return (
           <div key={key}>
             <div className="mb-2 flex items-center gap-2">
-              <CalendarDays size={15} className="text-primary" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-body dark:text-bodydark">{heading}</span>
+              <CalendarDays size={14} className="text-primary" />
+              <span className="eyebrow">{heading}</span>
             </div>
             <div className="space-y-2">
               {items.map((m) => (
-                <div key={m.id} className="flex flex-col gap-2 rounded-sm border border-stroke bg-white p-3 shadow-default dark:border-strokedark dark:bg-boxdark sm:flex-row sm:items-center">
-                  <div className="flex w-20 shrink-0 items-center gap-1.5 text-sm font-semibold text-black dark:text-white">
+                <div key={m.id} className="flex flex-col gap-2 rounded-lg border border-line-subtle bg-surface-1 p-3 shadow-elev-1 transition-colors hover:border-primary/40 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1 sm:flex-row sm:items-center">
+                  <div className="flex w-20 shrink-0 items-center gap-1.5 font-display text-sm font-bold num text-ink-1">
                     <Clock size={14} className="text-primary" />
                     {m.date ? fmtTime(m.date, lang) : '--:--'}
                   </div>
                   <div className="flex min-w-0 flex-1 items-center gap-2">
-                    <span className="text-xs text-bodydark2">{t('teams.schedule.vs')}</span>
+                    <span className="text-xs text-ink-3">{t('teams.schedule.vs')}</span>
                     <TeamChip team={m.opponent} size={8} />
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5">

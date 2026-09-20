@@ -13,23 +13,23 @@ function placementLabel(p: number | null | undefined, t: TFn) {
 }
 
 const PLACEMENT_STYLE: Record<number, string> = {
-  1: 'bg-warning/15 text-warning',
-  2: 'bg-bodydark/25 text-body dark:text-bodydark1',
-  3: 'bg-[#b87333]/15 text-[#b87333]',
+  1: 'tier-gold',
+  2: 'tier-silver',
+  3: 'tier-bronze',
 };
 
 export function HonourCard({ h, t }: { h: any; t: TFn }) {
   const p = h.placement ?? null;
-  const style = (p && PLACEMENT_STYLE[p]) || 'bg-primary/10 text-primary';
+  const style = (p && PLACEMENT_STYLE[p]) || 'bg-accent-cyan/10 text-accent-cyan';
   const Icon = p === 1 ? Trophy : p ? Medal : Award;
   const label = placementLabel(p, t);
   return (
-    <div className="flex items-start gap-3 rounded-sm border border-stroke bg-white p-3 shadow-default dark:border-strokedark dark:bg-boxdark">
-      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${style}`}><Icon size={20} /></div>
+    <div className={`flex items-start gap-3 rounded-lg border bg-surface-1 p-3 shadow-elev-1 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1 ${p === 1 ? 'border-accent-gold/40' : 'border-line-subtle'}`}>
+      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded cut-corners-sm ${style}`}><Icon size={20} /></div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
-          <p className="truncate text-sm font-semibold text-black dark:text-white">{h.title}</p>
-          {h.year && <span className="text-xs text-bodydark2">{h.year}</span>}
+          <p className="truncate font-display text-sm font-bold text-ink-1">{h.title}</p>
+          {h.year && <span className="text-xs num text-ink-3">{h.year}</span>}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
           {label && <Badge variant={p === 1 ? 'gold' : 'default'} size="sm">{label}</Badge>}
@@ -38,11 +38,11 @@ export function HonourCard({ h, t }: { h: any; t: TFn }) {
           </Badge>
         </div>
         {h.record && (
-          <p className="mt-1 text-xs text-body dark:text-bodydark">
+          <p className="mt-1 text-xs num text-ink-2">
             {t('teams.honours.record', { w: h.record.wins, l: h.record.losses, p: h.record.played })}
           </p>
         )}
-        {h.description && <p className="mt-1 whitespace-pre-line text-xs text-body dark:text-bodydark">{h.description}</p>}
+        {h.description && <p className="mt-1 whitespace-pre-line text-xs text-ink-2">{h.description}</p>}
       </div>
     </div>
   );
