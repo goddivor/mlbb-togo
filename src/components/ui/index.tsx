@@ -134,7 +134,8 @@ export function Button({
     outline:
       'rounded border border-line-strong text-ink-2 hover:border-primary hover:text-primary',
     ghost: 'rounded text-ink-2 hover:bg-surface-2 hover:text-ink-1',
-    success: 'rounded bg-accent-green text-white hover:brightness-110',
+    // Darker green than accent-green so white copy stays readable (>= 4.3:1).
+    success: 'rounded bg-success text-white hover:brightness-110',
   };
 
   const sizes: Record<string, string> = {
@@ -395,7 +396,7 @@ export function Avatar({ name, src, size = 'md', online, className, square = fal
     <div className={cn('relative inline-block', className)}>
       <div
         className={cn(
-          'shrink-0 flex items-center justify-center overflow-hidden bg-gradient-to-br from-accent-cyan to-accent-violet font-display font-bold text-white',
+          'shrink-0 flex items-center justify-center overflow-hidden bg-gradient-to-br from-accent-cyan to-accent-violet font-display font-bold text-on-primary',
           square ? 'rounded-md' : 'rounded-full',
           ring && 'ring-2 ring-primary/60 ring-offset-2 ring-offset-surface-1',
           sizes[size]

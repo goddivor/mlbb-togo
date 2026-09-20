@@ -486,8 +486,16 @@
   html:not(.dark) .tier-silver { color: #475569; }
   html:not(.dark) .tier-bronze { color: #9a3412; }
 
-  /* Dark mode: cyan fills paired with a bare `text-white` get the dark foreground instead. */
-  html.dark .bg-primary.text-white { color: rgb(var(--on-primary)); }
+  /* Dark mode: cyan fills paired with a bare `text-white` get the dark foreground
+     instead. Covers the same element, a white child inside a primary fill
+     (chat bubbles, team-colour headers, avatar initials) and primary gradients
+     (level badge, XP ring, achievements). */
+  html.dark .bg-primary.text-white,
+  html.dark .from-primary.text-white,
+  html.dark .bg-primary .text-white,
+  html.dark .from-primary .text-white {
+    color: rgb(var(--on-primary));
+  }
 }
 
 /* Particles background */
