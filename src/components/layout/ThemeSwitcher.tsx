@@ -41,21 +41,22 @@ export default function ThemeSwitcher() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label={t('theme.display')}
-        className="flex h-12 w-12 items-center justify-center rounded-full border-[0.5px] border-stroke bg-gray text-black hover:text-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+        aria-expanded={open}
+        className="header-btn"
       >
-        <Palette size={18} />
+        <Palette size={17} />
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2.5 w-52 rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+        <div className="header-menu absolute right-0 mt-2.5 w-56 overflow-hidden">
           {/* Light / dark toggle */}
-          <div className="border-b border-stroke px-2 pt-2 dark:border-strokedark">
+          <div className="border-b border-line-subtle p-1.5">
             <button
               type="button"
               onClick={() => toggleTheme()}
-              className="flex w-full items-center justify-between rounded-sm px-2 py-2 text-sm text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4"
+              className="flex w-full items-center justify-between rounded-md px-2.5 py-2 text-sm text-ink-2 transition-colors duration-fast hover:bg-surface-2"
             >
-              <span className="flex items-center gap-2 text-black dark:text-white">
+              <span className="flex items-center gap-2 text-ink-1">
                 {theme === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
                 {theme === 'dark' ? t('theme.dark') : t('theme.light')}
               </span>
@@ -72,7 +73,7 @@ export default function ThemeSwitcher() {
               </span>
             </button>
           </div>
-          <p className="px-4 py-2.5 text-xs font-medium text-bodydark2">{t('theme.display')}</p>
+          <p className="px-4 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('theme.display')}</p>
           <ul className="pb-1.5">
             {PALETTES.map((p) => {
               const Icon = p.icon;
@@ -84,15 +85,15 @@ export default function ThemeSwitcher() {
                       setPalette(p.id);
                       setOpen(false);
                     }}
-                    className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4"
+                    className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-ink-2 transition-colors duration-fast hover:bg-surface-2"
                   >
                     <span
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm"
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded cut-corners-sm"
                       style={{ background: `${p.color}1f`, color: p.color }}
                     >
                       <Icon size={14} />
                     </span>
-                    <span className="flex-1 text-black dark:text-white">{t(p.labelKey)}</span>
+                    <span className="flex-1 text-ink-1">{t(p.labelKey)}</span>
                     {(palette || 'default') === p.id && <Check size={15} className="text-primary" />}
                   </button>
                 </li>

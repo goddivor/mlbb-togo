@@ -15,7 +15,8 @@ export default function DarkModeToggle() {
 
   return (
     <label
-      className={`relative m-0 block h-7.5 w-14 rounded-full ${dark ? 'bg-primary' : 'bg-stroke'}`}
+      className={`relative m-0 block h-6 w-11 rounded-full transition-colors duration-base ${dark ? 'bg-primary' : 'bg-surface-3 ring-1 ring-inset ring-line-subtle'}`}
+      title="Dark mode"
     >
       <input
         type="checkbox"
@@ -25,15 +26,15 @@ export default function DarkModeToggle() {
         className="absolute top-0 z-50 m-0 h-full w-full cursor-pointer opacity-0"
       />
       <span
-        className={`absolute top-1/2 left-1 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-card duration-75 ease-linear ${
-          dark ? 'translate-x-full' : 'translate-x-0'
+        className={`absolute left-0.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-elev-1 transition-transform duration-base ease-out ${
+          dark ? 'translate-x-5' : 'translate-x-0'
         }`}
       >
         {/* Sun (light mode) */}
         <span className={dark ? 'hidden' : ''}>
           <svg
-            width="16"
-            height="16"
+            width="13"
+            height="13"
             viewBox="0 0 16 16"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -51,8 +52,8 @@ export default function DarkModeToggle() {
         {/* Moon (dark mode) */}
         <span className={dark ? 'inline-block' : 'hidden'}>
           <svg
-            width="16"
-            height="16"
+            width="13"
+            height="13"
             viewBox="0 0 16 16"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"

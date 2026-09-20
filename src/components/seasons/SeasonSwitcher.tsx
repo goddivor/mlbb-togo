@@ -54,17 +54,18 @@ export default function SeasonSwitcher({
 
   const dot = (s: Season | null) => (
     <span
-      className={`inline-block h-2 w-2 rounded-full ${
-        isLiveSeason(s) ? 'bg-success' : s?.status === 'closed' ? 'bg-bodydark2' : 'bg-primary'
+      className={`inline-block h-2 w-2 shrink-0 rounded-full ${
+        isLiveSeason(s) ? 'bg-accent-green' : s?.status === 'closed' ? 'bg-ink-3' : 'bg-primary'
       }`}
       style={s?.color ? { backgroundColor: s.color } : undefined}
     />
   );
 
+  // Header: compact pill matching the icon buttons; inline/admin: field-like trigger.
   const triggerCls =
     variant === 'header'
-      ? 'flex items-center gap-1.5 text-sm font-medium px-2.5 py-1.5 rounded-md text-body hover:text-primary hover:bg-gray dark:text-bodydark dark:hover:bg-meta-4 transition-colors'
-      : 'flex items-center gap-2 py-2 pl-3 pr-3 text-sm rounded-sm bg-gray-2 border border-stroke text-black hover:border-primary dark:bg-meta-4 dark:border-strokedark dark:text-white transition-colors';
+      ? 'flex h-9 w-full items-center gap-2 rounded-md border border-line-subtle bg-surface-2/60 px-3 text-[13px] font-medium text-ink-2 transition-[color,border-color,background-color] duration-fast ease-out hover:border-line-strong hover:bg-surface-2 hover:text-ink-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50'
+      : 'flex items-center gap-2 py-2 pl-3 pr-3 text-sm rounded border border-line-strong bg-surface-1 text-ink-1 hover:border-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25';
 
   const choose = (v: string) => {
     setSelection(v);
@@ -72,10 +73,8 @@ export default function SeasonSwitcher({
   };
 
   const rowCls = (active: boolean) =>
-    `w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
-      active
-        ? 'text-primary bg-primary/10'
-        : 'text-body hover:bg-gray hover:text-black dark:text-bodydark dark:hover:bg-meta-4 dark:hover:text-white'
+    `w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors duration-fast ${
+      active ? 'text-primary bg-primary/10' : 'text-ink-2 hover:bg-surface-2 hover:text-ink-1'
     }`;
 
   return (
@@ -87,10 +86,14 @@ export default function SeasonSwitcher({
         aria-label={t('seasons.switcher.label')}
         title={season?.name || t('seasons.switcher.label')}
       >
-        <CalendarDays size={14} />
-        <span className="max-w-[9rem] truncate">{label}</span>
-        {season && dot(season)}
-        <ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+        {variant === 'header' ? (
+          season ? dot(season) : <CalendarDays size={14} className="shrink-0 text-ink-3" />
+        ) : (
+          <CalendarDays size={14} />
+        )}
+        <span className="max-w-[9rem] flex-1 truncate">{label}</span>
+        {variant !== 'header' && season && dot(season)}
+        <ChevronDown size={14} className={`shrink-0 text-ink-3 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       <AnimatePresence>
         {open && (
@@ -99,9 +102,9 @@ export default function SeasonSwitcher({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.96 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-1 w-64 rounded-sm border border-stroke bg-white shadow-default overflow-hidden z-50 dark:border-strokedark dark:bg-boxdark"
+            className="header-menu absolute right-0 top-full mt-1.5 w-64 overflow-hidden z-50"
           >
-            <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-bodydark2 border-b border-stroke dark:border-strokedark">
+            <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3 border-b border-line-subtle">
               {t('seasons.switcher.label')}
             </div>
             <div className="max-h-72 overflow-y-auto">
@@ -113,24 +116,24 @@ export default function SeasonSwitcher({
                 {dot(current)}
                 <span className="flex-1 truncate">
                   {t('seasons.switcher.current')}
-                  {current && <span className="text-bodydark2"> · {seasonShortLabel(current)}</span>}
+                  {current && <span className="text-ink-3"> · {seasonShortLabel(current)}</span>}
                 </span>
                 {(selection === 'current' || (isAdmin && selection === 'all')) && <Check size={14} />}
               </button>
               {offerAll && (
                 <button type="button" onClick={() => choose('all')} className={rowCls(selection === 'all')}>
-                  <Layers size={12} className="text-bodydark2" />
+                  <Layers size={12} className="text-ink-3" />
                   <span className="flex-1">{t('seasons.switcher.all')}</span>
                   {selection === 'all' && <Check size={14} />}
                 </button>
               )}
-              {seasons.length > 0 && <div className="my-1 border-t border-stroke dark:border-strokedark" />}
+              {seasons.length > 0 && <div className="my-1 border-t border-line-subtle" />}
               {seasons.map((s) => (
                 <button key={s.id} type="button" onClick={() => choose(s.id)} className={rowCls(selection === s.id)}>
                   {dot(s)}
                   <span className="flex-1 min-w-0">
                     <span className="block truncate">{s.name}</span>
-                    <span className="block text-[11px] text-bodydark2 truncate">
+                    <span className="block text-[11px] text-ink-3 truncate">
                       {t('seasons.status.' + s.status)}
                       {s.theme ? ` · ${s.theme}` : ''}
                     </span>
@@ -142,7 +145,7 @@ export default function SeasonSwitcher({
             <Link
               href={browseHref}
               onClick={() => setOpen(false)}
-              className="block px-3 py-2 text-xs font-medium text-primary border-t border-stroke hover:bg-primary/5 dark:border-strokedark"
+              className="block px-3 py-2 text-xs font-semibold text-primary border-t border-line-subtle hover:bg-primary/5 transition-colors"
             >
               {t(isAdmin ? 'seasons.switcher.manage' : 'seasons.switcher.browse')}
             </Link>
