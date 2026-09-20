@@ -10,7 +10,7 @@ import {
   Star, CalendarClock,
 } from 'lucide-react';
 import {
-  Badge, Button, Card, EmptyState, PageHeader, SectionTitle, Skeleton, Tabs, Input, Textarea, Select,
+  Badge, Button, Card, EmptyState, PageHeader, Skeleton, Tabs, Input, Textarea, Select,
 } from '@/components/ui';
 import { MatchScoreline, RankFrame, teamTag } from '@/components/game';
 import { cn } from '@/lib/helpers';
@@ -510,7 +510,7 @@ export default function TeamDetailPage() {
             <div className="space-y-5">
               {captainMember && (
                 <div>
-                  <SectionTitle size="sm" className="mb-2.5" eyebrow={<span className="inline-flex items-center gap-1.5 !text-accent-gold"><Crown size={12} />{t('teams.detail.captain')}</span>} title="" />
+                  <h3 className="eyebrow mb-2.5 flex items-center gap-1.5 !text-accent-gold"><Crown size={12} />{t('teams.detail.captain')}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"><MemberCard m={captainMember} t={t} highlight /></div>
                 </div>
               )}
