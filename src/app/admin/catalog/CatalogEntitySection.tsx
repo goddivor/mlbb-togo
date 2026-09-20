@@ -5,7 +5,7 @@ import { Plus, Pencil, Trash2, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { mlbbImg } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Badge, Button, Input, SectionCard, Textarea } from '@/components/ui';
+import { Badge, Button, EmptyState, Input, SectionCard, SectionTitle, Textarea } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 
@@ -135,28 +135,32 @@ export default function CatalogEntitySection({
 
   return (
     <SectionCard>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-black dark:text-white">{title}</h2>
-          <Badge variant="purple" size="sm">
-            {rows.length}
-          </Badge>
-        </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus size={16} /> {t('admin.catalog.add')}
-        </Button>
-      </div>
+      <SectionTitle
+        className="mb-4"
+        title={
+          <span className="inline-flex items-center gap-2">
+            <span className="text-ink-3">{icon}</span>
+            {title}
+            <Badge variant="purple" size="sm">
+              {rows.length}
+            </Badge>
+          </span>
+        }
+        action={
+          <Button size="sm" onClick={openCreate}>
+            <Plus size={16} /> {t('admin.catalog.add')}
+          </Button>
+        }
+      />
 
       {rows.length === 0 ? (
-        <p className="py-6 text-center text-sm text-body dark:text-bodydark">
-          {t('admin.catalog.emptyList')}
-        </p>
+        <EmptyState className="!min-h-0 py-8" title={t('admin.catalog.emptyList')} />
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {rows.map((row) => (
             <div
               key={row.id}
-              className="flex items-start gap-3 rounded-lg border border-stroke bg-gray-2 p-3 dark:border-strokedark dark:bg-meta-4"
+              className="flex items-start gap-3 rounded-lg border border-line-subtle bg-surface-2 p-3"
             >
               {row.icon ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -167,14 +171,14 @@ export default function CatalogEntitySection({
                   className="h-10 w-10 shrink-0 rounded object-cover"
                 />
               ) : (
-                <div className="h-10 w-10 shrink-0 rounded border border-stroke bg-white dark:border-strokedark dark:bg-boxdark" />
+                <div className="h-10 w-10 shrink-0 rounded border border-line-subtle bg-surface-1" />
               )}
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-black dark:text-white">{row.name}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-body dark:text-bodydark">
-                  {row.type && <Badge size="sm">{row.type}</Badge>}
-                  {row.gold != null && <span>{row.gold} g</span>}
-                  {row.cooldown && <span>{row.cooldown}</span>}
+                <p className="truncate text-sm font-semibold text-ink-1">{row.name}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-ink-2">
+                  {row.type && <Badge size="sm" variant="outline">{row.type}</Badge>}
+                  {row.gold != null && <span className="num text-accent-gold">{row.gold} g</span>}
+                  {row.cooldown && <span className="num">{row.cooldown}</span>}
                 </div>
               </div>
               <div className="flex shrink-0 gap-1">
@@ -182,7 +186,7 @@ export default function CatalogEntitySection({
                   <Pencil size={14} />
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => setToDelete(row)} aria-label={t('admin.catalog.delete')}>
-                  <Trash2 size={14} className="text-danger" />
+                  <Trash2 size={14} className="text-accent-red" />
                 </Button>
               </div>
             </div>

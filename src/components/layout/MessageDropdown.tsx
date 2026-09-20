@@ -114,24 +114,25 @@ export default function MessageDropdown({ href = '/messages' }: MessageDropdownP
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label={t('header.messages')}
-        className="relative flex h-12 w-12 items-center justify-center rounded-full border-[0.5px] border-stroke bg-gray text-black hover:text-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+        aria-expanded={open}
+        className="header-btn"
       >
         {unreadTotal > 0 ? (
-          <span className="absolute -right-0.5 -top-0.5 z-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-meta-1 px-1 text-[10px] font-bold leading-none text-white">
+          <span className="absolute -right-1.5 -top-1.5 z-1 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-accent-red px-1 text-[10px] font-bold leading-none text-white num ring-2 ring-surface-1">
             {unreadTotal > 99 ? '99+' : unreadTotal}
           </span>
         ) : (
           notifying && (
-            <span className="absolute right-2.5 top-2.5 z-1 h-2 w-2 rounded-full bg-meta-1">
-              <span className="absolute -z-1 inline-flex h-full w-full animate-ping rounded-full bg-meta-1 opacity-75" />
+            <span className="absolute right-1.5 top-1.5 z-1 h-2 w-2 rounded-full bg-accent-red">
+              <span className="absolute -z-1 inline-flex h-full w-full animate-ping rounded-full bg-accent-red opacity-75" />
             </span>
           )
         )}
 
         <svg
-          className="fill-current duration-300 ease-in-out"
-          width="18"
-          height="18"
+          className="fill-current"
+          width="17"
+          height="17"
           viewBox="0 0 18 18"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
@@ -156,14 +157,14 @@ export default function MessageDropdown({ href = '/messages' }: MessageDropdownP
       </button>
 
       {open && (
-        <div className="absolute -right-16 mt-2.5 flex h-90 w-80 flex-col rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark sm:right-0">
-          <div className="px-4.5 py-3">
-            <h5 className="text-sm font-medium text-bodydark2">{t('header.messages')}</h5>
+        <div className="header-menu absolute -right-16 mt-2.5 flex h-90 w-80 flex-col overflow-hidden sm:right-0">
+          <div className="border-b border-line-subtle px-4 py-2.5">
+            <h5 className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('header.messages')}</h5>
           </div>
 
           <ul className="flex flex-1 flex-col overflow-y-auto">
             {rows.length === 0 ? (
-              <li className="flex flex-1 items-center justify-center px-4.5 py-6 text-center text-sm text-body dark:text-bodydark">
+              <li className="flex flex-1 items-center justify-center px-4 py-6 text-center text-sm text-ink-3">
                 {t('messages.none')}
               </li>
             ) : (
@@ -176,27 +177,27 @@ export default function MessageDropdown({ href = '/messages' }: MessageDropdownP
                       <Link
                         href={target}
                         onClick={() => setOpen(false)}
-                        className="flex gap-4.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4"
+                        className="flex gap-3 border-b border-line-subtle px-4 py-3 transition-colors duration-fast hover:bg-surface-2"
                       >
                         <RoomAvatar room={r} className="h-10 w-10" />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
-                            <h6 className="truncate text-sm font-medium text-black dark:text-white">
+                            <h6 className="truncate text-sm font-medium text-ink-1">
                               {r.title}
                             </h6>
                             {r.unread > 0 && (
-                              <span className="ml-auto shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                              <span className="ml-auto shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-on-primary num">
                                 {r.unread}
                               </span>
                             )}
                           </div>
-                          <p className="truncate text-sm text-body dark:text-bodydark">
+                          <p className="truncate text-sm text-ink-2">
                             {truncateText(
                               `${nameOf(r.lastMessage?.sender) ? `${nameOf(r.lastMessage.sender)}: ` : ''}${r.lastMessage?.body || ''}`,
                               32,
                             )}
                           </p>
-                          <p className="text-xs">{timeAgo(r.lastMessageAt)}</p>
+                          <p className="text-[11px] text-ink-3 num">{timeAgo(r.lastMessageAt)}</p>
                         </div>
                       </Link>
                     </li>
@@ -209,7 +210,7 @@ export default function MessageDropdown({ href = '/messages' }: MessageDropdownP
                     <Link
                       href={href}
                       onClick={() => setOpen(false)}
-                      className="flex gap-4.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4"
+                      className="flex gap-3 border-b border-line-subtle px-4 py-3 transition-colors duration-fast hover:bg-surface-2"
                     >
                       <Avatar
                         name={nameOf(o)}
@@ -219,19 +220,19 @@ export default function MessageDropdown({ href = '/messages' }: MessageDropdownP
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <h6 className="truncate text-sm font-medium text-black dark:text-white">
+                          <h6 className="truncate text-sm font-medium text-ink-1">
                             {nameOf(o) || th.subject || ''}
                           </h6>
                           {th.unread > 0 && (
-                            <span className="ml-auto shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                            <span className="ml-auto shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-on-primary num">
                               {th.unread}
                             </span>
                           )}
                         </div>
-                        <p className="truncate text-sm text-body dark:text-bodydark">
+                        <p className="truncate text-sm text-ink-2">
                           {truncateText(th.lastMessage?.body || '', 32)}
                         </p>
-                        <p className="text-xs">{timeAgo(th.lastMessageAt)}</p>
+                        <p className="text-[11px] text-ink-3 num">{timeAgo(th.lastMessageAt)}</p>
                       </div>
                     </Link>
                   </li>
@@ -243,7 +244,7 @@ export default function MessageDropdown({ href = '/messages' }: MessageDropdownP
           <Link
             href={href}
             onClick={() => setOpen(false)}
-            className="border-t border-stroke px-4.5 py-3 text-center text-sm font-medium text-primary hover:underline dark:border-strokedark"
+            className="border-t border-line-subtle px-4 py-2.5 text-center text-xs font-semibold text-primary transition-colors hover:bg-primary/5"
           >
             {t('header.viewAllMessages')}
           </Link>

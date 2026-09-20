@@ -2,14 +2,14 @@
 
 import { Lock, SlidersHorizontal } from 'lucide-react';
 import { useT } from '@/lib/i18n';
-import { Button, Badge, LoadingSpinner } from '@/components/ui';
+import { Button, Badge, LoadingSpinner, Input, Select, Table, Th, Td } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { SeasonPodium } from '@/components/seasons/shared';
 import type { LifecycleAction, SeasonLifecycle } from './useSeasonLifecycle';
 
-const fieldCls =
-  'w-full rounded-sm border border-stroke bg-transparent px-3 py-2 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:text-white dark:bg-meta-4';
+// Compact field sizing for the modal forms (primitives default to a taller field).
+const fieldCls = '!px-3 !py-2 text-sm';
 
 /**
  * Modals backing `useSeasonLifecycle`: lifecycle confirmation, closing flow
@@ -69,7 +69,7 @@ export default function SeasonLifecycleModals({ lifecycle }: { lifecycle: Season
         size="lg"
       >
         <div className="space-y-4">
-          <p className="text-sm text-body dark:text-bodydark">{t('admin.seasons.lifecycle.closeIntro')}</p>
+          <p className="text-sm text-ink-2">{t('admin.seasons.lifecycle.closeIntro')}</p>
           {previewLoading ? (
             <LoadingSpinner size="md" className="py-8" />
           ) : preview ? (
@@ -78,49 +78,49 @@ export default function SeasonLifecycleModals({ lifecycle }: { lifecycle: Season
                 <Badge variant="blue">{t('admin.seasons.summary.matches', { n: preview.matches.completed, total: preview.matches.total })}</Badge>
                 <Badge variant="purple">{t('admin.seasons.summary.teams', { n: preview.standings.length })}</Badge>
               </div>
-              <div className="rounded-lg border border-stroke bg-gray-2 p-4 dark:border-strokedark dark:bg-meta-4">
-                <p className="mb-3 text-center text-xs font-semibold uppercase tracking-wider text-bodydark2">
+              <div className="rounded-lg border border-line-subtle bg-surface-2/60 p-4">
+                <p className="eyebrow mb-3 text-center !text-ink-3">
                   {t('admin.seasons.summary.podiumPreview')}
                 </p>
                 <SeasonPodium podium={preview.podium} t={t} compact />
               </div>
               {preview.standings.length > 0 && (
-                <div className="max-h-48 overflow-y-auto rounded-lg border border-stroke dark:border-strokedark">
-                  <table className="w-full text-xs">
-                    <thead className="bg-gray-2 dark:bg-meta-4 text-bodydark2">
-                      <tr>
-                        <th className="px-2 py-1.5 text-left">#</th>
-                        <th className="px-2 py-1.5 text-left">{t('seasons.standings.team')}</th>
-                        <th className="px-2 py-1.5 text-right">{t('seasons.standings.played')}</th>
-                        <th className="px-2 py-1.5 text-right">{t('seasons.standings.wins')}</th>
-                        <th className="px-2 py-1.5 text-right">{t('seasons.standings.losses')}</th>
-                        <th className="px-2 py-1.5 text-right">{t('seasons.standings.diff')}</th>
+                <div className="max-h-48 overflow-auto rounded-lg border border-line-subtle">
+                  <Table className="text-xs">
+                    <thead className="sticky top-0 z-10 bg-surface-2">
+                      <tr className="border-b border-line-subtle">
+                        <Th className="py-1.5">#</Th>
+                        <Th className="py-1.5">{t('seasons.standings.team')}</Th>
+                        <Th className="py-1.5" align="right">{t('seasons.standings.played')}</Th>
+                        <Th className="py-1.5" align="right">{t('seasons.standings.wins')}</Th>
+                        <Th className="py-1.5" align="right">{t('seasons.standings.losses')}</Th>
+                        <Th className="py-1.5" align="right">{t('seasons.standings.diff')}</Th>
                       </tr>
                     </thead>
                     <tbody>
                       {preview.standings.map((r) => (
-                        <tr key={r.teamId} className="border-t border-stroke dark:border-strokedark">
-                          <td className="px-2 py-1.5">{r.rank}</td>
-                          <td className="px-2 py-1.5 font-medium text-black dark:text-white">{r.team.name}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums">{r.played}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-success">{r.wins}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-danger">{r.losses}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums">{r.scoreDiff > 0 ? `+${r.scoreDiff}` : r.scoreDiff}</td>
+                        <tr key={r.teamId} className="border-b border-line-subtle last:border-b-0">
+                          <Td className="py-1.5 text-ink-3">{r.rank}</Td>
+                          <Td className="py-1.5 font-medium">{r.team.name}</Td>
+                          <Td className="py-1.5" align="right">{r.played}</Td>
+                          <Td className="py-1.5 text-accent-green" align="right">{r.wins}</Td>
+                          <Td className="py-1.5 text-accent-red" align="right">{r.losses}</Td>
+                          <Td className="py-1.5" align="right">{r.scoreDiff > 0 ? `+${r.scoreDiff}` : r.scoreDiff}</Td>
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                  </Table>
                 </div>
               )}
               {preview.matches.completed === 0 && (
-                <label className="flex items-start gap-2 text-sm text-warning cursor-pointer">
+                <label className="flex cursor-pointer items-start gap-2 text-sm text-accent-gold">
                   <input type="checkbox" className="mt-0.5 accent-primary" checked={force} onChange={(e) => setForce(e.target.checked)} />
                   {t('admin.seasons.lifecycle.forceClose')}
                 </label>
               )}
             </>
           ) : (
-            <p className="text-sm text-danger">{t('admin.esport.errorGeneric')}</p>
+            <p className="text-sm text-accent-red">{t('admin.esport.errorGeneric')}</p>
           )}
           <div className="flex gap-2 pt-1">
             <Button
@@ -152,38 +152,26 @@ export default function SeasonLifecycleModals({ lifecycle }: { lifecycle: Season
           <LoadingSpinner />
         ) : (
           <div className="space-y-4">
-            <p className="text-xs text-bodydark2">{t('admin.seasons.settings.hint')}</p>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">
-                {t('admin.seasons.settings.qualifyTop')}
-              </label>
-              <select
-                value={settings.qualifyTop}
-                onChange={(e) => setSettings((v) => ({ ...v, qualifyTop: Number(e.target.value) }))}
-                className={fieldCls}
-              >
-                {[1, 2, 3, 4, 6, 8].map((n) => (
-                  <option key={n} value={n}>
-                    {t('admin.seasons.settings.topN', { n })}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
+            <p className="text-xs text-ink-3">{t('admin.seasons.settings.hint')}</p>
+            <Select
+              label={t('admin.seasons.settings.qualifyTop')}
+              value={settings.qualifyTop}
+              onChange={(e: any) => setSettings((v) => ({ ...v, qualifyTop: Number(e.target.value) }))}
+              className={fieldCls}
+              options={[1, 2, 3, 4, 6, 8].map((n) => ({ value: n, label: t('admin.seasons.settings.topN', { n }) }))}
+            />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {(['win', 'draw', 'loss'] as const).map((key) => (
-                <div key={key}>
-                  <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">
-                    {t(`admin.seasons.settings.${key}`)}
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={settings[key]}
-                    onChange={(e) => setSettings((v) => ({ ...v, [key]: Number(e.target.value) }))}
-                    className={fieldCls}
-                  />
-                </div>
+                <Input
+                  key={key}
+                  label={t(`admin.seasons.settings.${key}`)}
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={settings[key]}
+                  onChange={(e: any) => setSettings((v) => ({ ...v, [key]: Number(e.target.value) }))}
+                  className={`${fieldCls} num`}
+                />
               ))}
             </div>
             <div className="flex justify-end gap-2">

@@ -695,3 +695,107 @@ html[class*="theme-"].dark .text-accent-cyan,
 html[class*="theme-"].dark .eyebrow { color: var(--t-accent) !important; }
 html[class*="theme-"].dark .dark\:hover\:bg-meta-4:hover { background: var(--t-surface-bg) !important; }
 html[class*="theme-"].dark .dark\:hover\:text-white:hover { color: var(--t-page-text) !important; }
+
+/* ============================================================
+   SHELL (issue #61 step 2): sidebar rail + app header.
+   The rail is always dark (esport cockpit) whatever the theme: it
+   re-declares the dark tokens locally so every primitive rendered
+   inside it (Avatar, Badge, pills) uses the dark palette.
+   ============================================================ */
+@layer components {
+  .sidebar-rail {
+    --surface-0: 10 14 25;
+    --surface-1: 17 23 38;
+    --surface-2: 24 32 52;
+    --surface-3: 32 43 68;
+    --line-subtle: 146 160 196;
+    --line-subtle-a: 0.14;
+    --line-strong-a: 0.3;
+    --ink-1: 238 242 248;
+    --ink-2: 166 176 198;
+    --ink-3: 110 122 149;
+    --accent-cyan: 0 212 255;
+    --accent-violet: 168 85 247;
+    --accent-gold: 242 181 68;
+    --accent-red: 255 70 85;
+    --accent-green: 34 197 94;
+    --primary: 0 212 255;
+    --on-primary: 6 12 24;
+    --glow-cyan: 0 0 0 1px rgb(0 212 255 / 0.35), 0 0 24px rgb(0 212 255 / 0.25);
+    color-scheme: dark;
+    background-color: rgb(var(--surface-0));
+    background-image:
+      radial-gradient(420px 260px at 0% 0%, rgb(var(--accent-cyan) / 0.1), transparent 70%),
+      linear-gradient(180deg, rgb(var(--surface-1) / 0.35), transparent 40%);
+    border-right: 1px solid rgb(var(--line-subtle) / 0.12);
+  }
+
+  /* Active item: soft fill + left glow bar (rendered by the component). */
+  .rail-active {
+    background: linear-gradient(90deg, rgb(var(--primary) / 0.14), rgb(var(--primary) / 0.03) 70%, transparent);
+  }
+
+  /* Sticky app header: translucent surface with blur. */
+  .app-header {
+    background-color: rgb(var(--surface-1) / 0.82);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
+    border-bottom: 1px solid rgb(var(--line-subtle) / var(--line-subtle-a));
+  }
+
+  /* Square icon button used across the header (bell, chat, palette, search). */
+  .header-btn {
+    @apply relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-line-subtle bg-surface-2/60 text-ink-2 transition-[color,border-color,background-color] duration-fast ease-out hover:border-line-strong hover:bg-surface-2 hover:text-ink-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50;
+  }
+
+  /* Dropdown panel anchored under a header button. */
+  .header-menu {
+    @apply rounded-lg border border-line-subtle bg-surface-1 shadow-elev-3;
+  }
+}
+
+/* Palette-specific primary for the gold / night skins (dark only): buttons,
+   focus rings, tabs and the sidebar glow follow the palette accent. */
+@layer base {
+  html.theme-gold.dark {
+    --primary: 212 168 67;
+    --on-primary: 20 18 15;
+    --accent-cyan: 212 168 67;
+    --glow-cyan: 0 0 0 1px rgb(212 168 67 / 0.4), 0 0 24px rgb(212 168 67 / 0.25);
+  }
+  html.theme-night.dark {
+    --primary: 196 168 104;
+    --on-primary: 15 13 10;
+    --accent-cyan: 196 168 104;
+    --glow-cyan: 0 0 0 1px rgb(196 168 104 / 0.4), 0 0 24px rgb(196 168 104 / 0.22);
+  }
+  /* The rail re-declares its tokens: keep it on the palette accent as well. */
+  html.theme-gold.dark .sidebar-rail {
+    --primary: 212 168 67;
+    --on-primary: 20 18 15;
+    --accent-cyan: 212 168 67;
+    --glow-cyan: 0 0 0 1px rgb(212 168 67 / 0.4), 0 0 24px rgb(212 168 67 / 0.25);
+  }
+  html.theme-night.dark .sidebar-rail {
+    --primary: 196 168 104;
+    --on-primary: 15 13 10;
+    --accent-cyan: 196 168 104;
+    --glow-cyan: 0 0 0 1px rgb(196 168 104 / 0.4), 0 0 24px rgb(196 168 104 / 0.22);
+  }
+}
+
+/* Shell surfaces follow the selected skin like the other cards do. */
+html[class*="theme-"].dark .sidebar-rail { background-color: var(--t-page-bg); background-image: none; border-right-color: var(--t-card-border); }
+html[class*="theme-"].dark .app-header { background-color: var(--t-card-bg); border-bottom-color: var(--t-card-border); }
+html[class*="theme-"].dark .header-menu { background: var(--t-card-bg) !important; border-color: var(--t-card-border) !important; }
+
+/* Scrollable rows without a visible scrollbar (tabs, rails). */
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}

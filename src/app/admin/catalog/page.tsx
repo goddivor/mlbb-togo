@@ -1,18 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { LayoutGrid, Pencil, Check, RefreshCw, Sword, Shield, Sparkles } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { LayoutGrid, Pencil, Check, RefreshCw, Sword, Shield, Sparkles, Users, Map, Swords } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { fadeUp, stagger, still } from '@/lib/motion';
 import {
   Card,
   SectionCard,
+  SectionTitle,
+  StatCard,
   Button,
   Badge,
   Input,
   Textarea,
   PageHeader,
-  LoadingSpinner,
+  Skeleton,
 } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import RoleIcon from '@/components/game/RoleIcon';
@@ -46,6 +50,7 @@ type LaneForm = {
 
 export default function AdminCatalogPage() {
   const t = useT();
+  const reduce = useReducedMotion();
   const [lanes, setLanes] = useState<Lane[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [heroCount, setHeroCount] = useState<number | null>(null);
@@ -152,96 +157,122 @@ export default function AdminCatalogPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow={t('nav.section.catalog')}
         icon={<LayoutGrid size={28} />}
         title={t('admin.catalog.title')}
         subtitle={t('admin.catalog.subtitle')}
         variant="purple"
+        action={
+          <Button onClick={refreshHeroes} loading={refreshing} disabled={refreshing || loading}>
+            <RefreshCw size={16} /> {t('admin.catalog.refreshFromMlbb')}
+          </Button>
+        }
       />
 
       {loading ? (
-        <LoadingSpinner size="lg" className="py-24" />
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Card key={i} className="!p-5">
+                <Skeleton lines={2} />
+              </Card>
+            ))}
+          </div>
+          <Card>
+            <Skeleton lines={4} />
+          </Card>
+        </div>
       ) : (
-        <>
+        <motion.div
+          className="space-y-6"
+          variants={reduce ? still : stagger(0.06)}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* Catalog KPIs: counts already loaded with the sections below */}
+          <motion.div variants={reduce ? still : fadeUp} className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <StatCard
+              label={t('admin.catalog.heroes')}
+              value={heroCount ?? 0}
+              hint={t('admin.catalog.heroesCount', { count: heroCount ?? 0 })}
+              icon={<Swords size={18} />}
+              accent="violet"
+            />
+            <StatCard label={t('admin.catalog.roles')} value={roles.length} icon={<Users size={18} />} accent="cyan" />
+            <StatCard label={t('admin.catalog.lanes')} value={lanes.length} icon={<Map size={18} />} accent="green" />
+            <StatCard label={t('admin.catalog.items')} value={items.length} icon={<Sword size={18} />} accent="gold" />
+          </motion.div>
+
           {/* Hero roles section (read-only reference) */}
-          <SectionCard>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-black dark:text-white">{t('admin.catalog.roles')}</h2>
-              <Badge variant="purple" size="sm">{roles.length}</Badge>
-            </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              {roles.map((r) => (
-                <div
-                  key={r.key}
-                  className="flex flex-col items-center gap-2 rounded-lg border border-stroke bg-gray-2 p-3 text-center dark:border-strokedark dark:bg-meta-4"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={r.icon} alt={r.name} referrerPolicy="no-referrer" className="h-10 w-10 object-contain" />
-                  <span className="text-sm font-medium text-black dark:text-white">{r.name}</span>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
+          <motion.div variants={reduce ? still : fadeUp}>
+            <SectionCard>
+              <SectionTitle
+                className="mb-4"
+                title={t('admin.catalog.roles')}
+                action={<Badge variant="purple" size="sm">{roles.length}</Badge>}
+              />
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                {roles.map((r) => (
+                  <div
+                    key={r.key}
+                    className="flex flex-col items-center gap-2 rounded-lg border border-line-subtle bg-surface-2 p-3 text-center"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={r.icon} alt={r.name} referrerPolicy="no-referrer" className="h-10 w-10 object-contain" />
+                    <span className="text-sm font-medium text-ink-1">{r.name}</span>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          </motion.div>
 
           {/* Lanes section */}
-          <SectionCard>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-black dark:text-white">{t('admin.catalog.lanes')}</h2>
-              <Badge variant="purple" size="sm">
-                {lanes.length}
-              </Badge>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {lanes.map((lane) => (
-                <Card key={lane.id} hover={false} className="!p-4 flex items-start gap-3">
-                  {lane.icon ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={lane.icon}
-                      alt={lane.name}
-                      referrerPolicy="no-referrer"
-                      className="w-12 h-12 rounded-lg object-contain bg-gray-2 border border-stroke shrink-0 dark:bg-meta-4 dark:border-strokedark"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-lg bg-gray-2 border border-stroke shrink-0 dark:bg-meta-4 dark:border-strokedark" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-black dark:text-white truncate">{lane.name}</p>
-                    {lane.compatibleClasses?.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {lane.compatibleClasses.map((c) => (
-                          <Badge key={c} variant="neon" size="sm" className="gap-1">
-                            <RoleIcon role={c} size={13} />
-                            {c}
-                          </Badge>
-                        ))}
-                      </div>
+          <motion.div variants={reduce ? still : fadeUp}>
+            <SectionCard>
+              <SectionTitle
+                className="mb-4"
+                title={t('admin.catalog.lanes')}
+                action={<Badge variant="purple" size="sm">{lanes.length}</Badge>}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {lanes.map((lane) => (
+                  <Card key={lane.id} hover={false} className="!p-4 flex items-start gap-3">
+                    {lane.icon ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={lane.icon}
+                        alt={lane.name}
+                        referrerPolicy="no-referrer"
+                        className="w-12 h-12 rounded-lg object-contain bg-surface-2 border border-line-subtle shrink-0"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-surface-2 border border-line-subtle shrink-0" />
                     )}
-                    {lane.description && (
-                      <p className="text-xs text-body dark:text-bodydark mt-1.5 line-clamp-2">{lane.description}</p>
-                    )}
-                  </div>
-                  <Button size="sm" variant="ghost" onClick={() => openEdit(lane)}>
-                    <Pencil size={14} /> {t('admin.catalog.edit')}
-                  </Button>
-                </Card>
-              ))}
-            </div>
-          </SectionCard>
-
-          {/* Heroes section */}
-          <SectionCard>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold text-black dark:text-white">{t('admin.catalog.heroes')}</h2>
-                <p className="text-sm text-body dark:text-bodydark mt-0.5">
-                  {t('admin.catalog.heroesCount', { count: heroCount ?? 0 })}
-                </p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-ink-1 truncate">{lane.name}</p>
+                      {lane.compatibleClasses?.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {lane.compatibleClasses.map((c) => (
+                            <Badge key={c} variant="neon" size="sm" className="gap-1">
+                              <RoleIcon role={c} size={13} />
+                              {c}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      {lane.description && (
+                        <p className="text-xs text-ink-2 mt-1.5 line-clamp-2">{lane.description}</p>
+                      )}
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => openEdit(lane)}>
+                      <Pencil size={14} /> <span className="hidden sm:inline">{t('admin.catalog.edit')}</span>
+                    </Button>
+                  </Card>
+                ))}
               </div>
-              <Button onClick={refreshHeroes} loading={refreshing} disabled={refreshing}>
-                <RefreshCw size={16} /> {t('admin.catalog.refreshFromMlbb')}
-              </Button>
-            </div>
-          </SectionCard>
+            </SectionCard>
+          </motion.div>
+
 
           {/* Build blocks: items, emblems and battle spells feed the hero builds tab */}
           <CatalogEntitySection
@@ -275,7 +306,7 @@ export default function AdminCatalogPage() {
             onChanged={load}
           />
           <BuildsSection items={items} emblems={emblems} battleSpells={battleSpells} />
-        </>
+        </motion.div>
       )}
 
       {/* Lane edit modal */}

@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Trash2, Check, Settings, Swords, Users } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Plus, Trash2, Check, Settings, Swords, Users, Activity, Trophy } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { fadeUp, stagger, still } from '@/lib/motion';
 import CitySelect from '@/components/geo/CitySelect';
 import {
   Card,
@@ -12,15 +14,16 @@ import {
   PageHeader,
   Badge,
   EmptyState,
-  LoadingSpinner,
+  Input,
+  Textarea,
+  Skeleton,
+  StatCard,
 } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import toast from 'react-hot-toast';
 
-const inputCls =
-  'w-full px-3 py-2 text-sm rounded-lg border border-stroke bg-gray-2 text-black placeholder-bodydark2 focus:outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white';
-const labelCls = 'mb-1.5 block text-sm font-medium text-black dark:text-white';
+const labelCls = 'mb-2.5 block text-sm font-medium text-ink-1';
 
 type Category = '1v1' | '3v3' | '5v5';
 const CATEGORIES: Category[] = ['1v1', '3v3', '5v5'];
@@ -38,6 +41,7 @@ const statusVariant: Record<string, string> = {
 
 export default function AdminDraftPage() {
   const t = useT();
+  const reduce = useReducedMotion();
   const [tournaments, setTournaments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -140,9 +144,15 @@ export default function AdminDraftPage() {
     }
   };
 
+  // Counts derived from the loaded list (no extra request).
+  const openCount = tournaments.filter((tn) => tn.status === 'registration').length;
+  const liveCount = tournaments.filter((tn) => tn.status === 'drafted' || tn.status === 'ongoing').length;
+  const registered = tournaments.reduce((acc, tn) => acc + (tn.registeredCount ?? 0), 0);
+
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow={t('nav.section.esport')}
         icon={<Swords size={28} />}
         title={t('admin.draft.title')}
         subtitle={t('admin.draft.subtitle')}
@@ -153,8 +163,23 @@ export default function AdminDraftPage() {
         }
       />
 
+      {!loading && tournaments.length > 0 && (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatCard label={t('admin.draft.title')} value={tournaments.length} icon={<Trophy size={18} />} accent="cyan" />
+          <StatCard label={t('draft.status.registration')} value={openCount} icon={<Plus size={18} />} accent="green" />
+          <StatCard label={t('draft.status.ongoing')} value={liveCount} icon={<Activity size={18} />} accent="violet" />
+          <StatCard label={t('admin.draft.registrations')} value={registered} icon={<Users size={18} />} accent="gold" />
+        </div>
+      )}
+
       {loading ? (
-        <LoadingSpinner size="lg" className="py-24" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <Card key={i}>
+              <Skeleton lines={3} />
+            </Card>
+          ))}
+        </div>
       ) : tournaments.length === 0 ? (
         <EmptyState
           icon={<Swords size={28} />}
@@ -166,47 +191,57 @@ export default function AdminDraftPage() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <motion.div
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+          variants={reduce ? still : stagger()}
+          initial="hidden"
+          animate="visible"
+        >
           {tournaments.map((tn) => (
-            <Card key={tn.id} hover className="flex flex-col gap-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate text-base font-semibold text-black dark:text-white">
-                    {tn.name}
-                  </p>
-                  {tn.description && (
-                    <p className="mt-0.5 line-clamp-2 text-xs text-body dark:text-bodydark">
-                      {tn.description}
+            <motion.div key={tn.id} variants={reduce ? still : fadeUp} className="flex">
+              <Card
+                className="flex w-full flex-col gap-3"
+                accent={tn.status === 'ongoing' || tn.status === 'drafted' ? 'violet' : tn.status === 'registration' ? 'green' : undefined}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-display text-base font-bold tracking-tight2 text-ink-1">
+                      {tn.name}
                     </p>
-                  )}
+                    {tn.description && (
+                      <p className="mt-0.5 line-clamp-2 text-xs text-ink-2">
+                        {tn.description}
+                      </p>
+                    )}
+                  </div>
+                  <Badge variant="neon" size="sm">
+                    {tn.category}
+                  </Badge>
                 </div>
-                <Badge variant="neon" size="sm">
-                  {tn.category}
-                </Badge>
-              </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={statusVariant[tn.status] || 'default'} size="sm">
-                  {t('draft.status.' + tn.status)}
-                </Badge>
-                <span className="inline-flex items-center gap-1 text-xs text-body dark:text-bodydark">
-                  <Users size={13} /> {t('draft.registeredCount', { count: tn.registeredCount ?? 0 })}
-                </span>
-              </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={statusVariant[tn.status] || 'default'} size="sm" dot>
+                    {t('draft.status.' + tn.status)}
+                  </Badge>
+                  <span className="inline-flex items-center gap-1 text-xs text-ink-2 num">
+                    <Users size={13} /> {t('draft.registeredCount', { count: tn.registeredCount ?? 0 })}
+                  </span>
+                </div>
 
-              <div className="mt-auto flex items-center gap-2 pt-1">
-                <Link href={`/admin/draft/${tn.id}`} className="flex-1">
-                  <Button size="sm" variant="secondary" className="w-full">
-                    <Settings size={14} /> {t('admin.draft.manage')}
+                <div className="mt-auto flex items-center gap-2 pt-1">
+                  <Link href={`/admin/draft/${tn.id}`} className="flex-1">
+                    <Button size="sm" variant="secondary" className="w-full">
+                      <Settings size={14} /> {t('admin.draft.manage')}
+                    </Button>
+                  </Link>
+                  <Button size="sm" variant="danger" onClick={() => setPending({ id: tn.id })} aria-label={t('admin.draft.delete')}>
+                    <Trash2 size={14} />
                   </Button>
-                </Link>
-                <Button size="sm" variant="danger" onClick={() => setPending({ id: tn.id })}>
-                  <Trash2 size={14} />
-                </Button>
-              </div>
-            </Card>
+                </div>
+              </Card>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       <Modal
@@ -218,29 +253,26 @@ export default function AdminDraftPage() {
         headerVariant="gradient"
       >
         <form onSubmit={submit} className="space-y-4">
-          <div>
-            <label className={labelCls}>{t('admin.draft.name')}</label>
-            <input
-              className={inputCls}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              autoFocus
-            />
-          </div>
+          <Input
+            label={t('admin.draft.name')}
+            value={name}
+            onChange={(e: any) => setName(e.target.value)}
+            required
+            autoFocus
+          />
 
           <div>
             <label className={labelCls}>{t('admin.draft.category')}</label>
-            <div className="inline-flex w-full rounded-lg border border-stroke p-1 dark:border-strokedark">
+            <div className="inline-flex w-full rounded-md border border-line-subtle bg-surface-2/70 p-1">
               {CATEGORIES.map((c) => (
                 <button
                   key={c}
                   type="button"
                   onClick={() => setCat(c)}
-                  className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  className={`flex-1 rounded px-3 py-1.5 text-sm font-semibold transition-colors duration-fast ${
                     category === c
-                      ? 'bg-primary text-white'
-                      : 'text-body hover:bg-gray dark:text-bodydark dark:hover:bg-meta-4'
+                      ? 'bg-primary text-on-primary'
+                      : 'text-ink-2 hover:text-ink-1'
                   }`}
                 >
                   {c}
@@ -249,14 +281,11 @@ export default function AdminDraftPage() {
             </div>
           </div>
 
-          <div>
-            <label className={labelCls}>{t('admin.draft.description')}</label>
-            <textarea
-              className={`${inputCls} min-h-[80px] resize-y`}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
+          <Textarea
+            label={t('admin.draft.description')}
+            value={description}
+            onChange={(e: any) => setDescription(e.target.value)}
+          />
 
           <CitySelect
             label={t('admin.draft.city')}
@@ -268,7 +297,7 @@ export default function AdminDraftPage() {
           {needsRoles && (
             <div>
               <label className={labelCls}>{t('admin.draft.roles')}</label>
-              <p className="mb-2 text-xs text-body dark:text-bodydark">
+              <p className="mb-2 text-xs text-ink-2">
                 {t('admin.draft.rolesHelp')}
               </p>
               <div className="flex flex-wrap gap-2">
@@ -281,10 +310,10 @@ export default function AdminDraftPage() {
                       type="button"
                       onClick={() => toggleRole(r)}
                       disabled={atMax}
-                      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition ${
+                      className={`inline-flex items-center gap-1.5 rounded border px-3 py-1.5 text-sm transition-colors duration-fast ${
                         active
                           ? 'border-primary bg-primary/10 font-medium text-primary'
-                          : 'border-stroke text-body hover:border-primary/50 disabled:opacity-40 dark:border-strokedark dark:text-bodydark'
+                          : 'border-line-strong text-ink-2 hover:border-primary/50 disabled:opacity-40'
                       }`}
                     >
                       {active && <Check size={14} />}
@@ -293,7 +322,7 @@ export default function AdminDraftPage() {
                   );
                 })}
               </div>
-              <p className="mt-2 text-xs text-bodydark2">
+              <p className="mt-2 text-xs text-ink-3 num">
                 {roles.length}/{teamSize}
               </p>
             </div>

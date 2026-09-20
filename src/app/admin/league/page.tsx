@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
 import { CalendarDays, ExternalLink, Flag, RefreshCw, Sparkles, Settings2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { useLangStore } from '@/store/useStore';
 import { useSeasonStore, useSelectedSeason } from '@/store/useSeasonStore';
 import { Button, Card, EmptyState, LoadingSpinner, PageHeader } from '@/components/ui';
+import { fadeUp, stagger, still } from '@/lib/motion';
 import SeasonSwitcher from '@/components/seasons/SeasonSwitcher';
 import { SeasonStatusBadge, seasonPeriod, fmtSeasonDate } from '@/components/seasons/shared';
 import { useSeasonLifecycle } from '@/components/admin/seasons/useSeasonLifecycle';
@@ -33,6 +35,7 @@ import {
 export default function AdminLeaguePage() {
   const t = useT();
   const lang = useLangStore((s: any) => s.lang);
+  const reduce = useReducedMotion();
   const { selection, ready } = useSelectedSeason();
   const refreshSeasons = useSeasonStore((s) => s.load);
   // `current` / `all` -> let the API resolve the current season.
@@ -81,6 +84,7 @@ export default function AdminLeaguePage() {
     <div className="space-y-6">
       <PageHeader
         icon={<Flag size={28} />}
+        eyebrow={t('nav.section.esport')}
         title={t('admin.league.title')}
         subtitle={t('admin.league.subtitle')}
         variant="cyan"
@@ -116,65 +120,79 @@ export default function AdminLeaguePage() {
           }
         />
       ) : (
-        <>
-          {/* Season strip */}
-          <Card
-            className="!p-0 overflow-hidden"
-            style={season.color ? { borderLeft: `4px solid ${season.color}` } : undefined}
-          >
-            <div className="flex flex-col gap-3 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
+        <motion.div
+          className="space-y-6"
+          variants={reduce ? still : stagger(0.06)}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* Season strip: the hero of the control room */}
+          <motion.div variants={reduce ? still : fadeUp}>
+            <Card
+              className="relative !p-0 overflow-hidden"
+              style={season.color ? { borderLeft: `4px solid ${season.color}` } : undefined}
+            >
+              {season.banner && (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={season.banner} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-20" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-surface-1 via-surface-1/90 to-surface-1/40" />
+                </>
+              )}
+              <div className="relative flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
                   {season.number != null && (
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-bodydark2">
-                      {t('seasons.numberLabel', { n: season.number })}
-                    </span>
+                    <p className="eyebrow mb-2 num">{t('seasons.numberLabel', { n: season.number })}</p>
                   )}
-                  <h3 className="text-lg font-bold text-black dark:text-white truncate">{season.name}</h3>
-                  <SeasonStatusBadge status={season.status} t={t} />
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h3 className="truncate font-display text-2xl font-bold tracking-tight2 text-ink-1 md:text-3xl">
+                      {season.name}
+                    </h3>
+                    <SeasonStatusBadge status={season.status} t={t} />
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-2">
+                    {season.theme && (
+                      <span className="inline-flex items-center gap-1">
+                        <Sparkles size={12} className="text-accent-gold" /> {season.theme}
+                      </span>
+                    )}
+                    {period && (
+                      <span className="inline-flex items-center gap-1 num">
+                        <CalendarDays size={12} /> {period}
+                      </span>
+                    )}
+                    {season.playoffsStartDate && (
+                      <span className="inline-flex items-center gap-1 num">
+                        <Flag size={12} /> {t('seasons.playoffsFrom', { date: fmtSeasonDate(season.playoffsStartDate, lang) || '' })}
+                      </span>
+                    )}
+                    {season.slogan && <span className="italic text-ink-3">« {season.slogan} »</span>}
+                  </div>
                 </div>
-                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-body dark:text-bodydark">
-                  {season.theme && (
-                    <span className="inline-flex items-center gap-1">
-                      <Sparkles size={12} className="text-warning" /> {season.theme}
-                    </span>
-                  )}
-                  {period && (
-                    <span className="inline-flex items-center gap-1">
-                      <CalendarDays size={12} /> {period}
-                    </span>
-                  )}
-                  {season.playoffsStartDate && (
-                    <span className="inline-flex items-center gap-1">
-                      <Flag size={12} /> {t('seasons.playoffsFrom', { date: fmtSeasonDate(season.playoffsStartDate, lang) || '' })}
-                    </span>
-                  )}
-                  {season.slogan && <span className="italic">« {season.slogan} »</span>}
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <SeasonLifecycleButtons season={season} lifecycle={lifecycle} />
-                <Link href="/admin/seasons">
-                  <Button size="sm" variant="ghost" title={t('admin.league.goSeasons')}>
-                    <Settings2 size={14} /> {t('admin.league.goSeasons')}
-                  </Button>
-                </Link>
-                {season.slug && (
-                  <Link
-                    href={`/seasons/${season.slug}`}
-                    target="_blank"
-                    className="inline-flex items-center px-2 py-1.5 rounded-md text-body hover:bg-gray dark:text-bodydark dark:hover:bg-meta-4"
-                    title={t('seasons.viewPublic')}
-                  >
-                    <ExternalLink size={14} />
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <SeasonLifecycleButtons season={season} lifecycle={lifecycle} />
+                  <Link href="/admin/seasons">
+                    <Button size="sm" variant="ghost" title={t('admin.league.goSeasons')}>
+                      <Settings2 size={14} /> {t('admin.league.goSeasons')}
+                    </Button>
                   </Link>
-                )}
+                  {season.slug && (
+                    <Link
+                      href={`/seasons/${season.slug}`}
+                      target="_blank"
+                      className="inline-flex items-center rounded px-2 py-1.5 text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink-1"
+                      title={t('seasons.viewPublic')}
+                    >
+                      <ExternalLink size={14} />
+                    </Link>
+                  )}
+                </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </motion.div>
 
           {/* KPIs */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+          <motion.div variants={reduce ? still : fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
             <Kpi label={t('admin.league.kpi.teams')} value={overview.teams} href="/admin/esport" />
             <Kpi
               label={t('admin.league.kpi.matches')}
@@ -210,9 +228,9 @@ export default function AdminLeaguePage() {
               tone={overview.matches.overdue ? 'danger' : 'default'}
               href={`/admin/matches?season=${encodeURIComponent(season.id)}&status=scheduled`}
             />
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <motion.div variants={reduce ? still : fadeUp} className="grid grid-cols-1 gap-4 xl:grid-cols-3">
             <div className="space-y-4 xl:col-span-2">
               <ChecklistWidget overview={overview} onClose={() => lifecycle.openClose(season)} />
               <StandingsWidget overview={overview} />
@@ -224,16 +242,16 @@ export default function AdminLeaguePage() {
               <SponsorsWidget overview={overview} />
               <StreamWidget overview={overview} />
               <Card className="!p-5">
-                <p className="text-xs text-body dark:text-bodydark">
+                <p className="text-xs text-ink-2 num">
                   {t('admin.league.announcements.week', { n: overview.announcements.last7Days })}
                 </p>
-                <p className="mt-1 text-[11px] text-bodydark2">
+                <p className="mt-1 text-[11px] text-ink-3 num">
                   {t('admin.league.generatedAt', { date: new Date(overview.generatedAt).toLocaleString() })}
                 </p>
               </Card>
             </div>
-          </div>
-        </>
+          </motion.div>
+        </motion.div>
       )}
 
       <SeasonLifecycleModals lifecycle={lifecycle} />

@@ -1,28 +1,20 @@
 'use client';
 
 import { useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu } from 'lucide-react';
 import { useAuthStore, useLangStore } from '@/store/useStore';
 import { setToken, avatarSrc } from '@/lib/api';
-import LanguageSwitcher from '@/components/common/LanguageSwitcher';
 import SeasonSwitcher from '@/components/seasons/SeasonSwitcher';
 import { disconnectSocket } from '@/lib/realtime';
 import { useT } from '@/lib/i18n';
-import DarkModeToggle from './DarkModeToggle';
-import ThemeSwitcher from './ThemeSwitcher';
-import HeaderSearch from './HeaderSearch';
-import NotificationDropdown from './NotificationDropdown';
-import MessageDropdown from './MessageDropdown';
-import ProfileDropdown from './ProfileDropdown';
+import AppHeader from './AppHeader';
 
 interface HeaderProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
 }
 
-/** Player dashboard header (TailAdmin top bar). */
+/** Player top bar (adds the global season pill). */
 export default function DashboardHeader({ sidebarOpen, setSidebarOpen }: HeaderProps) {
   const router = useRouter();
   const userProfile = useAuthStore((s: any) => s.userProfile);
@@ -48,73 +40,27 @@ export default function DashboardHeader({ sidebarOpen, setSidebarOpen }: HeaderP
   const avatarUrl = userProfile?.avatar ? avatarSrc(userProfile.avatar) : null;
 
   return (
-    <header className="sticky top-0 z-999 flex w-full bg-white shadow-default dark:bg-boxdark">
-      <div className="flex flex-grow items-center justify-between px-4 py-4 md:px-6 2xl:px-11">
-        <div className="flex items-center gap-2 sm:gap-4 lg:hidden">
-          {/* Hamburger Toggle BTN */}
-          <button
-            type="button"
-            aria-label="Ouvrir le menu"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSidebarOpen(!sidebarOpen);
-            }}
-            className="z-99999 block rounded-sm border border-stroke bg-white p-1.5 text-black shadow-sm dark:border-strokedark dark:bg-boxdark dark:text-white lg:hidden"
-          >
-            <Menu size={20} />
-          </button>
-
-          <Link href="/dashboard" className="block flex-shrink-0 lg:hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/mlbbtogo-icon.png" alt="MLBB Togo" className="h-8 w-8" />
-          </Link>
-        </div>
-
-        {/* Desktop trigger of the global search (mobile uses the icon in the list below) */}
-        <div className="hidden lg:block">
-          <HeaderSearch variant="bar" shortcut={false} />
-        </div>
-
-        <div className="flex items-center gap-2 sm:gap-7">
-          <ul className="flex items-center gap-1.5 sm:gap-4">
-            <li className="lg:hidden">
-              <HeaderSearch />
-            </li>
-            {/* Dark toggle hidden on phone (the palette menu handles light/dark there) */}
-            <li className="hidden sm:block">
-              <DarkModeToggle />
-            </li>
-            <li>
-              <ThemeSwitcher />
-            </li>
-            <li>
-              <NotificationDropdown />
-            </li>
-            <li>
-              <MessageDropdown href="/messages" />
-            </li>
-            {/* Global season selector (pages filter on it); hidden on phone */}
-            <li className="hidden sm:block">
-              <SeasonSwitcher />
-            </li>
-            {/* Language hidden on phone to keep the bar from overflowing */}
-            <li className="hidden sm:block">
-              <LanguageSwitcher />
-            </li>
-          </ul>
-
-          <ProfileDropdown
-            name={name}
-            avatarUrl={avatarUrl}
-            logoutLabel={t('header.logout')}
-            onLogout={logout}
-            links={[
-              { href: '/profile', label: t('header.menu.profile'), icon: 'profile' },
-              { href: '/settings', label: t('header.menu.settings'), icon: 'settings' },
-            ]}
-          />
-        </div>
-      </div>
-    </header>
+    <AppHeader
+      sidebarOpen={sidebarOpen}
+      setSidebarOpen={setSidebarOpen}
+      homeHref="/dashboard"
+      messagesHref="/messages"
+      // Global season selector (pages filter on it); the drawer carries it on phones.
+      extra={
+        <li className="hidden sm:block">
+          <SeasonSwitcher />
+        </li>
+      }
+      profile={{
+        name,
+        avatarUrl,
+        logoutLabel: t('header.logout'),
+        onLogout: logout,
+        links: [
+          { href: '/profile', label: t('header.menu.profile'), icon: 'profile' },
+          { href: '/settings', label: t('header.menu.settings'), icon: 'settings' },
+        ],
+      }}
+    />
   );
 }

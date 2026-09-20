@@ -2,13 +2,26 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { MenuItemConfig } from '@/config/theme';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/helpers';
+import { springIndicator } from '@/lib/motion';
 
-export default function SidebarItem({ item }: { item: MenuItemConfig }) {
+/** Shared layoutId so the glow bar slides between items of the same rail. */
+const ACTIVE_BAR_ID = 'sidebar-active-bar';
+
+export default function SidebarItem({
+  item,
+  onNavigate,
+}: {
+  item: MenuItemConfig;
+  /** Called after a click (closes the mobile drawer). */
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
   const t = useT();
+  const reduce = useReducedMotion();
   const Icon = item.icon;
   const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
   const label = t(item.labelKey);
@@ -17,28 +30,31 @@ export default function SidebarItem({ item }: { item: MenuItemConfig }) {
     <Link
       href={item.href}
       title={label}
+      onClick={onNavigate}
+      aria-current={active ? 'page' : undefined}
       className={cn(
-        'group relative flex items-center gap-3 rounded-lg px-2 md:px-3 py-2.5 text-sm font-medium transition-all duration-200',
-        active ? 'bg-white/10 text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'
+        'group relative flex h-9 items-center gap-2.5 rounded-md pl-3 pr-2.5 text-[13px] font-medium transition-[color,background-color] duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+        active ? 'rail-active text-ink-1' : 'text-ink-2 hover:bg-surface-2/60 hover:text-ink-1'
       )}
     >
       {active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-neon-blue" />
+        <motion.span
+          layoutId={reduce ? undefined : ACTIVE_BAR_ID}
+          transition={springIndicator}
+          aria-hidden="true"
+          className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary shadow-glow-cyan"
+        />
       )}
       <span
         className={cn(
-          'shrink-0 flex items-center justify-center rounded-md p-1.5 transition-colors',
-          active
-            ? 'bg-neon-blue/20 text-neon-blue'
-            : 'bg-white/5 text-gray-400 group-hover:text-white'
+          'flex h-6 w-6 shrink-0 items-center justify-center rounded transition-colors duration-fast',
+          active ? 'text-primary' : 'text-ink-3 group-hover:text-ink-1'
         )}
       >
-        <Icon size={18} />
+        <Icon size={16} />
       </span>
-      <span className="hidden md:block flex-1 min-w-0 truncate">{label}</span>
-      {item.descKey && (
-        <span className="hidden md:block text-xs text-gray-500 truncate">{t(item.descKey)}</span>
-      )}
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {item.descKey && <span className="truncate text-[11px] text-ink-3">{t(item.descKey)}</span>}
     </Link>
   );
 }

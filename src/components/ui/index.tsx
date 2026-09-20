@@ -1,13 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useId, useMemo, type ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
+import dynamic from 'next/dynamic';
 import { ArrowDownRight, ArrowUpRight, ChevronDown, ChevronUp, ChevronsUpDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/helpers';
 import { useT } from '@/lib/i18n';
 import { type BannerVariant } from '@/config/theme';
-import { springIndicator } from '@/lib/motion';
 
 /* ------------------------------------------------------------------ */
 /* Shared accent vocabulary                                            */
@@ -709,7 +708,7 @@ export function PageHeader({
 
   const crumbs = (
     <nav aria-label="Breadcrumb">
-      <ol className="flex items-center gap-2 text-sm">
+      <ol className="flex items-center gap-2 whitespace-nowrap text-sm">
         <li>
           <Link className="font-medium text-ink-2 transition-colors hover:text-ink-1" href="/dashboard">
             {t('header.dashboard')} /
@@ -773,7 +772,7 @@ export function PageHeader({
       ) : (
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           {heading(false)}
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 flex-wrap items-center gap-4">
             {action}
             {crumbs}
           </div>
@@ -880,6 +879,47 @@ export function Tooltip({
 /* Tabs                                                                */
 /* ------------------------------------------------------------------ */
 
+// framer-motion is loaded on demand (own chunk) so pages that only use a
+// Button or an Input do not pay for it. Until the chunk mounts, a static
+// marker keeps the active tab highlighted.
+let motionReady = false;
+const motionListeners = new Set<() => void>();
+const TabIndicator = dynamic(
+  () =>
+    import('./TabIndicator').then((m) => {
+      motionReady = true;
+      motionListeners.forEach((l) => l());
+      return m;
+    }),
+  { ssr: false, loading: () => null }
+);
+
+function useMotionReady() {
+  const [ready, setReady] = useState(motionReady);
+  useEffect(() => {
+    if (motionReady) {
+      setReady(true);
+      return;
+    }
+    const l = () => setReady(true);
+    motionListeners.add(l);
+    return () => {
+      motionListeners.delete(l);
+    };
+  }, []);
+  return ready;
+}
+
+function ActiveMarker({ layoutId, className }: { layoutId: string; className: string }) {
+  const ready = useMotionReady();
+  return (
+    <>
+      <TabIndicator layoutId={layoutId} className={className} />
+      {!ready && <span aria-hidden="true" className={className} />}
+    </>
+  );
+}
+
 export function Tabs({
   tabs,
   active,
@@ -901,7 +941,10 @@ export function Tabs({
 
   if (variant === 'underline') {
     return (
-      <div role="tablist" className={cn('flex items-center gap-1 border-b border-line-subtle', className)}>
+      <div
+        role="tablist"
+        className={cn('no-scrollbar flex max-w-full items-center gap-1 overflow-x-auto border-b border-line-subtle', className)}
+      >
         {tabs.map((tab) => {
           const isActive = active === tab.id;
           return (
@@ -912,7 +955,7 @@ export function Tabs({
               aria-selected={isActive}
               onClick={() => onChange(tab.id)}
               className={cn(
-                'relative -mb-px flex items-center gap-2 font-semibold transition-colors duration-fast',
+                'relative -mb-px flex shrink-0 items-center gap-2 whitespace-nowrap font-semibold transition-colors duration-fast',
                 pad,
                 isActive ? 'text-ink-1' : 'text-ink-3 hover:text-ink-2'
               )}
@@ -923,9 +966,8 @@ export function Tabs({
                 <span className="rounded bg-surface-3 px-1.5 py-0.5 text-[10px] num text-ink-2">{tab.count}</span>
               )}
               {isActive && (
-                <motion.span
+                <ActiveMarker
                   layoutId={`tabs-underline-${layoutId}`}
-                  transition={springIndicator}
                   className="absolute inset-x-0 bottom-0 h-0.5 bg-primary shadow-glow-cyan"
                 />
               )}
@@ -939,7 +981,7 @@ export function Tabs({
   return (
     <div
       role="tablist"
-      className={cn('inline-flex rounded-md border border-line-subtle bg-surface-2/70 p-1', className)}
+      className={cn('no-scrollbar inline-flex max-w-full overflow-x-auto rounded-md border border-line-subtle bg-surface-2/70 p-1', className)}
     >
       {tabs.map((tab) => {
         const isActive = active === tab.id;
@@ -951,17 +993,13 @@ export function Tabs({
             aria-selected={isActive}
             onClick={() => onChange(tab.id)}
             className={cn(
-              'relative flex items-center gap-2 rounded font-semibold transition-colors duration-fast',
+              'relative flex shrink-0 items-center gap-2 whitespace-nowrap rounded font-semibold transition-colors duration-fast',
               pad,
               isActive ? 'text-on-primary' : 'text-ink-2 hover:text-ink-1'
             )}
           >
             {isActive && (
-              <motion.span
-                layoutId={`tabs-segment-${layoutId}`}
-                transition={springIndicator}
-                className="absolute inset-0 rounded bg-primary"
-              />
+              <ActiveMarker layoutId={`tabs-segment-${layoutId}`} className="absolute inset-0 rounded bg-primary" />
             )}
             <span className="relative flex items-center gap-2">
               {tab.icon && <tab.icon size={16} />}

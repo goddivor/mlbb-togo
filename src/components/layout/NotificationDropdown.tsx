@@ -116,18 +116,19 @@ export default function NotificationDropdown() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label={t('notif.title')}
-        className="relative flex h-12 w-12 items-center justify-center rounded-full border-[0.5px] border-stroke bg-gray text-black hover:text-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+        aria-expanded={open}
+        className="header-btn"
       >
         {notifying && (
-          <span className="absolute right-2.5 top-2.5 z-1 h-2 w-2 rounded-full bg-meta-1">
-            <span className="absolute -z-1 inline-flex h-full w-full animate-ping rounded-full bg-meta-1 opacity-75" />
+          <span className="absolute right-1.5 top-1.5 z-1 h-2 w-2 rounded-full bg-accent-red">
+            <span className="absolute -z-1 inline-flex h-full w-full animate-ping rounded-full bg-accent-red opacity-75" />
           </span>
         )}
 
         <svg
-          className="fill-current duration-300 ease-in-out"
-          width="18"
-          height="18"
+          className="fill-current"
+          width="17"
+          height="17"
           viewBox="0 0 18 18"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
@@ -140,9 +141,9 @@ export default function NotificationDropdown() {
       </button>
 
       {open && (
-        <div className="absolute -right-25 mt-2.5 flex h-90 w-80 flex-col rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark sm:right-0">
-          <div className="flex items-center justify-between px-4.5 py-3">
-            <h5 className="text-sm font-medium text-bodydark2">{t('notif.title')}</h5>
+        <div className="header-menu absolute -right-25 mt-2.5 flex h-90 w-80 flex-col overflow-hidden sm:right-0">
+          <div className="flex items-center justify-between border-b border-line-subtle px-4 py-2.5">
+            <h5 className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('notif.title')}</h5>
             {items.some((i) => !i.read) && (
               <button
                 type="button"
@@ -155,7 +156,7 @@ export default function NotificationDropdown() {
           </div>
 
           {items.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center px-4.5 py-6 text-center text-sm text-body dark:text-bodydark">
+            <div className="flex flex-1 items-center justify-center px-4 py-6 text-center text-sm text-ink-3">
               {t('notif.none')}
             </div>
           ) : (
@@ -168,15 +169,16 @@ export default function NotificationDropdown() {
                     <button
                       type="button"
                       onClick={() => openItem(n)}
-                      className={`flex w-full flex-col gap-2.5 border-t border-stroke px-4.5 py-3 text-left hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4 ${
-                        !n.read ? 'bg-gray-2 dark:bg-meta-4/40' : ''
+                      className={`relative flex w-full flex-col gap-1 border-b border-line-subtle px-4 py-3 text-left transition-colors duration-fast hover:bg-surface-2 ${
+                        !n.read ? 'bg-primary/5' : ''
                       }`}
                     >
-                      <p className="text-sm text-body dark:text-bodydark">
-                        <span className="text-black dark:text-white">{title}</span>
+                      {!n.read && <span aria-hidden="true" className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />}
+                      <p className="text-sm text-ink-2">
+                        <span className="font-medium text-ink-1">{title}</span>
                         {message ? ` ${message}` : ''}
                       </p>
-                      {time && <p className="text-xs">{time}</p>}
+                      {time && <p className="text-[11px] text-ink-3 num">{time}</p>}
                     </button>
                   </li>
                 );
@@ -187,7 +189,7 @@ export default function NotificationDropdown() {
           <Link
             href="/notifications"
             onClick={() => setOpen(false)}
-            className="mt-auto border-t border-stroke px-4.5 py-3 text-center text-sm font-medium text-primary hover:underline dark:border-strokedark"
+            className="mt-auto border-t border-line-subtle px-4 py-2.5 text-center text-xs font-semibold text-primary transition-colors hover:bg-primary/5"
           >
             {t('notif.viewAll')}
           </Link>

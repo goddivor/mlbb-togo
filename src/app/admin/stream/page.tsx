@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Card, Button, PageHeader, LoadingSpinner } from '@/components/ui';
+import { Card, Button, PageHeader, LoadingSpinner, Badge, Input, Select, SectionTitle, EmptyState, Skeleton } from '@/components/ui';
 import toast from 'react-hot-toast';
 
 type ChannelVideo = {
@@ -53,9 +53,7 @@ function fmtDate(iso?: string): string {
   return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
 }
 
-const inputCls =
-  'w-full px-3 py-2 text-sm rounded-lg border border-stroke bg-gray-2 text-black placeholder-bodydark2 focus:outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white';
-const labelCls = 'mb-1.5 block text-sm font-medium text-black dark:text-white';
+const labelCls = 'mb-2.5 block text-sm font-medium text-ink-1';
 
 function AdminStreamInner() {
   const t = useT();
@@ -250,33 +248,56 @@ function AdminStreamInner() {
 
   const selectedCount = useMemo(() => selected.size, [selected]);
 
-  if (loading) return <LoadingSpinner size="lg" className="py-24" />;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-64" />
+        <Card>
+          <Skeleton lines={4} />
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow={t('nav.section.esport')}
         icon={<Radio size={28} />}
         title={t('admin.stream.title')}
         subtitle={t('admin.stream.subtitle')}
+        variant="danger"
         action={
-          <a href="/stream" target="_blank" rel="noreferrer">
-            <Button variant="ghost" size="sm">
-              <ExternalLink size={16} /> {t('admin.stream.preview')}
-            </Button>
-          </a>
+          <div className="flex items-center gap-3">
+            {livePanel.active ? (
+              <Badge variant="live">{t('stream.live')}</Badge>
+            ) : (
+              connected && <Badge variant="green" dot>{t('admin.stream.connectedLabel')}</Badge>
+            )}
+            <a href="/stream" target="_blank" rel="noreferrer">
+              <Button variant="ghost" size="sm">
+                <ExternalLink size={16} /> {t('admin.stream.preview')}
+              </Button>
+            </a>
+          </div>
         }
       />
 
       {/* 1. YouTube connection */}
       <Card>
-        <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-          <Youtube size={20} className="text-danger" /> {t('admin.stream.connectSection')}
-        </h3>
+        <SectionTitle
+          className="mb-4"
+          title={
+            <span className="inline-flex items-center gap-2">
+              <Youtube size={20} className="text-accent-red" /> {t('admin.stream.connectSection')}
+            </span>
+          }
+        />
 
         {connected ? (
           <div>
-            <div className="overflow-hidden rounded-xl border border-stroke dark:border-strokedark">
-              <div className="relative h-28 w-full bg-gray-2 dark:bg-meta-4">
+            <div className="overflow-hidden rounded-lg border border-line-subtle">
+              <div className="relative h-28 w-full bg-surface-2">
                 {status.channelBanner && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={status.channelBanner} alt="" className="h-full w-full object-cover" />
@@ -286,51 +307,60 @@ function AdminStreamInner() {
                   <img
                     src={status.channelThumbnail}
                     alt={status.channelTitle}
-                    className="absolute left-1/2 top-full h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white object-cover shadow-lg dark:border-boxdark"
+                    className="absolute left-1/2 top-full h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-surface-1 object-cover shadow-elev-2"
                   />
                 )}
               </div>
-              <p className="mt-10 pb-3 text-center text-sm font-semibold text-black dark:text-white">
+              <p className="mt-10 pb-3 text-center font-display text-sm font-bold text-ink-1">
                 {status.channelTitle}
               </p>
             </div>
             <div className="mt-4 flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 text-sm text-success">
+              <span className="inline-flex items-center gap-1.5 text-sm text-accent-green">
                 <Check size={16} /> {t('admin.stream.connectedLabel')}
               </span>
-              <Button variant="ghost" size="sm" onClick={disconnect} className="text-danger hover:bg-danger/10">
+              <Button variant="ghost" size="sm" onClick={disconnect} className="text-accent-red hover:bg-accent-red/10">
                 <Unlink size={16} /> {t('admin.stream.disconnect')}
               </Button>
             </div>
           </div>
         ) : (
-          <div className="text-center">
-            <p className="mb-4 text-sm text-body dark:text-bodydark">
-              {t('admin.stream.connectHelp')}
-            </p>
-            <Button onClick={connect}>
-              <Link2 size={16} /> {t('admin.stream.connectBtn')}
-            </Button>
-          </div>
+          <EmptyState
+            className="!min-h-0 py-8"
+            icon={<Youtube size={28} />}
+            title={t('admin.stream.connectSection')}
+            description={t('admin.stream.connectHelp')}
+            action={
+              <Button onClick={connect}>
+                <Link2 size={16} /> {t('admin.stream.connectBtn')}
+              </Button>
+            }
+          />
         )}
       </Card>
 
       {connected && (
         <>
           {/* 2. Go live */}
-          <Card>
-            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-              <Zap size={20} className="text-primary" /> {t('admin.stream.liveSection')}
-            </h3>
+          <Card accent={livePanel.active ? 'red' : undefined}>
+            <SectionTitle
+              className="mb-4"
+              title={
+                <span className="inline-flex items-center gap-2">
+                  <Zap size={20} className="text-primary" /> {t('admin.stream.liveSection')}
+                </span>
+              }
+              action={livePanel.active ? <Badge variant="live">{t('stream.live')}</Badge> : undefined}
+            />
 
             {livePanel.active ? (
               <div className="space-y-4">
-                <p className="text-sm text-body dark:text-bodydark">{t('admin.stream.liveInstructions')}</p>
+                <p className="text-sm text-ink-2">{t('admin.stream.liveInstructions')}</p>
                 <div>
                   <label className={labelCls}>{t('admin.stream.rtmpUrl')}</label>
                   <div className="flex gap-2">
-                    <input className={inputCls} readOnly value={livePanel.rtmpUrl || ''} />
-                    <Button variant="secondary" size="sm" onClick={() => copy(livePanel.rtmpUrl || '')}>
+                    <Input readOnly value={livePanel.rtmpUrl || ''} className="font-mono text-xs" />
+                    <Button variant="secondary" size="sm" onClick={() => copy(livePanel.rtmpUrl || '')} aria-label={t('admin.stream.copied')}>
                       <Copy size={16} />
                     </Button>
                   </div>
@@ -338,11 +368,11 @@ function AdminStreamInner() {
                 <div>
                   <label className={labelCls}>{t('admin.stream.streamKey')}</label>
                   <div className="flex gap-2">
-                    <input
-                      className={inputCls}
+                    <Input
                       readOnly
                       type={showKey ? 'text' : 'password'}
                       value={livePanel.streamKey || ''}
+                      className="font-mono text-xs"
                     />
                     <Button variant="secondary" size="sm" onClick={() => setShowKey((v) => !v)}>
                       {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -360,35 +390,24 @@ function AdminStreamInner() {
                       </Button>
                     </a>
                   )}
-                  <Button
-                    size="sm"
-                    onClick={stopLive}
-                    disabled={stopping}
-                    className="bg-danger text-white hover:bg-danger/90"
-                  >
+                  <Button size="sm" variant="danger" onClick={stopLive} disabled={stopping}>
                     <Square size={16} /> {t('admin.stream.stopLive')}
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_200px_auto] md:items-end">
-                <div>
-                  <label className={labelCls}>{t('admin.stream.liveTitleLabel')}</label>
-                  <input
-                    className={inputCls}
-                    value={liveTitle}
-                    onChange={(e) => setLiveTitle(e.target.value)}
-                    placeholder="MLBB Togo — Live"
-                  />
-                </div>
-                <div>
-                  <label className={labelCls}>{t('admin.stream.privacy')}</label>
-                  <select className={inputCls} value={privacy} onChange={(e) => setPrivacy(e.target.value)}>
-                    <option value="public">{t('admin.stream.privacyPublic')}</option>
-                    <option value="unlisted">{t('admin.stream.privacyUnlisted')}</option>
-                    <option value="private">{t('admin.stream.privacyPrivate')}</option>
-                  </select>
-                </div>
+                <Input
+                  label={t('admin.stream.liveTitleLabel')}
+                  value={liveTitle}
+                  onChange={(e: any) => setLiveTitle(e.target.value)}
+                  placeholder="MLBB Togo — Live"
+                />
+                <Select label={t('admin.stream.privacy')} value={privacy} onChange={(e: any) => setPrivacy(e.target.value)}>
+                  <option value="public">{t('admin.stream.privacyPublic')}</option>
+                  <option value="unlisted">{t('admin.stream.privacyUnlisted')}</option>
+                  <option value="private">{t('admin.stream.privacyPrivate')}</option>
+                </Select>
                 <div>
                   <Button onClick={startLive} disabled={starting} className="w-full md:w-auto">
                     <Zap size={16} /> {t('admin.stream.startLive')}
@@ -400,45 +419,50 @@ function AdminStreamInner() {
 
           {/* 3. Per-season video selection */}
           <Card>
-            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-              <Play size={20} className="text-primary" /> {t('admin.stream.videosSection')}
-            </h3>
+            <SectionTitle
+              className="mb-4"
+              title={
+                <span className="inline-flex items-center gap-2">
+                  <Play size={20} className="text-primary" /> {t('admin.stream.videosSection')}
+                </span>
+              }
+            />
 
             {seasons.length === 0 ? (
-              <div className="py-8 text-center">
-                <CalendarDays size={28} className="mx-auto mb-3 text-bodydark2" />
-                <p className="text-sm text-body dark:text-bodydark">{t('admin.stream.noSeasons')}</p>
-                <a href="/admin/seasons" className="mt-3 inline-block">
-                  <Button variant="secondary" size="sm">
-                    <CalendarDays size={16} /> {t('admin.stream.goSeasons')}
-                  </Button>
-                </a>
-              </div>
+              <EmptyState
+                className="!min-h-0 py-8"
+                icon={<CalendarDays size={28} />}
+                title={t('admin.stream.noSeasons')}
+                action={
+                  <a href="/admin/seasons" className="inline-block">
+                    <Button variant="secondary" size="sm">
+                      <CalendarDays size={16} /> {t('admin.stream.goSeasons')}
+                    </Button>
+                  </a>
+                }
+              />
             ) : (
               <>
                 <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-                  <div>
-                    <label className={labelCls}>{t('admin.stream.seasonLabel')}</label>
-                    <select
-                      className={inputCls}
-                      value={seasonId}
-                      onChange={(e) => {
-                        setSeasonId(e.target.value);
-                        setVideos([]);
-                        setNextPageToken(null);
-                      }}
-                    >
-                      <option value="">{t('admin.stream.seasonPlaceholder')}</option>
-                      {seasons.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <Select
+                    label={t('admin.stream.seasonLabel')}
+                    value={seasonId}
+                    onChange={(e: any) => {
+                      setSeasonId(e.target.value);
+                      setVideos([]);
+                      setNextPageToken(null);
+                    }}
+                  >
+                    <option value="">{t('admin.stream.seasonPlaceholder')}</option>
+                    {seasons.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </Select>
                   {seasonId && (
-                    <div className="flex items-center gap-2">
-                      <span className="whitespace-nowrap text-sm text-bodydark2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="whitespace-nowrap text-sm text-ink-3 num">
                         {t('admin.stream.selectedCount', { count: selectedCount })}
                       </span>
                       <Button variant="secondary" size="sm" onClick={() => loadVideos(false)} disabled={loadingVideos}>
@@ -453,9 +477,9 @@ function AdminStreamInner() {
                 </div>
 
                 {!seasonId ? (
-                  <p className="py-8 text-center text-sm text-bodydark2">{t('admin.stream.pickSeason')}</p>
+                  <EmptyState className="!min-h-0 py-8" title={t('admin.stream.pickSeason')} />
                 ) : videos.length === 0 ? (
-                  <p className="py-8 text-center text-sm text-bodydark2">{t('admin.stream.loadHint')}</p>
+                  <EmptyState className="!min-h-0 py-8" title={t('admin.stream.loadHint')} />
                 ) : (
               <>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -466,26 +490,27 @@ function AdminStreamInner() {
                         key={v.videoId}
                         type="button"
                         onClick={() => toggle(v.videoId)}
-                        className={`flex items-center gap-3 rounded-lg border p-2 text-left transition ${
+                        aria-pressed={isSel}
+                        className={`flex items-center gap-3 rounded-lg border p-2 text-left transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
                           isSel
                             ? 'border-primary bg-primary/5'
-                            : 'border-stroke hover:border-primary/50 dark:border-strokedark'
+                            : 'border-line-subtle hover:border-primary/50'
                         }`}
                       >
-                        <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded bg-gray-2 dark:bg-meta-4">
+                        <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded bg-surface-2">
                           {v.thumbnail && (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={v.thumbnail} alt="" className="h-full w-full object-cover" />
                           )}
                           {isSel && (
                             <span className="absolute inset-0 flex items-center justify-center bg-primary/60">
-                              <Check size={18} className="text-white" />
+                              <Check size={18} className="text-on-primary" />
                             </span>
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-black dark:text-white">{v.title}</p>
-                          <p className="text-xs text-bodydark2">
+                          <p className="truncate text-sm font-medium text-ink-1">{v.title}</p>
+                          <p className="text-xs text-ink-3 num">
                             {iso8601ToClock(v.duration)}
                             {v.viewCount != null ? ` • ${v.viewCount} vues` : ''}
                           </p>

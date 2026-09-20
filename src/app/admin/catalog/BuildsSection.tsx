@@ -5,7 +5,7 @@ import { Plus, Pencil, Trash2, Check, Swords } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api, mlbbImg } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Badge, Button, Input, LoadingSpinner, SectionCard, Select, Textarea } from '@/components/ui';
+import { Badge, Button, EmptyState, Input, SectionCard, SectionTitle, Select, Skeleton, Textarea } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import type { CatalogEntity } from './CatalogEntitySection';
@@ -192,43 +192,53 @@ export default function BuildsSection({
 
   return (
     <SectionCard>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="w-full sm:max-w-xs">
-          <h2 className="mb-2 text-lg font-semibold text-black dark:text-white">
+      <SectionTitle
+        className="mb-4"
+        title={
+          <span className="inline-flex items-center gap-2">
+            <Swords size={20} className="text-ink-3" />
             {t('admin.catalog.builds')}
-          </h2>
-          <Select
-            label={t('admin.catalog.pickHero')}
-            options={heroOptions}
-            value={heroKey}
-            onChange={(e: any) => setHeroKey(e.target.value)}
-          />
-        </div>
-        <Button size="sm" onClick={openCreate} disabled={!heroKey}>
-          <Plus size={16} /> {t('admin.catalog.newBuild')}
-        </Button>
+          </span>
+        }
+        action={
+          <Button size="sm" onClick={openCreate} disabled={!heroKey}>
+            <Plus size={16} /> {t('admin.catalog.newBuild')}
+          </Button>
+        }
+      />
+      <div className="mb-4 w-full sm:max-w-xs">
+        <Select
+          label={t('admin.catalog.pickHero')}
+          options={heroOptions}
+          value={heroKey}
+          onChange={(e: any) => setHeroKey(e.target.value)}
+        />
       </div>
 
       {loading ? (
-        <LoadingSpinner className="py-10" />
+        <div className="space-y-3">
+          {[0, 1].map((i) => (
+            <div key={i} className="rounded-lg border border-line-subtle bg-surface-2 p-4">
+              <Skeleton lines={3} />
+            </div>
+          ))}
+        </div>
       ) : builds.length === 0 ? (
-        <p className="py-6 text-center text-sm text-body dark:text-bodydark">
-          {t('admin.catalog.noBuild')}
-        </p>
+        <EmptyState className="!min-h-0 py-8" title={t('admin.catalog.noBuild')} />
       ) : (
         <div className="space-y-3">
           {builds.map((build) => (
             <div
               key={build.id}
-              className="rounded-lg border border-stroke bg-gray-2 p-4 dark:border-strokedark dark:bg-meta-4"
+              className="rounded-lg border border-line-subtle bg-surface-2 p-4"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-black dark:text-white">
+                  <p className="text-sm font-semibold text-ink-1">
                     {build.name || t('heroes.builds.unnamed')}
                   </p>
                   <Badge variant="purple" size="sm">
-                    {t('admin.catalog.priority')} {build.priority ?? 0}
+                    {t('admin.catalog.priority')} <span className="num">{build.priority ?? 0}</span>
                   </Badge>
                 </div>
                 <div className="flex gap-1">
@@ -236,19 +246,19 @@ export default function BuildsSection({
                     <Pencil size={14} /> {t('admin.catalog.edit')}
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => setToDelete(build)}>
-                    <Trash2 size={14} className="text-danger" />
+                    <Trash2 size={14} className="text-accent-red" />
                   </Button>
                 </div>
               </div>
               {build.description && (
-                <p className="mt-1 text-xs text-body dark:text-bodydark">{build.description}</p>
+                <p className="mt-1 text-xs text-ink-2">{build.description}</p>
               )}
               <div className="mt-3 flex flex-wrap gap-4">
                 <div className="flex flex-wrap items-center gap-1.5">
                   {(build.items || []).map((item, i) => (
                     <span
                       key={`${item.id}-${i}`}
-                      className="flex items-center gap-1 rounded border border-stroke bg-white px-2 py-1 text-xs text-black dark:border-strokedark dark:bg-boxdark dark:text-white"
+                      className="flex items-center gap-1 rounded border border-line-subtle bg-surface-1 px-2 py-1 text-xs text-ink-1"
                     >
                       {item.icon && (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -264,12 +274,12 @@ export default function BuildsSection({
                   ))}
                 </div>
                 {build.emblem && (
-                  <Badge size="sm">
+                  <Badge size="sm" variant="outline">
                     {t('heroes.builds.emblem')}: {build.emblem.name}
                   </Badge>
                 )}
                 {build.battleSpell && (
-                  <Badge size="sm">
+                  <Badge size="sm" variant="outline">
                     {t('heroes.builds.battleSpell')}: {build.battleSpell.name}
                   </Badge>
                 )}
@@ -301,7 +311,7 @@ export default function BuildsSection({
             onChange={(e: any) => setForm({ ...form, description: e.target.value })}
           />
           <div>
-            <p className="mb-2 text-sm font-medium text-black dark:text-white">
+            <p className="mb-2 text-sm font-medium text-ink-1">
               {t('admin.catalog.itemSlots')}
             </p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">

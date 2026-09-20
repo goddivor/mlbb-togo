@@ -239,30 +239,30 @@ export default function HeaderSearch({
           type="button"
           aria-label={t('search.title')}
           onClick={() => setOpen(true)}
-          className="flex h-12 w-12 items-center justify-center rounded-full border-[0.5px] border-stroke bg-gray text-black hover:text-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+          className="header-btn"
           title={t('search.shortcut')}
         >
-          <Search size={18} />
+          <Search size={17} />
         </button>
       ) : (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex w-full items-center gap-3 text-left text-body hover:text-primary dark:text-bodydark xl:w-125"
-        title={t('search.shortcut')}
-      >
-        <Search size={20} />
-        <span className="flex-1 truncate">{t('search.placeholder')}</span>
-        <kbd className="hidden rounded border border-stroke px-1.5 py-0.5 text-xs dark:border-strokedark xl:inline">
-          Ctrl K
-        </kbd>
-      </button>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="group flex h-9 w-64 items-center gap-2.5 rounded-md border border-line-subtle bg-surface-2/60 px-3 text-left text-sm text-ink-3 transition-[border-color,background-color,color] duration-fast ease-out hover:border-line-strong hover:text-ink-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 xl:w-96"
+          title={t('search.shortcut')}
+        >
+          <Search size={16} className="shrink-0 text-ink-3 transition-colors group-hover:text-primary" />
+          <span className="flex-1 truncate">{t('search.placeholder')}</span>
+          <kbd className="hidden rounded border border-line-subtle bg-surface-1 px-1.5 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-ink-3 xl:inline">
+            Ctrl K
+          </kbd>
+        </button>
       )}
 
       <Modal open={open} onClose={() => setOpen(false)} title={t('search.title')} size="md">
         <div className="p-2">
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-bodydark2">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3">
               <Search size={18} />
             </span>
             <input
@@ -271,29 +271,30 @@ export default function HeaderSearch({
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={t('search.placeholder')}
-              className="w-full rounded-lg border border-stroke bg-transparent py-3 pl-10 pr-4 text-black outline-none focus:border-primary dark:border-strokedark dark:text-white"
+              className="w-full rounded border border-line-strong bg-surface-1 py-3 pl-10 pr-4 text-ink-1 placeholder:text-ink-3 outline-none transition-[border-color,box-shadow] duration-base ease-out focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60"
               autoComplete="off"
             />
           </div>
 
-          <div className="mt-3 space-y-3">
+          <div className="mt-3 space-y-4">
             {isLoading && (
-              <p className="py-3 text-center text-sm text-bodydark2">
+              <p className="py-3 text-center text-sm text-ink-3">
                 {t('search.loading')}
               </p>
             )}
 
             {!isLoading && allResults.length === 0 && q.length >= 2 && (
-              <p className="py-6 text-center text-sm text-bodydark2">{t('search.empty')}</p>
+              <p className="py-6 text-center text-sm text-ink-3">{t('search.empty')}</p>
             )}
 
             {!isLoading && groupedResults.length > 0 && (
               groupedResults.map(([group, items]) => (
                 <div key={group}>
-                  <p className="mb-2 text-xs font-semibold uppercase text-bodydark2">
-                    {group}
+                  <p className="mb-1.5 flex items-center gap-2 px-1 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">
+                    <span>{group}</span>
+                    <span aria-hidden="true" className="h-px flex-1 bg-line-subtle" />
                   </p>
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     {items.map((item) => {
                       const Icon = item.icon;
                       return (
@@ -301,12 +302,12 @@ export default function HeaderSearch({
                           key={`${item.id}-${item.type}`}
                           type="button"
                           onClick={() => go(item.href)}
-                          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm hover:bg-gray-2 dark:hover:bg-meta-4"
+                          className="group flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-ink-1 transition-colors duration-fast hover:bg-primary/10 focus-visible:outline-none focus-visible:bg-primary/10"
                         >
-                          <Icon size={18} className="text-primary flex-shrink-0" />
-                          <span className="truncate text-black dark:text-white">
-                            {item.label}
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded cut-corners-sm bg-surface-2 text-ink-3 transition-colors group-hover:bg-primary/15 group-hover:text-primary">
+                            <Icon size={15} />
                           </span>
+                          <span className="truncate">{item.label}</span>
                         </button>
                       );
                     })}
