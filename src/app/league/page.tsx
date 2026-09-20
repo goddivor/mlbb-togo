@@ -78,11 +78,11 @@ export default function LeaguePage() {
       }
     })();
     api.posts
-      .feed({ category: 'announcement', sort: 'recent', limit: 3 })
+      .feed({ category: 'announcement', sort: 'latest', limit: 3 })
       .then((d: any) => !cancelled && Array.isArray(d?.items) && setPosts(d.items))
       .catch(() => {});
     api.posts
-      .feed({ sort: 'recent', limit: 20 })
+      .feed({ sort: 'latest', limit: 20 })
       .then((d: any) => {
         if (cancelled || !Array.isArray(d?.items)) return;
         const s = d.items.find((p: FeedPost) => p.isSponsored);
