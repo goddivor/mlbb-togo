@@ -11,7 +11,7 @@ import Modal from '@/components/ui/Modal';
 import { useEventStore } from '@/store/useStore';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { cn } from '@/lib/helpers';
+import { cn, formatDate } from '@/lib/helpers';
 import { fadeUp, stagger, still } from '@/lib/motion';
 import CitySelect from '@/components/geo/CitySelect';
 import toast from 'react-hot-toast';
@@ -207,7 +207,7 @@ export default function Events() {
         <StatCard label={t('events.kpi.thisMonth')} value={thisMonth} hint={`${t(MONTH_KEYS[month])} ${year}`} icon={<CalendarIcon size={18} />} accent="cyan" />
         <StatCard
           label={t('events.kpi.next')}
-          value={nextEvent ? <span className="text-xl">{nextEvent.date}</span> : '—'}
+          value={nextEvent ? <span className="text-xl">{formatDate(nextEvent.date)}</span> : '—'}
           hint={nextEvent?.title}
           icon={<CalendarClock size={18} />}
           accent="gold"
