@@ -26,7 +26,7 @@ export default function PostImages({
       {shown.map((src, i) => (
         <div
           key={`${src}-${i}`}
-          className="relative overflow-hidden rounded-lg border border-stroke bg-gray-2 dark:border-strokedark dark:bg-meta-4"
+          className="relative overflow-hidden rounded-lg border border-line-subtle bg-surface-2"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

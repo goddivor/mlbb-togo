@@ -40,13 +40,13 @@ function MissionGroup({ period, items }: { period: 'daily' | 'weekly'; items: Mi
   return (
     <div>
       <div className="flex items-center justify-between gap-2 mb-3">
-        <h4 className="font-semibold text-black dark:text-white">
+        <h4 className="font-display font-bold tracking-tight2 text-ink-1">
           {t(`progress.missions.${period}`)}{' '}
-          <span className="text-xs font-normal text-body dark:text-bodydark">
+          <span className="num text-xs font-normal text-ink-3">
             {done}/{items.length}
           </span>
         </h4>
-        <span className="inline-flex items-center gap-1 text-xs text-body dark:text-bodydark">
+        <span className="inline-flex items-center gap-1 num text-xs text-ink-3">
           <Clock size={12} /> {t('progress.missions.resetIn', { time: countdown })}
         </span>
       </div>
@@ -54,31 +54,31 @@ function MissionGroup({ period, items }: { period: 'daily' | 'weekly'; items: Mi
         {items.map((m) => (
           <div
             key={m.id}
-            className={`flex items-center gap-3 rounded-sm border p-3 ${
+            className={`flex items-center gap-3 rounded-lg border p-3 ${
               m.completed
-                ? 'border-success/40 bg-success/5'
-                : 'border-stroke bg-white dark:border-strokedark dark:bg-boxdark'
+                ? 'border-accent-green/40 bg-accent-green/5'
+                : 'border-line-subtle bg-surface-1'
             }`}
           >
             <div
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                m.completed ? 'bg-success text-white' : 'bg-gray text-body dark:bg-meta-4 dark:text-bodydark'
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded cut-corners-sm ${
+                m.completed ? 'bg-accent-green/15 text-accent-green' : 'bg-surface-3 text-ink-3'
               }`}
             >
               {m.completed ? <CheckCircle2 size={18} /> : <GamificationIcon name={m.icon} size={16} />}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium text-black dark:text-white truncate">
+                <p className="truncate text-sm font-medium text-ink-1">
                   {t(`mission.${m.id}`)}
                 </p>
-                <span className="shrink-0 text-xs font-semibold text-warning">
+                <span className="shrink-0 num text-xs font-semibold text-accent-gold">
                   {t('progress.reward', { xp: m.reward })}
                 </span>
               </div>
               <div className="mt-1.5 flex items-center gap-2">
-                <ProgressBar value={m.progress} max={m.target} className="flex-1" />
-                <span className="text-xs text-body dark:text-bodydark tabular-nums">
+                <ProgressBar value={m.progress} max={m.target} className="flex-1" accent={m.completed ? 'green' : undefined} />
+                <span className="num text-xs text-ink-3">
                   {m.completed ? t('progress.missions.done') : `${m.progress}/${m.target}`}
                 </span>
               </div>

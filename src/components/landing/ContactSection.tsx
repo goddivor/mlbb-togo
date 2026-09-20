@@ -1,11 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { Send } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Badge, Button, Input, Textarea } from '@/components/ui';
+import { Button, Input, Textarea, SectionTitle } from '@/components/ui';
 import toast from 'react-hot-toast';
 
 export default function ContactSection() {
@@ -36,15 +35,13 @@ export default function ContactSection() {
   return (
     <div className="relative max-w-5xl mx-auto">
 
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="rounded-xl border border-gaming-border bg-gaming-card shadow-gaming relative z-10 p-6 sm:p-10 lg:pr-[40%]"
-      >
-        <Badge variant="neon" size="sm" className="mb-3 uppercase tracking-[0.2em]">{t('contact.eyebrow')}</Badge>
-        <h2 className="text-2xl sm:text-3xl font-bold text-white">{t('contact.title')}</h2>
-        <p className="text-gray-400 mt-2">{t('contact.subtitle')}</p>
+      <div className="cut-corners relative z-10 border border-line-subtle bg-surface-1 p-6 shadow-elev-2 sm:p-10 lg:pr-[40%]">
+        <SectionTitle
+          size="lg"
+          eyebrow={t('contact.eyebrow')}
+          title={<span className="uppercase">{t('contact.title')}</span>}
+          description={t('contact.subtitle')}
+        />
 
         <form onSubmit={submit} className="mt-6 space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
@@ -57,14 +54,14 @@ export default function ContactSection() {
             {t('contact.send')} <Send size={16} />
           </Button>
         </form>
-      </motion.div>
+      </div>
 
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/cecilion.png"
         alt="Cecilion"
         aria-hidden
-        className="hidden lg:block absolute right-[-2%] bottom-0 h-[118%] w-auto z-20 pointer-events-none select-none drop-shadow-[0_25px_55px_rgba(168,85,247,0.4)]"
+        className="hidden lg:block absolute right-[-2%] bottom-0 h-[118%] w-auto z-20 pointer-events-none select-none drop-shadow-[0_25px_55px_rgb(var(--accent-violet)/0.4)]"
       />
     </div>
   );

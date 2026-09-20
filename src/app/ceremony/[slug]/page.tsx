@@ -6,7 +6,8 @@ import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ChevronLeft, ChevronRight, Crown, Download, Maximize2, Minimize2, Play, Trophy, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { LoadingSpinner } from '@/components/ui';
+import { Button, LoadingSpinner } from '@/components/ui';
+import { cn } from '@/lib/helpers';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import {
@@ -20,7 +21,7 @@ import {
   type SeasonAwards,
   type Sponsor,
 } from '@/components/awards/shared';
-import type { TFn } from '@/components/seasons/shared';
+import { PLACE_TIER, PodiumTeamLogo, type TFn } from '@/components/seasons/shared';
 
 /**
  * Ceremony / presentation mode (#48): full-screen, forced dark, step-by-step
@@ -57,7 +58,9 @@ function buildSteps(data: SeasonAwards): Step[] {
   return steps;
 }
 
-const PLACE_COLORS: Record<number, string> = { 1: '#facc15', 2: '#cbd5e1', 3: '#d97706' };
+const PLACE_COLORS: Record<number, string> = { 1: '#f2b544', 2: '#cbd5e1', 3: '#cd7f32' };
+/** Gold fill for the chamfered ceremony buttons. */
+const GOLD_BTN = { ['--btn-bg' as any]: 'rgb(var(--accent-gold))' } as React.CSSProperties;
 
 export default function CeremonyPage() {
   const t = useT();
@@ -158,28 +161,32 @@ export default function CeremonyPage() {
   return (
     <div
       ref={stageRef}
-      className="ceremony fixed inset-0 z-[60] bg-[#05070d] text-white overflow-hidden select-none"
+      className="ceremony fixed inset-0 z-[60] overflow-hidden select-none bg-surface-0 text-ink-1"
       style={{ ['--accent' as any]: accent }}
     >
-      {/* Ambient glow */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[32rem] w-[32rem] rounded-full blur-3xl opacity-30" style={{ background: accent }} />
-      <div className="pointer-events-none absolute -bottom-52 -right-20 h-[28rem] w-[28rem] rounded-full blur-3xl opacity-20 bg-yellow-400" />
+      {/* Ambient glow + angled accent slab */}
+      <div className="pointer-events-none absolute -top-40 left-1/2 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full opacity-30 blur-3xl" style={{ background: accent }} />
+      <div className="pointer-events-none absolute -bottom-52 -right-20 h-[28rem] w-[28rem] rounded-full bg-accent-gold opacity-15 blur-3xl" />
+      <div
+        className="pointer-events-none absolute -right-40 top-0 h-full w-80 -skew-x-12 opacity-10"
+        style={{ background: `linear-gradient(180deg, ${accent}, transparent)` }}
+      />
 
       {/* Top bar */}
       <div className="absolute top-0 inset-x-0 z-20 flex items-center justify-between gap-3 px-4 sm:px-6 py-3 print:hidden">
         <Link
           href={data?.season.slug ? `/hall-of-fame` : '/awards'}
-          className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-2 transition-colors hover:text-ink-1"
         >
           <ArrowLeft size={16} /> <span className="hidden sm:inline">{t('ceremony.exit')}</span>
         </Link>
-        <div className="text-xs text-gray-500 truncate">{data?.season.name}</div>
+        <div className="eyebrow truncate !text-ink-3">{data?.season.name}</div>
         <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={exportImage}
             title={t('ceremony.export')}
-            className="p-2 rounded-lg text-gray-300 hover:bg-white/10 transition-colors"
+            className="rounded p-2 text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink-1"
             disabled={!data}
           >
             <Download size={18} />
@@ -188,7 +195,7 @@ export default function CeremonyPage() {
             type="button"
             onClick={toggleFullscreen}
             title={fullscreen ? t('ceremony.exitFullscreen') : t('ceremony.fullscreen')}
-            className="p-2 rounded-lg text-gray-300 hover:bg-white/10 transition-colors"
+            className="rounded p-2 text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink-1"
           >
             {fullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
           </button>
@@ -204,7 +211,7 @@ export default function CeremonyPage() {
         {loading ? (
           <LoadingSpinner size="lg" />
         ) : !data ? (
-          <p className="text-gray-400">{t('ceremony.notFound')}</p>
+          <p className="text-ink-2">{t('ceremony.notFound')}</p>
         ) : (
           <AnimatePresence mode="wait" custom={dir}>
             <motion.div
@@ -229,7 +236,7 @@ export default function CeremonyPage() {
             type="button"
             onClick={() => go(-1)}
             disabled={index === 0}
-            className="p-2 rounded-full border border-white/15 text-gray-300 hover:bg-white/10 disabled:opacity-30 transition-colors"
+            className="rounded-full border border-line-strong p-2 text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink-1 disabled:opacity-30"
             aria-label={t('ceremony.prev')}
           >
             <ChevronLeft size={18} />
@@ -245,13 +252,15 @@ export default function CeremonyPage() {
                     setIndex(i);
                   }}
                   aria-label={t('ceremony.step', { n: i + 1, total })}
-                  className={`h-2 rounded-full transition-all ${
-                    i === index ? 'w-6 bg-yellow-400' : i < index ? 'w-2 bg-white/60' : 'w-2 bg-white/20'
-                  } ${s.kind === 'award' && s.award.category === 'mvp' ? 'ring-2 ring-yellow-400/40' : ''}`}
+                  className={cn(
+                    'h-1.5 -skew-x-12 rounded-sm transition-all duration-fast',
+                    i === index ? 'w-7 bg-accent-gold' : i < index ? 'w-2.5 bg-ink-2' : 'w-2.5 bg-surface-3',
+                    s.kind === 'award' && s.award.category === 'mvp' && 'ring-2 ring-accent-gold/40'
+                  )}
                 />
               ))}
             </div>
-            <p className="text-[11px] text-gray-500 hidden sm:block">
+            <p className="hidden text-[11px] text-ink-3 sm:block num">
               {t('ceremony.step', { n: index + 1, total })} · {t('ceremony.hint')}
             </p>
           </div>
@@ -259,7 +268,7 @@ export default function CeremonyPage() {
             type="button"
             onClick={() => go(1)}
             disabled={index >= total - 1}
-            className="p-2 rounded-full border border-white/15 text-gray-300 hover:bg-white/10 disabled:opacity-30 transition-colors"
+            className="rounded-full border border-line-strong p-2 text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink-1 disabled:opacity-30"
             aria-label={t('ceremony.next')}
           >
             <ChevronRight size={18} />
@@ -296,7 +305,7 @@ function StepView({
             initial={{ opacity: 0, letterSpacing: '0.1em' }}
             animate={{ opacity: 1, letterSpacing: '0.35em' }}
             transition={{ duration: 0.8 }}
-            className="text-xs sm:text-sm font-semibold uppercase text-yellow-400"
+            className="text-xs font-semibold uppercase text-accent-gold sm:text-sm"
           >
             {t('ceremony.kicker')}
           </motion.p>
@@ -304,7 +313,7 @@ function StepView({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.6 }}
-            className="text-4xl sm:text-6xl md:text-7xl font-black drop-shadow"
+            className="font-display text-4xl font-bold uppercase leading-[0.95] tracking-tight2 text-ink-1 sm:text-6xl md:text-8xl"
           >
             {data.season.name}
           </motion.h1>
@@ -313,29 +322,30 @@ function StepView({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="text-xl sm:text-2xl font-semibold"
+              className="font-display text-xl font-semibold sm:text-2xl"
               style={{ color: 'var(--accent)' }}
             >
               {data.season.theme}
             </motion.p>
           )}
-          {data.season.slogan && <p className="text-gray-400 italic">« {data.season.slogan} »</p>}
+          {data.season.slogan && <p className="italic text-ink-2">« {data.season.slogan} »</p>}
           {data.podiums.regular.length + data.podiums.playoffs.length + data.awards.length === 0 && (
-            <p className="text-sm text-gray-500 max-w-md mx-auto">{t('ceremony.empty')}</p>
+            <p className="mx-auto max-w-md text-sm text-ink-3">{t('ceremony.empty')}</p>
           )}
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            type="button"
-            onClick={(e) => {
-              stop(e);
-              onStart();
-            }}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-black font-bold bg-gradient-to-r from-yellow-300 to-amber-500 hover:brightness-110 transition"
-          >
-            <Play size={18} /> {t('ceremony.start')}
-          </motion.button>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
+            <Button
+              size="lg"
+              variant="primary"
+              className="!text-black hover:!shadow-glow-gold"
+              style={GOLD_BTN}
+              onClick={(e) => {
+                stop(e);
+                onStart();
+              }}
+            >
+              <Play size={18} /> {t('ceremony.start')}
+            </Button>
+          </motion.div>
         </div>
       );
 
@@ -343,9 +353,9 @@ function StepView({
       return (
         <div className="space-y-8">
           <div className="text-center">
-            <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.35em] text-gray-400">{t('ceremony.' + step.scope)}</p>
-            <h2 className="text-3xl sm:text-5xl font-black inline-flex items-center gap-3 mt-2">
-              <Trophy className="text-yellow-400" size={36} /> {t('awards.podium.' + step.scope)}
+            <p className="eyebrow !text-ink-3">{t('ceremony.' + step.scope)}</p>
+            <h2 className="mt-3 inline-flex items-center gap-3 font-display text-3xl font-bold uppercase tracking-tight2 text-ink-1 sm:text-5xl">
+              <Trophy className="text-accent-gold" size={36} /> {t('awards.podium.' + step.scope)}
             </h2>
           </div>
           <PodiumReveal entries={step.entries} reveal={step.reveal} t={t} />
@@ -358,7 +368,7 @@ function StepView({
     case 'sponsors':
       return (
         <div className="text-center space-y-8">
-          <h2 className="text-3xl sm:text-5xl font-black">{t('ceremony.sponsors')}</h2>
+          <h2 className="font-display text-3xl font-bold uppercase tracking-tight2 text-ink-1 sm:text-5xl">{t('ceremony.sponsors')}</h2>
           <div className="flex flex-wrap items-center justify-center gap-4">
             {step.sponsors.map((s, i) => (
               <motion.div
@@ -366,7 +376,7 @@ function StepView({
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.15 * i, type: 'spring', stiffness: 200 }}
-                className="rounded-2xl bg-white p-4 flex items-center justify-center"
+                className="flex items-center justify-center rounded-md cut-corners bg-white p-4"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={s.logo} alt={s.name || ''} className="h-16 sm:h-24 max-w-[14rem] object-contain" />
@@ -379,46 +389,45 @@ function StepView({
     case 'end':
       return (
         <div className="space-y-8 text-center">
-          <motion.h2 initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-4xl sm:text-6xl font-black">
+          <motion.h2 initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="font-display text-4xl font-bold uppercase tracking-tight2 text-ink-1 sm:text-6xl">
             {t('ceremony.end')}
           </motion.h2>
-          <p className="text-gray-400">{t('ceremony.endSub')}</p>
+          <p className="text-ink-2">{t('ceremony.endSub')}</p>
           {step.entries.length > 0 && (
             <div className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
+              <p className="eyebrow !text-ink-3">
                 {t('ceremony.finalPodium')} · {step.scope ? t('awards.podium.' + step.scope) : ''}
               </p>
               <PodiumReveal entries={[...step.entries].sort((a, b) => b.placement - a.placement)} reveal={3} t={t} compact />
             </div>
           )}
           {step.mvp && (
-            <div className="inline-flex items-center gap-3 rounded-2xl border border-yellow-400/40 bg-yellow-500/10 px-4 py-3">
-              <PlayerAvatar user={step.mvp.user} size="md" className="ring-yellow-400/60" />
+            <div className="inline-flex items-center gap-3 rounded-md border border-accent-gold/40 bg-accent-gold/10 px-4 py-3">
+              <PlayerAvatar user={step.mvp.user} size="md" className="ring-accent-gold/60" />
               <div className="text-left">
-                <p className="text-[10px] uppercase tracking-[0.25em] text-yellow-400 inline-flex items-center gap-1">
+                <p className="eyebrow inline-flex items-center gap-1 !text-accent-gold">
                   <Crown size={11} /> {t('ceremony.mvp')}
                 </p>
-                <p className="font-bold">{step.mvp.user ? step.mvp.user.displayName || step.mvp.user.username : t('awards.noPlayer')}</p>
+                <p className="font-display font-bold text-ink-1">{step.mvp.user ? step.mvp.user.displayName || step.mvp.user.username : t('awards.noPlayer')}</p>
               </div>
             </div>
           )}
           <div className="flex flex-wrap justify-center gap-3 print:hidden">
-            <button
-              type="button"
+            <Button
+              variant="primary"
+              className="!text-black hover:!shadow-glow-gold"
+              style={GOLD_BTN}
               onClick={(e) => {
                 stop(e);
                 onExport();
               }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-black font-bold bg-gradient-to-r from-yellow-300 to-amber-500 hover:brightness-110 transition"
             >
               <Download size={16} /> {t('ceremony.export')}
-            </button>
-            <Link
-              href="/hall-of-fame"
-              onClick={stop}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/20 text-gray-200 hover:bg-white/10 transition"
-            >
-              <X size={16} /> {t('ceremony.exit')}
+            </Button>
+            <Link href="/hall-of-fame" onClick={stop}>
+              <Button variant="outline">
+                <X size={16} /> {t('ceremony.exit')}
+              </Button>
             </Link>
           </div>
         </div>
@@ -449,36 +458,29 @@ function PodiumReveal({ entries, reveal, t, compact = false }: { entries: Podium
                   transition={{ type: 'spring', stiffness: 220, damping: 18 }}
                   className="flex flex-col items-center gap-2 min-w-0 w-full"
                 >
-                  {e.team.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={e.team.image}
-                      alt={e.team.name}
-                      className={`${compact ? 'h-12 w-12' : 'h-20 w-20 sm:h-28 sm:w-28'} rounded-full object-cover ring-4`}
-                      style={{ ['--tw-ring-color' as any]: PLACE_COLORS[e.placement] }}
-                    />
-                  ) : (
-                    <div
-                      className={`${compact ? 'h-12 w-12 text-lg' : 'h-20 w-20 sm:h-28 sm:w-28 text-3xl'} rounded-full bg-white/10 flex items-center justify-center font-black ring-4`}
-                      style={{ ['--tw-ring-color' as any]: PLACE_COLORS[e.placement] }}
-                    >
-                      {e.team.name?.[0]?.toUpperCase()}
-                    </div>
-                  )}
-                  <p className={`${compact ? 'text-sm' : 'text-base sm:text-2xl'} font-black text-center truncate w-full`}>{e.team.name}</p>
-                  <p className="text-[10px] sm:text-xs uppercase tracking-[0.25em]" style={{ color: PLACE_COLORS[e.placement] }}>
+                  <PodiumTeamLogo
+                    team={e.team}
+                    placement={e.placement}
+                    className={cn(compact ? 'h-12 w-12 text-lg' : 'h-20 w-20 text-3xl sm:h-28 sm:w-28', e.placement === 1 && !compact && 'shadow-glow-gold')}
+                  />
+                  <p className={cn('w-full truncate text-center font-display font-bold uppercase tracking-tight2 text-ink-1', compact ? 'text-sm' : 'text-base sm:text-2xl')}>{e.team.name}</p>
+                  <p className="eyebrow" style={{ color: PLACE_COLORS[e.placement] }}>
                     {labels[e.placement]}
                   </p>
                 </motion.div>
               )}
             </AnimatePresence>
-            {!on && <div className={`${compact ? 'h-12' : 'h-20 sm:h-28'} flex items-center justify-center text-4xl text-white/20 font-black`}>?</div>}
+            {!on && <div className={cn('flex items-center justify-center font-display text-4xl font-bold text-ink-3/40', compact ? 'h-12' : 'h-20 sm:h-28')}>?</div>}
             <motion.div
               initial={{ scaleY: 0 }}
               animate={{ scaleY: 1 }}
               transition={{ duration: 0.5 }}
-              style={{ originY: 1, background: on ? `linear-gradient(to top, ${PLACE_COLORS[e.placement]}55, ${PLACE_COLORS[e.placement]})` : 'rgba(255,255,255,0.06)' }}
-              className={`w-full ${heights[e.placement]} rounded-t-2xl flex items-start justify-center pt-3 text-2xl sm:text-4xl font-black ${on ? 'text-black' : 'text-white/30'}`}
+              style={{ originY: 1 }}
+              className={cn(
+                'flex w-full items-start justify-center rounded-t-md pt-3 font-display text-2xl font-bold num sm:text-4xl',
+                heights[e.placement],
+                on ? PLACE_TIER[e.placement] : 'bg-surface-2 text-ink-3'
+              )}
             >
               {e.placement}
             </motion.div>
@@ -497,11 +499,11 @@ function AwardReveal({ award, t }: { award: AwardItem; t: TFn }) {
       <motion.p
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`text-xs sm:text-sm font-semibold uppercase tracking-[0.35em] ${isMvp ? 'text-yellow-400' : 'text-gray-400'}`}
+        className={cn('eyebrow', isMvp ? '!text-accent-gold' : '!text-ink-3')}
       >
         {isMvp ? t('awards.mvpKicker') : t('ceremony.awards')}
       </motion.p>
-      <motion.h2 initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }} className="text-3xl sm:text-5xl font-black">
+      <motion.h2 initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }} className="font-display text-3xl font-bold uppercase tracking-tight2 text-ink-1 sm:text-5xl">
         {categoryLabel(t, award)}
       </motion.h2>
       <motion.div
@@ -510,16 +512,16 @@ function AwardReveal({ award, t }: { award: AwardItem; t: TFn }) {
         transition={{ delay: 0.5, type: 'spring', stiffness: 180, damping: 14 }}
         className="relative"
       >
-        <div className={`absolute inset-0 rounded-full blur-3xl opacity-40 ${isMvp ? 'bg-yellow-400' : 'bg-white/40'}`} />
-        <PlayerAvatar user={award.user} size="xl" className={`relative ${isMvp ? 'ring-4 ring-yellow-400' : 'ring-4 ring-white/40'}`} />
+        <div className={cn('absolute inset-0 rounded-full opacity-40 blur-3xl', isMvp ? 'bg-accent-gold' : 'bg-ink-2/40')} />
+        <PlayerAvatar user={award.user} size="xl" className={cn('relative ring-4', isMvp ? 'ring-accent-gold' : 'ring-line-strong')} />
         <TrophyVisual category={award.category} imageUrl={award.imageUrl} size="md" className="absolute -bottom-3 -right-3" />
       </motion.div>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }} className="space-y-2 max-w-2xl w-full">
-        <p className="text-3xl sm:text-5xl md:text-6xl font-black break-words">{name}</p>
+        <p className="break-words font-display text-3xl font-bold uppercase leading-none tracking-tight2 text-ink-1 sm:text-5xl md:text-6xl">{name}</p>
         <div className="flex justify-center">
           <TeamChip team={award.team} t={t} className="text-sm sm:text-base" />
         </div>
-        {award.description && <p className="text-gray-300 max-w-xl mx-auto">{award.description}</p>}
+        {award.description && <p className="mx-auto max-w-xl text-ink-2">{award.description}</p>}
         {award.criteria && (
           <div className="pt-3 max-w-lg mx-auto">
             <CriteriaStats criteria={award.criteria} t={t} compact />

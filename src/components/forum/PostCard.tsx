@@ -34,7 +34,7 @@ export type FeedPost = {
 export function SponsorBadge({ sponsor, t }: { sponsor?: FeedPost['sponsor']; t: (k: string, p?: any) => string }) {
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-xs font-semibold text-warning"
+      className="inline-flex items-center gap-1.5 rounded border border-accent-gold/40 bg-accent-gold/10 px-2 py-0.5 text-xs font-semibold text-accent-gold"
       title={sponsor?.name ? t('comm.sponsoredBy', { name: sponsor.name }) : t('comm.sponsored')}
     >
       {sponsor?.logo ? (
@@ -44,7 +44,7 @@ export function SponsorBadge({ sponsor, t }: { sponsor?: FeedPost['sponsor']; t:
         <Handshake size={12} />
       )}
       {t('comm.sponsored')}
-      {sponsor?.name && <span className="font-normal text-body dark:text-bodydark">· {sponsor.name}</span>}
+      {sponsor?.name && <span className="font-normal text-ink-2">{sponsor.name}</span>}
     </span>
   );
 }
@@ -81,11 +81,9 @@ export default function PostCard({
 
   return (
     <Card
-      className={cn(
-        'cursor-pointer transition-shadow hover:shadow-md',
-        post.isPinned && 'border-warning/40',
-        post.isSponsored && 'bg-warning/[0.03]',
-      )}
+      hover
+      accent={post.isPinned ? 'gold' : undefined}
+      className={cn('cursor-pointer', post.isSponsored && '!bg-accent-gold/[0.04]')}
       onClick={() => onOpen(post)}
     >
       <div className="flex gap-3 sm:gap-4">
@@ -103,23 +101,23 @@ export default function PostCard({
               </Badge>
             )}
             {post.isSponsored && <SponsorBadge sponsor={post.sponsor} t={t} />}
-            <span className="ml-auto text-xs text-bodydark2" title={new Date(post.createdAt).toLocaleString()}>
+            <span className="ml-auto num text-xs text-ink-3" title={new Date(post.createdAt).toLocaleString()}>
               {timeAgo(post.createdAt)}
             </span>
           </div>
 
-          <h3 className="mb-1 text-base font-bold text-black dark:text-white">{post.title}</h3>
+          <h3 className="mb-1 font-display text-lg font-bold leading-tight tracking-tight2 text-ink-1">{post.title}</h3>
           {excerpt && (
-            <p className="mb-3 line-clamp-3 text-sm text-body dark:text-bodydark">{excerpt}</p>
+            <p className="mb-3 line-clamp-3 text-sm text-ink-2">{excerpt}</p>
           )}
           {post.images && post.images.length > 0 && (
             <PostImages images={post.images} compact className="mb-3" />
           )}
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-body dark:text-bodydark">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-ink-2">
             <div className="flex min-w-0 items-center gap-1.5">
               <Avatar name={post.authorName} size="sm" className="sm:hidden" />
-              <span className="truncate font-medium">{post.authorName}</span>
+              <span className="truncate font-semibold text-ink-1">{post.authorName}</span>
               {post.authorRank && (
                 <Badge variant="neon" size="sm">{getRankName(post.authorRank)}</Badge>
               )}
@@ -132,14 +130,14 @@ export default function PostCard({
                 aria-pressed={!!post.likedByMe}
                 title={post.likedByMe ? t('comm.unlike') : t('comm.like')}
                 className={cn(
-                  'flex items-center gap-1 rounded-md px-2 py-1 transition-colors hover:bg-gray-2 dark:hover:bg-meta-4',
-                  post.likedByMe ? 'text-danger' : 'hover:text-danger',
+                  'flex items-center gap-1 rounded px-2 py-1 num transition-colors duration-fast hover:bg-surface-2',
+                  post.likedByMe ? 'text-accent-red' : 'hover:text-accent-red',
                 )}
               >
                 <Heart size={14} className={post.likedByMe ? 'fill-current' : ''} />
                 {post.likes}
               </button>
-              <span className="flex items-center gap-1 px-2 py-1" title={t('comm.comments')}>
+              <span className="flex items-center gap-1 px-2 py-1 num" title={t('comm.comments')}>
                 <MessageCircle size={14} />
                 {commentCount}
               </span>
@@ -147,25 +145,25 @@ export default function PostCard({
                 type="button"
                 onClick={(e) => { stop(e); onShare(post); }}
                 title={t('comm.share')}
-                className="flex items-center gap-1 rounded-md px-2 py-1 transition-colors hover:bg-gray-2 hover:text-primary dark:hover:bg-meta-4"
+                className="flex items-center gap-1 rounded px-2 py-1 num transition-colors duration-fast hover:bg-surface-2 hover:text-primary"
               >
                 <Share2 size={14} />
                 {post.shares ?? 0}
               </button>
-              <span className="hidden items-center gap-1 px-2 py-1 sm:flex">
+              <span className="hidden items-center gap-1 px-2 py-1 num sm:flex">
                 <Eye size={14} />
                 {post.views}
               </span>
 
               {(isStaff || canDelete) && (
-                <span className="ml-1 flex items-center gap-0.5 border-l border-stroke pl-1 dark:border-strokedark">
+                <span className="ml-1 flex items-center gap-0.5 border-l border-line-subtle pl-1">
                   {isStaff && (
                     <>
                       <button
                         type="button"
                         onClick={(e) => { stop(e); onTogglePin(post); }}
                         title={post.isPinned ? t('comm.admin.unpin') : t('comm.admin.pin')}
-                        className="rounded-md p-1.5 transition-colors hover:bg-gray-2 hover:text-warning dark:hover:bg-meta-4"
+                        className="rounded p-1.5 transition-colors duration-fast hover:bg-surface-2 hover:text-accent-gold"
                       >
                         {post.isPinned ? <PinOff size={14} /> : <Pin size={14} />}
                       </button>
@@ -174,8 +172,8 @@ export default function PostCard({
                         onClick={(e) => { stop(e); onSponsor(post); }}
                         title={post.isSponsored ? t('comm.admin.unsponsor') : t('comm.admin.sponsor')}
                         className={cn(
-                          'rounded-md p-1.5 transition-colors hover:bg-gray-2 dark:hover:bg-meta-4',
-                          post.isSponsored ? 'text-warning' : 'hover:text-warning',
+                          'rounded p-1.5 transition-colors duration-fast hover:bg-surface-2',
+                          post.isSponsored ? 'text-accent-gold' : 'hover:text-accent-gold',
                         )}
                       >
                         <Handshake size={14} />
@@ -186,7 +184,7 @@ export default function PostCard({
                     type="button"
                     onClick={(e) => { stop(e); onDelete(post); }}
                     title={t('comm.admin.delete')}
-                    className="rounded-md p-1.5 transition-colors hover:bg-danger/10 hover:text-danger"
+                    className="rounded p-1.5 transition-colors duration-fast hover:bg-accent-red/10 hover:text-accent-red"
                   >
                     <Trash2 size={14} />
                   </button>

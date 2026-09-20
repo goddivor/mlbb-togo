@@ -33,17 +33,17 @@ export default function XpBar({
       <div className="flex items-end justify-between gap-3 mb-2">
         <div className="flex items-center gap-3">
           <div
-            className={`flex items-center justify-center rounded-full bg-gradient-to-br from-primary to-meta-5 text-white font-bold shadow-md ${
-              compact ? 'w-10 h-10 text-sm' : 'w-14 h-14 text-lg'
+            className={`flex items-center justify-center rounded cut-corners-sm bg-gradient-to-br from-accent-cyan to-accent-violet font-display font-bold num text-on-primary ${
+              compact ? 'w-10 h-10 text-sm' : 'w-14 h-14 text-xl'
             }`}
           >
             {level}
           </div>
           <div>
-            <p className={`font-bold text-black dark:text-white ${compact ? 'text-sm' : 'text-lg'}`}>
+            <p className={`font-display font-bold tracking-tight2 text-ink-1 ${compact ? 'text-sm' : 'text-lg'}`}>
               {t('progress.level')} {level}
             </p>
-            <p className="text-xs text-body dark:text-bodydark">
+            <p className="text-xs text-ink-2 num">
               {toNext === null
                 ? t('progress.maxLevel')
                 : t('progress.toNext', { xp: toNext, level: level + 1 })}
@@ -51,25 +51,25 @@ export default function XpBar({
           </div>
         </div>
         <div className="text-right">
-          <p className="inline-flex items-center gap-1 text-sm font-semibold text-primary">
+          <p className="inline-flex items-center gap-1 text-sm font-semibold text-primary num">
             <Sparkles size={14} /> {xp.toLocaleString()} {t('progress.xp')}
           </p>
           {span !== null && (
-            <p className="text-xs text-body dark:text-bodydark">
+            <p className="text-xs text-ink-3 num">
               {xpIntoLevel.toLocaleString()} / {span.toLocaleString()}
             </p>
           )}
         </div>
       </div>
       <div
-        className="h-3 rounded-full bg-stroke overflow-hidden dark:bg-strokedark"
+        className="h-2.5 rounded-full bg-surface-3 overflow-hidden"
         role="progressbar"
         aria-valuenow={percent}
         aria-valuemin={0}
         aria-valuemax={100}
       >
         <div
-          className="h-full rounded-full bg-gradient-to-r from-primary to-meta-5 transition-all duration-700"
+          className="h-full rounded-full bg-gradient-to-r from-primary to-accent-violet transition-[width] duration-slow ease-out"
           style={{ width: `${Math.max(2, Math.min(100, percent))}%` }}
         />
       </div>

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { api, mlbbImg } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Button, LoadingSpinner } from '@/components/ui';
+import { Button, Skeleton } from '@/components/ui';
+import { cn } from '@/lib/helpers';
 import RoleIcon from '@/components/game/RoleIcon';
 
 export interface CatalogHero {
@@ -79,12 +80,12 @@ export default function HeroPicker({
     <div className="space-y-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative w-full sm:max-w-xs">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-bodydark2" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('ai.picker.search')}
-            className="w-full rounded-sm border border-stroke bg-gray-2 py-2 pl-9 pr-3 text-sm text-black placeholder-bodydark2 focus:border-primary focus:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white"
+            className="w-full rounded border border-line-strong bg-surface-1 py-2 pl-9 pr-3 text-sm text-ink-1 placeholder:text-ink-3 outline-none transition-[border-color,box-shadow] duration-base focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60"
           />
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -102,7 +103,7 @@ export default function HeroPicker({
 
       {selected.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-body dark:text-bodydark">{t('ai.picker.selected')}:</span>
+          <span className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('ai.picker.selected')}</span>
           {selected.map((id) => {
             const h = byId.get(id);
             return (
@@ -110,26 +111,28 @@ export default function HeroPicker({
                 key={id}
                 type="button"
                 onClick={() => toggle(id)}
-                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+                className="inline-flex items-center gap-1 rounded bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary ring-1 ring-inset ring-primary/25 transition-colors hover:bg-primary/20"
               >
                 {h?.name ?? id}
                 <X size={12} />
               </button>
             );
           })}
-          <button type="button" onClick={() => onChange([])} className="text-xs text-body underline dark:text-bodydark">
+          <button type="button" onClick={() => onChange([])} className="text-xs text-ink-2 underline hover:text-ink-1">
             {t('ai.picker.clear')}
           </button>
-          {max > 1 && full && <span className="text-xs text-warning">{t('ai.picker.max')}</span>}
+          {max > 1 && full && <span className="text-xs text-accent-gold">{t('ai.picker.max')}</span>}
         </div>
       )}
 
       {loading ? (
-        <div className="flex justify-center py-8">
-          <LoadingSpinner />
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <Skeleton key={i} className="aspect-square w-full" />
+          ))}
         </div>
       ) : filtered.length === 0 ? (
-        <p className="py-6 text-center text-sm text-bodydark2">{t('ai.picker.none')}</p>
+        <p className="py-6 text-center text-sm text-ink-3">{t('ai.picker.none')}</p>
       ) : (
         <div className="grid max-h-72 grid-cols-4 gap-2 overflow-y-auto pr-1 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
           {filtered.map((h) => {
@@ -142,17 +145,18 @@ export default function HeroPicker({
                 onClick={() => toggle(h.id)}
                 disabled={!active && max > 1 && full}
                 title={h.name}
-                className={`group overflow-hidden rounded-sm border bg-white text-left transition-colors disabled:opacity-40 dark:bg-boxdark ${
-                  active ? 'border-primary ring-2 ring-primary/40' : 'border-stroke hover:border-primary dark:border-strokedark'
-                }`}
+                className={cn(
+                  'group overflow-hidden rounded border bg-surface-2/60 text-left transition-[border-color,transform] duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-40',
+                  active ? 'border-primary ring-2 ring-primary/40' : 'border-line-subtle hover:-translate-y-0.5 hover:border-primary'
+                )}
               >
-                <div className="aspect-square overflow-hidden bg-gray dark:bg-meta-4">
+                <div className="aspect-square overflow-hidden bg-surface-2">
                   {img && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={mlbbImg(img, 96)} alt={h.name} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
                   )}
                 </div>
-                <p className="truncate px-1 py-0.5 text-[10px] font-medium text-black dark:text-white">{h.name}</p>
+                <p className="truncate px-1 py-0.5 text-[10px] font-medium text-ink-1">{h.name}</p>
               </button>
             );
           })}

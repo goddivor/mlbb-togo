@@ -1,11 +1,12 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Footprints, Shield, Sparkles, Wand2, AlertTriangle } from 'lucide-react';
 import { api, mlbbImg } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Badge, SectionCard } from '@/components/ui';
+import { fadeUp, still } from '@/lib/motion';
+import { Badge, Card } from '@/components/ui';
 import RoleIcon from '@/components/game/RoleIcon';
 import HeroPicker, { useHeroCatalog } from './HeroPicker';
 import { ErrorBox, RunButton, SourceBadge, useAiLang, useAiRun } from './shared';
@@ -23,18 +24,19 @@ interface BuildData {
 
 function ItemCard({ name, reason, icon }: { name: string; reason: string; icon?: React.ReactNode }) {
   return (
-    <SectionCard className="flex gap-3 !p-4">
-      {icon && <span className="mt-0.5 shrink-0 text-primary">{icon}</span>}
+    <Card className="flex gap-3 !p-4">
+      {icon && <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded cut-corners-sm bg-primary/10 text-primary">{icon}</span>}
       <div className="min-w-0">
-        <p className="font-semibold text-black dark:text-white">{name}</p>
-        {reason && <p className="text-sm text-body dark:text-bodydark">{reason}</p>}
+        <p className="font-semibold text-ink-1">{name}</p>
+        {reason && <p className="text-sm text-ink-2">{reason}</p>}
       </div>
-    </SectionCard>
+    </Card>
   );
 }
 
 export default function BuildTab() {
   const t = useT();
+  const reduce = useReducedMotion();
   const lang = useAiLang();
   const { heroes, loading: catalogLoading } = useHeroCatalog();
   const [selected, setSelected] = useState<string[]>([]);
@@ -48,17 +50,17 @@ export default function BuildTab() {
 
   return (
     <div className="space-y-6">
-      <SectionCard className="space-y-4">
-        <p className="text-sm text-body dark:text-bodydark">{t('ai.build.intro')}</p>
+      <Card className="space-y-4">
+        <p className="text-sm text-ink-2">{t('ai.build.intro')}</p>
         <HeroPicker heroes={heroes} loading={catalogLoading} selected={selected} onChange={setSelected} max={1} />
         <RunButton onClick={run} loading={loading} hasResult={!!data} labelKey="ai.build.cta" disabled={!heroId} />
         <ErrorBox errorKey={errorKey} />
-      </SectionCard>
+      </Card>
 
       {data && (
-        <motion.div className="space-y-6" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          <SectionCard className="flex flex-wrap items-center gap-4">
-            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-sm bg-gray dark:bg-meta-4">
+        <motion.div className="space-y-6" variants={reduce ? still : fadeUp} initial="hidden" animate="visible">
+          <Card className="flex flex-wrap items-center gap-4">
+            <div className="h-16 w-16 shrink-0 overflow-hidden rounded cut-corners-sm bg-surface-2 ring-1 ring-inset ring-line-subtle">
               {img && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={mlbbImg(img, 128)} alt={data.hero.name} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
@@ -66,26 +68,26 @@ export default function BuildTab() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-lg font-bold text-black dark:text-white">{data.hero.name}</h3>
+                <h3 className="font-display text-lg font-bold tracking-tight2 text-ink-1">{data.hero.name}</h3>
                 <RoleIcon role={data.hero.role} size={16} />
                 <SourceBadge source={data.source} />
               </div>
-              {data.note && <p className="mt-1 text-sm text-body dark:text-bodydark">{data.note}</p>}
+              {data.note && <p className="mt-1 text-sm text-ink-2">{data.note}</p>}
               {!data.metaAvailable && !data.note && (
-                <p className="mt-1 flex items-center gap-1 text-xs text-warning">
+                <p className="mt-1 flex items-center gap-1 text-xs text-accent-gold">
                   <AlertTriangle size={12} /> {t('ai.build.metaMissing')}
                 </p>
               )}
             </div>
-          </SectionCard>
+          </Card>
 
           <div>
-            <h4 className="mb-3 font-semibold text-black dark:text-white">{t('ai.build.boots')}</h4>
+            <h4 className="mb-3 font-display text-base font-bold tracking-tight2 text-ink-1">{t('ai.build.boots')}</h4>
             <ItemCard name={data.boots.name} reason={data.boots.reason} icon={<Footprints size={18} />} />
           </div>
 
           <div>
-            <h4 className="mb-3 font-semibold text-black dark:text-white">{t('ai.build.core')}</h4>
+            <h4 className="mb-3 font-display text-base font-bold tracking-tight2 text-ink-1">{t('ai.build.core')}</h4>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {core.map((i) => (
                 <ItemCard key={i.name} name={i.name} reason={i.reason} icon={<Shield size={18} />} />
@@ -95,7 +97,7 @@ export default function BuildTab() {
 
           {situational.length > 0 && (
             <div>
-              <h4 className="mb-3 font-semibold text-black dark:text-white">{t('ai.build.situational')}</h4>
+              <h4 className="mb-3 font-display text-base font-bold tracking-tight2 text-ink-1">{t('ai.build.situational')}</h4>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 {situational.map((i) => (
                   <ItemCard key={i.name} name={i.name} reason={i.reason} />
@@ -105,11 +107,11 @@ export default function BuildTab() {
           )}
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <SectionCard className="space-y-2 !p-4">
-              <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-body dark:text-bodydark">
+            <Card className="space-y-2 !p-4">
+              <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">
                 <Sparkles size={14} /> {t('ai.build.emblem')}
               </p>
-              <p className="font-semibold text-black dark:text-white">{data.emblem.name}</p>
+              <p className="font-semibold text-ink-1">{data.emblem.name}</p>
               {data.emblem.talents.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {data.emblem.talents.map((tal) => (
@@ -119,15 +121,15 @@ export default function BuildTab() {
                   ))}
                 </div>
               )}
-              {data.emblem.reason && <p className="text-sm text-body dark:text-bodydark">{data.emblem.reason}</p>}
-            </SectionCard>
-            <SectionCard className="space-y-2 !p-4">
-              <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-body dark:text-bodydark">
+              {data.emblem.reason && <p className="text-sm text-ink-2">{data.emblem.reason}</p>}
+            </Card>
+            <Card className="space-y-2 !p-4">
+              <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">
                 <Wand2 size={14} /> {t('ai.build.spell')}
               </p>
-              <p className="font-semibold text-black dark:text-white">{data.spell.name}</p>
-              {data.spell.reason && <p className="text-sm text-body dark:text-bodydark">{data.spell.reason}</p>}
-            </SectionCard>
+              <p className="font-semibold text-ink-1">{data.spell.name}</p>
+              {data.spell.reason && <p className="text-sm text-ink-2">{data.spell.reason}</p>}
+            </Card>
           </div>
         </motion.div>
       )}

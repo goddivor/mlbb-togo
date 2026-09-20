@@ -125,81 +125,105 @@ export default function PickBanBoard({
 
   return (
     <div className="space-y-4">
-      {/* Step banner */}
+      {/* Phase strip */}
       <div
         className={cn(
-          "flex flex-col gap-3 rounded-sm border bg-white p-4 shadow-default dark:bg-boxdark sm:flex-row sm:items-center sm:justify-between",
+          "relative overflow-hidden rounded-lg border bg-surface-1 shadow-elev-1 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1",
           done
-            ? "border-success/50"
+            ? "border-accent-green/50"
             : step?.team === "blue"
-              ? "border-primary/50"
-              : "border-danger/50",
+              ? "border-accent-cyan/50"
+              : "border-accent-red/50",
         )}
       >
-        <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wide text-body dark:text-bodydark">
-            {t("pickban.currentStep", {
-              step: Math.min(state.currentStep + 1, total),
-              total,
-            })}{" "}
-            · {t(`pickban.${state.mode}`)}
-          </p>
-          {done ? (
-            <p className="flex items-center gap-2 text-lg font-bold text-success">
-              <CheckCircle2 size={20} />
-              {t("pickban.complete")}
-            </p>
-          ) : step ? (
-            <p
-              className={cn(
-                "text-lg font-bold",
-                step.team === "blue" ? "text-primary" : "text-danger",
-              )}
-            >
-              {t(
-                step.action === "ban" ? "pickban.stepBan" : "pickban.stepPick",
-                {
-                  team: teamLabel(step.team),
-                },
-              )}
-            </p>
-          ) : null}
-          <p className="text-xs text-body dark:text-bodydark">
-            {readOnly
-              ? t("pickban.readOnly")
-              : done
-                ? t("pickban.completeHint")
-                : step &&
-                  t("pickban.tipTap", {
-                    action: t(`pickban.${step.action}`).toLowerCase(),
-                  })}
-          </p>
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute inset-y-0 left-0 w-1",
+            done ? "bg-accent-green" : step?.team === "blue" ? "bg-accent-cyan" : "bg-accent-red",
+          )}
+        />
+        {/* Progress rail */}
+        <div className="absolute inset-x-0 bottom-0 h-0.5 bg-surface-3">
+          <div
+            className={cn(
+              "h-full transition-[width] duration-slow ease-out",
+              done ? "bg-accent-green" : step?.team === "blue" ? "bg-accent-cyan" : "bg-accent-red",
+            )}
+            style={{ width: `${Math.round((Math.min(state.currentStep, total) / total) * 100)}%` }}
+          />
         </div>
-        {!readOnly && (
-          <div className="flex flex-wrap items-center gap-2">
-            {toolbar}
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={busy || state.currentStep === 0}
-              onClick={() => void onUndo?.()}
-              className="gap-1.5"
-            >
-              <Undo2 size={15} />
-              {t("pickban.undo")}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={busy || state.currentStep === 0}
-              onClick={() => void onReset?.()}
-              className="gap-1.5"
-            >
-              <RotateCcw size={15} />
-              {t("pickban.reset")}
-            </Button>
+        <div className="flex flex-col gap-3 p-4 pl-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">
+              {t("pickban.phase")}
+              <span className="mx-1.5 text-line-strong">/</span>
+              <span className="num">
+                {t("pickban.currentStep", {
+                  step: Math.min(state.currentStep + 1, total),
+                  total,
+                })}
+              </span>
+              <span className="mx-1.5 text-line-strong">/</span>
+              {t(`pickban.${state.mode}`)}
+            </p>
+            {done ? (
+              <p className="mt-1 flex items-center gap-2 font-display text-xl font-bold uppercase tracking-tight2 text-accent-green">
+                <CheckCircle2 size={20} />
+                {t("pickban.complete")}
+              </p>
+            ) : step ? (
+              <p
+                className={cn(
+                  "mt-1 font-display text-xl font-bold uppercase tracking-tight2",
+                  step.team === "blue" ? "text-accent-cyan" : "text-accent-red",
+                )}
+              >
+                {t(
+                  step.action === "ban" ? "pickban.stepBan" : "pickban.stepPick",
+                  {
+                    team: teamLabel(step.team),
+                  },
+                )}
+              </p>
+            ) : null}
+            <p className="mt-0.5 text-xs text-ink-2">
+              {readOnly
+                ? t("pickban.readOnly")
+                : done
+                  ? t("pickban.completeHint")
+                  : step &&
+                    t("pickban.tipTap", {
+                      action: t(`pickban.${step.action}`).toLowerCase(),
+                    })}
+            </p>
           </div>
-        )}
+          {!readOnly && (
+            <div className="flex flex-wrap items-center gap-2">
+              {toolbar}
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy || state.currentStep === 0}
+                onClick={() => void onUndo?.()}
+                className="gap-1.5"
+              >
+                <Undo2 size={15} />
+                {t("pickban.undo")}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy || state.currentStep === 0}
+                onClick={() => void onReset?.()}
+                className="gap-1.5"
+              >
+                <RotateCcw size={15} />
+                {t("pickban.reset")}
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Board: teams on the sides (desktop) or side by side above the grid (mobile).

@@ -3,19 +3,21 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Users2, Check, X, UserMinus, MessageSquare } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Users2, Check, X, UserMinus, MessageSquare, UserPlus, Wifi } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Button, PageHeader, EmptyState, LoadingSpinner, Tabs, Avatar } from '@/components/ui';
+import { Button, PageHeader, EmptyState, Tabs, Avatar, Badge, Card, StatCard, Skeleton } from '@/components/ui';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import { getSocket, usePresence } from '@/lib/realtime';
+import { fadeUp, stagger, still } from '@/lib/motion';
 import toast from 'react-hot-toast';
 
 export default function FriendsPage() {
   const t = useT();
   const router = useRouter();
+  const reduce = useReducedMotion();
   const [tab, setTab] = useState<'friends' | 'requests'>('friends');
   const [friends, setFriends] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
@@ -81,51 +83,92 @@ export default function FriendsPage() {
     setConfirm(null);
   };
 
+  const onlineCount = friends.filter((u) => online.has(u.id)).length;
   const TABS = [
-    { id: 'friends', label: `${t('friends.tab.friends')}${friends.length ? ` (${friends.length})` : ''}`, icon: Users2 },
-    { id: 'requests', label: `${t('friends.tab.requests')}${requests.length ? ` (${requests.length})` : ''}`, icon: Check },
+    { id: 'friends', label: t('friends.tab.friends'), icon: Users2, count: friends.length },
+    { id: 'requests', label: t('friends.tab.requests'), icon: UserPlus, count: requests.length },
   ];
+  const listVariants = reduce ? still : stagger(0.04);
+  const itemVariants = reduce ? still : fadeUp;
+
+  const personRow = (u: any, actions: React.ReactNode, isOnline?: boolean) => (
+    <motion.div key={u.id} variants={itemVariants}>
+      <Card hover className="!p-4">
+        <div className="flex items-center gap-4">
+          <Avatar
+            name={u.displayName || u.username}
+            src={u.avatar ? avatarSrc(u.avatar, 88) : undefined}
+            size="lg"
+            online={isOnline}
+          />
+          <Link href={`/players/${u.id}`} className="min-w-0 flex-1">
+            <p className="truncate font-display text-base font-bold tracking-tight2 text-ink-1 transition-colors hover:text-primary">
+              {u.displayName || u.username}
+            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              {u.gameRank ? (
+                <Badge variant="tier-gold" size="sm" className="gap-1">
+                  {hasRankBadge(u.gameRank) && <RankBadge rank={u.gameRank} size={12} />}
+                  {u.gameRank}
+                </Badge>
+              ) : (
+                <span className="text-xs text-ink-3">@{u.username}</span>
+              )}
+              {u.country && <span className="text-xs text-ink-3">{u.country}</span>}
+              {isOnline && (
+                <Badge variant="green" size="sm" dot>
+                  {t('friends.online')}
+                </Badge>
+              )}
+            </div>
+          </Link>
+          <div className="flex shrink-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center">{actions}</div>
+        </div>
+      </Card>
+    </motion.div>
+  );
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <PageHeader icon={<Users2 size={28} />} title={t('friends.title')} variant="blue" />
+    <div className="mx-auto max-w-4xl space-y-6">
+      <PageHeader
+        eyebrow={t('friends.eyebrow')}
+        icon={<Users2 size={22} />}
+        title={t('friends.title')}
+        subtitle={t('friends.subtitle')}
+        variant="blue"
+      >
+        <StatCard label={t('friends.kpi.friends')} value={friends.length} icon={<Users2 size={18} />} accent="cyan" />
+        <StatCard label={t('friends.kpi.online')} value={onlineCount} icon={<Wifi size={18} />} accent="green" />
+        <StatCard label={t('friends.kpi.pending')} value={requests.length} icon={<UserPlus size={18} />} accent="violet" />
+      </PageHeader>
 
-      <Tabs tabs={TABS} active={tab} onChange={(id: any) => setTab(id)} />
+      <div className="overflow-x-auto whitespace-nowrap">
+        <Tabs variant="underline" tabs={TABS} active={tab} onChange={(id: any) => setTab(id)} />
+      </div>
 
       {loading ? (
-        <LoadingSpinner size="lg" className="py-24" />
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="!p-4">
+              <div className="flex items-center gap-4">
+                <Skeleton circle className="h-14 w-14 shrink-0" />
+                <Skeleton lines={2} className="flex-1" />
+              </div>
+            </Card>
+          ))}
+        </div>
       ) : tab === 'friends' ? (
         friends.length === 0 ? (
-          <EmptyState icon={<Users2 size={28} />} title={t('friends.none')} />
+          <EmptyState icon={<Users2 size={28} />} title={t('friends.none')} description={t('friends.noneHint')} />
         ) : (
-          <div className="space-y-2">
-            {friends.map((u, i) => (
-              <motion.div
-                key={u.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.03, 0.3) }}
-                className="flex items-center gap-3 rounded-sm border border-stroke bg-white p-3 shadow-default dark:border-strokedark dark:bg-boxdark"
-              >
-                <Avatar
-                  name={u.displayName || u.username}
-                  src={u.avatar ? avatarSrc(u.avatar, 88) : undefined}
-                  size="md"
-                  online={online.has(u.id)}
-                />
-                <Link href={`/players/${u.id}`} className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-black transition-colors hover:text-primary dark:text-white">
-                    {u.displayName || u.username}
-                  </p>
-                  <div className="mt-0.5 flex items-center gap-1.5 text-xs text-body dark:text-bodydark">
-                    {hasRankBadge(u.gameRank) && <RankBadge rank={u.gameRank} size={14} />}
-                    {u.gameRank || u.country}
-                  </div>
-                </Link>
-                <div className="flex shrink-0 items-center gap-2">
+          <motion.div variants={listVariants} initial="hidden" animate="visible" className="space-y-3">
+            {friends.map((u) =>
+              personRow(
+                u,
+                <>
                   <Button
                     size="sm"
-                    variant="ghost"
+                    variant="secondary"
                     onClick={() =>
                       router.push(
                         `/messages?to=${u.id}&name=${encodeURIComponent(u.displayName || u.username)}`,
@@ -142,35 +185,20 @@ export default function FriendsPage() {
                   >
                     <UserMinus size={14} /> {t('friends.remove')}
                   </Button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </>,
+                online.has(u.id),
+              ),
+            )}
+          </motion.div>
         )
       ) : requests.length === 0 ? (
-        <EmptyState icon={<Check size={28} />} title={t('friends.noRequests')} />
+        <EmptyState icon={<UserPlus size={28} />} title={t('friends.noRequests')} />
       ) : (
-        <div className="space-y-2">
-          {requests.map((u, i) => (
-            <motion.div
-              key={u.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.03, 0.3) }}
-              className="flex items-center gap-3 rounded-sm border border-stroke bg-white p-3 shadow-default dark:border-strokedark dark:bg-boxdark"
-            >
-              <Avatar
-                name={u.displayName || u.username}
-                src={u.avatar ? avatarSrc(u.avatar, 88) : undefined}
-                size="md"
-              />
-              <Link href={`/players/${u.id}`} className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-black transition-colors hover:text-primary dark:text-white">
-                  {u.displayName || u.username}
-                </p>
-                {u.country && <p className="text-xs text-body dark:text-bodydark">{u.country}</p>}
-              </Link>
-              <div className="flex items-center gap-2 shrink-0">
+        <motion.div variants={listVariants} initial="hidden" animate="visible" className="space-y-3">
+          {requests.map((u) =>
+            personRow(
+              u,
+              <>
                 <Button
                   size="sm"
                   disabled={busy === u.id + 'a'}
@@ -180,16 +208,16 @@ export default function FriendsPage() {
                 </Button>
                 <Button
                   size="sm"
-                  variant="danger"
+                  variant="outline"
                   disabled={busy === u.id + 'r'}
                   onClick={() => setConfirm({ kind: 'refuse', user: u })}
                 >
                   <X size={14} /> {t('friends.refuse')}
                 </Button>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              </>,
+            ),
+          )}
+        </motion.div>
       )}
 
       {/* Removal / refusal confirmation */}

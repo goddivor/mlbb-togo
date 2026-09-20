@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { ArrowRight, Trash2 } from 'lucide-react';
-import { Badge, Button, Card } from '@/components/ui';
+import { Badge, Button, Card, ProgressBar } from '@/components/ui';
 import { useT } from '@/lib/i18n';
 import { useLangStore } from '@/store/useStore';
 import { totalSteps, type PickBanMode } from '@/lib/pickban';
@@ -35,21 +35,21 @@ export default function PickBanList({
         const total = totalSteps(d.mode);
         const completed = d.status === 'completed' || d.currentStep >= total;
         return (
-          <Card key={d.id} hover className="flex flex-col gap-3 p-4">
+          <Card key={d.id} hover accent={completed ? 'green' : 'cyan'} className="flex flex-col gap-3 p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h3 className="truncate text-base font-semibold text-black dark:text-white">{d.name}</h3>
-                <p className="text-xs text-body dark:text-bodydark">
+                <h3 className="truncate font-display text-base font-bold tracking-tight2 text-ink-1">{d.name}</h3>
+                <p className="text-xs num text-ink-3">
                   {t('pickban.draft', { code: d.shareCode })}
                 </p>
               </div>
-              <Badge size="sm" variant={completed ? 'green' : 'blue'}>
+              <Badge size="sm" variant={completed ? 'green' : 'blue'} dot>
                 {t(completed ? 'pickban.status.completed' : 'pickban.status.active')}
               </Badge>
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-body dark:text-bodydark">
-              <span>{t(`pickban.${d.mode}`)}</span>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs num text-ink-2">
+              <Badge size="sm" variant="outline">{t(`pickban.${d.mode}`)}</Badge>
               <span>{t('pickban.progress', { done: d.currentStep, total })}</span>
               <span>
                 {t('pickban.lastUpdate', {
@@ -61,19 +61,14 @@ export default function PickBanList({
               </span>
             </div>
 
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-2 dark:bg-meta-4">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${Math.round((d.currentStep / total) * 100)}%` }}
-              />
-            </div>
+            <ProgressBar value={d.currentStep} max={total} className="h-1.5" accent={completed ? 'green' : undefined} />
 
-            <div className="mt-auto flex items-center justify-between gap-2 border-t border-stroke pt-3 dark:border-strokedark">
-              <div className="flex gap-3 text-xs">
-                <span className="font-semibold text-primary">
+            <div className="mt-auto flex items-center justify-between gap-2 border-t border-line-subtle pt-3">
+              <div className="flex gap-3 text-xs num">
+                <span className="font-semibold text-accent-cyan">
                   {t('pickban.blue')} {d.blueTeam?.picks?.length ?? 0}/5
                 </span>
-                <span className="font-semibold text-danger">
+                <span className="font-semibold text-accent-red">
                   {t('pickban.red')} {d.redTeam?.picks?.length ?? 0}/5
                 </span>
               </div>

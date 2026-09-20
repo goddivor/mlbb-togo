@@ -1,10 +1,10 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Crown, Trophy, Radio, Calendar } from 'lucide-react';
+import { Crown, Trophy, Calendar } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { avatarSrc } from '@/lib/api';
-import { formatDateTime } from '@/lib/helpers';
+import { cn, formatDateTime } from '@/lib/helpers';
 
 export type BracketTeam = {
   id: string;
@@ -80,7 +80,7 @@ export default function EliminationBracket({
 
   if (matches.length === 0) {
     return (
-      <div className="py-10 text-center text-sm text-body dark:text-bodydark">
+      <div className="py-10 text-center text-sm text-ink-2">
         {emptyText ?? <>{t('draft.bracket')} —</>}
       </div>
     );
@@ -113,33 +113,33 @@ export default function EliminationBracket({
             onTeamClick(teamId);
           }
         }}
-        className={`flex w-full items-center gap-2 rounded-md border px-2 py-1.5 text-left text-sm transition ${
-          isWinner
-            ? 'border-primary bg-primary/10 font-semibold text-black dark:text-white'
-            : 'border-stroke text-body dark:border-strokedark dark:text-bodydark'
-        } ${isHighlighted ? 'ring-2 ring-warning/70' : ''} ${isLoser ? 'opacity-60' : ''} ${
+        className={cn(
+          'flex w-full items-center gap-2 rounded border px-2 py-1.5 text-left text-sm transition-colors duration-fast',
+          isWinner ? 'border-primary/60 bg-primary/10 font-semibold text-ink-1' : 'border-line-subtle text-ink-2',
+          isHighlighted && 'ring-2 ring-accent-gold/70',
+          isLoser && 'opacity-60',
           canClick ? 'cursor-pointer hover:border-primary hover:bg-primary/5' : 'cursor-default'
-        }`}
+        )}
       >
         {team?.icon ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={avatarSrc(team.icon, 48)}
             alt=""
-            className="h-6 w-6 rounded bg-gray-2 object-cover dark:bg-meta-4"
+            className="h-6 w-6 rounded cut-corners-sm bg-surface-2 object-cover"
           />
         ) : (
-          <span className="flex h-6 w-6 items-center justify-center rounded bg-gray-2 text-xs text-bodydark2 dark:bg-meta-4">
+          <span className="flex h-6 w-6 items-center justify-center rounded cut-corners-sm bg-surface-2 text-[10px] font-semibold num text-ink-3">
             {team?.seed ?? '?'}
           </span>
         )}
         <span className="min-w-0 flex-1 truncate">{team?.name || t('draft.tbd')}</span>
         {showScore && (
-          <span className={`shrink-0 text-xs font-bold ${isWinner ? 'text-primary' : ''}`}>
+          <span className={cn('shrink-0 font-display text-sm font-bold num', isWinner ? 'text-primary' : 'text-ink-2')}>
             {score ?? 0}
           </span>
         )}
-        {isWinner && <Crown size={14} className="shrink-0 text-primary" />}
+        {isWinner && <Crown size={13} className="shrink-0 text-accent-gold" />}
       </button>
     );
   };
@@ -148,20 +148,20 @@ export default function EliminationBracket({
     if (!showDetails) return null;
     if (m.status === 'live') {
       return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-danger">
-          <Radio size={10} className="animate-pulse" /> {t('tournament.match.status.live')}
+        <span className="inline-flex items-center gap-1.5 rounded bg-accent-red/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-red">
+          <span className="live-dot" aria-hidden="true" /> {t('tournament.match.status.live')}
         </span>
       );
     }
     if (m.scheduledAt && m.status !== 'finished' && m.status !== 'bye') {
       return (
-        <span className="inline-flex items-center gap-1 text-[10px] text-bodydark2">
+        <span className="inline-flex items-center gap-1 text-[10px] num text-ink-3">
           <Calendar size={10} /> {formatDateTime(m.scheduledAt)}
         </span>
       );
     }
     if (m.status === 'bye') {
-      return <span className="text-[10px] uppercase text-bodydark2">{t('tournament.match.status.bye')}</span>;
+      return <span className="text-[10px] uppercase tracking-wide text-ink-3">{t('tournament.match.status.bye')}</span>;
     }
     return null;
   };
@@ -171,9 +171,9 @@ export default function EliminationBracket({
       <div className="flex min-w-max gap-6">
         {rounds.map(({ round, matches: ms }, ri) => (
           <div key={round} className="flex min-w-[220px] flex-col justify-around gap-4">
-            <p className="mb-1 text-center text-xs font-semibold uppercase tracking-wide text-bodydark2">
+            <p className="mb-1 text-center text-[11px] font-semibold uppercase tracking-eyebrow text-ink-3">
               {ri === rounds.length - 1 ? (
-                <span className="inline-flex items-center gap-1 text-primary">
+                <span className="inline-flex items-center gap-1.5 text-accent-gold">
                   <Trophy size={13} />{' '}
                   {roundLabel ? roundLabel(round, totalRounds) : t('draft.round', { n: round })}
                 </span>
@@ -200,19 +200,21 @@ export default function EliminationBracket({
                       onSelectMatch!(m);
                     }
                   }}
-                  className={`space-y-1 rounded-lg border bg-white p-2 shadow-sm transition dark:bg-boxdark ${
+                  className={cn(
+                    'space-y-1 rounded-lg border bg-surface-1 p-2 shadow-elev-1 transition-[border-color,box-shadow] duration-fast dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1',
                     selected
                       ? 'border-primary ring-2 ring-primary/30'
                       : involved
-                        ? 'border-warning/60'
+                        ? 'border-accent-gold/60'
                         : m.status === 'live'
-                          ? 'border-danger/60'
-                          : 'border-stroke dark:border-strokedark'
-                  } ${clickable ? 'cursor-pointer hover:border-primary' : ''}`}
+                          ? 'border-accent-red/60'
+                          : 'border-line-subtle',
+                    clickable && 'cursor-pointer hover:border-primary/60 hover:shadow-elev-2'
+                  )}
                 >
                   {showDetails && (
                     <div className="flex items-center justify-between px-0.5">
-                      <span className="text-[10px] font-medium uppercase text-bodydark2">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-ink-3">
                         {t('tournament.match.n', { n: m.position + 1 })}
                       </span>
                       {statusPill(m)}

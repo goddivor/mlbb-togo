@@ -7,10 +7,11 @@ import {
   Settings as SettingsIcon, User, Bell, Shield, Palette,
   Trash2, Save, Moon, Sun, Sparkles, Zap, Crown,
 } from 'lucide-react';
-import { Card, Button, Input, Textarea, Tabs, PageHeader, SectionCard } from '@/components/ui';
+import { Card, Button, Input, Textarea, Tabs, PageHeader, SectionTitle, Avatar } from '@/components/ui';
+import { cn } from '@/lib/helpers';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useThemeStore, useAuthStore } from '@/store/useStore';
-import { api, setToken } from '@/lib/api';
+import { api, setToken, avatarSrc } from '@/lib/api';
 import { isPushSupported, isPushEnabled, enablePush, disablePush } from '@/lib/push';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
@@ -19,12 +20,58 @@ import CitySelect from '@/components/geo/CitySelect';
 const DEFAULT_NOTIFS = { friends: true, messages: true, teams: true };
 const DEFAULT_PRIVACY = { profilePublic: true, showStats: true, showOnline: true, allowInvites: true };
 
-const PALETTES: { id: string; label: string; icon: any; color: string }[] = [
-  { id: 'default', label: 'Défaut', icon: Sparkles, color: '#3C50E0' },
-  { id: 'neon', label: 'Néon', icon: Zap, color: '#00d4ff' },
-  { id: 'gold', label: 'Gold', icon: Crown, color: '#d4a843' },
-  { id: 'night', label: 'Night', icon: Moon, color: '#c4a868' },
+const PALETTES: { id: string; label: string; icon: any; color: string; swatch: string }[] = [
+  { id: 'default', label: 'Défaut', icon: Sparkles, color: '#00d4ff', swatch: 'linear-gradient(135deg, #0a0e19 0%, #111726 55%, #00d4ff 140%)' },
+  { id: 'neon', label: 'Néon', icon: Zap, color: '#00d4ff', swatch: 'linear-gradient(135deg, #060612 0%, #0f0f2a 55%, #a855f7 140%)' },
+  { id: 'gold', label: 'Gold', icon: Crown, color: '#d4a843', swatch: 'linear-gradient(135deg, #0a0a0a 0%, #14120f 55%, #d4a843 140%)' },
+  { id: 'night', label: 'Night', icon: Moon, color: '#c4a868', swatch: 'linear-gradient(135deg, #0f0d0a 0%, #1a1814 55%, #c4a868 140%)' },
 ];
+
+/** Accessible switch shared by every toggle row. */
+function Switch({ checked, onChange, disabled, label, size = 'md' }: { checked: boolean; onChange: () => void; disabled?: boolean; label: string; size?: 'md' | 'lg' }) {
+  const w = size === 'lg' ? 'h-7 w-14' : 'h-6 w-12';
+  const knob = size === 'lg' ? 'h-5 w-5' : 'h-4 w-4';
+  const travel = size === 'lg' ? 28 : 24;
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={onChange}
+      disabled={disabled}
+      className={cn(
+        'relative shrink-0 rounded-full transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-60',
+        w,
+        checked ? 'bg-primary' : 'bg-surface-3 ring-1 ring-inset ring-line-strong',
+      )}
+    >
+      <motion.span
+        animate={{ x: checked ? travel : 2 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+        className={cn('absolute top-1 flex items-center justify-center rounded-full bg-white shadow-elev-1', knob)}
+      />
+    </button>
+  );
+}
+
+/** Setting row: label + description on the left, control on the right. */
+function SettingRow({ label, desc, control, highlight }: { label: string; desc: string; control: React.ReactNode; highlight?: boolean }) {
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-between gap-4 rounded border p-4',
+        highlight ? 'border-primary/30 bg-primary/5' : 'border-line-subtle bg-surface-2/60',
+      )}
+    >
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-ink-1">{label}</p>
+        <p className="mt-0.5 text-xs text-ink-2">{desc}</p>
+      </div>
+      {control}
+    </div>
+  );
+}
 
 export default function Settings() {
   const { theme, toggleTheme, palette, setPalette } = useThemeStore();
@@ -135,259 +182,218 @@ export default function Settings() {
     }
   };
 
-  return (
-    <div className="space-y-6">
+  const TABS = [
+    { id: 'profile', label: t('settings.tabProfile'), icon: User },
+    { id: 'notifications', label: t('settings.tabNotifications'), icon: Bell },
+    { id: 'privacy', label: t('settings.tabPrivacy'), icon: Shield },
+    { id: 'appearance', label: t('settings.tabAppearance'), icon: Palette },
+  ];
 
+  const saveBar = (key: string, onClick: () => void) => (
+    <div className="flex justify-end border-t border-line-subtle pt-4">
+      <Button onClick={onClick} loading={saving === key}>
+        <Save size={16} />
+        {t('settings.save')}
+      </Button>
+    </div>
+  );
+
+  return (
+    <div className="mx-auto max-w-4xl space-y-6">
       <PageHeader
-        icon={<SettingsIcon size={28} />}
+        eyebrow={t('settings.eyebrow')}
+        icon={<SettingsIcon size={22} />}
         title={t('settings.title')}
         subtitle={t('settings.subtitle')}
         variant="cyan"
       />
 
-      <SectionCard className="!p-4">
-        <Tabs
-          tabs={[
-            { id: 'profile', label: t('settings.tabProfile'), icon: User },
-            { id: 'notifications', label: t('settings.tabNotifications'), icon: Bell },
-            { id: 'privacy', label: t('settings.tabPrivacy'), icon: Shield },
-            { id: 'appearance', label: t('settings.tabAppearance'), icon: Palette },
-          ]}
-          active={activeTab}
-          onChange={setActiveTab}
-        />
-      </SectionCard>
+      <div className="overflow-x-auto whitespace-nowrap">
+        <Tabs variant="underline" tabs={TABS} active={activeTab} onChange={setActiveTab} />
+      </div>
 
       {activeTab === 'profile' && (
-        <div className="space-y-6">
-          <Card>
-            <h3 className="font-bold text-lg mb-4 text-black dark:text-white">
-              {t('settings.profileInfo')}
-            </h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label={t('settings.username')}
-                  value={profile.username}
-                  onChange={(e: any) => setProfile({ ...profile, username: e.target.value })}
-                />
-                <Input
-                  label={t('settings.email')}
-                  type="email"
-                  value={profile.email}
-                  disabled
-                  readOnly
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CitySelect
-                  label={t('settings.city')}
-                  value={profile.city}
-                  onChange={(city) => setProfile({ ...profile, city })}
-                />
-                <Input
-                  label={t('settings.country')}
-                  value={profile.country}
-                  onChange={(e: any) => setProfile({ ...profile, country: e.target.value })}
-                />
-              </div>
-              <p className="text-xs text-body dark:text-bodydark -mt-2">{t('settings.cityHint')}</p>
-              <Textarea
-                label={t('settings.bio')}
-                value={profile.bio}
-                onChange={(e: any) => setProfile({ ...profile, bio: e.target.value })}
-                rows={3}
+        <Card className="space-y-6">
+          <div className="flex items-center gap-4">
+            <Avatar
+              name={userProfile?.displayName || userProfile?.username || '?'}
+              src={userProfile?.avatar ? avatarSrc(userProfile.avatar, 160) : undefined}
+              size="xl"
+              ring
+            />
+            <SectionTitle
+              eyebrow={userProfile?.username ? `@${userProfile.username}` : undefined}
+              title={t('settings.profileInfo')}
+              description={t('settings.subtitle')}
+            />
+          </div>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Input
+                label={t('settings.username')}
+                value={profile.username}
+                onChange={(e: any) => setProfile({ ...profile, username: e.target.value })}
+              />
+              <Input
+                label={t('settings.email')}
+                type="email"
+                value={profile.email}
+                disabled
+                readOnly
               />
             </div>
-          </Card>
-
-          <div className="flex justify-end">
-            <Button onClick={saveProfile} loading={saving === 'profile'}>
-              <Save size={16} />
-              {t('settings.save')}
-            </Button>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <CitySelect
+                label={t('settings.city')}
+                value={profile.city}
+                onChange={(city) => setProfile({ ...profile, city })}
+              />
+              <Input
+                label={t('settings.country')}
+                value={profile.country}
+                onChange={(e: any) => setProfile({ ...profile, country: e.target.value })}
+              />
+            </div>
+            <p className="-mt-2 text-xs text-ink-3">{t('settings.cityHint')}</p>
+            <Textarea
+              label={t('settings.bio')}
+              value={profile.bio}
+              onChange={(e: any) => setProfile({ ...profile, bio: e.target.value })}
+              rows={3}
+            />
           </div>
-        </div>
+          {saveBar('profile', saveProfile)}
+        </Card>
       )}
 
       {activeTab === 'notifications' && (
-        <Card>
-          <h3 className="font-bold text-lg mb-4 text-black dark:text-white">
-            {t('settings.notifications.title')}
-          </h3>
+        <Card className="space-y-6">
+          <SectionTitle title={t('settings.notifications.title')} />
 
-          {pushSupported && (
-            <div className="mb-4 flex items-center justify-between rounded-sm border border-primary/30 bg-primary/5 p-3">
-              <div>
-                <p className="font-medium text-sm text-black dark:text-white">{t('settings.push.title')}</p>
-                <p className="text-xs text-body dark:text-bodydark">{t('settings.push.desc')}</p>
-              </div>
-              <button
-                onClick={togglePush}
-                disabled={pushBusy}
-                className={`relative w-12 h-6 rounded-full transition-colors disabled:opacity-60 ${
-                  pushOn ? 'bg-primary' : 'bg-stroke dark:bg-strokedark'
-                }`}
-              >
-                <motion.div animate={{ x: pushOn ? 24 : 2 }} className="absolute top-1 w-4 h-4 rounded-full bg-white" />
-              </button>
-            </div>
-          )}
-
-          <div className="space-y-4">
+          <div className="space-y-3">
+            {pushSupported && (
+              <SettingRow
+                highlight
+                label={t('settings.push.title')}
+                desc={t('settings.push.desc')}
+                control={<Switch checked={pushOn} onChange={togglePush} disabled={pushBusy} label={t('settings.push.title')} />}
+              />
+            )}
             {[
               { key: 'friends', label: t('settings.notifications.friends'), desc: t('settings.notifications.friendsDesc') },
               { key: 'messages', label: t('settings.notifications.messages'), desc: t('settings.notifications.messagesDesc') },
               { key: 'teams', label: t('settings.notifications.teams'), desc: t('settings.notifications.teamsDesc') },
             ].map((item) => (
-              <div key={item.key} className="flex items-center justify-between p-3 rounded-sm bg-gray-2 dark:bg-meta-4">
-                <div>
-                  <p className="font-medium text-sm text-black dark:text-white">{item.label}</p>
-                  <p className="text-xs text-body dark:text-bodydark">{item.desc}</p>
-                </div>
-                <button
-                  onClick={() => setNotifications({ ...notifications, [item.key]: !notifications[item.key] })}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${
-                    notifications[item.key] ? 'bg-primary' : 'bg-stroke dark:bg-strokedark'
-                  }`}
-                >
-                  <motion.div
-                    animate={{ x: notifications[item.key] ? 24 : 2 }}
-                    className="absolute top-1 w-4 h-4 rounded-full bg-white"
+              <SettingRow
+                key={item.key}
+                label={item.label}
+                desc={item.desc}
+                control={
+                  <Switch
+                    checked={!!notifications[item.key]}
+                    onChange={() => setNotifications({ ...notifications, [item.key]: !notifications[item.key] })}
+                    label={item.label}
                   />
-                </button>
-              </div>
+                }
+              />
             ))}
           </div>
-          <div className="flex justify-end mt-6">
-            <Button onClick={saveNotifications} loading={saving === 'notifications'}>
-              <Save size={16} />
-              {t('settings.save')}
-            </Button>
-          </div>
+          {saveBar('notifications', saveNotifications)}
         </Card>
       )}
 
       {activeTab === 'privacy' && (
-        <Card>
-          <h3 className="font-bold text-lg mb-4 text-white">
-            {t('settings.privacy.title')}
-          </h3>
-          <div className="space-y-4">
-            {[
-              { key: 'profilePublic', label: t('settings.privacy.publicProfile'), desc: t('settings.privacy.publicProfileDesc') },
-              { key: 'showStats', label: t('settings.privacy.showStats'), desc: t('settings.privacy.showStatsDesc') },
-              { key: 'showOnline', label: t('settings.privacy.showOnline'), desc: t('settings.privacy.showOnlineDesc') },
-              { key: 'allowInvites', label: t('settings.privacy.allowInvites'), desc: t('settings.privacy.allowInvitesDesc') },
-            ].map((item) => (
-              <div key={item.key} className="flex items-center justify-between p-3 rounded-sm bg-gray-2 dark:bg-meta-4">
-                <div>
-                  <p className="font-medium text-sm text-black dark:text-white">{item.label}</p>
-                  <p className="text-xs text-body dark:text-bodydark">{item.desc}</p>
-                </div>
-                <button
-                  onClick={() => setPrivacy({ ...privacy, [item.key]: !privacy[item.key] })}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${
-                    privacy[item.key] ? 'bg-primary' : 'bg-stroke dark:bg-strokedark'
-                  }`}
-                >
-                  <motion.div
-                    animate={{ x: privacy[item.key] ? 24 : 2 }}
-                    className="absolute top-1 w-4 h-4 rounded-full bg-white"
-                  />
-                </button>
-              </div>
-            ))}
-          </div>
+        <div className="space-y-6">
+          <Card className="space-y-6">
+            <SectionTitle title={t('settings.privacy.title')} />
+            <div className="space-y-3">
+              {[
+                { key: 'profilePublic', label: t('settings.privacy.publicProfile'), desc: t('settings.privacy.publicProfileDesc') },
+                { key: 'showStats', label: t('settings.privacy.showStats'), desc: t('settings.privacy.showStatsDesc') },
+                { key: 'showOnline', label: t('settings.privacy.showOnline'), desc: t('settings.privacy.showOnlineDesc') },
+                { key: 'allowInvites', label: t('settings.privacy.allowInvites'), desc: t('settings.privacy.allowInvitesDesc') },
+              ].map((item) => (
+                <SettingRow
+                  key={item.key}
+                  label={item.label}
+                  desc={item.desc}
+                  control={
+                    <Switch
+                      checked={!!privacy[item.key]}
+                      onChange={() => setPrivacy({ ...privacy, [item.key]: !privacy[item.key] })}
+                      label={item.label}
+                    />
+                  }
+                />
+              ))}
+            </div>
+            {saveBar('privacy', savePrivacy)}
+          </Card>
 
-          <div className="mt-8 pt-6 border-t border-stroke dark:border-strokedark">
-            <h4 className="text-danger font-bold mb-3">{t('settings.privacy.dangerZone')}</h4>
-            <Button variant="danger" onClick={() => setShowDelete(true)}>
+          <Card accent="red" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="eyebrow mb-1 !text-accent-red">{t('settings.privacy.dangerZone')}</p>
+              <p className="text-sm text-ink-2">{t('settings.deleteConfirm')}</p>
+            </div>
+            <Button variant="danger" size="sm" onClick={() => setShowDelete(true)} className="shrink-0">
               <Trash2 size={16} />
               {t('settings.privacy.deleteAccount')}
             </Button>
-          </div>
-
-          <div className="flex justify-end mt-6">
-            <Button onClick={savePrivacy} loading={saving === 'privacy'}>
-              <Save size={16} />
-              {t('settings.save')}
-            </Button>
-          </div>
-        </Card>
+          </Card>
+        </div>
       )}
 
       {activeTab === 'appearance' && (
-        <Card>
-          <h3 className="font-bold text-lg mb-4 text-white">
-            {t('settings.appearance.title')}
-          </h3>
+        <Card className="space-y-6">
+          <SectionTitle title={t('settings.appearance.title')} />
 
-          <div className="space-y-6">
-            <div className="flex items-center justify-between p-4 rounded-sm bg-gray-2 dark:bg-meta-4">
+          <SettingRow
+            label={t('settings.appearance.darkTheme')}
+            desc={theme === 'dark' ? t('settings.appearance.darkDesc') : t('settings.appearance.lightDesc')}
+            control={
               <div className="flex items-center gap-3">
-                {theme === 'dark' ? <Moon size={20} className="text-primary" /> : <Sun size={20} className="text-warning" />}
-                <div>
-                  <p className="font-medium text-sm text-black dark:text-white">
-                    {t('settings.appearance.darkTheme')}
-                  </p>
-                  <p className="text-xs text-body dark:text-bodydark">
-                    {theme === 'dark' ? t('settings.appearance.darkDesc') : t('settings.appearance.lightDesc')}
-                  </p>
-                </div>
+                {theme === 'dark' ? <Moon size={18} className="text-primary" /> : <Sun size={18} className="text-accent-gold" />}
+                <Switch size="lg" checked={theme === 'dark'} onChange={toggleTheme} label={t('settings.appearance.darkTheme')} />
               </div>
-              <button
-                onClick={toggleTheme}
-                className={`relative w-14 h-7 rounded-full transition-colors ${
-                  theme === 'dark' ? 'bg-primary' : 'bg-warning'
-                }`}
-              >
-                <motion.div
-                  animate={{ x: theme === 'dark' ? 28 : 2 }}
-                  className="absolute top-1 w-5 h-5 rounded-full bg-white flex items-center justify-center"
-                >
-                  {theme === 'dark' ? <Moon size={12} className="text-primary" /> : <Sun size={12} className="text-warning" />}
-                </motion.div>
-              </button>
-            </div>
+            }
+          />
 
-            <div>
-              <p className="text-sm text-body dark:text-bodydark mb-3">{t('settings.appearance.colorTheme')}</p>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {PALETTES.map((p) => {
-                  const active = (palette || 'default') === p.id;
-                  const Icon = p.icon;
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setPalette(p.id)}
-                      className={`flex items-center gap-2.5 rounded-sm border p-3 transition-colors ${
-                        active
-                          ? 'border-primary bg-primary/10'
-                          : 'border-stroke bg-gray-2 hover:border-primary/50 dark:border-strokedark dark:bg-meta-4'
-                      }`}
-                    >
-                      <span
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm"
-                        style={{ background: `${p.color}1f`, color: p.color }}
-                      >
-                        <Icon size={18} />
-                      </span>
-                      <span className="text-sm font-medium text-black dark:text-white">
+          <div>
+            <p className="eyebrow mb-3">{t('settings.appearance.colorTheme')}</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {PALETTES.map((p) => {
+                const active = (palette || 'default') === p.id;
+                const Icon = p.icon;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setPalette(p.id)}
+                    aria-pressed={active}
+                    className={cn(
+                      'group flex flex-col overflow-hidden rounded border text-left transition-[border-color,box-shadow,transform] duration-base ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+                      active ? 'border-primary shadow-glow-cyan' : 'border-line-subtle hover:border-line-strong',
+                    )}
+                  >
+                    <span aria-hidden="true" className="relative block h-16 w-full cut-corners-sm" style={{ background: p.swatch }}>
+                      <span className="absolute bottom-2 left-2 h-1.5 w-8 rounded-sm" style={{ background: p.color }} />
+                      <span className="absolute bottom-2 left-11 h-1.5 w-4 rounded-sm bg-white/30" />
+                    </span>
+                    <span className="flex items-center gap-2 px-3 py-2.5">
+                      <Icon size={14} style={{ color: p.color }} />
+                      <span className={cn('text-sm font-semibold', active ? 'text-ink-1' : 'text-ink-2')}>
                         {p.id === 'default' ? t('settings.appearance.paletteDefault') : p.label}
                       </span>
-                    </button>
-                  );
-                })}
-              </div>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-
           </div>
         </Card>
       )}
 
-      {/* Confirmation de suppression du compte */}
+      {/* Account deletion confirmation */}
       <ConfirmModal
         open={showDelete}
         onClose={() => setShowDelete(false)}

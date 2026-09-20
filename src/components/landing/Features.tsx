@@ -1,20 +1,35 @@
 'use client';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Trophy, Users, Shield, MessageSquare, Swords, Calendar, Sparkles, ArrowRight } from 'lucide-react';
+import { Trophy, Users, Shield, MessageSquare, Swords, Calendar, Sparkles, Flag, ArrowRight } from 'lucide-react';
 import { useT } from '@/lib/i18n';
-import { Badge } from '@/components/ui';
+import { cn } from '@/lib/helpers';
+import { SectionTitle, type Accent } from '@/components/ui';
 
-const features = [
-  { key: 'tournaments', icon: Trophy, href: '/tournaments', color: 'text-neon-gold', ring: 'bg-neon-gold/10' },
-  { key: 'rankings', icon: Users, href: '/players', color: 'text-neon-blue', ring: 'bg-neon-blue/10' },
-  { key: 'teams', icon: Shield, href: '/teams', color: 'text-neon-purple', ring: 'bg-neon-purple/10' },
-  { key: 'forum', icon: MessageSquare, href: '/forum', color: 'text-neon-pink', ring: 'bg-neon-pink/10' },
-  { key: 'matches', icon: Swords, href: '/matches', color: 'text-neon-blue', ring: 'bg-neon-blue/10' },
-  { key: 'events', icon: Calendar, href: '/events', color: 'text-neon-green', ring: 'bg-neon-green/10' },
-  { key: 'heroes', icon: Sparkles, href: '/heroes', color: 'text-neon-purple', ring: 'bg-neon-purple/10' },
-  { key: 'esport', icon: Trophy, href: '#partners', color: 'text-neon-gold', ring: 'bg-neon-gold/10' },
+const ACCENT_TEXT: Record<Accent, string> = {
+  cyan: 'text-accent-cyan',
+  violet: 'text-accent-violet',
+  gold: 'text-accent-gold',
+  red: 'text-accent-red',
+  green: 'text-accent-green',
+};
+const ACCENT_SOFT: Record<Accent, string> = {
+  cyan: 'bg-accent-cyan/10',
+  violet: 'bg-accent-violet/10',
+  gold: 'bg-accent-gold/15',
+  red: 'bg-accent-red/10',
+  green: 'bg-accent-green/10',
+};
+
+const features: { key: string; icon: any; href: string; accent: Accent }[] = [
+  { key: 'tournaments', icon: Trophy, href: '/tournaments', accent: 'gold' },
+  { key: 'rankings', icon: Users, href: '/players', accent: 'cyan' },
+  { key: 'teams', icon: Shield, href: '/teams', accent: 'violet' },
+  { key: 'forum', icon: MessageSquare, href: '/forum', accent: 'red' },
+  { key: 'matches', icon: Swords, href: '/matches', accent: 'cyan' },
+  { key: 'events', icon: Calendar, href: '/events', accent: 'green' },
+  { key: 'heroes', icon: Sparkles, href: '/heroes', accent: 'violet' },
+  { key: 'esport', icon: Flag, href: '#partners', accent: 'gold' },
 ];
 
 export default function Features() {
@@ -22,39 +37,42 @@ export default function Features() {
 
   return (
     <div>
+      <SectionTitle
+        size="lg"
+        eyebrow={t('features.eyebrow')}
+        title={
+          <span className="uppercase">
+            {t('features.titlePre')} <span className="text-accent-cyan">MLBB Togo</span>
+          </span>
+        }
+        description={<span className="block max-w-2xl text-base">{t('features.subtitle')}</span>}
+        className="mb-10"
+      />
 
-      <div className="text-center mb-12">
-        <Badge variant="neon" size="sm" className="mb-3 uppercase tracking-[0.2em]">{t('features.eyebrow')}</Badge>
-        <h2 className="text-3xl sm:text-5xl font-bold text-white">
-          {t('features.titlePre')} <span className="text-gradient">MLBB Togo</span>
-        </h2>
-        <p className="text-gray-400 mt-4 max-w-2xl mx-auto text-lg">{t('features.subtitle')}</p>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {features.map((f, i) => {
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {features.map((f) => {
           const Icon = f.icon;
           return (
-            <motion.div
+            <Link
               key={f.key}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: (i % 4) * 0.08 }}
-              className="card-gaming group flex flex-col p-7 sm:p-8"
+              href={f.href}
+              className={cn(
+                'group relative flex flex-col overflow-hidden rounded-lg border border-line-subtle bg-surface-1 p-6 shadow-elev-1 transition-[transform,box-shadow,border-color] duration-base ease-out hover:-translate-y-0.5 hover:border-line-strong hover:shadow-elev-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1')}
             >
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 ${f.ring}`}>
-                <Icon size={30} className={f.color} />
+              <span
+                aria-hidden="true"
+                className={cn('absolute -right-10 -top-10 h-24 w-24 rotate-45 transition-transform duration-slow group-hover:scale-125', ACCENT_SOFT[f.accent])}
+              />
+              <div className={cn('mb-5 flex h-11 w-11 items-center justify-center cut-corners-sm', ACCENT_SOFT[f.accent], ACCENT_TEXT[f.accent])}>
+                <Icon size={22} />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">{t(`feat.${f.key}.title`)}</h3>
-              <p className="text-gray-400 text-sm leading-relaxed flex-1">{t(`feat.${f.key}.desc`)}</p>
-              <Link
-                href={f.href}
-                className={`mt-6 inline-flex items-center gap-1.5 text-sm font-semibold ${f.color} group-hover:gap-3 transition-all`}
-              >
-                {t('features.discover')} <ArrowRight size={16} />
-              </Link>
-            </motion.div>
+              <h3 className="font-display text-lg font-bold uppercase tracking-tight2 text-ink-1">{t(`feat.${f.key}.title`)}</h3>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-ink-2">{t(`feat.${f.key}.desc`)}</p>
+              <span className={cn('mt-6 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider', ACCENT_TEXT[f.accent])}>
+                {t('features.discover')}
+                <ArrowRight size={14} className="transition-transform duration-base group-hover:translate-x-1" />
+              </span>
+            </Link>
           );
         })}
       </div>

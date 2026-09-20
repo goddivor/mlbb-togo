@@ -111,7 +111,7 @@ export default function TogoMap({
   if (!geo) {
     return (
       <div className={`flex min-h-[320px] items-center justify-center ${className}`}>
-        {failed ? <p className="text-sm text-body dark:text-bodydark">{t('geo.map.loadError')}</p> : <LoadingSpinner />}
+        {failed ? <p className="text-sm text-ink-3">{t('geo.map.loadError')}</p> : <LoadingSpinner />}
       </div>
     );
   }
@@ -147,10 +147,10 @@ export default function TogoMap({
                 region === r.id
                   ? 'fill-primary/25 stroke-primary'
                   : hovered
-                    ? 'fill-primary/15 stroke-bodydark2 dark:stroke-bodydark/60'
+                    ? 'fill-primary/15 stroke-ink-3'
                     : active
-                      ? 'fill-gray-2 stroke-bodydark2/70 dark:fill-meta-4 dark:stroke-bodydark/40'
-                      : 'fill-gray-2/50 stroke-bodydark2/40 dark:fill-meta-4/40 dark:stroke-bodydark/20'
+                      ? 'fill-surface-3 stroke-ink-3/60'
+                      : 'fill-surface-3/40 stroke-ink-3/30'
               } ${onRegionSelect ? 'cursor-pointer' : ''}`}
               strokeWidth={region === r.id ? 2 : 1.5}
               strokeLinejoin="round"
@@ -176,7 +176,7 @@ export default function TogoMap({
               x={r.centroid[0] + (REGION_LABEL_OFFSET[r.id]?.[0] ?? 0)}
               y={r.centroid[1] + (REGION_LABEL_OFFSET[r.id]?.[1] ?? 0)}
               textAnchor="middle"
-              className={`pointer-events-none select-none fill-bodydark2 text-[14px] font-bold uppercase tracking-[0.25em] dark:fill-bodydark ${
+              className={`pointer-events-none select-none fill-ink-3 font-display text-[13px] font-bold uppercase tracking-[0.25em] ${
                 dim ? 'opacity-25' : 'opacity-60'
               }`}
             >
@@ -217,8 +217,8 @@ export default function TogoMap({
                 r={core}
                 className={
                   has
-                    ? `fill-primary stroke-white dark:stroke-boxdark ${selected ? 'stroke-[3px]' : 'stroke-2'}`
-                    : 'fill-bodydark2 dark:fill-bodydark'
+                    ? `fill-primary stroke-surface-1 ${selected ? 'stroke-[3px]' : 'stroke-2'}`
+                    : 'fill-ink-3'
                 }
               />
               {has && (
@@ -226,7 +226,8 @@ export default function TogoMap({
                   x={x}
                   y={y + 4}
                   textAnchor="middle"
-                  className="pointer-events-none select-none fill-white text-[12px] font-bold"
+                  className="pointer-events-none select-none font-display text-[12px] font-bold num"
+                  style={{ fill: 'rgb(var(--on-primary))' }}
                 >
                   {count}
                 </text>
@@ -236,7 +237,7 @@ export default function TogoMap({
                   x={x}
                   y={y + core + 13}
                   textAnchor="middle"
-                  className={`pointer-events-none select-none fill-black text-[12px] dark:fill-white ${
+                  className={`pointer-events-none select-none fill-ink-1 text-[12px] ${
                     has || selected ? 'font-semibold' : 'opacity-70'
                   }`}
                 >
@@ -248,7 +249,7 @@ export default function TogoMap({
         })}
       </svg>
 
-      <p className="mt-2 text-center text-[11px] text-body dark:text-bodydark">
+      <p className="mt-2 text-center text-[11px] text-ink-3">
         {t('geo.map.source')}{' '}
         <a href={TOGO_GEO_SOURCE.url} target="_blank" rel="noreferrer" className="underline hover:text-primary">
           {TOGO_GEO_SOURCE.name}
@@ -261,11 +262,11 @@ export default function TogoMap({
 
       {tooltip && (
         <div
-          className="pointer-events-none absolute z-20 w-max max-w-[220px] -translate-x-1/2 -translate-y-full rounded-md border border-stroke bg-white px-3 py-2 text-xs shadow-lg dark:border-strokedark dark:bg-boxdark"
+          className="pointer-events-none absolute z-20 w-max max-w-[220px] -translate-x-1/2 -translate-y-full rounded border border-line-strong bg-surface-1 px-3 py-2 text-xs shadow-elev-2"
           style={{ left: tooltip.x, top: tooltip.y - 12 }}
         >
-          <p className="font-semibold text-black dark:text-white">{tooltip.bucket.name}</p>
-          <p className="text-body dark:text-bodydark">
+          <p className="font-semibold text-ink-1">{tooltip.bucket.name}</p>
+          <p className="text-ink-2 num">
             {t('geo.tooltip.players', { n: tooltip.bucket.counts.players })} ·{' '}
             {t('geo.tooltip.teams', { n: tooltip.bucket.counts.teams })} ·{' '}
             {t('geo.tooltip.competitions', {

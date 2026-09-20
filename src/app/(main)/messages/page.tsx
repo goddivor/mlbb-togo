@@ -10,7 +10,13 @@ export default function MessagesPage() {
   const t = useT();
   return (
     <div className="space-y-6">
-      <PageHeader icon={<MessageSquare size={28} />} title={t('messages.title')} variant="cyan" />
+      <PageHeader
+        icon={<MessageSquare size={22} />}
+        eyebrow={t('messages.eyebrow')}
+        title={t('messages.title')}
+        subtitle={t('messages.pageSubtitle')}
+        variant="cyan"
+      />
       <Suspense fallback={null}>
         <MessagesInbox />
       </Suspense>

@@ -23,7 +23,7 @@ export default function BackToTop() {
           exit={{ opacity: 0, scale: 0.8, y: 10 }}
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           aria-label="Revenir en haut"
-          className="fixed bottom-6 right-6 z-50 w-12 h-12 flex items-center justify-center rounded-full text-white bg-gradient-to-br from-neon-blue to-neon-purple shadow-neon-lg hover:brightness-110 transition-all"
+          className="fixed bottom-6 right-6 z-50 w-11 h-11 flex items-center justify-center cut-corners-sm bg-primary text-on-primary shadow-glow-cyan hover:brightness-110 transition-[filter]"
         >
           <ChevronUp size={24} />
         </motion.button>

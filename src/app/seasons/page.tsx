@@ -2,21 +2,22 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { CalendarDays, Trophy, Sparkles, ChevronRight, Flag } from 'lucide-react';
-import LandingHeader from '@/components/landing/LandingHeader';
-import LandingFooter from '@/components/landing/LandingFooter';
-import BackToTop from '@/components/landing/BackToTop';
-import { LoadingSpinner, EmptyState } from '@/components/ui';
+import { motion, useReducedMotion } from 'framer-motion';
+import { CalendarDays, Trophy, Sparkles, ChevronRight } from 'lucide-react';
+import PublicShell from '@/components/landing/PublicShell';
+import { Button, Card, EmptyState, SectionTitle, Skeleton } from '@/components/ui';
 import { useT } from '@/lib/i18n';
 import { useLangStore } from '@/store/useStore';
 import { useSeasonStore, isLiveSeason, type Season } from '@/store/useSeasonStore';
-import { SeasonStatusBadge, seasonPeriod, fmtSeasonDate } from '@/components/seasons/shared';
+import { fadeUp, stagger, still } from '@/lib/motion';
+import { SeasonHero, SeasonStatusBadge, seasonAccent, seasonPeriod } from '@/components/seasons/shared';
+import type { TFn } from '@/components/seasons/shared';
 
 /** Public list of league seasons: the live one as a themed banner, then the archive. */
 export default function SeasonsPage() {
   const t = useT();
   const lang = useLangStore((s: any) => s.lang);
+  const reduce = useReducedMotion();
   const seasons = useSeasonStore((s) => s.seasons);
   const loaded = useSeasonStore((s) => s.loaded);
   const load = useSeasonStore((s) => s.load);
@@ -29,175 +30,136 @@ export default function SeasonsPage() {
   const live = seasons.find(isLiveSeason) ?? null;
   const upcoming = seasons.filter((s) => s.status === 'upcoming');
   const closed = seasons.filter((s) => s.status === 'closed');
+  const listVariants = reduce ? still : stagger(0.06);
+  const itemVariants = reduce ? still : fadeUp;
+
+  const grid = (items: Season[]) => (
+    <motion.div variants={listVariants} initial="hidden" animate="visible" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((s) => (
+        <motion.div key={s.id} variants={itemVariants} className="h-full">
+          <SeasonCard season={s} t={t} lang={lang} />
+        </motion.div>
+      ))}
+    </motion.div>
+  );
 
   return (
-    <div className="relative min-h-screen">
-      <LandingHeader />
-      <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-28 pb-20 space-y-12">
-        <div className="text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-500 mb-3">{t('seasons.kicker')}</p>
-          <h1 className="text-3xl sm:text-5xl font-bold text-white">{t('seasons.title')}</h1>
-          <p className="text-gray-400 mt-3 max-w-2xl mx-auto">{t('seasons.intro')}</p>
-        </div>
+    <PublicShell>
+      <div className="mx-auto max-w-7xl space-y-12 px-4 pb-20 sm:px-6">
+        <header className="max-w-2xl">
+          <p className="eyebrow mb-3">{t('seasons.kicker')}</p>
+          <h1 className="font-display text-4xl font-bold uppercase leading-none tracking-tight2 text-ink-1 sm:text-6xl">{t('seasons.title')}</h1>
+          <p className="mt-4 text-base text-ink-2">{t('seasons.intro')}</p>
+        </header>
 
         {!ready || !loaded ? (
-          <LoadingSpinner size="lg" className="py-24" />
+          <div className="space-y-6">
+            <Skeleton className="h-[22rem] w-full rounded-lg" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-56 w-full rounded-lg" />
+              ))}
+            </div>
+          </div>
         ) : seasons.length === 0 ? (
           <EmptyState icon={<CalendarDays size={28} />} title={t('seasons.none')} />
         ) : (
           <>
-            {live && <LiveBanner season={live} t={t} lang={lang} />}
+            {live && (
+              <SeasonHero
+                season={live}
+                t={t}
+                lang={lang}
+                actions={
+                  live.slug ? (
+                    <Link href={`/seasons/${live.slug}`}>
+                      <Button variant="primary">
+                        {t('seasons.details')} <ChevronRight size={16} />
+                      </Button>
+                    </Link>
+                  ) : undefined
+                }
+              />
+            )}
 
             {upcoming.length > 0 && (
               <section>
-                <SectionTitle icon={<CalendarDays size={16} />}>{t('seasons.section.upcoming')}</SectionTitle>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {upcoming.map((s) => (
-                    <SeasonCard key={s.id} season={s} t={t} lang={lang} />
-                  ))}
-                </div>
+                <SectionTitle
+                  title={<span className="inline-flex items-center gap-2"><CalendarDays size={18} className="text-ink-3" /> {t('seasons.section.upcoming')}</span>}
+                  className="mb-5"
+                />
+                {grid(upcoming)}
               </section>
             )}
 
             {closed.length > 0 && (
               <section>
-                <SectionTitle icon={<Trophy size={16} />}>{t('seasons.section.archive')}</SectionTitle>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {closed.map((s) => (
-                    <SeasonCard key={s.id} season={s} t={t} lang={lang} />
-                  ))}
-                </div>
+                <SectionTitle
+                  title={<span className="inline-flex items-center gap-2"><Trophy size={18} className="text-accent-gold" /> {t('seasons.section.archive')}</span>}
+                  description={t('seasons.count', { n: closed.length })}
+                  className="mb-5"
+                />
+                {grid(closed)}
               </section>
             )}
           </>
         )}
-      </main>
-      <LandingFooter />
-      <BackToTop />
-    </div>
-  );
-}
-
-function SectionTitle({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <h2 className="mb-4 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-gray-400">
-      {icon} {children}
-    </h2>
-  );
-}
-
-function LiveBanner({ season, t, lang }: { season: Season; t: (k: string, p?: any) => string; lang: string }) {
-  const accent = season.color || '#3c50e0';
-  const period = seasonPeriod(season, lang);
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-3xl border border-white/10"
-      style={{ boxShadow: `0 0 80px -20px ${accent}` }}
-    >
-      {season.banner ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={season.banner} alt="" className="absolute inset-0 h-full w-full object-cover" />
-      ) : (
-        <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${accent}, #0b0f1a 70%)` }} />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20" />
-      <div className="relative p-6 sm:p-10 md:p-14 flex flex-col gap-4 min-h-[18rem] justify-end">
-        <div className="flex flex-wrap items-center gap-2">
-          <SeasonStatusBadge status={season.status} t={t} size="md" className="bg-white/10 backdrop-blur" />
-          {season.number != null && (
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/70">
-              {t('seasons.numberLabel', { n: season.number })}
-            </span>
-          )}
-        </div>
-        <h2 className="text-3xl sm:text-5xl font-black text-white drop-shadow">{season.name}</h2>
-        {season.theme && (
-          <p className="inline-flex items-center gap-2 text-lg sm:text-2xl font-semibold" style={{ color: accent }}>
-            <Sparkles size={20} /> {season.theme}
-          </p>
-        )}
-        {season.slogan && <p className="text-white/80 italic text-base sm:text-lg max-w-2xl">« {season.slogan} »</p>}
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-white/70">
-          {period && (
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarDays size={14} /> {period}
-            </span>
-          )}
-          {season.playoffsStartDate && (
-            <span className="inline-flex items-center gap-1.5">
-              <Flag size={14} /> {t('seasons.playoffsFrom', { date: fmtSeasonDate(season.playoffsStartDate, lang) || '' })}
-            </span>
-          )}
-        </div>
-        {season.slug && (
-          <Link
-            href={`/seasons/${season.slug}`}
-            className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white hover:bg-white/20 transition-colors"
-          >
-            {t('seasons.details')} <ChevronRight size={16} />
-          </Link>
-        )}
       </div>
-    </motion.section>
+    </PublicShell>
   );
 }
 
-function SeasonCard({ season, t, lang }: { season: Season; t: (k: string, p?: any) => string; lang: string }) {
-  const accent = season.color || '#3c50e0';
+function SeasonCard({ season, t, lang }: { season: Season; t: TFn; lang: string }) {
+  const accent = seasonAccent(season.color);
   const period = seasonPeriod(season, lang);
   const champion = season.summary?.champion?.team ?? null;
   const inner = (
-    <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] hover:border-white/25 transition-colors h-full flex flex-col">
-      <div className="relative h-28">
+    <Card hover className="group flex h-full flex-col overflow-hidden !p-0">
+      <div className="relative h-32 bg-[#0a0e19]">
         {season.banner ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={season.banner} alt="" className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+          <img src={season.banner} alt="" className="absolute inset-0 h-full w-full object-cover opacity-80 transition-opacity duration-base group-hover:opacity-100" />
         ) : (
-          <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${accent}aa, #0b0f1a)` }} />
+          <div aria-hidden="true" className="absolute inset-0" style={{ background: `linear-gradient(120deg, ${accent} -20%, #0a0e19 75%)` }} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-        <div className="absolute left-4 right-4 bottom-3 flex items-end justify-between gap-2">
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#0a0e19] via-[#0a0e19]/40 to-transparent" />
+        <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1" style={{ background: accent }} />
+        <div className="absolute inset-x-4 bottom-3 flex items-end justify-between gap-2">
           <div className="min-w-0">
-            {season.number != null && (
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/60">
-                {t('seasons.numberLabel', { n: season.number })}
-              </p>
-            )}
-            <p className="text-lg font-bold text-white truncate">{season.name}</p>
+            {season.number != null && <p className="eyebrow !text-white/70">{t('seasons.numberLabel', { n: season.number })}</p>}
+            <p className="mt-1 truncate font-display text-xl font-bold uppercase leading-none tracking-tight2 text-white">{season.name}</p>
           </div>
           <SeasonStatusBadge status={season.status} t={t} className="shrink-0 bg-black/50" />
         </div>
       </div>
-      <div className="p-4 flex flex-col gap-2 flex-1 text-sm">
+      <div className="flex flex-1 flex-col gap-2 p-4 text-sm">
         {season.theme && (
-          <p className="font-semibold inline-flex items-center gap-1.5" style={{ color: accent }}>
+          <p className="inline-flex items-center gap-1.5 font-display font-semibold" style={{ color: accent }}>
             <Sparkles size={14} /> {season.theme}
           </p>
         )}
-        {season.slogan && <p className="text-gray-400 italic text-xs">« {season.slogan} »</p>}
+        {season.slogan && <p className="text-xs italic text-ink-2">« {season.slogan} »</p>}
         {period && (
-          <p className="inline-flex items-center gap-1.5 text-xs text-gray-500">
+          <p className="inline-flex items-center gap-1.5 text-xs text-ink-3 num">
             <CalendarDays size={12} /> {period}
           </p>
         )}
         {champion && (
-          <p className="mt-auto pt-2 inline-flex items-center gap-2 text-xs text-yellow-400">
+          <p className="mt-auto inline-flex items-center gap-2 pt-2 text-xs text-accent-gold">
             <Trophy size={14} />
-            {t('seasons.champion')} : <b className="text-white">{champion.name}</b>
+            {t('seasons.champion')} : <b className="text-ink-1">{champion.name}</b>
           </p>
         )}
         {season.status === 'closed' && season.slug && (
-          <span className="inline-flex items-center gap-1 text-xs text-gray-400 group-hover:text-white transition-colors">
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-ink-3 transition-colors group-hover:text-primary">
             {t('seasons.viewSummary')} <ChevronRight size={14} />
           </span>
         )}
       </div>
-    </div>
+    </Card>
   );
   return season.slug ? (
-    <Link href={`/seasons/${season.slug}`} className="block h-full">
+    <Link href={`/seasons/${season.slug}`} className="block h-full rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
       {inner}
     </Link>
   ) : (

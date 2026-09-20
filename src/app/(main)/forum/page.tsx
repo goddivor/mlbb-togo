@@ -1,14 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { MessagesSquare, Plus, Clock, TrendingUp, Pin } from 'lucide-react';
-import { Button, PageHeader, EmptyState, LoadingSpinner } from '@/components/ui';
+import { Button, PageHeader, EmptyState, Tabs, Card, Skeleton } from '@/components/ui';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useAuthStore } from '@/store/useStore';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/helpers';
 import { useT } from '@/lib/i18n';
+import { fadeUp, stagger, still } from '@/lib/motion';
 import toast from 'react-hot-toast';
 import PostCard, { type FeedPost } from '@/components/forum/PostCard';
 import PostComposerModal from '@/components/forum/PostComposerModal';
@@ -28,6 +29,7 @@ const SORT_ICONS: Record<FeedSort, any> = { pinned: Pin, latest: Clock, popular:
 
 export default function CommunicationFeed() {
   const t = useT();
+  const reduce = useReducedMotion();
   const user = useAuthStore((s: any) => s.user);
   const isLoggedIn = !!user;
   const isStaff = isStaffRole(user?.roleUser);
@@ -225,7 +227,8 @@ export default function CommunicationFeed() {
   return (
     <div className="space-y-6">
       <PageHeader
-        icon={<MessagesSquare size={28} />}
+        icon={<MessagesSquare size={22} />}
+        eyebrow={t('comm.eyebrow')}
         title={t('comm.title')}
         subtitle={t('comm.subtitle')}
         variant="danger"
@@ -240,47 +243,25 @@ export default function CommunicationFeed() {
       />
 
       {/* Category tabs with counters */}
-      <div className="-mx-1 overflow-x-auto px-1 pb-1">
-        <div className="flex min-w-max gap-2">
-          {tabs.map((id) => {
-            const meta = CATEGORY_META[id];
-            const Icon = meta.icon;
-            const active = category === id;
-            const count = counts[id];
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setCategory(id)}
-                className={cn(
-                  'flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors',
-                  active
-                    ? 'border-primary bg-primary text-white'
-                    : 'border-stroke bg-white text-body hover:border-primary hover:text-primary dark:border-strokedark dark:bg-boxdark dark:text-bodydark',
-                )}
-              >
-                <Icon size={15} />
-                {t(`comm.cat.${id}`)}
-                {typeof count === 'number' && (
-                  <span
-                    className={cn(
-                      'rounded-full px-1.5 py-0.5 text-xs',
-                      active ? 'bg-white/20 text-white' : 'bg-gray-2 text-bodydark2 dark:bg-meta-4',
-                    )}
-                  >
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+      <div className="overflow-x-auto overflow-y-hidden whitespace-nowrap">
+        <Tabs
+          variant="underline"
+          className="min-w-max"
+          tabs={tabs.map((id) => ({
+            id,
+            label: t(`comm.cat.${id}`),
+            icon: CATEGORY_META[id].icon,
+            count: typeof counts[id] === 'number' ? counts[id] : undefined,
+          }))}
+          active={category}
+          onChange={setCategory}
+        />
       </div>
 
       {/* Sort control */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-bodydark2">{t('comm.postCount', { count: total })}</span>
-        <div className="ml-auto inline-flex rounded-md border border-stroke bg-white p-1 dark:border-strokedark dark:bg-boxdark">
+        <span className="num text-xs text-ink-3">{t('comm.postCount', { count: total })}</span>
+        <div className="ml-auto inline-flex rounded-md border border-line-subtle bg-surface-2/70 p-1">
           {FEED_SORTS.map((id) => {
             const Icon = SORT_ICONS[id];
             return (
@@ -288,9 +269,10 @@ export default function CommunicationFeed() {
                 key={id}
                 type="button"
                 onClick={() => setSort(id)}
+                aria-pressed={sort === id}
                 className={cn(
-                  'flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-colors',
-                  sort === id ? 'bg-primary/10 text-primary' : 'text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4',
+                  'flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-semibold transition-colors duration-fast',
+                  sort === id ? 'bg-surface-1 text-primary shadow-elev-1' : 'text-ink-2 hover:text-ink-1',
                 )}
               >
                 <Icon size={13} />
@@ -302,8 +284,19 @@ export default function CommunicationFeed() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16">
-          <LoadingSpinner size="lg" />
+        <div className="space-y-4" aria-busy="true">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i}>
+              <div className="flex gap-4">
+                <Skeleton circle className="h-10 w-10 shrink-0" />
+                <div className="flex-1 space-y-3">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton lines={2} />
+                </div>
+              </div>
+            </Card>
+          ))}
         </div>
       ) : posts.length === 0 ? (
         <EmptyState
@@ -321,26 +314,29 @@ export default function CommunicationFeed() {
         />
       ) : (
         <div className="space-y-4">
-          {posts.map((post, index) => (
-            <motion.div
-              key={post.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(index, 8) * 0.04 }}
-            >
-              <PostCard
-                post={post}
-                isStaff={isStaff}
-                canDelete={isStaff || post.authorId === user?.id}
-                onOpen={setSelected}
-                onLike={handleLike}
-                onShare={handleShare}
-                onTogglePin={handleTogglePin}
-                onSponsor={setSponsorTarget}
-                onDelete={setDeleteTarget}
-              />
-            </motion.div>
-          ))}
+          <motion.div
+            key={`${category}-${sort}`}
+            variants={reduce ? still : stagger(0.04)}
+            initial="hidden"
+            animate="visible"
+            className="space-y-4"
+          >
+            {posts.map((post) => (
+              <motion.div key={post.id} variants={reduce ? still : fadeUp}>
+                <PostCard
+                  post={post}
+                  isStaff={isStaff}
+                  canDelete={isStaff || post.authorId === user?.id}
+                  onOpen={setSelected}
+                  onLike={handleLike}
+                  onShare={handleShare}
+                  onTogglePin={handleTogglePin}
+                  onSponsor={setSponsorTarget}
+                  onDelete={setDeleteTarget}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
           {hasMore && (
             <div className="flex justify-center pt-2">
               <Button variant="outline" loading={loadingMore} onClick={() => load(page + 1, true)}>

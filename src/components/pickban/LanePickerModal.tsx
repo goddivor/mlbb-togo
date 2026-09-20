@@ -45,11 +45,11 @@ export default function LanePickerModal({
               src={hero.thumb ?? hero.image}
               name={hero.name}
               size={128}
-              className="h-16 w-16 rounded-sm"
+              className="h-16 w-16 rounded cut-corners-sm ring-1 ring-inset ring-line-subtle"
             />
             <div>
-              <p className="text-lg font-semibold text-black dark:text-white">{hero.name}</p>
-              <p className="flex items-center gap-1 text-sm capitalize text-body dark:text-bodydark">
+              <p className="font-display text-lg font-bold tracking-tight2 text-ink-1">{hero.name}</p>
+              <p className="flex items-center gap-1.5 text-sm capitalize text-ink-2">
                 <RoleIcon role={hero.role} size={14} />
                 {hero.role}
               </p>
@@ -63,10 +63,10 @@ export default function LanePickerModal({
                 type="button"
                 onClick={() => setLane(l)}
                 className={cn(
-                  'flex items-center gap-2 rounded-sm border px-3 py-2 text-sm transition-colors',
+                  'flex items-center gap-2 rounded border px-3 py-2 text-sm font-medium transition-colors duration-fast',
                   lane === l
                     ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-stroke text-body hover:border-primary dark:border-strokedark dark:text-bodydark',
+                    : 'border-line-subtle bg-surface-2/60 text-ink-2 hover:border-line-strong hover:text-ink-1',
                   taken.has(l) && lane !== l && 'opacity-50',
                 )}
               >

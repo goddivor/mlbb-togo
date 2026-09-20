@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   Play,
   Radio,
@@ -11,8 +11,11 @@ import {
   Clock,
   Flame,
   WifiOff,
+  ExternalLink,
 } from 'lucide-react';
-import { Button, SectionCard, Badge, Tabs, Card, LoadingSpinner } from '@/components/ui';
+import { Button, Badge, Tabs, Card, LoadingSpinner, PageHeader, Skeleton, StatCard } from '@/components/ui';
+import { cn } from '@/lib/helpers';
+import { fade, still } from '@/lib/motion';
 import { api } from '@/lib/api';
 import { useSelectedSeason } from '@/store/useSeasonStore';
 import { useT } from '@/lib/i18n';
@@ -61,6 +64,7 @@ function formatViews(count: string | undefined): string {
 
 export default function StreamPage() {
   const t = useT();
+  const reduce = useReducedMotion();
   const [config, setConfig] = useState<StreamConfig | null>(null);
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [loading, setLoading] = useState(true);
@@ -147,296 +151,293 @@ export default function StreamPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
-  if (loading) {
-    return <LoadingSpinner size="lg" className="py-32" />;
-  }
-
   const channel = config?.youtubeChannel || 'eternumesports';
   const banner = config?.channelBanner || '';
   const avatar = config?.channelAvatar || '';
+  const isLive = !!live?.live;
+  const totalVideos = seasons.reduce((n, s) => n + s.videos.length, 0);
 
   const tabs = [
     { id: 'live', label: t('stream.tabLive'), icon: Radio },
-    ...seasons.map((s) => ({ id: s.seasonId, label: s.name, icon: Play })),
+    ...seasons.map((s) => ({ id: s.seasonId, label: s.name, icon: Play, count: s.videos.length })),
   ];
 
   const mainVideo = activeSeason
     ? selectedVideo || activeSeason.videos[0] || null
     : null;
   const hasSidebar = !!(activeSeason && activeSeason.videos.length > 0);
+  const paneVariants = reduce ? still : fade;
+
+  const channelAvatar = (
+    <a
+      href={channelUrl(channel)}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={config?.channelTitle || 'YouTube'}
+      className="group relative block h-14 w-14 shrink-0 sm:h-16 sm:w-16"
+    >
+      {avatar ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={avatar} alt={config?.channelTitle || 'Channel'} className="h-full w-full rounded-full border-2 border-white/40 object-cover" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center rounded-full border-2 border-white/30 bg-surface-1/60 text-accent-red backdrop-blur">
+          <Youtube size={26} />
+        </div>
+      )}
+      <span
+        className={cn(
+          'absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[#0a0e19]',
+          isLive ? 'bg-accent-red shadow-[0_0_10px_rgb(var(--accent-red)/0.9)] animate-pulse' : 'bg-ink-3',
+        )}
+        aria-hidden="true"
+      />
+    </a>
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-44 w-full rounded-lg" />
+        <Skeleton className="h-10 w-72" />
+        <Skeleton className="aspect-video w-full rounded-lg" />
+      </div>
+    );
+  }
 
   return (
-    <div className="relative min-h-screen">
-      {/* Hero */}
-      <section className="relative overflow-hidden rounded-b-3xl">
-        {banner ? (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={banner} alt="" className="absolute inset-0 h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-gaming-dark/40" />
-            <div className="absolute inset-0 bg-gradient-to-t from-gaming-dark via-gaming-dark/30 to-transparent" />
-          </>
-        ) : (
-          <>
-            <div className="absolute inset-0 bg-gradient-to-br from-gaming-darker via-gaming-dark to-gaming-darker" />
-            <div className="absolute -top-40 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px] pointer-events-none" />
-            <div className="absolute top-20 right-20 h-[300px] w-[400px] rounded-full bg-neon-purple/15 blur-[100px] pointer-events-none" />
-          </>
-        )}
-
-        <div className="relative mx-auto flex max-w-7xl justify-center px-4 py-10 sm:px-6 lg:px-8">
-          <motion.a
-            href={channelUrl(channel)}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={config?.channelTitle || 'YouTube'}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-            className="group relative block h-32 w-32 sm:h-36 sm:w-36"
-          >
-            {avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={avatar}
-                alt={config?.channelTitle || 'Channel'}
-                className="h-full w-full rounded-full border-2 border-white/30 object-cover shadow-neon"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center rounded-full border-2 border-white/20 bg-gradient-to-br from-red-500/20 to-red-600/10 shadow-neon">
-                <Radio size={44} className="text-red-500" />
-              </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow={
+          <span className="inline-flex items-center gap-2">
+            <Youtube size={12} /> {config?.channelTitle || `@${channel}`}
+          </span>
+        }
+        icon={<Radio size={22} />}
+        title={
+          <span className="inline-flex flex-wrap items-center gap-3">
+            {t('stream.title')}
+            {isLive && (
+              <Badge variant="live" size="md">
+                {t('stream.live')}
+              </Badge>
             )}
-            {/* Live status dot in a corner */}
-            <span
-              className={`absolute right-2 top-2 h-5 w-5 rounded-full border-2 border-gaming-dark bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.9)] ${
-                live?.live ? 'animate-pulse' : ''
-              }`}
-            />
-            {/* Hover: open on YouTube */}
-            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-              <Youtube size={34} className="text-white" />
-            </span>
-          </motion.a>
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gaming-dark to-transparent" />
-      </section>
-
-      {/* Main content */}
-      <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-        <div className="mt-8">
-          <SectionCard className="!p-1.5">
-            <Tabs tabs={tabs} active={activeTab} onChange={(id: string) => setActiveTab(id)} />
-          </SectionCard>
-        </div>
-
-        <div className={hasSidebar ? 'mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3' : 'mt-8'}>
-          <div className={hasSidebar ? 'lg:col-span-2 space-y-6' : 'space-y-6'}>
-            <AnimatePresence mode="wait">
-              {/* LIVE */}
-              {activeTab === 'live' && (
-                <motion.div
-                  key="live"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.3 }}
-                  className="space-y-6"
-                >
-                  <Card className="relative overflow-hidden !p-0 shadow-2xl">
-                    {/* Overlay: live badge + title (left) and watch button (right) */}
-                    <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-3 bg-gradient-to-b from-black/75 to-transparent p-4">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <Badge variant="red" size="sm" className={live?.live ? 'animate-pulse' : ''}>
-                          <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
-                          {t('stream.live')}
-                        </Badge>
-                        <span className="truncate font-semibold text-white">
-                          {config?.liveTitle || t('stream.liveTitle')}
-                        </span>
-                      </div>
-                      <a
-                        href={live?.live && live.videoId ? watchUrl(live.videoId) : channelUrl(channel)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="shrink-0"
-                      >
-                        <Button variant="primary" size="sm" className="shadow-neon">
-                          <Youtube size={16} />
-                          <span className="hidden sm:inline">{t('stream.watchOnYoutube')}</span>
-                        </Button>
-                      </a>
-                    </div>
-
-                    {live?.live && live.videoId ? (
-                      <div className="relative aspect-video w-full overflow-hidden bg-black">
-                        <iframe
-                          src={videoEmbedUrl(live.videoId)}
-                          title={config?.liveTitle || t('stream.liveTitle')}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                          className="h-full w-full"
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex aspect-video w-full items-center justify-center bg-gaming-darker">
-                        {loadingLive ? (
-                          <LoadingSpinner size="lg" />
-                        ) : (
-                          <div className="text-center">
-                            <WifiOff size={48} className="mx-auto mb-4 text-gray-500" />
-                            <p className="text-lg font-semibold text-gray-300">{t('stream.noLive')}</p>
-                            <p className="mt-2 text-sm text-gray-400">{t('stream.noLiveDesc')}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </Card>
-                </motion.div>
-              )}
-
-              {/* SEASON */}
-              {activeSeason && (
-                <motion.div
-                  key={activeSeason.seasonId}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.3 }}
-                  className="space-y-6"
-                >
-                  <Card className="overflow-hidden !p-0 shadow-2xl">
-                    <div className="relative aspect-video w-full overflow-hidden bg-black">
-                      {mainVideo ? (
-                        <iframe
-                          src={videoEmbedUrl(mainVideo.id)}
-                          title={mainVideo.title}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                          referrerPolicy="strict-origin-when-cross-origin"
-                          allowFullScreen
-                          className="h-full w-full"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <Play size={48} className="text-gray-600" />
-                        </div>
-                      )}
-                      {mainVideo && (
-                        <div className="absolute bottom-4 left-4">
-                          <Badge variant="default" size="sm" className="bg-black/60 backdrop-blur-sm">
-                            <Play size={12} className="mr-1" />
-                            {mainVideo.title}
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-
-                  <Card>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <Badge variant="gold" size="sm">
-                        <Flame size={14} />
-                        {activeSeason.name}
-                      </Badge>
-                      <h3 className="text-xl font-bold text-black dark:text-white">
-                        {mainVideo?.title || activeSeason.name}
-                      </h3>
-                    </div>
-                    {mainVideo && (
-                      <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <span className="flex items-center gap-1.5">
-                          <Eye size={16} />
-                          {t('stream.viewsCount', { count: viewsMap[mainVideo.id] || '—' })}
-                        </span>
-                        {mainVideo.date && (
-                          <span className="flex items-center gap-1.5">
-                            <Calendar size={16} />
-                            {mainVideo.date}
-                          </span>
-                        )}
-                        {mainVideo.duration && (
-                          <span className="flex items-center gap-1.5">
-                            <Clock size={16} />
-                            {mainVideo.duration}
-                          </span>
-                        )}
-                        <a
-                          href={watchUrl(mainVideo.id)}
-                          target="_blank"
-                          rel="noreferrer"
-                          title={t('stream.watchOnYoutube')}
-                          className="ml-auto inline-flex items-center text-primary transition-colors hover:text-primary/80"
-                        >
-                          <Youtube size={20} />
-                        </a>
-                      </div>
-                    )}
-                  </Card>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          </span>
+        }
+        subtitle={t('stream.subtitle')}
+        variant="danger"
+        banner={banner || undefined}
+        action={
+          <div className="flex items-center gap-3">
+            {channelAvatar}
+            <a href={channelUrl(channel)} target="_blank" rel="noreferrer">
+              <Button variant="primary" size="sm">
+                <ExternalLink size={14} /> {t('stream.openChannel')}
+              </Button>
+            </a>
           </div>
+        }
+      >
+        <StatCard
+          label={t('stream.kpi.status')}
+          value={isLive ? t('stream.live') : t('stream.kpi.offline')}
+          icon={<Radio size={18} />}
+          accent={isLive ? 'red' : 'cyan'}
+        />
+        <StatCard label={t('stream.kpi.seasons')} value={seasons.length} icon={<Flame size={18} />} accent="gold" />
+        <StatCard label={t('stream.kpi.videos')} value={totalVideos} icon={<Play size={18} />} accent="violet" />
+        <StatCard label={t('stream.channel')} value={<span className="text-xl">@{channel}</span>} icon={<Youtube size={18} />} accent="red" />
+      </PageHeader>
 
-          {/* Sidebar: the active season's videos (stacks below the player on mobile) */}
-          {activeSeason && activeSeason.videos.length > 0 && (
-            <div>
-              <div className="lg:sticky lg:top-6">
-                <Card className="!p-0">
-                  <div className="flex items-center gap-3 p-5">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-neon-blue/20 to-neon-purple/20">
-                      <Flame size={20} className="text-neon-blue" />
+      <div className="overflow-x-auto whitespace-nowrap">
+        <Tabs variant="underline" tabs={tabs} active={activeTab} onChange={(id: string) => setActiveTab(id)} />
+      </div>
+
+      <div className={hasSidebar ? 'grid grid-cols-1 gap-6 lg:grid-cols-3' : ''}>
+        <div className={hasSidebar ? 'space-y-6 lg:col-span-2' : 'space-y-6'}>
+          <AnimatePresence mode="wait">
+            {/* LIVE */}
+            {activeTab === 'live' && (
+              <motion.div key="live" variants={paneVariants} initial="hidden" animate="visible" exit="exit" className="space-y-6">
+                <Card className={cn('relative overflow-hidden !p-0', isLive && 'border-accent-red/40 shadow-[var(--glow-cyan)]')}>
+                  <div className="flex items-center justify-between gap-3 border-b border-line-subtle px-4 py-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Badge variant={isLive ? 'live' : 'default'} size="sm">
+                        {isLive ? t('stream.live') : t('stream.kpi.offline')}
+                      </Badge>
+                      <span className="truncate font-display text-sm font-bold tracking-tight2 text-ink-1">
+                        {config?.liveTitle || t('stream.liveTitle')}
+                      </span>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-black dark:text-white">{activeSeason.name}</h3>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
-                        {t('stream.videosCount', { count: activeSeason.videos.length })}
-                      </p>
-                    </div>
+                    <a
+                      href={isLive && live?.videoId ? watchUrl(live.videoId) : channelUrl(channel)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="shrink-0"
+                    >
+                      <Button variant="secondary" size="sm">
+                        <Youtube size={16} />
+                        <span className="hidden sm:inline">{t('stream.watchOnYoutube')}</span>
+                      </Button>
+                    </a>
                   </div>
-                  <div className="border-t border-stroke dark:border-strokedark" />
-                  <div className="p-3">
-                    <div className="space-y-2">
-                      {activeSeason.videos.map((video) => {
-                        const isActive = (mainVideo?.id || '') === video.id;
-                        return (
-                          <button
-                            key={video.id}
-                            type="button"
-                            onClick={() => setSelectedVideo(video)}
-                            className={`flex w-full items-center gap-3 rounded-xl p-2 text-left transition-all duration-300 ${
-                              isActive
-                                ? 'bg-neon-blue/10 text-neon-blue'
-                                : 'text-body hover:bg-gray-2 hover:text-black dark:text-bodydark dark:hover:bg-meta-4 dark:hover:text-white'
-                            }`}
-                          >
-                            <div className="relative h-10 w-16 shrink-0 overflow-hidden rounded bg-gray-2 dark:bg-meta-4">
-                              {video.thumbnail ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={video.thumbnail} alt="" className="h-full w-full object-cover" />
-                              ) : (
-                                <span className="flex h-full w-full items-center justify-center">
-                                  <Play size={14} />
-                                </span>
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-medium">{video.title}</p>
-                              <p className="text-xs text-gray-500">
-                                {video.duration}
-                                {viewsMap[video.id] ? ` • ${t('stream.viewsCount', { count: viewsMap[video.id] })}` : ''}
-                              </p>
-                            </div>
-                            {isActive && <div className="h-2 w-2 rounded-full bg-neon-blue shadow-neon" />}
-                          </button>
-                        );
-                      })}
+
+                  {isLive && live?.videoId ? (
+                    <div className="relative aspect-video w-full overflow-hidden bg-black">
+                      <iframe
+                        src={videoEmbedUrl(live.videoId)}
+                        title={config?.liveTitle || t('stream.liveTitle')}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="h-full w-full"
+                      />
                     </div>
+                  ) : (
+                    <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden bg-surface-0">
+                      <div aria-hidden="true" className="absolute inset-0 bg-grid opacity-60" />
+                      {loadingLive ? (
+                        <LoadingSpinner size="lg" />
+                      ) : (
+                        <div className="relative px-6 text-center">
+                          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded cut-corners bg-surface-2 text-ink-3 ring-1 ring-inset ring-line-subtle">
+                            <WifiOff size={28} />
+                          </div>
+                          <p className="font-display text-lg font-bold tracking-tight2 text-ink-1">{t('stream.noLive')}</p>
+                          <p className="mt-1.5 text-sm text-ink-2">{t('stream.noLiveDesc')}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Card>
+              </motion.div>
+            )}
+
+            {/* SEASON */}
+            {activeSeason && (
+              <motion.div key={activeSeason.seasonId} variants={paneVariants} initial="hidden" animate="visible" exit="exit" className="space-y-6">
+                <Card className="overflow-hidden !p-0">
+                  <div className="relative aspect-video w-full overflow-hidden bg-black">
+                    {mainVideo ? (
+                      <iframe
+                        src={videoEmbedUrl(mainVideo.id)}
+                        title={mainVideo.title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        allowFullScreen
+                        className="h-full w-full"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-ink-3">
+                        <Play size={48} />
+                      </div>
+                    )}
                   </div>
                 </Card>
-              </div>
-            </div>
-          )}
+
+                <Card className="!p-5">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Badge variant="gold" size="sm" className="gap-1">
+                      <Flame size={12} />
+                      {activeSeason.name}
+                    </Badge>
+                    <h3 className="font-display text-xl font-bold tracking-tight2 text-ink-1">
+                      {mainVideo?.title || activeSeason.name}
+                    </h3>
+                  </div>
+                  {mainVideo && (
+                    <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-ink-2 num">
+                      <span className="flex items-center gap-1.5">
+                        <Eye size={16} />
+                        {t('stream.viewsCount', { count: viewsMap[mainVideo.id] || '—' })}
+                      </span>
+                      {mainVideo.date && (
+                        <span className="flex items-center gap-1.5">
+                          <Calendar size={16} />
+                          {mainVideo.date}
+                        </span>
+                      )}
+                      {mainVideo.duration && (
+                        <span className="flex items-center gap-1.5">
+                          <Clock size={16} />
+                          {mainVideo.duration}
+                        </span>
+                      )}
+                      <a
+                        href={watchUrl(mainVideo.id)}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={t('stream.watchOnYoutube')}
+                        className="ml-auto inline-flex items-center gap-1.5 text-primary transition-colors hover:text-primary/80"
+                      >
+                        <Youtube size={18} /> <span className="text-xs font-semibold">{t('stream.watchOnYoutube')}</span>
+                      </a>
+                    </div>
+                  )}
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+
+        {/* Sidebar: the active season's videos (stacks below the player on mobile) */}
+        {activeSeason && activeSeason.videos.length > 0 && (
+          <div>
+            <div className="lg:sticky lg:top-6">
+              <Card className="!p-0">
+                <div className="flex items-center gap-3 p-5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded cut-corners-sm bg-accent-gold/15 text-accent-gold">
+                    <Flame size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold tracking-tight2 text-ink-1">{activeSeason.name}</h3>
+                    <p className="text-xs text-ink-3 num">
+                      {t('stream.videosCount', { count: activeSeason.videos.length })}
+                    </p>
+                  </div>
+                </div>
+                <div className="border-t border-line-subtle" />
+                <div className="max-h-[60vh] overflow-y-auto p-3">
+                  <div className="space-y-1.5">
+                    {activeSeason.videos.map((video) => {
+                      const isActive = (mainVideo?.id || '') === video.id;
+                      return (
+                        <button
+                          key={video.id}
+                          type="button"
+                          onClick={() => setSelectedVideo(video)}
+                          aria-current={isActive || undefined}
+                          className={cn(
+                            'flex w-full items-center gap-3 rounded border-l-2 p-2 text-left transition-colors duration-fast',
+                            isActive
+                              ? 'border-l-primary bg-primary/10 text-ink-1'
+                              : 'border-l-transparent text-ink-2 hover:bg-surface-2 hover:text-ink-1',
+                          )}
+                        >
+                          <div className="relative h-10 w-16 shrink-0 overflow-hidden rounded bg-surface-3">
+                            {video.thumbnail ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={video.thumbnail} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              <span className="flex h-full w-full items-center justify-center">
+                                <Play size={14} />
+                              </span>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{video.title}</p>
+                            <p className="text-xs text-ink-3 num">
+                              {video.duration}
+                              {viewsMap[video.id] ? ` · ${t('stream.viewsCount', { count: viewsMap[video.id] })}` : ''}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

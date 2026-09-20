@@ -2,11 +2,12 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Bot, Sparkles, Cpu, GraduationCap, Swords, Shield, Shuffle, BarChart3 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { Badge, PageHeader, Tabs } from '@/components/ui';
+import { fadeUp, still } from '@/lib/motion';
 import CoachTab from './components/CoachTab';
 import HeroesTab from './components/HeroesTab';
 import BuildTab from './components/BuildTab';
@@ -25,6 +26,7 @@ const TAB_ICONS: Record<TabId, any> = {
 
 function AiPageInner() {
   const t = useT();
+  const reduce = useReducedMotion();
   const router = useRouter();
   const params = useSearchParams();
   const paramTab = params.get('tab');
@@ -44,9 +46,11 @@ function AiPageInner() {
   return (
     <div className="space-y-6">
       <PageHeader
-        icon={<Bot size={28} className="text-white" />}
+        icon={<Bot size={20} />}
+        eyebrow={t('ai.eyebrow')}
         title={t('ai.title')}
         subtitle={t('ai.subtitle')}
+        variant="purple"
         action={
           status &&
           (status.enabled ? (
@@ -67,20 +71,23 @@ function AiPageInner() {
       />
 
       {status && !status.enabled && (
-        <p className="rounded-sm border border-warning/40 bg-warning/10 px-4 py-2 text-xs text-black dark:text-white">
+        <p className="flex items-start gap-2 rounded border border-accent-gold/40 bg-accent-gold/10 px-4 py-2.5 text-xs text-ink-1">
+          <Cpu size={14} className="mt-0.5 shrink-0 text-accent-gold" />
           {t('ai.heuristicNote')}
         </p>
       )}
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto whitespace-nowrap">
         <Tabs
+          variant="underline"
           tabs={TAB_IDS.map((id) => ({ id, label: t(`ai.tab.${id}`), icon: TAB_ICONS[id] }))}
           active={tab}
           onChange={changeTab}
+          className="min-w-max"
         />
       </div>
 
-      <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+      <motion.div key={tab} variants={reduce ? still : fadeUp} initial="hidden" animate="visible">
         {tab === 'coach' && <CoachTab />}
         {tab === 'heroes' && <HeroesTab />}
         {tab === 'build' && <BuildTab />}

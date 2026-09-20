@@ -1,9 +1,9 @@
 'use client';
 
-import { Calendar, Crown, Radio, Play } from 'lucide-react';
+import { Calendar, Crown, Play } from 'lucide-react';
 import { Badge } from '@/components/ui';
 import { useT } from '@/lib/i18n';
-import { formatDateTime } from '@/lib/helpers';
+import { cn, formatDateTime } from '@/lib/helpers';
 import { MATCH_STATUS_VARIANT, TeamLogo, roundLabelKey } from './tournament-utils';
 
 export type TeamRef = { id: string; name: string; logo?: string | null; seed?: number | null } | null;
@@ -24,7 +24,7 @@ export type DetailedMatch = {
   streamUrl?: string | null;
 };
 
-/** Compact "Team A  x - y  Team B" row with status, date and round. */
+/** Scoreline row "Team A  x - y  Team B" with status, date and round (tournament matches). */
 export default function MatchSummary({
   match,
   roundKey,
@@ -38,24 +38,27 @@ export default function MatchSummary({
 }) {
   const t = useT();
   const status = match.status || 'pending';
-  const showScore = status === 'finished' || status === 'live';
+  const live = status === 'live';
+  const showScore = status === 'finished' || live;
   const isWinner = (id?: string | null) => !!id && match.winnerTeamId === id;
 
   const side = (team: TeamRef | undefined, id: string | null | undefined, align: 'left' | 'right') => (
     <div
-      className={`flex min-w-0 flex-1 flex-col items-center gap-1 text-center sm:flex-row sm:gap-2 sm:text-left ${
-        align === 'right' ? 'sm:flex-row-reverse sm:text-right' : ''
-      }`}
+      className={cn(
+        'flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center sm:flex-row sm:gap-2.5 sm:text-left',
+        align === 'right' && 'sm:flex-row-reverse sm:text-right'
+      )}
     >
       <TeamLogo name={team?.name} logo={team?.logo} size="md" />
       <span
-        className={`line-clamp-2 min-w-0 break-words text-xs sm:truncate sm:text-sm ${
-          isWinner(id) ? 'font-bold text-black dark:text-white' : 'text-body dark:text-bodydark'
-        }`}
+        className={cn(
+          'line-clamp-2 min-w-0 break-words text-xs sm:truncate sm:text-sm',
+          isWinner(id) ? 'font-bold text-ink-1' : 'font-medium text-ink-2'
+        )}
       >
         {team?.name || t('draft.tbd')}
       </span>
-      {isWinner(id) && <Crown size={14} className="shrink-0 text-primary" />}
+      {isWinner(id) && <Crown size={13} className="shrink-0 text-accent-gold" />}
     </div>
   );
 
@@ -65,33 +68,49 @@ export default function MatchSummary({
     <Wrapper
       type={onClick ? 'button' : undefined}
       onClick={onClick}
-      className={`w-full rounded-lg border bg-white p-3 text-left dark:bg-boxdark ${
-        status === 'live' ? 'border-danger/60' : 'border-stroke dark:border-strokedark'
-      } ${onClick ? 'transition hover:border-primary' : ''} ${className}`}
+      className={cn(
+        'relative w-full overflow-hidden rounded-lg border bg-surface-1 px-4 py-3 text-left shadow-elev-1 transition-[border-color,box-shadow] duration-base ease-out dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1',
+        live ? 'border-accent-red/50' : 'border-line-subtle',
+        onClick && 'hover:border-primary/40 hover:shadow-elev-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+        className
+      )}
     >
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-bodydark2">
-        <span className="font-medium uppercase tracking-wide">
+      {live && <span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-accent-red" />}
+      <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">
           {roundKey ? t(roundLabelKey(roundKey), { n: match.round }) : t('draft.round', { n: match.round })}
-          {' · '}
+          <span className="mx-1.5 text-line-strong">/</span>
           {t('tournament.match.n', { n: match.position + 1 })}
         </span>
         <div className="flex items-center gap-2">
           {match.scheduledAt && (
-            <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1 text-xs num text-ink-3">
               <Calendar size={12} /> {formatDateTime(match.scheduledAt)}
             </span>
           )}
           {match.streamUrl && <Play size={12} className="text-primary" />}
           <Badge variant={MATCH_STATUS_VARIANT[status] || 'default'} size="sm">
-            {status === 'live' && <Radio size={10} className="animate-pulse" />}
             {t(`tournament.match.status.${status}`)}
           </Badge>
         </div>
       </div>
       <div className="flex items-center gap-3">
         {side(match.teamA, match.teamAId, 'left')}
-        <div className="shrink-0 rounded-md bg-gray-2 px-3 py-1 text-sm font-bold text-black dark:bg-meta-4 dark:text-white">
-          {showScore ? `${match.scoreA ?? 0} - ${match.scoreB ?? 0}` : 'VS'}
+        <div
+          className={cn(
+            'shrink-0 rounded cut-corners-sm px-3 py-1.5 font-display text-base font-bold leading-none num',
+            showScore ? 'bg-surface-2 text-ink-1' : 'bg-surface-2 text-ink-3'
+          )}
+        >
+          {showScore ? (
+            <>
+              <span className={cn(isWinner(match.teamAId) && 'text-primary')}>{match.scoreA ?? 0}</span>
+              <span className="mx-1.5 text-ink-3">:</span>
+              <span className={cn(isWinner(match.teamBId) && 'text-primary')}>{match.scoreB ?? 0}</span>
+            </>
+          ) : (
+            'VS'
+          )}
         </div>
         {side(match.teamB, match.teamBId, 'right')}
       </div>

@@ -20,7 +20,7 @@ export default function HeroThumb({
   return (
     <div
       className={cn(
-        'relative overflow-hidden bg-gray-2 dark:bg-meta-4',
+        'relative overflow-hidden bg-surface-2',
         dimmed && 'grayscale opacity-60',
         className,
       )}
@@ -35,7 +35,7 @@ export default function HeroThumb({
           className="h-full w-full object-cover"
         />
       ) : (
-        <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-body dark:text-bodydark">
+        <div className="flex h-full w-full items-center justify-center font-display text-xs font-bold text-ink-3">
           {name.slice(0, 2).toUpperCase()}
         </div>
       )}
