@@ -26,7 +26,7 @@ export default function GamesBreakdown({
   let b = 0;
 
   return (
-    <ol className="divide-y divide-stroke rounded-sm border border-stroke bg-white shadow-default dark:divide-strokedark dark:border-strokedark dark:bg-boxdark">
+    <ol className="divide-y divide-line-subtle overflow-hidden rounded-lg border border-line-subtle bg-surface-1 shadow-elev-1">
       {games.map((g) => {
         const winner = teamOf(g.winnerTeamId);
         if (g.winnerTeamId === match.teamA?.id) a++;
@@ -34,7 +34,7 @@ export default function GamesBreakdown({
         const dur = formatDuration(g.duration);
         return (
           <li key={g.number} className="flex flex-wrap items-center gap-3 px-4 py-3">
-            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-2 text-xs font-bold text-body dark:bg-meta-4 dark:text-bodydark">
+            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded cut-corners-sm bg-surface-3 font-display text-xs font-bold text-ink-2">
               G{g.number}
             </span>
             <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -42,26 +42,26 @@ export default function GamesBreakdown({
                 <>
                   <TeamLogo team={winner} size="sm" />
                   <span className="min-w-0 flex-1 overflow-hidden">
-                    <span className="block truncate text-sm font-semibold text-black dark:text-white">{winner.name}</span>
-                    <span className="flex items-center gap-1 whitespace-nowrap text-[11px] text-success">
+                    <span className="block truncate text-sm font-semibold text-ink-1">{winner.name}</span>
+                    <span className="flex items-center gap-1 whitespace-nowrap text-[11px] text-accent-green">
                       <Trophy size={11} className="shrink-0" /> <span className="truncate">{t('matches.games.won')}</span>
                     </span>
                   </span>
                 </>
               ) : (
-                <span className="text-sm text-body dark:text-bodydark">{t('matches.games.pending')}</span>
+                <span className="text-sm text-ink-2">{t('matches.games.pending')}</span>
               )}
             </div>
-            <span className="text-xs font-bold tabular-nums text-body dark:text-bodydark" title={t('matches.games.running')}>
+            <span className="font-display text-sm font-bold num text-ink-1" title={t('matches.games.running')}>
               {a} - {b}
             </span>
             {dur && (
-              <span className="inline-flex items-center gap-1 text-xs text-body dark:text-bodydark">
+              <span className="inline-flex items-center gap-1 text-xs num text-ink-2">
                 <Clock size={12} /> {dur}
               </span>
             )}
             {g.mvp && (
-              <span className="inline-flex items-center gap-1.5 text-xs text-body dark:text-bodydark">
+              <span className="inline-flex items-center gap-1.5 text-xs text-ink-2">
                 <MvpAvatar user={g.mvp} t={t} />
                 <span className="hidden max-w-24 truncate 2xl:inline">{userLabel(g.mvp)}</span>
               </span>
@@ -71,7 +71,7 @@ export default function GamesBreakdown({
                 type="button"
                 onClick={() => onOpenScreenshot?.(g.screenshot!)}
                 title={t('matches.screenshots.open')}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-2 text-body transition-colors hover:text-primary dark:bg-meta-4 dark:text-bodydark"
+                className="inline-flex h-7 w-7 items-center justify-center rounded cut-corners-sm bg-surface-3 text-ink-2 transition-colors hover:text-primary"
               >
                 <Camera size={14} />
               </button>

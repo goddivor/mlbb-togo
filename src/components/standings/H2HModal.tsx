@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Swords } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
-import { Badge, LoadingSpinner } from '@/components/ui';
+import { Badge, Skeleton } from '@/components/ui';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/helpers';
 import { StandingRow, StandingsType, TeamAvatar, TFn } from './bits';
@@ -96,53 +96,53 @@ export default function H2HModal({
       closeLabel={t('common.close')}
     >
       {loading ? (
-        <div className="py-12">
-          <LoadingSpinner />
+        <div className="space-y-2 py-2" aria-busy="true">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
         </div>
       ) : !team || opponents.length === 0 ? (
-        <p className="py-8 text-center text-sm text-body dark:text-bodydark">{t('standings.h2h.empty')}</p>
+        <p className="py-8 text-center text-sm text-ink-3">{t('standings.h2h.empty')}</p>
       ) : (
         <div className="space-y-2">
           {opponents.map((o) => {
             const isOpen = expanded === o.teamB.id;
-            const lead = o.winsA > o.winsB ? 'text-success' : o.winsA < o.winsB ? 'text-danger' : 'text-body dark:text-bodydark';
+            const lead = o.winsA > o.winsB ? 'text-accent-green' : o.winsA < o.winsB ? 'text-accent-red' : 'text-ink-2';
             return (
               <div
                 key={o.teamB.id}
-                className="rounded-sm border border-stroke dark:border-strokedark overflow-hidden"
+                className={cn('overflow-hidden rounded-lg border transition-colors', isOpen ? 'border-primary/40' : 'border-line-subtle')}
               >
                 <button
                   type="button"
                   onClick={() => setExpanded(isOpen ? null : o.teamB.id)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-gray-2 dark:hover:bg-meta-4 transition-colors"
+                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-surface-2/60"
                 >
                   <TeamAvatar team={o.teamB} size={32} />
                   <span className="min-w-0 flex-1">
-                    <span className="block font-semibold text-black dark:text-white truncate">{o.teamB.name}</span>
-                    <span className="block text-xs text-bodydark2">
+                    <span className="block truncate font-semibold text-ink-1">{o.teamB.name}</span>
+                    <span className="block text-xs num text-ink-3">
                       {t('standings.h2h.games', { n: o.played })} · {t('standings.h2h.rounds', { a: o.scoreA, b: o.scoreB })}
                       {o.draws > 0 ? ` · ${t('standings.h2h.draws', { n: o.draws })}` : ''}
                     </span>
                   </span>
-                  <span className={cn('shrink-0 text-sm font-bold tabular-nums', lead)}>
+                  <span className={cn('shrink-0 font-display text-base font-bold num', lead)}>
                     {t('standings.h2h.record', { w: o.winsA, l: o.winsB })}
                   </span>
                 </button>
                 {isOpen && (
-                  <ul className="border-t border-stroke dark:border-strokedark divide-y divide-stroke dark:divide-strokedark bg-gray-2/50 dark:bg-meta-4/40">
+                  <ul className="divide-y divide-line-subtle border-t border-line-subtle bg-surface-2/40">
                     {[...o.matches].reverse().map((m) => {
                       const won = m.winnerTeamId === team.id;
                       const drawn = !m.winnerTeamId;
                       return (
                         <li key={m.id} className="flex items-center gap-3 px-3 py-2 text-xs">
-                          <span className="w-16 shrink-0 text-bodydark2 tabular-nums">{fmtDate(m.date, lang)}</span>
+                          <span className="w-16 shrink-0 num text-ink-3">{fmtDate(m.date, lang)}</span>
                           <Badge size="sm" variant={drawn ? 'default' : won ? 'green' : 'red'}>
                             {t('standings.result.' + (drawn ? 'D' : won ? 'W' : 'L'))}
                           </Badge>
-                          <span className="font-semibold tabular-nums text-black dark:text-white">
+                          <span className="font-display font-bold num text-ink-1">
                             {m.scoreA} - {m.scoreB}
                           </span>
-                          <span className="ml-auto text-bodydark2">{t('matchType.' + m.type)}</span>
+                          <span className="ml-auto text-ink-3">{t('matchType.' + m.type)}</span>
                         </li>
                       );
                     })}
@@ -152,7 +152,7 @@ export default function H2HModal({
             );
           })}
           <div className="pt-2 text-right">
-            <Link href={`/teams/${team.id}`} className="text-sm font-medium text-primary hover:underline">
+            <Link href={`/teams/${team.id}`} className="text-sm font-semibold text-primary hover:underline">
               {t('standings.h2h.teamPage')}
             </Link>
           </div>

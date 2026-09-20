@@ -54,21 +54,21 @@ export type StandingsPayload = {
 };
 
 const RESULT_CLS: Record<MatchResult, string> = {
-  W: 'bg-success text-white',
-  L: 'bg-danger text-white',
-  D: 'bg-bodydark2 text-white',
+  W: 'bg-accent-green text-white',
+  L: 'bg-accent-red text-white',
+  D: 'bg-surface-3 text-ink-2',
 };
 
 /** Last N results as small coloured pills (oldest on the left). */
 export function FormPills({ form, t, size = 'sm' }: { form: MatchResult[]; t: TFn; size?: 'sm' | 'md' }) {
-  if (!form?.length) return <span className="text-bodydark2">-</span>;
+  if (!form?.length) return <span className="text-ink-3">-</span>;
   const dim = size === 'md' ? 'h-6 w-6 text-[11px]' : 'h-5 w-5 text-[10px]';
   return (
     <span className="inline-flex items-center gap-0.5" aria-label={t('standings.hint.form')}>
       {form.map((r, i) => (
         <span
           key={i}
-          className={cn('inline-flex items-center justify-center rounded font-bold leading-none', dim, RESULT_CLS[r])}
+          className={cn('inline-flex items-center justify-center rounded-sm font-bold leading-none', dim, RESULT_CLS[r])}
           title={t('standings.result.' + r)}
         >
           {t('standings.result.' + r)}
@@ -80,16 +80,16 @@ export function FormPills({ form, t, size = 'sm' }: { form: MatchResult[]; t: TF
 
 /** Current streak, e.g. "W3" in green or "L2" in red. */
 export function StreakChip({ streak, t }: { streak: StandingRow['streak']; t: TFn }) {
-  if (!streak) return <span className="text-bodydark2">-</span>;
+  if (!streak) return <span className="text-ink-3">-</span>;
   const tone =
     streak.type === 'W'
-      ? 'bg-success/10 text-success'
+      ? 'bg-accent-green/10 text-accent-green'
       : streak.type === 'L'
-        ? 'bg-danger/10 text-danger'
-        : 'bg-gray text-body dark:bg-meta-4 dark:text-bodydark';
+        ? 'bg-accent-red/10 text-accent-red'
+        : 'bg-surface-3 text-ink-2';
   return (
     <span
-      className={cn('inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold tabular-nums', tone)}
+      className={cn('inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold num', tone)}
       title={t('standings.streak.' + streak.type, { n: streak.count })}
     >
       {t('standings.result.' + streak.type)}
@@ -102,14 +102,14 @@ export function StreakChip({ streak, t }: { streak: StandingRow['streak']; t: TF
 export function RankDelta({ value, t }: { value: number | null; t: TFn }) {
   if (value == null) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-[11px] text-primary" title={t('standings.delta.new')}>
+      <span className="inline-flex items-center gap-0.5 text-[11px] text-accent-cyan" title={t('standings.delta.new')}>
         <Sparkles size={12} />
       </span>
     );
   }
   if (value === 0) {
     return (
-      <span className="inline-flex items-center text-bodydark2" title="0">
+      <span className="inline-flex items-center text-ink-3" title="0">
         <Minus size={12} />
       </span>
     );
@@ -118,8 +118,8 @@ export function RankDelta({ value, t }: { value: number | null; t: TFn }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums',
-        up ? 'text-success' : 'text-danger',
+        'inline-flex items-center gap-0.5 text-xs font-semibold num',
+        up ? 'text-accent-green' : 'text-accent-red',
       )}
       title={`${up ? '+' : ''}${value}`}
     >
@@ -138,14 +138,14 @@ export function TeamAvatar({ team, size = 32 }: { team: StandingRow['team']; siz
         alt={team.name}
         referrerPolicy="no-referrer"
         style={{ width: size, height: size }}
-        className="shrink-0 rounded-full object-cover border border-stroke dark:border-strokedark"
+        className="shrink-0 rounded cut-corners-sm object-cover ring-1 ring-inset ring-line-subtle"
       />
     );
   }
   return (
     <span
       style={{ width: size, height: size, fontSize: Math.round(size * 0.4) }}
-      className="shrink-0 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold"
+      className="flex shrink-0 items-center justify-center rounded cut-corners-sm bg-surface-3 font-bold text-ink-2"
     >
       {team.name?.[0]?.toUpperCase() || '?'}
     </span>

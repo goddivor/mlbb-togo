@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
+import { Table, Td, Th } from '@/components/ui';
 import { cn } from '@/lib/helpers';
 import {
   DeltaWindow,
@@ -50,12 +50,6 @@ const COLUMNS: Column[] = [
   { key: 'form', labelKey: 'standings.col.form', hintKey: 'standings.hint.form', sortable: false, align: 'center', advanced: true },
   { key: 'sos', labelKey: 'standings.col.sos', hintKey: 'standings.hint.sos', sortable: true, align: 'right', advanced: true },
 ];
-
-const ALIGN: Record<Column['align'], string> = {
-  left: 'text-left',
-  center: 'text-center',
-  right: 'text-right',
-};
 
 /** Value used to sort a row on a column (null-safe). */
 export function sortValue(row: StandingRow, key: SortKey, window: DeltaWindow): number {
@@ -110,45 +104,27 @@ export default function StandingsTable({
 
   const hideCls = (c: Column) => (c.advanced && !advanced ? 'hidden md:table-cell' : '');
 
+  const cell = 'px-1.5 py-2.5 sm:px-3';
+
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-gray-2 text-xs uppercase text-bodydark2 dark:bg-meta-4">
+      <Table>
+        <thead className="bg-surface-2">
+          <tr className="border-b border-line-subtle">
             {COLUMNS.map((c) => {
               const active = c.sortable && sortKey === c.key;
               return (
-                <th
+                <Th
                   key={c.key}
-                  scope="col"
-                  className={cn('py-3 px-1.5 sm:px-3 font-medium whitespace-nowrap', ALIGN[c.align], c.width, hideCls(c))}
+                  align={c.align}
+                  sortable={c.sortable}
+                  sorted={active ? dir : null}
+                  onSort={() => toggleSort(c.key as SortKey)}
+                  className={cn(cell, c.width, hideCls(c))}
                   title={c.hintKey ? t(c.hintKey) : undefined}
-                  aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : undefined}
                 >
-                  {c.sortable ? (
-                    <button
-                      type="button"
-                      onClick={() => toggleSort(c.key as SortKey)}
-                      className={cn(
-                        'inline-flex items-center gap-1 uppercase transition-colors hover:text-primary',
-                        active && 'text-primary',
-                      )}
-                    >
-                      {t(c.labelKey)}
-                      {active ? (
-                        dir === 'asc' ? (
-                          <ChevronUp size={12} />
-                        ) : (
-                          <ChevronDown size={12} />
-                        )
-                      ) : (
-                        <ChevronsUpDown size={12} className="opacity-40" />
-                      )}
-                    </button>
-                  ) : (
-                    t(c.labelKey)
-                  )}
-                </th>
+                  {t(c.labelKey)}
+                </Th>
               );
             })}
           </tr>
@@ -156,70 +132,72 @@ export default function StandingsTable({
         <tbody>
           {sorted.map((row) => {
             const divider = byRank && row.rank === qualifyTop && row.rank < rows.length;
+            const podium = byRank && row.rank === 1;
             return (
               <tr
                 key={row.teamId}
                 onClick={onSelectTeam ? () => onSelectTeam(row) : undefined}
                 className={cn(
-                  'border-t border-stroke transition-colors dark:border-strokedark',
-                  row.qualified ? 'bg-success/5 dark:bg-success/10' : '',
-                  onSelectTeam && 'cursor-pointer hover:bg-gray-2 dark:hover:bg-meta-4',
-                  divider && 'border-b-2 border-b-success',
+                  'border-b border-line-subtle transition-colors duration-fast last:border-b-0',
+                  row.qualified && 'bg-accent-green/5',
+                  onSelectTeam && 'cursor-pointer hover:bg-primary/5',
+                  divider && 'border-b-2 border-b-accent-green',
                 )}
               >
-                <td className={cn('py-2.5 px-1.5 sm:px-3 tabular-nums', ALIGN.right)}>
+                <Td align="right" className={cell}>
                   <span
                     className={cn(
-                      'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold',
-                      row.qualified ? 'bg-success text-white' : 'bg-gray text-body dark:bg-meta-4 dark:text-bodydark',
+                      'inline-flex h-6 w-6 items-center justify-center rounded cut-corners-sm font-display text-xs font-bold',
+                      row.qualified ? 'bg-accent-green text-white' : 'bg-surface-3 text-ink-2',
+                      podium && 'shadow-glow-cyan',
                     )}
                     style={row.qualified && accent ? { backgroundColor: accent } : undefined}
                   >
                     {row.rank}
                   </span>
-                </td>
-                <td className="py-2.5 px-1.5 sm:px-3">
-                  <span className="flex items-center gap-2.5 min-w-0">
+                </Td>
+                <Td className={cell}>
+                  <span className="flex min-w-0 items-center gap-2.5">
                     <TeamAvatar team={row.team} size={30} />
-                    <span className="font-semibold text-black dark:text-white truncate max-w-[6.5rem] sm:max-w-none">
+                    <span className={cn('truncate font-semibold text-ink-1 max-w-[6.5rem] sm:max-w-none', podium && 'font-display')}>
                       {row.team.name}
                     </span>
                   </span>
-                </td>
-                <td className={cn('py-2.5 px-1.5 sm:px-3 tabular-nums', ALIGN.right)}>{row.played}</td>
-                <td className={cn('py-2.5 px-1.5 sm:px-3 tabular-nums text-success font-medium', ALIGN.right)}>{row.wins}</td>
-                <td className={cn('py-2.5 px-1.5 sm:px-3 tabular-nums text-danger font-medium', ALIGN.right)}>{row.losses}</td>
-                <td className={cn('py-2.5 px-1.5 sm:px-3 tabular-nums', ALIGN.right, hideCls(COLUMNS[5]))}>{row.winRate}%</td>
-                <td
+                </Td>
+                <Td align="right" className={cn(cell, 'text-ink-2')}>{row.played}</Td>
+                <Td align="right" className={cn(cell, 'font-medium text-accent-green')}>{row.wins}</Td>
+                <Td align="right" className={cn(cell, 'font-medium text-accent-red')}>{row.losses}</Td>
+                <Td align="right" className={cn(cell, 'text-ink-2', hideCls(COLUMNS[5]))}>{row.winRate}%</Td>
+                <Td
+                  align="right"
                   className={cn(
-                    'py-2.5 px-1.5 sm:px-3 tabular-nums',
-                    ALIGN.right,
+                    cell,
                     hideCls(COLUMNS[6]),
-                    row.scoreDiff > 0 ? 'text-success' : row.scoreDiff < 0 ? 'text-danger' : '',
+                    row.scoreDiff > 0 ? 'text-accent-green' : row.scoreDiff < 0 ? 'text-accent-red' : 'text-ink-2',
                   )}
                 >
                   {fmtDiff(row.scoreDiff)}
-                </td>
-                <td className={cn('py-2.5 px-1.5 sm:px-3 tabular-nums font-bold text-black dark:text-white', ALIGN.right)}>
+                </Td>
+                <Td align="right" className={cn(cell, 'font-display text-base font-bold')}>
                   {row.points}
-                </td>
-                <td className={cn('py-2.5 px-1.5 sm:px-3', ALIGN.center, hideCls(COLUMNS[8]))}>
+                </Td>
+                <Td align="center" className={cn(cell, hideCls(COLUMNS[8]))}>
                   <RankDelta value={row.delta[deltaWindow]} t={t} />
-                </td>
-                <td className={cn('py-2.5 px-1.5 sm:px-3', ALIGN.center, hideCls(COLUMNS[9]))}>
+                </Td>
+                <Td align="center" className={cn(cell, hideCls(COLUMNS[9]))}>
                   <StreakChip streak={row.streak} t={t} />
-                </td>
-                <td className={cn('py-2.5 px-1.5 sm:px-3', ALIGN.center, hideCls(COLUMNS[10]))}>
+                </Td>
+                <Td align="center" className={cn(cell, hideCls(COLUMNS[10]))}>
                   <FormPills form={row.form} t={t} />
-                </td>
-                <td className={cn('py-2.5 px-1.5 sm:px-3 tabular-nums', ALIGN.right, hideCls(COLUMNS[11]))}>
+                </Td>
+                <Td align="right" className={cn(cell, 'text-ink-2', hideCls(COLUMNS[11]))}>
                   {row.sos == null ? '-' : `${row.sos}%`}
-                </td>
+                </Td>
               </tr>
             );
           })}
         </tbody>
-      </table>
+      </Table>
     </div>
   );
 }
