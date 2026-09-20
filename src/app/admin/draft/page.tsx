@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Plus, Trash2, Check, Settings, Swords, Users } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import CitySelect from '@/components/geo/CitySelect';
 import {
   Card,
   Button,
@@ -45,6 +46,7 @@ export default function AdminDraftPage() {
   const [name, setName] = useState('');
   const [category, setCategory] = useState<Category>('5v5');
   const [description, setDescription] = useState('');
+  const [city, setCity] = useState('');
   const [roles, setRoles] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -79,6 +81,7 @@ export default function AdminDraftPage() {
     setName('');
     setCategory('5v5');
     setDescription('');
+    setCity('');
     setRoles([]);
     setFormOpen(true);
   };
@@ -108,6 +111,7 @@ export default function AdminDraftPage() {
         name: name.trim(),
         category,
         description: description.trim() || undefined,
+        city: city || undefined,
       };
       if (needsRoles) payload.roles = roles;
       await api.draft.admin.create(payload);
@@ -253,6 +257,13 @@ export default function AdminDraftPage() {
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
+
+          <CitySelect
+            label={t('admin.draft.city')}
+            value={city}
+            onChange={setCity}
+            className="py-2 px-3 text-sm"
+          />
 
           {needsRoles && (
             <div>

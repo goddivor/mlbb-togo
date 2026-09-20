@@ -11,6 +11,7 @@ import Modal from '@/components/ui/Modal';
 import { useEventStore } from '@/store/useStore';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import CitySelect from '@/components/geo/CitySelect';
 import toast from 'react-hot-toast';
 
 const DAY_KEYS = [
@@ -43,7 +44,7 @@ export default function Events() {
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState('calendar');
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ type: 'scrim', title: '', date: '', time: '', description: '' });
+  const [form, setForm] = useState({ type: 'scrim', title: '', date: '', time: '', description: '', city: '' });
   const [saving, setSaving] = useState(false);
 
   const loadEvents = () => api.events.list().then((l: any) => setEvents(Array.isArray(l) ? l : []));
@@ -66,9 +67,10 @@ export default function Events() {
         date: form.date,
         time: form.time || null,
         description: form.description.trim() || null,
+        city: form.city || null,
       });
       await loadEvents();
-      setForm({ type: 'scrim', title: '', date: '', time: '', description: '' });
+      setForm({ type: 'scrim', title: '', date: '', time: '', description: '', city: '' });
       setShowCreate(false);
       toast.success(t('events.created'));
     } catch (e: any) {
@@ -306,6 +308,11 @@ export default function Events() {
               onChange={(e: any) => setForm({ ...form, time: e.target.value })}
             />
           </div>
+          <CitySelect
+            label={t('events.form.city')}
+            value={form.city}
+            onChange={(city) => setForm({ ...form, city })}
+          />
           <Textarea
             label={t('events.form.description')}
             rows={3}
