@@ -2,21 +2,24 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { CalendarClock, ClipboardList, Megaphone, RotateCcw, Send, Trophy } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { CalendarClock, ClipboardList, Megaphone, RotateCcw, Send, Trophy, Users } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import {
   Badge,
   Button,
+  Card,
   PageHeader,
   SectionCard,
   Select,
   EmptyState,
-  LoadingSpinner,
+  Skeleton,
+  StatCard,
   Tabs,
   Textarea,
 } from '@/components/ui';
+import { fadeUp, stagger, still } from '@/lib/motion';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import RoleIcon from '@/components/game/RoleIcon';
@@ -64,6 +67,7 @@ const EMPTY_FILTERS: Filters = { role: '', rankLevel: '', availability: '' };
 
 export default function RecruitmentPage() {
   const t = useT();
+  const reduce = useReducedMotion();
   const [tab, setTab] = useState<'campaigns' | 'mine'>('campaigns');
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -157,6 +161,38 @@ export default function RecruitmentPage() {
 
   const slotRoles = useMemo(() => (apply?.slots || []).map((s: any) => s.role), [apply]);
 
+  const openSlots = useMemo(
+    () => campaigns.reduce((n, c) => n + (c.slots || []).reduce((m: number, s: any) => m + (Number(s.quantity) || 1), 0), 0),
+    [campaigns],
+  );
+  const activeApps = useMemo(() => myApps.filter((a) => ACTIVE_STATUSES.includes(a.status)).length, [myApps]);
+  const listVariants = reduce ? still : stagger(0.04);
+  const itemVariants = reduce ? still : fadeUp;
+
+  const teamAvatar = (team: any, size: string) =>
+    team.image ? (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={avatarSrc(team.image)} alt={team.name} referrerPolicy="no-referrer" className={`${size} shrink-0 rounded-md border border-line-subtle object-cover`} />
+    ) : (
+      <div className={`${size} flex shrink-0 items-center justify-center rounded-md cut-corners-sm bg-gradient-to-br from-accent-violet to-primary font-display font-bold text-on-primary`}>
+        {team.name?.[0]?.toUpperCase() || 'T'}
+      </div>
+    );
+
+  const skeletonGrid = (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i}>
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-11 w-11 shrink-0 rounded-md" />
+            <Skeleton lines={2} className="flex-1" />
+          </div>
+          <Skeleton lines={3} className="mt-4" />
+        </Card>
+      ))}
+    </div>
+  );
+
   const statusBadge = (status: string) => (
     <Badge variant={STATUS_VARIANT[status] ?? 'default'} size="sm">
       {t('recruitment.status.' + status)}
@@ -182,25 +218,31 @@ export default function RecruitmentPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        icon={<Megaphone size={28} />}
+        eyebrow={t('recruitment.eyebrow')}
+        icon={<Megaphone size={22} />}
         title={t('recruitment.title')}
         subtitle={t('recruitment.subtitle')}
         variant="purple"
-      />
+      >
+        <StatCard label={t('recruitment.kpi.campaigns')} value={campaigns.length} icon={<Megaphone size={18} />} accent="violet" />
+        <StatCard label={t('recruitment.kpi.slots')} value={openSlots} icon={<Users size={18} />} accent="cyan" />
+        <StatCard label={t('recruitment.kpi.active')} value={activeApps} icon={<ClipboardList size={18} />} accent="gold" />
+      </PageHeader>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="overflow-x-auto whitespace-nowrap">
         <Tabs
+          variant="underline"
           tabs={[
-            { id: 'campaigns', label: t('recruitment.tab.campaigns'), icon: Megaphone },
-            { id: 'mine', label: t('recruitment.tab.mine'), icon: ClipboardList },
+            { id: 'campaigns', label: t('recruitment.tab.campaigns'), icon: Megaphone, count: campaigns.length },
+            { id: 'mine', label: t('recruitment.tab.mine'), icon: ClipboardList, count: myApps.length },
           ]}
           active={tab}
           onChange={(id: any) => setTab(id)}
         />
-        {tab === 'mine' && myApps.length > 0 && (
-          <span className="text-sm text-body dark:text-bodydark">{t('recruitment.mineHint')}</span>
-        )}
       </div>
+      {tab === 'mine' && myApps.length > 0 && (
+        <p className="text-sm text-ink-2">{t('recruitment.mineHint')}</p>
+      )}
 
       {tab === 'campaigns' && (
         <>
@@ -209,7 +251,7 @@ export default function RecruitmentPage() {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setFilters((f) => ({ ...f, role: '' }))}
-                className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${filters.role === '' ? 'border-primary bg-primary/10 text-primary' : 'border-stroke bg-gray-2 text-body hover:text-black dark:border-strokedark dark:bg-meta-4 dark:text-bodydark dark:hover:text-white'}`}
+                className={`rounded border px-3 py-1.5 text-xs font-semibold transition-colors duration-fast ${filters.role === '' ? 'border-primary bg-primary/10 text-primary' : 'border-line-subtle bg-surface-2 text-ink-2 hover:border-line-strong hover:text-ink-1'}`}
               >
                 {t('recruitment.filterAll')}
               </button>
@@ -217,7 +259,7 @@ export default function RecruitmentPage() {
                 <button
                   key={l}
                   onClick={() => setFilters((f) => ({ ...f, role: l }))}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors ${filters.role === l ? 'border-primary bg-primary/10 text-primary' : 'border-stroke bg-gray-2 text-body hover:text-black dark:border-strokedark dark:bg-meta-4 dark:text-bodydark dark:hover:text-white'}`}
+                  className={`inline-flex items-center gap-1.5 rounded border px-3 py-1.5 text-xs font-semibold transition-colors duration-fast ${filters.role === l ? 'border-primary bg-primary/10 text-primary' : 'border-line-subtle bg-surface-2 text-ink-2 hover:border-line-strong hover:text-ink-1'}`}
                 >
                   <RoleIcon role={l} size={14} /> {t('lane.' + l)}
                 </button>
@@ -244,7 +286,7 @@ export default function RecruitmentPage() {
                 ]}
               />
               <div className="flex items-end justify-between gap-3">
-                <span className="pb-3 text-sm text-body dark:text-bodydark">
+                <span className="num pb-3 text-sm text-ink-2">
                   {t('recruitment.resultCount', { count: campaigns.length })}
                 </span>
                 {hasFilters && (
@@ -257,34 +299,22 @@ export default function RecruitmentPage() {
           </SectionCard>
 
           {loading ? (
-            <LoadingSpinner size="lg" className="py-24" />
+            skeletonGrid
           ) : campaigns.length === 0 ? (
             <EmptyState icon={<Megaphone size={28} />} title={t('recruitment.none')} />
           ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {campaigns.map((c, i) => {
+            <motion.div variants={listVariants} initial="hidden" animate="visible" className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {campaigns.map((c) => {
                 const team = c.team || {};
                 const applied = appliedIds.has(c.id);
                 return (
-                  <motion.div
-                    key={c.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: Math.min(i * 0.03, 0.3) }}
-                    className="flex flex-col rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark"
-                  >
-                    <Link href={`/teams/${c.teamId}`} className="mb-3 flex items-center gap-3">
-                      {team.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={team.image} alt={team.name} referrerPolicy="no-referrer" className="h-11 w-11 rounded-full border border-stroke object-cover dark:border-strokedark" />
-                      ) : (
-                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary font-bold text-white">
-                          {team.name?.[0]?.toUpperCase() || 'T'}
-                        </div>
-                      )}
+                  <motion.div key={c.id} variants={itemVariants} className="flex">
+                  <Card hover accent={applied ? 'green' : 'violet'} className="flex w-full flex-col !p-5">
+                    <Link href={`/teams/${c.teamId}`} className="mb-4 flex items-center gap-3">
+                      {teamAvatar(team, 'h-12 w-12')}
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-black dark:text-white">{team.name}</p>
-                        <p className="text-xs text-bodydark2">{t('recruitment.recruits')}</p>
+                        <p className="truncate font-display text-base font-bold tracking-tight2 text-ink-1">{team.name}</p>
+                        <p className="text-xs text-ink-3">{t('recruitment.recruits')}</p>
                       </div>
                     </Link>
 
@@ -305,21 +335,22 @@ export default function RecruitmentPage() {
                       )}
                     </div>
 
-                    {c.message && <p className="mb-3 whitespace-pre-line text-sm text-body dark:text-bodydark">{c.message}</p>}
+                    {c.message && <p className="mb-3 whitespace-pre-line text-sm text-ink-2">{c.message}</p>}
 
-                    <div className="mt-auto">
+                    <div className="mt-auto border-t border-line-subtle pt-3">
                       {applied ? (
-                        <Badge variant="green" size="md">{t('recruitment.applied')}</Badge>
+                        <Badge variant="green" size="md" dot>{t('recruitment.applied')}</Badge>
                       ) : (
                         <Button size="sm" onClick={() => openApply(c)}>
                           <Send size={14} /> {t('recruitment.apply')}
                         </Button>
                       )}
                     </div>
+                  </Card>
                   </motion.div>
                 );
               })}
-            </div>
+            </motion.div>
           )}
         </>
       )}
@@ -327,33 +358,22 @@ export default function RecruitmentPage() {
       {/* Application tracking, candidate side */}
       {tab === 'mine' && (
         loading ? (
-          <LoadingSpinner size="lg" className="py-24" />
+          skeletonGrid
         ) : myApps.length === 0 ? (
           <EmptyState icon={<ClipboardList size={28} />} title={t('recruitment.mineNone')} description={t('recruitment.mineHint')} />
         ) : (
-          <div className="space-y-3">
-            {myApps.map((a, i) => {
+          <motion.div variants={listVariants} initial="hidden" animate="visible" className="space-y-3">
+            {myApps.map((a) => {
               const team = a.team || {};
               const closed = a.recruitment && a.recruitment.status !== 'open';
+              const accent = ({ accepted: 'green', rejected: 'red', shortlisted: 'cyan', pending: 'gold' } as const)[a.status as string];
               return (
-                <motion.div
-                  key={a.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(i * 0.03, 0.3) }}
-                  className="rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark"
-                >
+                <motion.div key={a.id} variants={itemVariants}>
+                <Card hover accent={accent} className="!p-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <Link href={`/teams/${a.teamId}`} className="flex min-w-0 items-center gap-3">
-                      {team.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={avatarSrc(team.image)} alt={team.name} referrerPolicy="no-referrer" className="h-10 w-10 rounded-full border border-stroke object-cover dark:border-strokedark" />
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary font-bold text-white">
-                          {team.name?.[0]?.toUpperCase() || 'T'}
-                        </div>
-                      )}
-                      <span className="truncate text-sm font-medium text-black dark:text-white">{team.name}</span>
+                      {teamAvatar(team, 'h-10 w-10')}
+                      <span className="truncate font-display text-base font-bold tracking-tight2 text-ink-1">{team.name}</span>
                     </Link>
 
                     {a.role ? (
@@ -381,25 +401,26 @@ export default function RecruitmentPage() {
                     </div>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-bodydark2">
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-3 num">
                     <span>{t('recruitment.sentOn', { date: fmtDate(a.createdAt) })}</span>
                     {a.decidedAt && <span>{t('recruitment.updatedOn', { date: fmtDate(a.decidedAt) })}</span>}
                   </div>
 
                   {a.message && (
-                    <p className="mt-2 whitespace-pre-line text-sm text-body dark:text-bodydark">{a.message}</p>
+                    <p className="mt-2 whitespace-pre-line text-sm text-ink-2">{a.message}</p>
                   )}
 
                   {a.decisionNote && (
-                    <p className="mt-2 rounded-sm bg-gray-2 p-3 text-sm text-body dark:bg-meta-4 dark:text-bodydark">
-                      <span className="font-medium text-black dark:text-white">{t('recruitment.decisionNote')} : </span>
+                    <p className="mt-2 rounded bg-surface-2 p-3 text-sm text-ink-2">
+                      <span className="font-medium text-ink-1">{t('recruitment.decisionNote')} : </span>
                       {a.decisionNote}
                     </p>
                   )}
+                </Card>
                 </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         )
       )}
 
@@ -414,13 +435,13 @@ export default function RecruitmentPage() {
       >
         <form onSubmit={submitApply} className="space-y-4">
           {apply && (apply.minRankLabel || apply.availability) && (
-            <div className="flex flex-wrap items-center gap-2 rounded-sm bg-gray-2 p-3 dark:bg-meta-4">
-              <Trophy size={14} className="text-warning" />
+            <div className="flex flex-wrap items-center gap-2 rounded bg-surface-2 p-3">
+              <Trophy size={14} className="text-accent-gold" />
               {requirementBadges(apply)}
             </div>
           )}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">{t('recruitment.applyRole')}</label>
+            <label className="mb-1.5 block text-sm font-medium text-ink-1">{t('recruitment.applyRole')}</label>
             <RoleSelect
               value={applyForm.role}
               onChange={(v) => setApplyForm({ ...applyForm, role: v })}

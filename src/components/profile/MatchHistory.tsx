@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { History, Star, Trophy } from 'lucide-react';
-import { Card, Badge, Button, LoadingSpinner } from '@/components/ui';
+import { Card, Badge, Button, Skeleton, SectionTitle } from '@/components/ui';
+import { cn } from '@/lib/helpers';
 import RoleIcon from '@/components/game/RoleIcon';
 import { api, mlbbImg } from '@/lib/api';
 import { useT } from '@/lib/i18n';
@@ -24,12 +25,12 @@ function TeamLogo({ team }: { team: any }) {
         src={team.image}
         alt={team.name}
         referrerPolicy="no-referrer"
-        className="w-7 h-7 rounded-lg object-cover border border-stroke shrink-0 dark:border-strokedark"
+        className="h-7 w-7 shrink-0 rounded cut-corners-sm object-cover ring-1 ring-inset ring-line-subtle"
       />
     );
   }
   return (
-    <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-[11px] font-bold text-white shrink-0">
+    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded cut-corners-sm bg-surface-3 text-[11px] font-bold text-ink-2">
       {team?.name?.[0]?.toUpperCase() || 'T'}
     </div>
   );
@@ -81,44 +82,56 @@ export default function MatchHistory({ userId }: { userId: string }) {
     });
 
   return (
-    <Card hover={false}>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-black dark:text-white inline-flex items-center gap-2">
-          <History size={18} /> {t('stats.history')}
-        </h3>
-        {total > 0 && (
-          <span className="text-xs text-body dark:text-bodydark">
-            {t('stats.shown', { shown: items.length, total })}
+    <Card>
+      <SectionTitle
+        size="sm"
+        title={
+          <span className="inline-flex items-center gap-2">
+            <History size={18} className="text-primary" /> {t('stats.history')}
           </span>
-        )}
-      </div>
+        }
+        className="mb-4"
+        action={
+          total > 0 ? (
+            <span className="text-xs text-ink-3 num">{t('stats.shown', { shown: items.length, total })}</span>
+          ) : undefined
+        }
+      />
 
       {loading ? (
-        <div className="flex justify-center py-8">
-          <LoadingSpinner size="md" />
+        <div className="space-y-3 py-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 rounded" />
+          ))}
         </div>
       ) : items.length === 0 ? (
-        <p className="text-sm text-bodydark2 text-center py-6">{t('stats.historyNone')}</p>
+        <p className="py-6 text-center text-sm text-ink-3">{t('stats.historyNone')}</p>
       ) : (
-        <ul className="divide-y divide-stroke dark:divide-strokedark">
+        <ul className="divide-y divide-line-subtle">
           {items.map((m) => (
-            <li key={m.id} className="py-3 flex flex-col sm:flex-row sm:items-center gap-3">
+            <li
+              key={m.id}
+              className={cn(
+                'flex flex-col gap-3 border-l-2 py-3 pl-3 sm:flex-row sm:items-center',
+                m.result === 'win' ? 'border-l-accent-green' : m.result === 'loss' ? 'border-l-accent-red' : 'border-l-line-strong',
+              )}
+            >
               {/* Result + date */}
-              <div className="flex items-center gap-2 sm:w-40 shrink-0">
+              <div className="flex shrink-0 items-center gap-2 sm:w-40">
                 <Badge variant={RESULT_BADGE[m.result] || 'default'} size="sm">
                   {t(`stats.result.${m.result}`)}
                 </Badge>
-                <span className="text-xs text-body dark:text-bodydark">{fmtDate(m.date)}</span>
+                <span className="text-xs text-ink-3 num">{fmtDate(m.date)}</span>
               </div>
 
               {/* Teams and score */}
-              <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
                 <TeamLogo team={m.team} />
-                <span className="text-sm font-semibold text-black dark:text-white truncate">{m.team?.name}</span>
-                <span className="text-sm font-bold tabular-nums text-black dark:text-white px-1">
+                <span className="truncate text-sm font-semibold text-ink-1">{m.team?.name}</span>
+                <span className="px-1 font-display text-sm font-bold num text-ink-1">
                   {m.scoreFor} - {m.scoreAgainst}
                 </span>
-                <span className="text-sm text-body dark:text-bodydark truncate">{m.opponent?.name}</span>
+                <span className="truncate text-sm text-ink-2">{m.opponent?.name}</span>
                 <TeamLogo team={m.opponent} />
               </div>
 
@@ -131,26 +144,26 @@ export default function MatchHistory({ userId }: { userId: string }) {
                       src={mlbbImg(m.heroImage, 64)}
                       alt={m.hero || ''}
                       referrerPolicy="no-referrer"
-                      className="w-8 h-8 rounded-sm object-cover bg-gray dark:bg-boxdark"
+                      className="h-8 w-8 rounded object-cover bg-surface-3"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-sm bg-gray dark:bg-boxdark" />
+                    <div className="h-8 w-8 rounded bg-surface-3" />
                   )}
                   <div className="leading-tight">
-                    <p className="text-xs font-semibold text-black dark:text-white truncate max-w-[110px]">
+                    <p className="max-w-[110px] truncate text-xs font-semibold text-ink-1">
                       {m.hero || t('stats.noHero')}
                     </p>
-                    <p className="text-[11px] text-body dark:text-bodydark inline-flex items-center gap-1">
+                    <p className="inline-flex items-center gap-1 text-[11px] text-ink-2">
                       {m.role && <RoleIcon role={m.role} size={12} />}
                       {m.role ? t(`lane.${m.role}`) : m.type ? t(`matchType.${m.type}`) : ''}
                     </p>
                   </div>
                 </div>
-                <div className="text-right leading-tight w-20">
-                  <p className="text-sm font-bold tabular-nums text-black dark:text-white">
+                <div className="w-20 text-right leading-tight">
+                  <p className="text-sm font-bold num text-ink-1">
                     {m.kills} / {m.deaths} / {m.assists}
                   </p>
-                  <p className="text-[11px] text-body dark:text-bodydark">KDA {m.kda}</p>
+                  <p className="text-[11px] text-ink-2 num">KDA {m.kda}</p>
                 </div>
                 {m.isMvp && (
                   <Badge variant="gold" size="sm" className="gap-1">
@@ -160,7 +173,7 @@ export default function MatchHistory({ userId }: { userId: string }) {
               </div>
 
               {m.seasonName && (
-                <span className="hidden xl:inline-flex items-center gap-1 text-xs text-body dark:text-bodydark shrink-0">
+                <span className="hidden shrink-0 items-center gap-1 text-xs text-ink-3 xl:inline-flex">
                   <Trophy size={12} /> {m.seasonName}
                 </span>
               )}

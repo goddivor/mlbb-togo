@@ -16,7 +16,8 @@ import {
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { useSelectedSeason } from '@/store/useSeasonStore';
-import { Avatar, Badge, Button, EmptyState, LoadingSpinner, PageHeader, SectionCard, Select, StatCard } from '@/components/ui';
+import { Avatar, Badge, Button, Card, DataTable, EmptyState, PageHeader, SectionCard, Select, Skeleton, StatCard, StatTile, type DataColumn } from '@/components/ui';
+import { cn } from '@/lib/helpers';
 import SeasonSwitcher from '@/components/seasons/SeasonSwitcher';
 import TogoMap from '@/components/geo/TogoMap';
 import { useGeoCities } from '@/components/geo/CitySelect';
@@ -75,29 +76,53 @@ export default function MapPage() {
   const selected = useMemo(() => allBuckets.find((c) => c.id === selectedId) ?? null, [allBuckets, selectedId]);
 
   const nothingLocated = !!data && data.totals.located + data.totals.unlocated === 0;
+
+  const rankingColumns: DataColumn<{ bucket: MapCityBucket; count: number }>[] = [
+    { key: 'rank', header: '#', width: 'w-10', align: 'center', render: (_r, i) => <span className="font-display font-bold text-ink-3">{i + 1}</span> },
+    {
+      key: 'name',
+      header: t('geo.city'),
+      render: (r) => <span className="font-medium text-ink-1">{r.bucket.id === 'other' ? t('geo.other.label') : r.bucket.name}</span>,
+    },
+    {
+      key: 'region',
+      header: t('geo.regionFilter'),
+      hideBelow: 'md',
+      render: (r) => <span className="text-ink-2">{r.bucket.region ? t(`geo.region.${r.bucket.region}`) : ''}</span>,
+    },
+    { key: 'players', header: t('geo.layer.players'), align: 'right', hideBelow: 'lg', render: (r) => r.bucket.counts.players },
+    { key: 'teams', header: t('geo.layer.teams'), align: 'right', hideBelow: 'lg', render: (r) => r.bucket.counts.teams },
+    {
+      key: 'count',
+      header: t('geo.ranking.total'),
+      align: 'right',
+      render: (r) => <span className="font-display font-bold text-primary">{r.count}</span>,
+    },
+  ];
   const competitions = data ? data.totals.tournaments + data.totals.events + data.totals.drafts : 0;
   const locatedCities = data ? data.cities.filter((c) => c.counts.total > 0).length : 0;
 
   return (
     <div>
       <PageHeader
+        eyebrow={t('geo.eyebrow')}
+        icon={<MapPin size={22} />}
         title={t('geo.title')}
         subtitle={t('geo.subtitle')}
+        variant="green"
         action={<SeasonSwitcher variant="inline" />}
       >
-        <StatCard icon={<Users size={22} />} label={t('geo.stat.players')} value={data?.totals.players ?? 0} />
-        <StatCard icon={<Shield size={22} />} label={t('geo.stat.teams')} value={data?.totals.teams ?? 0} />
-        <StatCard icon={<Trophy size={22} />} label={t('geo.stat.competitions')} value={competitions} />
-        <StatCard icon={<MapPin size={22} />} label={t('geo.stat.cities')} value={locatedCities} />
+        <StatCard icon={<Users size={18} />} label={t('geo.stat.players')} value={data?.totals.players ?? 0} accent="cyan" />
+        <StatCard icon={<Shield size={18} />} label={t('geo.stat.teams')} value={data?.totals.teams ?? 0} accent="violet" />
+        <StatCard icon={<Trophy size={18} />} label={t('geo.stat.competitions')} value={competitions} accent="gold" />
+        <StatCard icon={<MapPin size={18} />} label={t('geo.stat.cities')} value={locatedCities} accent="green" />
       </PageHeader>
 
       {/* Filters */}
       <SectionCard className="mb-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-body dark:text-bodydark">
-              {t('geo.layers')}
-            </p>
+            <p className="eyebrow mb-2.5">{t('geo.layers')}</p>
             <div className="flex flex-wrap gap-2">
               {LAYERS.map(({ id, icon: Icon, key }) => (
                 <button
@@ -105,11 +130,12 @@ export default function MapPage() {
                   type="button"
                   onClick={() => toggleLayer(id)}
                   aria-pressed={layers[id]}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded border px-3 py-1.5 text-xs font-semibold transition-colors duration-fast',
                     layers[id]
-                      ? 'border-primary bg-primary text-white'
-                      : 'border-stroke bg-white text-body hover:border-primary dark:border-strokedark dark:bg-boxdark dark:text-bodydark'
-                  }`}
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-line-subtle bg-surface-2 text-ink-2 hover:border-line-strong hover:text-ink-1',
+                  )}
                 >
                   <Icon size={14} /> {t(key)}
                 </button>
@@ -137,8 +163,9 @@ export default function MapPage() {
       </SectionCard>
 
       {loading && !data ? (
-        <div className="flex justify-center py-20">
-          <LoadingSpinner />
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
+          <Skeleton className="h-[420px] rounded-lg xl:col-span-2" />
+          <Skeleton className="h-[420px] rounded-lg xl:col-span-3" />
         </div>
       ) : nothingLocated ? (
         <SectionCard>
@@ -158,9 +185,9 @@ export default function MapPage() {
       ) : (
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
           {/* Map */}
-          <SectionCard className="xl:col-span-2">
+          <Card className="xl:col-span-2">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-semibold text-black dark:text-white">{t('geo.map.heading')}</h3>
+              <h3 className="font-display font-bold tracking-tight2 text-ink-1">{t('geo.map.heading')}</h3>
               {data?.season && (
                 <Badge variant="blue" size="sm">
                   {data.season.name}
@@ -182,53 +209,34 @@ export default function MapPage() {
               <button
                 type="button"
                 onClick={() => setSelectedId(selectedId === 'other' ? null : 'other')}
-                className={`mt-3 flex w-full items-center justify-between rounded-sm border px-3 py-2 text-sm transition-colors ${
-                  selectedId === 'other'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-stroke hover:border-primary dark:border-strokedark'
-                }`}
+                className={cn(
+                  'mt-3 flex w-full items-center justify-between rounded border px-3 py-2 text-sm transition-colors duration-fast',
+                  selectedId === 'other' ? 'border-primary bg-primary/5' : 'border-line-subtle hover:border-line-strong',
+                )}
               >
-                <span className="text-black dark:text-white">{t('geo.other.label')}</span>
-                <span className="font-semibold text-primary">{layerCount(data.other, layers)}</span>
+                <span className="text-ink-1">{t('geo.other.label')}</span>
+                <span className="font-semibold text-primary num">{layerCount(data.other, layers)}</span>
               </button>
             )}
-          </SectionCard>
+          </Card>
 
           {/* Side panel */}
           <div className="space-y-6 xl:col-span-3">
             {selected ? (
               <CityPanel bucket={selected} onClose={() => setSelectedId(null)} />
             ) : (
-              <SectionCard>
-                <h3 className="mb-3 font-semibold text-black dark:text-white">{t('geo.ranking.title')}</h3>
-                {ranked.length === 0 ? (
-                  <p className="text-sm text-body dark:text-bodydark">{t('geo.ranking.empty')}</p>
-                ) : (
-                  <ol className="space-y-1.5">
-                    {ranked.map(({ bucket, count }, i) => (
-                      <li key={bucket.id}>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedId(bucket.id)}
-                          className="flex w-full items-center gap-3 rounded-sm px-2 py-2 text-left transition-colors hover:bg-gray-2 dark:hover:bg-meta-4"
-                        >
-                          <span className="w-6 text-center text-xs font-bold text-bodydark2">{i + 1}</span>
-                          <span className="flex-1 truncate text-sm font-medium text-black dark:text-white">
-                            {bucket.id === 'other' ? t('geo.other.label') : bucket.name}
-                          </span>
-                          <span className="hidden text-xs text-body dark:text-bodydark sm:block">
-                            {bucket.region ? t(`geo.region.${bucket.region}`) : ''}
-                          </span>
-                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
-                            {count}
-                          </span>
-                        </button>
-                      </li>
-                    ))}
-                  </ol>
-                )}
-                <p className="mt-4 text-xs text-body dark:text-bodydark">{t('geo.ranking.hint')}</p>
-              </SectionCard>
+              <Card>
+                <h3 className="mb-3 font-display font-bold tracking-tight2 text-ink-1">{t('geo.ranking.title')}</h3>
+                <DataTable
+                  columns={rankingColumns}
+                  rows={ranked}
+                  rowKey={(r) => r.bucket.id}
+                  onRowClick={(r) => setSelectedId(r.bucket.id)}
+                  dense
+                  emptyMessage={t('geo.ranking.empty')}
+                />
+                <p className="mt-4 text-xs text-ink-3">{t('geo.ranking.hint')}</p>
+              </Card>
             )}
           </div>
         </div>
@@ -250,44 +258,35 @@ function CityPanel({ bucket, onClose }: { bucket: MapCityBucket; onClose: () => 
   const hidden = Math.max(0, bucket.players - bucket.topPlayers.length);
 
   return (
-    <SectionCard>
+    <Card accent="green">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h3 className="flex items-center gap-2 text-lg font-bold text-black dark:text-white">
-            <MapPin size={18} className="text-primary" />
+          <p className="eyebrow mb-1">{isOther ? t('geo.other.desc') : bucket.region ? t(`geo.region.${bucket.region}`) : t('geo.map.heading')}</p>
+          <h3 className="flex items-center gap-2 font-display text-xl font-bold tracking-tight2 text-ink-1">
+            <MapPin size={18} className="text-accent-green" />
             {isOther ? t('geo.other.label') : bucket.name}
           </h3>
-          <p className="text-xs text-body dark:text-bodydark">
-            {isOther ? t('geo.other.desc') : bucket.region ? t(`geo.region.${bucket.region}`) : ''}
-          </p>
         </div>
         <button
           type="button"
           onClick={onClose}
           aria-label={t('common.close')}
-          className="rounded-md p-1 text-body hover:bg-gray-2 hover:text-black dark:text-bodydark dark:hover:bg-meta-4 dark:hover:text-white"
+          className="rounded p-1.5 text-ink-2 transition-colors duration-fast hover:bg-surface-2 hover:text-ink-1"
         >
           <X size={18} />
         </button>
       </div>
 
-      <div className="mb-5 grid grid-cols-3 gap-2 text-center">
-        {[
-          { label: t('geo.layer.players'), value: bucket.counts.players },
-          { label: t('geo.layer.teams'), value: bucket.counts.teams },
-          { label: t('geo.layer.competitions'), value: bucket.counts.tournaments + bucket.counts.events + bucket.counts.drafts },
-        ].map((s) => (
-          <div key={s.label} className="rounded-sm bg-gray-2 py-2 dark:bg-meta-4">
-            <p className="text-lg font-bold text-black dark:text-white">{s.value}</p>
-            <p className="text-[11px] text-body dark:text-bodydark">{s.label}</p>
-          </div>
-        ))}
+      <div className="mb-5 grid grid-cols-3 gap-2 rounded border border-line-subtle bg-surface-2/60 p-3">
+        <StatTile label={t('geo.layer.players')} value={bucket.counts.players} accent="cyan" align="center" />
+        <StatTile label={t('geo.layer.teams')} value={bucket.counts.teams} accent="violet" align="center" />
+        <StatTile label={t('geo.layer.competitions')} value={bucket.counts.tournaments + bucket.counts.events + bucket.counts.drafts} accent="gold" align="center" />
       </div>
 
       {/* Players */}
       <Section icon={<Users size={14} />} title={t('geo.panel.players', { n: bucket.counts.players })}>
         {bucket.topPlayers.length === 0 ? (
-          <p className="text-xs text-body dark:text-bodydark">
+          <p className="text-xs text-ink-3">
             {bucket.counts.players > 0 ? t('geo.panel.playersPrivate') : t('geo.panel.none')}
           </p>
         ) : (
@@ -296,7 +295,7 @@ function CityPanel({ bucket, onClose }: { bucket: MapCityBucket; onClose: () => 
               <li key={p.id}>
                 <Link
                   href={`/players/${p.id}`}
-                  className="flex items-center gap-2 rounded-sm px-1 py-1 text-sm text-black hover:bg-gray-2 dark:text-white dark:hover:bg-meta-4"
+                  className="flex items-center gap-2 rounded px-1.5 py-1 text-sm text-ink-1 transition-colors duration-fast hover:bg-surface-2"
                 >
                   <Avatar name={p.username} src={avatarSrc(p.avatar, 64)} size="sm" />
                   <span className="truncate">{p.username}</span>
@@ -304,7 +303,7 @@ function CityPanel({ bucket, onClose }: { bucket: MapCityBucket; onClose: () => 
               </li>
             ))}
             {hidden > 0 && (
-              <li className="px-1 text-xs text-body dark:text-bodydark">{t('geo.panel.morePlayers', { n: hidden })}</li>
+              <li className="px-1 text-xs text-ink-3">{t('geo.panel.morePlayers', { n: hidden })}</li>
             )}
           </ul>
         )}
@@ -313,14 +312,14 @@ function CityPanel({ bucket, onClose }: { bucket: MapCityBucket; onClose: () => 
       {/* Teams */}
       <Section icon={<Shield size={14} />} title={t('geo.panel.teams', { n: bucket.counts.teams })}>
         {bucket.teams.length === 0 ? (
-          <p className="text-xs text-body dark:text-bodydark">{t('geo.panel.none')}</p>
+          <p className="text-xs text-ink-3">{t('geo.panel.none')}</p>
         ) : (
           <ul className="space-y-1.5">
             {bucket.teams.map((team) => (
               <li key={team.id}>
                 <Link
                   href={`/teams/${team.id}`}
-                  className="flex items-center gap-2 rounded-sm px-1 py-1 text-sm text-black hover:bg-gray-2 dark:text-white dark:hover:bg-meta-4"
+                  className="flex items-center gap-2 rounded px-1.5 py-1 text-sm text-ink-1 transition-colors duration-fast hover:bg-surface-2"
                 >
                   <Avatar name={team.name} src={avatarSrc(team.image, 64)} size="sm" />
                   <span className="flex-1 truncate">{team.name}</span>
@@ -337,18 +336,18 @@ function CityPanel({ bucket, onClose }: { bucket: MapCityBucket; onClose: () => 
       {/* Tournaments & events */}
       <Section icon={<Trophy size={14} />} title={t('geo.panel.upcoming', { n: bucket.counts.upcoming })}>
         {upcomingTournaments.length + upcomingEvents.length === 0 ? (
-          <p className="text-xs text-body dark:text-bodydark">{t('geo.panel.none')}</p>
+          <p className="text-xs text-ink-3">{t('geo.panel.none')}</p>
         ) : (
           <ul className="space-y-1.5">
             {upcomingTournaments.map((x) => (
               <li key={x.id}>
                 <Link
                   href={`/tournaments/${x.id}`}
-                  className="flex items-center gap-2 rounded-sm px-1 py-1 text-sm text-black hover:bg-gray-2 dark:text-white dark:hover:bg-meta-4"
+                  className="flex items-center gap-2 rounded px-1.5 py-1 text-sm text-ink-1 transition-colors duration-fast hover:bg-surface-2"
                 >
-                  <Medal size={14} className="shrink-0 text-warning" />
+                  <Medal size={14} className="shrink-0 text-accent-gold" />
                   <span className="flex-1 truncate">{x.name}</span>
-                  {x.startDate && <span className="text-xs text-body dark:text-bodydark">{x.startDate}</span>}
+                  {x.startDate && <span className="text-xs text-ink-3 num">{x.startDate}</span>}
                 </Link>
               </li>
             ))}
@@ -356,11 +355,11 @@ function CityPanel({ bucket, onClose }: { bucket: MapCityBucket; onClose: () => 
               <li key={x.id}>
                 <Link
                   href="/events"
-                  className="flex items-center gap-2 rounded-sm px-1 py-1 text-sm text-black hover:bg-gray-2 dark:text-white dark:hover:bg-meta-4"
+                  className="flex items-center gap-2 rounded px-1.5 py-1 text-sm text-ink-1 transition-colors duration-fast hover:bg-surface-2"
                 >
-                  <CalendarDays size={14} className="shrink-0 text-secondary" />
+                  <CalendarDays size={14} className="shrink-0 text-accent-cyan" />
                   <span className="flex-1 truncate">{x.title}</span>
-                  {x.date && <span className="text-xs text-body dark:text-bodydark">{x.date}</span>}
+                  {x.date && <span className="text-xs text-ink-3 num">{x.date}</span>}
                 </Link>
               </li>
             ))}
@@ -375,11 +374,11 @@ function CityPanel({ bucket, onClose }: { bucket: MapCityBucket; onClose: () => 
               <li key={x.id}>
                 <Link
                   href={`/tournaments/${x.id}`}
-                  className="flex items-center gap-2 rounded-sm px-1 py-1 text-sm text-body hover:bg-gray-2 dark:text-bodydark dark:hover:bg-meta-4"
+                  className="flex items-center gap-2 rounded px-1.5 py-1 text-sm text-ink-2 transition-colors duration-fast hover:bg-surface-2"
                 >
                   <Medal size={14} className="shrink-0" />
                   <span className="flex-1 truncate">{x.name}</span>
-                  {x.startDate && <span className="text-xs">{x.startDate}</span>}
+                  {x.startDate && <span className="text-xs num">{x.startDate}</span>}
                 </Link>
               </li>
             ))}
@@ -394,7 +393,7 @@ function CityPanel({ bucket, onClose }: { bucket: MapCityBucket; onClose: () => 
               <li key={d.id}>
                 <Link
                   href={`/draft/${d.id}`}
-                  className="flex items-center gap-2 rounded-sm px-1 py-1 text-sm text-black hover:bg-gray-2 dark:text-white dark:hover:bg-meta-4"
+                  className="flex items-center gap-2 rounded px-1.5 py-1 text-sm text-ink-1 transition-colors duration-fast hover:bg-surface-2"
                 >
                   <Gamepad2 size={14} className="shrink-0 text-primary" />
                   <span className="flex-1 truncate">{d.name}</span>
@@ -405,14 +404,14 @@ function CityPanel({ bucket, onClose }: { bucket: MapCityBucket; onClose: () => 
           </ul>
         </Section>
       )}
-    </SectionCard>
+    </Card>
   );
 }
 
 function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
     <div className="mb-4 last:mb-0">
-      <h4 className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-body dark:text-bodydark">
+      <h4 className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">
         {icon} {title}
       </h4>
       {children}
