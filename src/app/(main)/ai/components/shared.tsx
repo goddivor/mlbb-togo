@@ -5,7 +5,8 @@ import { AlertCircle, Sparkles, Cpu } from 'lucide-react';
 import { ApiError, mlbbImg } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { useLangStore } from '@/store/useStore';
-import { Badge, Button, SectionCard } from '@/components/ui';
+import { Badge, Button, Card } from '@/components/ui';
+import { cn } from '@/lib/helpers';
 import RoleIcon from '@/components/game/RoleIcon';
 
 export type AiSource = 'llm' | 'heuristic';
@@ -65,7 +66,7 @@ export function ErrorBox({ errorKey }: { errorKey: string | null }) {
   const t = useT();
   if (!errorKey) return null;
   return (
-    <div className="flex items-start gap-2 rounded-sm border border-danger/40 bg-danger/10 p-3 text-sm text-danger">
+    <div className="flex items-start gap-2 rounded border border-accent-red/40 bg-accent-red/10 p-3 text-sm text-accent-red">
       <AlertCircle size={16} className="mt-0.5 shrink-0" />
       <span>{t(errorKey)}</span>
     </div>
@@ -96,14 +97,15 @@ export function RunButton({
 
 export function ScoreBar({ value, label }: { value: number; label: string }) {
   const pct = Math.round(Math.min(1, Math.max(0, value)) * 100);
+  const accent = pct >= 70 ? 'bg-accent-green' : pct >= 40 ? 'bg-accent-cyan' : 'bg-accent-gold';
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-xs text-body dark:text-bodydark">
-        <span>{label}</span>
-        <span className="font-semibold text-black dark:text-white">{pct}%</span>
+      <div className="mb-1 flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{label}</span>
+        <span className="font-display text-xs font-bold num text-ink-1">{pct}%</span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-gray dark:bg-meta-4">
-        <div className="h-1.5 rounded-full bg-primary" style={{ width: `${pct}%` }} />
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-3">
+        <div className={cn('h-full rounded-full transition-[width] duration-slow ease-out', accent)} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -115,31 +117,32 @@ export function HeroResultCard({ hero, scoreLabel }: { hero: HeroCard; scoreLabe
   const img = hero.thumb || hero.image;
   const score = hero.effectiveness ?? hero.confidence;
   return (
-    <SectionCard className="flex flex-col gap-3 !p-4">
+    <Card hover className="group relative flex flex-col gap-3 overflow-hidden !p-4">
+      <span aria-hidden="true" className="absolute -right-8 -top-8 h-16 w-16 rotate-45 bg-primary/10 transition-colors group-hover:bg-primary/20" />
       <div className="flex items-center gap-3">
-        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-sm bg-gray dark:bg-meta-4">
+        <div className="h-14 w-14 shrink-0 overflow-hidden rounded cut-corners-sm bg-surface-2 ring-1 ring-inset ring-line-subtle">
           {img && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={mlbbImg(img, 112)} alt={hero.name} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
           )}
         </div>
         <div className="min-w-0">
-          <p className="truncate font-semibold text-black dark:text-white">{hero.name}</p>
+          <p className="truncate font-display text-base font-bold tracking-tight2 text-ink-1">{hero.name}</p>
           <div className="mt-1 flex items-center gap-1">
             {(hero.roles?.length ? hero.roles : [hero.role]).slice(0, 3).map((r) => (
               <RoleIcon key={r} role={r} size={14} />
             ))}
-            <span className="text-xs text-body dark:text-bodydark">{t(`role.${String(hero.role).toLowerCase()}`)}</span>
+            <span className="text-xs text-ink-2">{t(`role.${String(hero.role).toLowerCase()}`)}</span>
           </div>
         </div>
       </div>
-      <p className="text-sm text-body dark:text-bodydark">{hero.reason}</p>
+      <p className="text-sm text-ink-2">{hero.reason}</p>
       {hero.against && hero.against.length > 0 && (
-        <p className="text-xs text-body dark:text-bodydark">
-          <span className="font-medium text-black dark:text-white">{t('ai.counter.against')}:</span> {hero.against.join(', ')}
+        <p className="text-xs text-ink-2">
+          <span className="font-medium text-ink-1">{t('ai.counter.against')}:</span> {hero.against.join(', ')}
         </p>
       )}
       <ScoreBar value={score} label={scoreLabel} />
-    </SectionCard>
+    </Card>
   );
 }

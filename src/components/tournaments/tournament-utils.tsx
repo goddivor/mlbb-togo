@@ -1,17 +1,18 @@
 'use client';
 
 import { avatarSrc } from '@/lib/api';
+import { cn } from '@/lib/helpers';
 
 export const TOURNAMENT_STATUS_VARIANT: Record<string, string> = {
   upcoming: 'neon',
-  ongoing: 'green',
+  ongoing: 'live',
   completed: 'default',
 };
 
 export const MATCH_STATUS_VARIANT: Record<string, string> = {
   pending: 'default',
   scheduled: 'blue',
-  live: 'red',
+  live: 'live',
   finished: 'green',
   bye: 'default',
 };
@@ -56,7 +57,7 @@ export function streamEmbedUrl(url?: string | null): string | null {
   }
 }
 
-/** Square team logo with initial fallback. */
+/** Square chamfered team logo with initial fallback. */
 export function TeamLogo({
   name,
   logo,
@@ -70,14 +71,18 @@ export function TeamLogo({
 }) {
   const cls = { sm: 'h-6 w-6 text-[10px]', md: 'h-9 w-9 text-sm', lg: 'h-14 w-14 text-lg' }[size];
   return (
-    <div className={`shrink-0 overflow-hidden rounded-lg bg-primary ${cls} ${className}`}>
+    <div
+      className={cn(
+        'flex shrink-0 items-center justify-center overflow-hidden rounded cut-corners-sm bg-surface-2 ring-1 ring-inset ring-line-subtle',
+        cls,
+        className
+      )}
+    >
       {logo ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={avatarSrc(logo, 96)} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
       ) : (
-        <span className="flex h-full w-full items-center justify-center font-bold text-white">
-          {name?.[0]?.toUpperCase() || 'T'}
-        </span>
+        <span className="font-display font-bold text-ink-2">{name?.[0]?.toUpperCase() || 'T'}</span>
       )}
     </div>
   );

@@ -13,25 +13,26 @@ import {
   Radio,
   ExternalLink,
   WifiOff,
-  Star,
   GitBranch,
   ListChecks,
   Play,
 } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   Card,
   Badge,
   Button,
   Tabs,
-  SectionCard,
   EmptyState,
-  LoadingSpinner,
   Avatar,
+  PageHeader,
+  Skeleton,
 } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { formatDate, formatDateTime } from '@/lib/helpers';
+import { cn, formatDate, formatDateTime } from '@/lib/helpers';
+import { fadeUp, stagger, still } from '@/lib/motion';
 import EliminationBracket from '@/components/tournaments/EliminationBracket';
 import MatchSummary, { DetailedMatch } from '@/components/tournaments/MatchSummary';
 import {
@@ -57,6 +58,7 @@ const TABS = ['bracket', 'participants', 'results', 'schedule', 'live'] as const
 
 export default function TournamentDetailPage() {
   const t = useT();
+  const reduce = useReducedMotion();
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<Details | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,7 +102,24 @@ export default function TournamentDetailPage() {
     [data],
   );
 
-  if (loading) return <LoadingSpinner size="lg" className="py-24" />;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-9 w-2/3 max-w-md" />
+        <Card className="!p-5">
+          <div className="grid grid-cols-2 gap-5 xl:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} lines={2} />
+            ))}
+          </div>
+        </Card>
+        <Card>
+          <Skeleton lines={4} />
+        </Card>
+      </div>
+    );
+  }
 
   if (!data) {
     return (
@@ -110,7 +129,7 @@ export default function TournamentDetailPage() {
             <ArrowLeft size={16} /> {t('tournament.back')}
           </Button>
         </Link>
-        <EmptyState icon={<Trophy size={28} />} title={t('tournament.notFound')} />
+        <EmptyState icon={<Trophy size={28} />} title={t('tournament.notFound')} className="min-h-[40vh]" />
       </div>
     );
   }
@@ -126,122 +145,130 @@ export default function TournamentDetailPage() {
 
   const tabs = [
     { id: 'bracket', label: t('tournament.tab.bracket') },
-    { id: 'participants', label: `${t('tournament.tab.participants')} (${participants.length})` },
+    { id: 'participants', label: t('tournament.tab.participants'), count: participants.length },
     { id: 'results', label: t('tournament.tab.results') },
     { id: 'schedule', label: t('tournament.tab.schedule') },
-    { id: 'live', label: liveMatch ? `🔴 ${t('tournament.tab.live')}` : t('tournament.tab.live') },
+    {
+      id: 'live',
+      label: liveMatch ? (
+        <span className="inline-flex items-center gap-2 text-accent-red">
+          <span className="live-dot" aria-hidden="true" /> {t('tournament.tab.live')}
+        </span>
+      ) : (
+        t('tournament.tab.live')
+      ),
+    },
   ];
+
+  const kpi = (icon: React.ReactNode, label: React.ReactNode, value: React.ReactNode) => (
+    <div className="flex items-start gap-3">
+      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded cut-corners-sm bg-accent-gold/15 text-accent-gold">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{label}</p>
+        <div className="mt-1 truncate font-display text-base font-bold leading-tight num text-ink-1">{value}</div>
+      </div>
+    </div>
+  );
+
+  const sectionTitle = (icon: React.ReactNode, label: React.ReactNode, action?: React.ReactNode) => (
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <h3 className="flex items-center gap-2 font-display text-lg font-bold tracking-tight2 text-ink-1">
+        <span className="text-primary">{icon}</span> {label}
+      </h3>
+      {action}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
-      <Link href="/tournaments" className="inline-block">
-        <Button variant="ghost" size="sm">
-          <ArrowLeft size={16} /> {t('tournament.back')}
-        </Button>
+      <Link href="/tournaments" className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-2 transition-colors hover:text-primary">
+        <ArrowLeft size={15} /> {t('tournament.back')}
       </Link>
-
-      {/* Header / banner */}
-      <Card className="!p-0 overflow-hidden">
-        <div className="relative h-40 w-full bg-gradient-to-r from-neon-blue/30 via-neon-purple/30 to-neon-gold/30 sm:h-52">
-          {tournament.banner && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={tournament.banner} alt="" className="h-full w-full object-cover" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-black/10" />
-          <div className="absolute bottom-4 left-4 right-4 flex flex-wrap items-end justify-between gap-3">
-            <div className="min-w-0">
-              <div className="mb-2 inline-flex flex-wrap items-center gap-2 rounded-lg bg-black/50 px-2 py-1 backdrop-blur-sm">
-                <Badge variant={TOURNAMENT_STATUS_VARIANT[status] || 'default'} size="sm">
-                  {t(`tournament.status.${status}`)}
-                </Badge>
-                {tournament.format && (
-                  <Badge variant="purple" size="sm">{tournament.format}</Badge>
-                )}
-                {liveMatch && (
-                  <Badge variant="red" size="sm">
-                    <Radio size={10} className="animate-pulse" /> {t('tournament.match.status.live')}
-                  </Badge>
-                )}
-              </div>
-              <h1 className="truncate text-2xl font-bold text-white sm:text-3xl">{tournament.name}</h1>
-            </div>
-            {tournament.prizePool && (
-              <div className="text-right">
-                <p className="text-xs uppercase tracking-wide text-white/70">{t('tournament.prizePool')}</p>
-                <p className="text-xl font-bold text-warning sm:text-2xl">{tournament.prizePool}</p>
-              </div>
+      <PageHeader
+        eyebrow={t('tournaments.eyebrow')}
+        title={tournament.name}
+        breadcrumb={t('tournaments.title')}
+        variant="gold"
+        banner={tournament.banner || undefined}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-2">
+            <Badge variant={TOURNAMENT_STATUS_VARIANT[status] || 'default'} size="sm">
+              {t(`tournament.status.${status}`)}
+            </Badge>
+            {tournament.format && <Badge variant="purple" size="sm">{tournament.format}</Badge>}
+            {liveMatch && (
+              <Badge variant="live" size="sm">
+                {t('tournament.match.status.live')}
+              </Badge>
             )}
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-4">
-          <div>
-            <p className="mb-1 flex items-center gap-1 text-xs text-body dark:text-bodydark">
-              <Calendar size={12} /> {t('tournament.dates')}
-            </p>
-            <p className="text-sm font-medium text-black dark:text-white">
+          </span>
+        }
+        action={
+          tournament.prizePool ? (
+            <div className="text-right">
+              <p className={cn('text-[10px] font-semibold uppercase tracking-eyebrow', tournament.banner ? 'text-white/70' : 'text-ink-3')}>
+                {t('tournament.prizePool')}
+              </p>
+              <p className="font-display text-2xl font-bold leading-none num text-accent-gold">{tournament.prizePool}</p>
+            </div>
+          ) : undefined
+        }
+      />
+
+      {/* Key facts */}
+      <Card className="!p-5">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          {kpi(
+            <Calendar size={15} />,
+            t('tournament.dates'),
+            <>
               {tournament.startDate ? formatDate(tournament.startDate) : '—'}
               {tournament.endDate ? ` → ${formatDate(tournament.endDate)}` : ''}
-            </p>
-          </div>
-          <div>
-            <p className="mb-1 flex items-center gap-1 text-xs text-body dark:text-bodydark">
-              <Users size={12} /> {t('tournament.tab.participants')}
-            </p>
-            <p className="text-sm font-medium text-black dark:text-white">
-              {t('tournament.teamsCount', { count: participants.length, max: tournament.maxTeams })}
-            </p>
-          </div>
-          <div>
-            <p className="mb-1 flex items-center gap-1 text-xs text-body dark:text-bodydark">
-              <Swords size={12} /> {t('tournament.organizer')}
-            </p>
-            <p className="truncate text-sm font-medium text-black dark:text-white">
-              {tournament.organizer || '—'}
-            </p>
-          </div>
-          <div>
-            <p className="mb-1 flex items-center gap-1 text-xs text-body dark:text-bodydark">
-              <Trophy size={12} /> {t('tournament.champion')}
-            </p>
-            {champion ? (
-              <p className="flex items-center gap-2 text-sm font-semibold text-black dark:text-white">
+            </>,
+          )}
+          {kpi(
+            <Users size={15} />,
+            t('tournament.tab.participants'),
+            t('tournament.teamsCount', { count: participants.length, max: tournament.maxTeams }),
+          )}
+          {kpi(<Swords size={15} />, t('tournament.organizer'), tournament.organizer || '—')}
+          {kpi(
+            <Trophy size={15} />,
+            t('tournament.champion'),
+            champion ? (
+              <span className="inline-flex items-center gap-2">
                 <TeamLogo name={champion.name} logo={champion.logo} size="sm" />
                 <span className="truncate">{champion.name}</span>
-              </p>
+              </span>
             ) : (
-              <p className="text-sm text-bodydark2">—</p>
-            )}
-          </div>
+              '—'
+            ),
+          )}
         </div>
         {tournament.description && (
-          <p className="border-t border-stroke px-4 py-3 text-sm text-body dark:border-strokedark dark:text-bodydark">
-            {tournament.description}
-          </p>
+          <p className="mt-5 border-t border-line-subtle pt-4 text-sm text-ink-2">{tournament.description}</p>
         )}
       </Card>
 
-      <SectionCard className="!p-4">
-        <div className="overflow-x-auto">
-          <Tabs tabs={tabs} active={tab} onChange={(v: any) => setTab(v)} className="whitespace-nowrap" />
-        </div>
-      </SectionCard>
+      <div className="overflow-x-auto whitespace-nowrap">
+        <Tabs variant="underline" tabs={tabs} active={tab} onChange={(v: any) => setTab(v)} className="min-w-max" />
+      </div>
 
       {/* Bracket */}
       {tab === 'bracket' && (
         <Card>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-              <GitBranch size={18} className="text-primary" /> {t('tournament.tab.bracket')}
-            </h3>
-            {highlight && (
+          {sectionTitle(
+            <GitBranch size={18} />,
+            t('tournament.tab.bracket'),
+            highlight && (
               <Button variant="ghost" size="sm" onClick={() => setHighlight(null)}>
                 {t('tournament.bracket.clearHighlight')}
               </Button>
-            )}
-          </div>
-          {allMatches.length > 0 && (
-            <p className="mb-3 text-xs text-bodydark2">{t('tournament.bracket.hint')}</p>
+            ),
           )}
+          {allMatches.length > 0 && <p className="mb-4 text-xs text-ink-3">{t('tournament.bracket.hint')}</p>}
           <EliminationBracket
             teams={bracketTeams}
             matches={allMatches}
@@ -254,7 +281,7 @@ export default function TournamentDetailPage() {
               t(roundLabelKey(roundKeyOf.get(round) || (round === total ? 'final' : 'round')), { n: round })
             }
             emptyText={
-              <EmptyState icon={<GitBranch size={28} />} title={t('tournament.bracket.empty')} />
+              <EmptyState icon={<GitBranch size={28} />} title={t('tournament.bracket.empty')} className="min-h-0 py-10" />
             }
           />
         </Card>
@@ -263,22 +290,25 @@ export default function TournamentDetailPage() {
       {/* Participants */}
       {tab === 'participants' && (
         <Card>
-          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-            <Users size={18} className="text-primary" /> {t('tournament.tab.participants')}
-          </h3>
+          {sectionTitle(<Users size={18} />, t('tournament.tab.participants'))}
           {participants.length === 0 ? (
-            <EmptyState icon={<Users size={28} />} title={t('tournament.participants.empty')} />
+            <EmptyState icon={<Users size={28} />} title={t('tournament.participants.empty')} className="min-h-0 py-10" />
           ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <motion.div
+              className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+              variants={reduce ? still : stagger(0.04)}
+              initial="hidden"
+              animate="visible"
+            >
               {participants.map((p) => {
                 const inner = (
                   <>
                     <TeamLogo name={p.name} logo={p.logo} size="lg" />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <p className="truncate text-sm font-semibold text-black dark:text-white">{p.name}</p>
+                        <p className="truncate font-display text-base font-bold tracking-tight2 text-ink-1">{p.name}</p>
                         {p.champion && (
-                          <Badge variant="gold" size="sm">
+                          <Badge variant="tier-gold" size="sm">
                             <Crown size={10} /> {t('tournament.participants.champion')}
                           </Badge>
                         )}
@@ -286,34 +316,37 @@ export default function TournamentDetailPage() {
                           <Badge variant="red" size="sm">{t('tournament.participants.eliminated')}</Badge>
                         )}
                       </div>
-                      <p className="mt-0.5 text-xs text-body dark:text-bodydark">
-                        {t('tournament.participants.seed', { n: p.seed })}
-                        {' · '}
-                        {t('tournament.participants.members', { count: p.membersCount })}
-                        {' · '}
-                        {t('tournament.participants.wins', { count: p.wins })}
+                      <p className="mt-1 flex flex-wrap gap-x-3 text-xs num text-ink-2">
+                        <span>{t('tournament.participants.seed', { n: p.seed })}</span>
+                        <span>{t('tournament.participants.members', { count: p.membersCount })}</span>
+                        <span>{t('tournament.participants.wins', { count: p.wins })}</span>
                       </p>
                       {p.captain && (
-                        <p className="mt-1 flex items-center gap-1 text-xs text-bodydark2">
-                          <Crown size={10} className="text-warning" /> {t('tournament.participants.captain')} :{' '}
-                          <span className="truncate text-black dark:text-white">{p.captain.name}</span>
+                        <p className="mt-1 flex items-center gap-1 text-xs text-ink-3">
+                          <Crown size={10} className="text-accent-gold" /> {t('tournament.participants.captain')} :{' '}
+                          <span className="truncate text-ink-1">{p.captain.name}</span>
                         </p>
                       )}
                     </div>
                   </>
                 );
-                const cls = `flex items-center gap-3 rounded-lg border bg-white p-3 dark:bg-boxdark ${
-                  p.champion ? 'border-warning/60' : 'border-stroke dark:border-strokedark'
-                }`;
-                return p.exists ? (
-                  <Link key={p.id} href={`/teams/${p.id}`} className={`${cls} transition hover:border-primary`}>
-                    {inner}
-                  </Link>
-                ) : (
-                  <div key={p.id} className={cls}>{inner}</div>
+                const cls = cn(
+                  'flex items-center gap-3 rounded-lg border bg-surface-1 p-3 shadow-elev-1 transition-[border-color,box-shadow] duration-base dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1',
+                  p.champion ? 'border-accent-gold/50' : 'border-line-subtle',
+                );
+                return (
+                  <motion.div key={p.id} variants={reduce ? still : fadeUp}>
+                    {p.exists ? (
+                      <Link href={`/teams/${p.id}`} className={cn(cls, 'hover:border-primary/50 hover:shadow-elev-2')}>
+                        {inner}
+                      </Link>
+                    ) : (
+                      <div className={cls}>{inner}</div>
+                    )}
+                  </motion.div>
                 );
               })}
-            </div>
+            </motion.div>
           )}
         </Card>
       )}
@@ -324,14 +357,12 @@ export default function TournamentDetailPage() {
           <div className="space-y-4 lg:col-span-2">
             {results.length === 0 ? (
               <Card>
-                <EmptyState icon={<ListChecks size={28} />} title={t('tournament.results.empty')} />
+                <EmptyState icon={<ListChecks size={28} />} title={t('tournament.results.empty')} className="min-h-0 py-10" />
               </Card>
             ) : (
               [...results].reverse().map((r) => (
                 <Card key={r.round}>
-                  <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-bodydark2">
-                    {t(roundLabelKey(r.key), { n: r.round })}
-                  </h3>
+                  <p className="eyebrow mb-3">{t(roundLabelKey(r.key), { n: r.round })}</p>
                   <div className="space-y-2">
                     {r.matches.map((m) => (
                       <MatchSummary key={m.id} match={m} roundKey={r.key} onClick={() => setSelected(m)} />
@@ -342,39 +373,35 @@ export default function TournamentDetailPage() {
             )}
           </div>
           <div className="space-y-4">
-            <Card className="border-warning/40">
-              <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-                <Trophy size={18} className="text-warning" /> {t('tournament.champion')}
-              </h3>
+            <Card accent="gold">
+              <p className="eyebrow mb-3 !text-accent-gold">{t('tournament.champion')}</p>
               {champion ? (
                 <Link href={`/teams/${champion.id}`} className="flex items-center gap-3">
                   <TeamLogo name={champion.name} logo={champion.logo} size="lg" />
-                  <span className="text-base font-bold text-black dark:text-white">{champion.name}</span>
+                  <span className="font-display text-lg font-bold tracking-tight2 text-ink-1">{champion.name}</span>
                 </Link>
               ) : (
-                <p className="text-sm text-bodydark2">—</p>
+                <p className="text-sm text-ink-3">—</p>
               )}
             </Card>
-            <Card className="border-primary/40">
-              <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-                <Star size={18} className="text-primary" /> {t('tournament.mvp.title')}
-              </h3>
+            <Card accent="cyan">
+              <p className="eyebrow mb-3">{t('tournament.mvp.title')}</p>
               {mvp ? (
                 <div className="flex items-center gap-3">
-                  <Avatar name={mvp.name} src={mvp.avatar} size="lg" />
+                  <Avatar name={mvp.name} src={mvp.avatar} size="lg" ring />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-base font-bold text-black dark:text-white">{mvp.name}</p>
+                    <p className="truncate font-display text-lg font-bold tracking-tight2 text-ink-1">{mvp.name}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                       {hasRankBadge(mvp.rank) && <RankBadge rank={mvp.rank} size={22} />}
                       {mvp.role && <Badge variant="default" size="sm">{mvp.role}</Badge>}
                     </div>
-                    <Link href={`/players/${mvp.userId}`} className="mt-1 inline-block text-xs text-primary hover:underline">
+                    <Link href={`/players/${mvp.userId}`} className="mt-1 inline-block text-xs font-medium text-primary hover:underline">
                       {t('tournament.mvp.viewProfile')}
                     </Link>
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-bodydark2">{t('tournament.mvp.empty')}</p>
+                <p className="text-sm text-ink-3">{t('tournament.mvp.empty')}</p>
               )}
             </Card>
           </div>
@@ -384,18 +411,14 @@ export default function TournamentDetailPage() {
       {/* Schedule */}
       {tab === 'schedule' && (
         <Card>
-          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-            <Calendar size={18} className="text-primary" /> {t('tournament.tab.schedule')}
-          </h3>
+          {sectionTitle(<Calendar size={18} />, t('tournament.tab.schedule'))}
           {schedule.length === 0 ? (
-            <EmptyState icon={<Calendar size={28} />} title={t('tournament.schedule.empty')} />
+            <EmptyState icon={<Calendar size={28} />} title={t('tournament.schedule.empty')} className="min-h-0 py-10" />
           ) : (
-            <div className="space-y-5">
+            <div className="space-y-6">
               {upcoming.length > 0 && (
                 <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-bodydark2">
-                    {t('tournament.schedule.upcoming')}
-                  </p>
+                  <p className="eyebrow mb-3">{t('tournament.schedule.upcoming')}</p>
                   <div className="space-y-2">
                     {upcoming.map((m) => (
                       <MatchSummary key={m.id} match={m} roundKey={roundKeyOf.get(m.round)} onClick={() => setSelected(m)} />
@@ -405,9 +428,7 @@ export default function TournamentDetailPage() {
               )}
               {past.length > 0 && (
                 <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-bodydark2">
-                    {t('tournament.schedule.past')}
-                  </p>
+                  <p className="eyebrow mb-3 !text-ink-3">{t('tournament.schedule.past')}</p>
                   <div className="space-y-2">
                     {past.map((m) => (
                       <MatchSummary key={m.id} match={m} roundKey={roundKeyOf.get(m.round)} onClick={() => setSelected(m)} />
@@ -423,9 +444,13 @@ export default function TournamentDetailPage() {
       {/* Live */}
       {tab === 'live' && (
         <Card className="!p-0 overflow-hidden">
-          <div className="flex items-center justify-between gap-2 border-b border-stroke p-4 dark:border-strokedark">
-            <h3 className="flex items-center gap-2 text-lg font-semibold text-black dark:text-white">
-              <Radio size={18} className={liveMatch ? 'animate-pulse text-danger' : 'text-bodydark2'} />{' '}
+          <div className="flex items-center justify-between gap-2 border-b border-line-subtle p-4">
+            <h3 className="flex items-center gap-2 font-display text-lg font-bold tracking-tight2 text-ink-1">
+              {liveMatch ? (
+                <span className="live-dot text-accent-red" aria-hidden="true" />
+              ) : (
+                <Radio size={18} className="text-ink-3" />
+              )}
               {t('tournament.live.title')}
             </h3>
             {liveMatch?.streamUrl && (
@@ -449,9 +474,9 @@ export default function TournamentDetailPage() {
                   />
                 </div>
               ) : (
-                <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 bg-gaming-darker text-center">
-                  <WifiOff size={40} className="text-gray-500" />
-                  <p className="text-sm text-gray-400">{t('tournament.live.noStream')}</p>
+                <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 bg-surface-0 text-center">
+                  <WifiOff size={40} className="text-ink-3" />
+                  <p className="text-sm text-ink-2">{t('tournament.live.noStream')}</p>
                   {liveMatch.streamUrl && (
                     <a href={liveMatch.streamUrl} target="_blank" rel="noreferrer">
                       <Button size="sm">
@@ -466,10 +491,10 @@ export default function TournamentDetailPage() {
               </div>
             </>
           ) : (
-            <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 bg-gaming-darker text-center">
-              <WifiOff size={40} className="text-gray-500" />
-              <p className="text-sm font-medium text-gray-300">{t('tournament.live.none')}</p>
-              <p className="text-xs text-gray-500">{t('tournament.live.noneHint')}</p>
+            <div className="flex aspect-video max-h-[360px] w-full flex-col items-center justify-center gap-2 bg-surface-0 px-4 text-center">
+              <WifiOff size={40} className="text-ink-3" />
+              <p className="font-display text-base font-bold text-ink-1">{t('tournament.live.none')}</p>
+              <p className="text-xs text-ink-3">{t('tournament.live.noneHint')}</p>
             </div>
           )}
         </Card>
@@ -488,15 +513,15 @@ export default function TournamentDetailPage() {
           <div className="space-y-4">
             <MatchSummary match={selected} roundKey={roundKeyOf.get(selected.round)} />
             <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-              <div className="rounded-lg bg-gray-2 p-3 dark:bg-meta-4">
-                <p className="mb-1 text-xs text-body dark:text-bodydark">{t('tournament.match.scheduledAt')}</p>
-                <p className="font-medium text-black dark:text-white">
+              <div className="rounded-lg bg-surface-2/70 p-3">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('tournament.match.scheduledAt')}</p>
+                <p className="font-medium num text-ink-1">
                   {selected.scheduledAt ? formatDateTime(selected.scheduledAt) : t('tournament.match.notScheduled')}
                 </p>
               </div>
-              <div className="rounded-lg bg-gray-2 p-3 dark:bg-meta-4">
-                <p className="mb-1 text-xs text-body dark:text-bodydark">{t('tournament.match.winner')}</p>
-                <p className="font-medium text-black dark:text-white">
+              <div className="rounded-lg bg-surface-2/70 p-3">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('tournament.match.winner')}</p>
+                <p className="font-medium text-ink-1">
                   {selected.winnerTeamId
                     ? (selected.winnerTeamId === selected.teamAId ? selected.teamA?.name : selected.teamB?.name) || '—'
                     : '—'}
@@ -504,7 +529,7 @@ export default function TournamentDetailPage() {
               </div>
             </div>
             {(!selected.teamAId || !selected.teamBId) && selected.status !== 'bye' && (
-              <p className="text-xs text-bodydark2">{t('tournament.match.tbd')}</p>
+              <p className="text-xs text-ink-3">{t('tournament.match.tbd')}</p>
             )}
             {selected.streamUrl && (
               <a href={selected.streamUrl} target="_blank" rel="noreferrer" className="block">

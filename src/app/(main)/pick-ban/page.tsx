@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Save, Swords } from 'lucide-react';
+import { Plus, Save, Swords, Bookmark, CheckCircle2, Shield, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Button, EmptyState, LoadingSpinner, PageHeader } from '@/components/ui';
+import { Button, EmptyState, PageHeader, SectionTitle, Skeleton, StatCard, Card } from '@/components/ui';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import PickBanBoard, { type BoardMove } from '@/components/pickban/PickBanBoard';
 import PickBanList, { type DraftSummary } from '@/components/pickban/PickBanList';
@@ -16,6 +16,7 @@ import {
   applyAction,
   emptyDraft,
   playedMoves,
+  totalSteps,
   undoAction,
   type DraftState,
   type PickBanHero,
@@ -115,36 +116,67 @@ export default function PickBanPage() {
     }
   };
 
+  const completedCount = drafts.filter(
+    (d) => d.status === 'completed' || d.currentStep >= totalSteps(d.mode),
+  ).length;
+  const localTotal = totalSteps(local.mode);
+
   return (
     <div className="space-y-6">
       <PageHeader
-        icon={<Swords size={28} />}
+        icon={<Swords size={20} />}
+        eyebrow={t('pickban.eyebrow')}
         title={t('pickban.title')}
         subtitle={t('pickban.subtitle')}
         action={
-          <Button onClick={() => setCreateOpen(true)} className="gap-1.5">
+          <Button onClick={() => setCreateOpen(true)} className="shrink-0 gap-1.5 whitespace-nowrap">
             <Plus size={16} />
             {t('pickban.new')}
           </Button>
         }
-      />
+      >
+        <StatCard label={t('pickban.kpi.saved')} value={loading ? '—' : drafts.length} icon={<Bookmark size={18} />} accent="cyan" />
+        <StatCard label={t('pickban.kpi.completed')} value={loading ? '—' : completedCount} icon={<CheckCircle2 size={18} />} accent="green" />
+        <StatCard
+          label={t('pickban.kpi.local')}
+          value={
+            <>
+              {Math.min(local.currentStep, localTotal)}
+              <span className="text-base text-ink-3">/{localTotal}</span>
+            </>
+          }
+          hint={t(`pickban.${local.mode}`)}
+          icon={<Zap size={18} />}
+          accent="violet"
+        />
+        <StatCard label={t('pickban.kpi.heroes')} value={loading ? '—' : heroes.length} icon={<Shield size={18} />} accent="gold" />
+      </PageHeader>
 
       {loading ? (
-        <LoadingSpinner size="lg" className="py-24" />
+        <div className="space-y-4">
+          <Card>
+            <Skeleton lines={2} />
+          </Card>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+            <Card className="lg:col-span-3"><Skeleton lines={6} /></Card>
+            <Card className="lg:col-span-6"><Skeleton lines={8} /></Card>
+            <Card className="lg:col-span-3"><Skeleton lines={6} /></Card>
+          </div>
+        </div>
       ) : (
         <>
-          <section className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-semibold text-black dark:text-white">{t('pickban.localTitle')}</h3>
-                <p className="text-xs text-body dark:text-bodydark">{t('pickban.saveHint')}</p>
-              </div>
-              <ModeSwitch
-                value={local.mode}
-                onChange={(mode) => updateLocal(emptyDraft(mode))}
-                size="sm"
-              />
-            </div>
+          <section className="space-y-4">
+            <SectionTitle
+              title={t('pickban.localTitle')}
+              description={t('pickban.saveHint')}
+              action={
+                <ModeSwitch
+                  value={local.mode}
+                  onChange={(mode) => updateLocal(emptyDraft(mode))}
+                  size="sm"
+                />
+              }
+            />
             <PickBanBoard
               state={local}
               heroes={heroes}
@@ -165,13 +197,13 @@ export default function PickBanPage() {
             />
           </section>
 
-          <section className="space-y-3">
-            <h3 className="text-lg font-semibold text-black dark:text-white">{t('pickban.myDrafts')}</h3>
+          <section className="space-y-4">
+            <SectionTitle title={t('pickban.myDrafts')} />
             {drafts.length === 0 ? (
               <EmptyState
                 icon={<Swords size={26} />}
                 title={t('pickban.empty')}
-                className="min-h-[30vh] py-10"
+                className="min-h-0 rounded-lg border border-dashed border-line-subtle py-10"
               />
             ) : (
               <PickBanList drafts={drafts} onDelete={setToDelete} />

@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { useAuthStore } from '@/store/useStore';
-import { Badge, Button, EmptyState, LoadingSpinner, PageHeader } from '@/components/ui';
+import { Badge, Button, EmptyState, PageHeader, Skeleton, Card } from '@/components/ui';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import PickBanBoard, { type BoardMove } from '@/components/pickban/PickBanBoard';
 import type { DraftState, PickBanHero } from '@/lib/pickban';
@@ -115,8 +115,14 @@ export default function PickBanDraftPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <PageHeader title={t('pickban.title')} breadcrumb={t('header.pickban')} />
-        <LoadingSpinner size="lg" className="py-24" />
+        <PageHeader eyebrow={t('pickban.eyebrow')} title={t('pickban.title')} breadcrumb={t('header.pickban')} />
+        <Card>
+          <Skeleton lines={2} />
+        </Card>
+        <div className="grid grid-cols-2 gap-4">
+          <Card><Skeleton lines={6} /></Card>
+          <Card><Skeleton lines={6} /></Card>
+        </div>
       </div>
     );
   }
@@ -124,7 +130,7 @@ export default function PickBanDraftPage() {
   if (!draft) {
     return (
       <div className="space-y-6">
-        <PageHeader title={t('pickban.title')} breadcrumb={t('header.pickban')} />
+        <PageHeader eyebrow={t('pickban.eyebrow')} title={t('pickban.title')} breadcrumb={t('header.pickban')} />
         <EmptyState
           icon={<Swords size={26} />}
           title={t('pickban.notFound')}
@@ -145,11 +151,13 @@ export default function PickBanDraftPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow={t('pickban.eyebrow')}
         title={draft.name}
         breadcrumb={t('header.pickban')}
+        variant={draft.mode === 'ranked' ? 'cyan' : 'purple'}
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
-            {t('pickban.draft', { code: draft.shareCode })}
+            <span className="num">{t('pickban.draft', { code: draft.shareCode })}</span>
             <Badge size="sm" variant={draft.mode === 'ranked' ? 'blue' : 'purple'}>
               {t(`pickban.${draft.mode}`)}
             </Badge>
@@ -161,7 +169,7 @@ export default function PickBanDraftPage() {
           </span>
         }
         action={
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <Link href="/pick-ban">
               <Button size="sm" variant="ghost" className="gap-1.5">
                 <ArrowLeft size={15} />

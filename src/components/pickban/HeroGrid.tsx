@@ -42,16 +42,16 @@ export default function HeroGrid({
   const available = filtered.filter((h) => !used.has(h.id)).length;
 
   return (
-    <div className="rounded-sm border border-stroke bg-white p-3 shadow-default dark:border-strokedark dark:bg-boxdark sm:p-4">
+    <div className="rounded-lg border border-line-subtle bg-surface-1 p-3 shadow-elev-1 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1 sm:p-4">
       <div className="mb-3 space-y-2.5">
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-bodydark2" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('pickban.search')}
             aria-label={t('pickban.search')}
-            className="w-full rounded-sm border border-stroke bg-gray-2 py-2 pl-9 pr-3 text-sm text-black placeholder-bodydark2 focus:border-primary focus:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white"
+            className="w-full rounded border border-line-strong bg-surface-1 py-2 pl-9 pr-3 text-sm text-ink-1 placeholder:text-ink-3 outline-none transition-[border-color,box-shadow] duration-base focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60"
           />
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -87,13 +87,13 @@ export default function HeroGrid({
             </Button>
           ))}
         </div>
-        <p className="text-xs text-body dark:text-bodydark">
+        <p className="text-xs num text-ink-3">
           {t('pickban.available', { count: available })}
         </p>
       </div>
 
       {filtered.length === 0 ? (
-        <p className="py-10 text-center text-sm text-body dark:text-bodydark">{t('pickban.noHero')}</p>
+        <p className="py-10 text-center text-sm text-ink-2">{t('pickban.noHero')}</p>
       ) : (
         <div className="grid max-h-[60vh] grid-cols-4 gap-2 overflow-y-auto pr-1 sm:grid-cols-5 md:grid-cols-6 xl:grid-cols-7">
           {filtered.map((h) => {
@@ -106,8 +106,8 @@ export default function HeroGrid({
                   onClick={() => onSelect(h)}
                   title={h.name}
                   className={cn(
-                    'w-full overflow-hidden rounded-sm border border-stroke bg-white text-left transition-colors dark:border-strokedark dark:bg-boxdark',
-                    isUsed || disabled ? 'cursor-not-allowed' : 'hover:border-primary',
+                    'w-full overflow-hidden rounded border border-line-subtle bg-surface-2/60 text-left transition-[border-color,transform] duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+                    isUsed || disabled ? 'cursor-not-allowed' : 'hover:-translate-y-0.5 hover:border-primary',
                   )}
                 >
                   <HeroThumb
@@ -119,7 +119,7 @@ export default function HeroGrid({
                   />
                   <div className="flex items-center gap-1 px-1.5 py-1">
                     <RoleIcon role={h.role} size={12} />
-                    <span className="truncate text-[11px] font-medium text-black dark:text-white">
+                    <span className="truncate text-[11px] font-medium text-ink-1">
                       {h.name}
                     </span>
                   </div>
@@ -130,7 +130,7 @@ export default function HeroGrid({
                     onClick={() => onInfo(h)}
                     aria-label={t('pickban.heroInfo')}
                     title={t('pickban.heroInfo')}
-                    className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-80 hover:opacity-100"
+                    className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity duration-fast hover:opacity-100 focus-visible:opacity-100 group-hover:opacity-90"
                   >
                     <Info size={12} />
                   </button>

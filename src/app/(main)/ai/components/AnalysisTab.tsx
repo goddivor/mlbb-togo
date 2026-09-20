@@ -1,11 +1,12 @@
 'use client';
 
 import { useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Badge, SectionCard, StatCard } from '@/components/ui';
+import { fadeUp, still } from '@/lib/motion';
+import { Badge, Card, StatCard } from '@/components/ui';
 import { ErrorBox, RunButton, SourceBadge, useAiLang, useAiRun } from './shared';
 
 interface Point {
@@ -25,6 +26,7 @@ const IMPACT_VARIANT: Record<string, string> = { high: 'red', medium: 'gold', lo
 
 export default function AnalysisTab() {
   const t = useT();
+  const reduce = useReducedMotion();
   const lang = useAiLang();
   const fetcher = useCallback(() => api.ai.analyze(lang) as Promise<AnalysisData>, [lang]);
   const { data, loading, errorKey, run } = useAiRun(fetcher);
@@ -32,20 +34,20 @@ export default function AnalysisTab() {
   const list = (title: string, icon: React.ReactNode, points: Point[]) =>
     points.length > 0 && (
       <div>
-        <h3 className="mb-3 flex items-center gap-2 font-semibold text-black dark:text-white">
+        <h3 className="mb-3 flex items-center gap-2 font-display text-base font-bold tracking-tight2 text-ink-1">
           {icon} {title}
         </h3>
         <div className="space-y-3">
           {points.map((p, i) => (
-            <SectionCard key={i} className="flex items-start justify-between gap-3 !p-4">
+            <Card key={i} className="flex items-start justify-between gap-3 !p-4">
               <div className="min-w-0">
-                <p className="font-semibold text-black dark:text-white">{p.category}</p>
-                <p className="text-sm text-body dark:text-bodydark">{p.description}</p>
+                <p className="font-semibold text-ink-1">{p.category}</p>
+                <p className="text-sm text-ink-2">{p.description}</p>
               </div>
               <Badge variant={IMPACT_VARIANT[p.impact]} size="sm" className="shrink-0">
                 {t(`ai.impact.${p.impact}`)}
               </Badge>
-            </SectionCard>
+            </Card>
           ))}
         </div>
       </div>
@@ -53,36 +55,36 @@ export default function AnalysisTab() {
 
   return (
     <div className="space-y-6">
-      <SectionCard className="space-y-4">
-        <p className="text-sm text-body dark:text-bodydark">{t('ai.analysis.intro')}</p>
+      <Card className="space-y-4">
+        <p className="text-sm text-ink-2">{t('ai.analysis.intro')}</p>
         <RunButton onClick={run} loading={loading} hasResult={!!data} labelKey="ai.analysis.cta" />
         <ErrorBox errorKey={errorKey} />
-      </SectionCard>
+      </Card>
 
       {data && (
-        <motion.div className="space-y-6" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div className="space-y-6" variants={reduce ? still : fadeUp} initial="hidden" animate="visible">
           <div className="flex justify-end">
             <SourceBadge source={data.source} />
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <StatCard label={t('ai.analysis.games')} value={data.stats.games} />
-            <StatCard label={t('ai.analysis.winRate')} value={`${data.stats.winRate}%`} />
-            <StatCard label={t('ai.analysis.mvpRate')} value={`${data.stats.mvpRate}%`} />
-            <StatCard label={t('ai.analysis.streak')} value={data.stats.streak} />
+            <StatCard label={t('ai.analysis.games')} value={data.stats.games} accent="cyan" />
+            <StatCard label={t('ai.analysis.winRate')} value={`${data.stats.winRate}%`} accent="green" />
+            <StatCard label={t('ai.analysis.mvpRate')} value={`${data.stats.mvpRate}%`} accent="gold" />
+            <StatCard label={t('ai.analysis.streak')} value={data.stats.streak} accent="violet" />
           </div>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {list(t('ai.analysis.strengths'), <TrendingUp size={18} className="text-success" />, data.strengths)}
-            {list(t('ai.analysis.weaknesses'), <TrendingDown size={18} className="text-danger" />, data.weaknesses)}
+            {list(t('ai.analysis.strengths'), <TrendingUp size={18} className="text-accent-green" />, data.strengths)}
+            {list(t('ai.analysis.weaknesses'), <TrendingDown size={18} className="text-accent-red" />, data.weaknesses)}
           </div>
           {data.recommendations.length > 0 && (
             <div>
-              <h3 className="mb-3 font-semibold text-black dark:text-white">{t('ai.analysis.recommendations')}</h3>
+              <h3 className="mb-3 font-display text-base font-bold tracking-tight2 text-ink-1">{t('ai.analysis.recommendations')}</h3>
               <div className="space-y-2">
                 {data.recommendations.map((r, i) => (
-                  <SectionCard key={i} className="flex items-start gap-2 !p-4">
+                  <Card key={i} className="flex items-start gap-2 !p-4">
                     <ArrowRight size={16} className="mt-0.5 shrink-0 text-primary" />
-                    <p className="text-sm text-body dark:text-bodydark">{r}</p>
-                  </SectionCard>
+                    <p className="text-sm text-ink-2">{r}</p>
+                  </Card>
                 ))}
               </div>
             </div>

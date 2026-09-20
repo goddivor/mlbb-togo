@@ -1,11 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { AlertTriangle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { SectionCard } from '@/components/ui';
+import { fadeUp, still } from '@/lib/motion';
+import { Card } from '@/components/ui';
 import HeroPicker, { useHeroCatalog } from './HeroPicker';
 import { ErrorBox, HeroCard, HeroResultCard, RunButton, SourceBadge, useAiLang, useAiRun } from './shared';
 
@@ -19,6 +20,7 @@ interface CounterData {
 /** `initialEnemy` = hero name preselected from the hero detail modal (`?enemy=`). */
 export default function CounterTab({ initialEnemy }: { initialEnemy?: string | null }) {
   const t = useT();
+  const reduce = useReducedMotion();
   const lang = useAiLang();
   const { heroes, loading: catalogLoading } = useHeroCatalog();
   const [selected, setSelected] = useState<string[]>([]);
@@ -34,27 +36,27 @@ export default function CounterTab({ initialEnemy }: { initialEnemy?: string | n
 
   return (
     <div className="space-y-6">
-      <SectionCard className="space-y-4">
-        <p className="text-sm text-body dark:text-bodydark">{t('ai.counter.intro')}</p>
-        <p className="text-xs font-medium uppercase tracking-wide text-body dark:text-bodydark">{t('ai.counter.enemies')}</p>
+      <Card className="space-y-4">
+        <p className="text-sm text-ink-2">{t('ai.counter.intro')}</p>
+        <p className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('ai.counter.enemies')}</p>
         <HeroPicker heroes={heroes} loading={catalogLoading} selected={selected} onChange={setSelected} max={5} />
         <RunButton onClick={run} loading={loading} hasResult={!!data} labelKey="ai.counter.cta" disabled={selected.length === 0} />
         <ErrorBox errorKey={errorKey} />
-      </SectionCard>
+      </Card>
 
       {data && (
-        <motion.div className="space-y-3" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div className="space-y-3" variants={reduce ? still : fadeUp} initial="hidden" animate="visible">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="font-semibold text-black dark:text-white">
+            <h3 className="font-semibold text-ink-1">
               {t('ai.counter.results')}{' '}
-              <span className="font-normal text-body dark:text-bodydark">
+              <span className="font-normal text-ink-2">
                 ({t('ai.counter.against')} {data.enemies.map((e) => e.name).join(', ')})
               </span>
             </h3>
             <SourceBadge source={data.source} />
           </div>
           {!data.metaAvailable && (
-            <p className="flex items-center gap-1 text-xs text-warning">
+            <p className="flex items-center gap-1 text-xs text-accent-gold">
               <AlertTriangle size={12} /> {t('ai.counter.metaMissing')}
             </p>
           )}

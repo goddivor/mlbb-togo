@@ -37,32 +37,32 @@ export default function SuggestionsPanel({
   };
 
   return (
-    <div className="rounded-sm border border-warning/40 bg-white p-3 shadow-default dark:bg-boxdark sm:p-4">
+    <div className="rounded-lg border border-accent-gold/40 bg-surface-1 p-3 shadow-elev-1 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1 sm:p-4">
       <div className="mb-1 flex items-center gap-2">
-        <Lightbulb size={18} className="text-warning" />
-        <h4 className="font-semibold text-black dark:text-white">{t('pickban.suggestions')}</h4>
+        <Lightbulb size={18} className="text-accent-gold" />
+        <h4 className="font-display text-base font-bold tracking-tight2 text-ink-1">{t('pickban.suggestions')}</h4>
         {data && (
           <Badge size="sm" variant={data.action === 'ban' ? 'red' : 'blue'}>
             {t(`pickban.${data.action}`)} · {t(data.team === 'blue' ? 'pickban.teamBlue' : 'pickban.teamRed')}
           </Badge>
         )}
       </div>
-      <p className="mb-3 text-xs text-body dark:text-bodydark">{t('pickban.suggestionsHint')}</p>
+      <p className="mb-3 text-xs text-ink-3">{t('pickban.suggestionsHint')}</p>
 
       {data && !data.metaAvailable && (
-        <p className="mb-3 flex items-start gap-1.5 rounded-sm bg-warning/10 px-2.5 py-1.5 text-xs text-warning">
+        <p className="mb-3 flex items-start gap-1.5 rounded bg-accent-gold/10 px-2.5 py-1.5 text-xs text-accent-gold">
           <AlertTriangle size={14} className="mt-0.5 shrink-0" />
           {t('pickban.metaUnavailable')}
         </p>
       )}
 
       {loading ? (
-        <div className="flex items-center gap-2 py-4 text-sm text-body dark:text-bodydark">
+        <div className="flex items-center gap-2 py-4 text-sm text-ink-2">
           <SpinLoader />
           {t('pickban.suggestionsLoading')}
         </div>
       ) : items.length === 0 ? (
-        <p className="py-4 text-sm text-body dark:text-bodydark">{t('pickban.suggestionsNone')}</p>
+        <p className="py-4 text-sm text-ink-2">{t('pickban.suggestionsNone')}</p>
       ) : (
         <ol className="space-y-1.5">
           {items.map((s, i) => {
@@ -73,21 +73,21 @@ export default function SuggestionsPanel({
                   type="button"
                   disabled={disabled || !hero}
                   onClick={() => hero && onSelect(hero)}
-                  className="flex w-full items-center gap-2.5 rounded-sm border border-stroke bg-gray-2 p-1.5 text-left transition-colors hover:border-warning disabled:cursor-not-allowed disabled:opacity-60 dark:border-strokedark dark:bg-meta-4"
+                  className="flex w-full items-center gap-2.5 rounded border border-line-subtle bg-surface-2/60 p-1.5 text-left transition-colors duration-fast hover:border-accent-gold/70 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 >
-                  <span className="w-4 text-center text-xs font-bold text-body dark:text-bodydark">{i + 1}</span>
+                  <span className="w-4 text-center font-display text-xs font-bold num text-ink-3">{i + 1}</span>
                   <HeroThumb
                     src={s.thumb ?? s.image ?? hero?.thumb}
                     name={s.heroName}
                     size={80}
-                    className="h-10 w-10 shrink-0 rounded-sm"
+                    className="h-10 w-10 shrink-0 rounded cut-corners-sm"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-1 truncate text-sm font-semibold text-black dark:text-white">
+                    <p className="flex items-center gap-1 truncate text-sm font-semibold text-ink-1">
                       <RoleIcon role={s.role} size={12} />
                       {s.heroName}
                     </p>
-                    <p className="truncate text-xs text-body dark:text-bodydark" title={describe(s)}>
+                    <p className="truncate text-xs text-ink-2" title={describe(s)}>
                       {describe(s)}
                     </p>
                   </div>

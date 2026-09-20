@@ -20,7 +20,7 @@ export default function ModeSwitch({
     <div
       role="radiogroup"
       aria-label={t('pickban.mode')}
-      className="inline-flex rounded-sm border border-stroke bg-gray-2 p-0.5 dark:border-strokedark dark:bg-meta-4"
+      className="inline-flex rounded-md border border-line-subtle bg-surface-2/70 p-1"
     >
       {(['ranked', 'tournament'] as PickBanMode[]).map((m) => (
         <button
@@ -31,11 +31,9 @@ export default function ModeSwitch({
           disabled={disabled}
           onClick={() => onChange(m)}
           className={cn(
-            'rounded-sm font-medium transition-colors disabled:cursor-not-allowed',
+            'rounded font-semibold transition-colors duration-fast disabled:cursor-not-allowed',
             size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-4 py-1.5 text-sm',
-            value === m
-              ? 'bg-primary text-white'
-              : 'text-body hover:text-primary dark:text-bodydark',
+            value === m ? 'bg-primary text-on-primary' : 'text-ink-2 hover:text-ink-1',
           )}
         >
           {t(`pickban.${m}`)}

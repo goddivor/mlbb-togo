@@ -51,7 +51,7 @@ export default function CreateDraftModal({
           autoFocus
         />
         <div>
-          <p className="mb-2.5 block text-black dark:text-white">{t('pickban.mode')}</p>
+          <p className="mb-2.5 block text-sm font-medium text-ink-1">{t('pickban.mode')}</p>
           {lockMode ? (
             <Badge variant={defaultMode === 'ranked' ? 'blue' : 'purple'}>{t(`pickban.${defaultMode}`)}</Badge>
           ) : (
