@@ -63,6 +63,8 @@ export type MapPlayerPreview = {
   id: string;
   username: string;
   avatar: string | null;
+  equippedFrame?: string | null;
+  equippedTitle?: string | null;
 };
 
 export type MapCityBucket = {

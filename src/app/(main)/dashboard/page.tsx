@@ -12,7 +12,8 @@ import {
 import { useAuthStore } from '@/store/useStore';
 import { api, avatarSrc, clearApiCache } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
-import RankFrame from '@/components/game/RankFrame';
+import AvatarFrame from '@/components/game/AvatarFrame';
+import PlayerTitle from '@/components/gamification/PlayerTitle';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
 import { notifyGameSync } from '@/components/profile/gameSyncToast';
@@ -63,15 +64,18 @@ function GameIdentityCard({ userProfile }: { userProfile: any }) {
       <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         {/* Identity */}
         <div className="flex items-center gap-4">
-          <RankFrame
+          <AvatarFrame
+            frame={userProfile.equippedFrame}
             name={nick}
             src={userProfile.avatar ? avatarSrc(userProfile.avatar, 160) : null}
             rank={userProfile.gameRank}
-            size={72}
+            avatarSize={72}
+            bleed
           />
           <div className="min-w-0">
             <p className="eyebrow mb-1">{t('dashboard.gameId')} {userProfile.mlbbRoleId}</p>
             <p className="truncate font-display text-2xl font-bold leading-tight tracking-tight2 text-ink-1">{nick}</p>
+            <PlayerTitle id={userProfile.equippedTitle} className="block" />
             <p className="mt-0.5 text-sm num text-ink-2">
               {t('dashboard.gameServer')} {userProfile.mlbbZoneId}
               {userProfile.gameCountry && (

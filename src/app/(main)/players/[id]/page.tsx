@@ -7,7 +7,8 @@ import { ArrowLeft, MapPin, Trophy, UserPlus, UserCheck, UserMinus, Check, X, Me
 import { Card, Badge, Button, EmptyState, Skeleton, StatTile } from '@/components/ui';
 import { api, avatarSrc } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
-import RankFrame from '@/components/game/RankFrame';
+import AvatarFrame from '@/components/game/AvatarFrame';
+import PlayerTitle from '@/components/gamification/PlayerTitle';
 import RoleIcon, { roleLabel } from '@/components/game/RoleIcon';
 import PlayerStatsSection from '@/components/profile/PlayerStatsSection';
 import MatchHistory from '@/components/profile/MatchHistory';
@@ -110,7 +111,13 @@ export default function PublicProfilePage() {
       <Card className="relative overflow-hidden">
         <span aria-hidden="true" className="absolute -right-8 -top-8 h-16 w-16 rotate-45 bg-primary/10" />
         <div className="relative flex flex-col items-center gap-5 sm:flex-row sm:items-start">
-          <RankFrame name={name} src={user.avatar ? avatarSrc(user.avatar, 200) : null} rank={user.gameRank} size={96} />
+          <AvatarFrame
+            frame={user.equippedFrame}
+            name={name}
+            src={user.avatar ? avatarSrc(user.avatar, 200) : null}
+            rank={user.gameRank}
+            avatarSize={96}
+          />
 
           <div className="min-w-0 flex-1 text-center sm:text-left">
             <p className="eyebrow mb-1.5">
@@ -124,6 +131,7 @@ export default function PublicProfilePage() {
                 <Badge variant="purple" size="sm" className="uppercase">{user.roleUser}</Badge>
               )}
             </div>
+            <PlayerTitle id={user.equippedTitle} className="mt-1 block text-sm" />
 
             <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 sm:justify-start">
               {user.gameRank && (

@@ -25,7 +25,8 @@ import {
   Tooltip,
   type DataColumn,
 } from '@/components/ui';
-import { HeroCard, MatchScoreline, PlayerCard, RankFrame, TeamCard } from '@/components/game';
+import { HeroCard, MatchScoreline, RankFrame, TeamCard } from '@/components/game';
+import PlayerCard from '@/components/game/PlayerCard';
 import DarkModeToggle from '@/components/layout/DarkModeToggle';
 import FramesShowcase from './FramesShowcase';
 
