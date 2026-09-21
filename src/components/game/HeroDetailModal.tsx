@@ -7,6 +7,22 @@ import { X, ChevronsRight, Sparkles } from 'lucide-react';
 import { api, mlbbImg } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import Portal from '@/components/ui/Portal';
+import { Tabs } from '@/components/ui';
+import HeroStatsPanel from './hero-meta/HeroStatsPanel';
+import HeroTrendsPanel from './hero-meta/HeroTrendsPanel';
+import HeroTimelinePanel from './hero-meta/HeroTimelinePanel';
+import HeroMatchupsPanel from './hero-meta/HeroMatchupsPanel';
+import HeroMetaBuildsPanel from './hero-meta/HeroMetaBuildsPanel';
+
+type TabId = 'skills' | 'stats' | 'trends' | 'timeline' | 'matchups' | 'builds';
+const TABS: Array<{ id: TabId; label: string }> = [
+  { id: 'skills', label: 'heroes.tab.skills' },
+  { id: 'stats', label: 'heroMeta.tab.stats' },
+  { id: 'trends', label: 'heroMeta.tab.trends' },
+  { id: 'timeline', label: 'heroMeta.tab.timeline' },
+  { id: 'matchups', label: 'heroMeta.tab.matchups' },
+  { id: 'builds', label: 'heroMeta.tab.builds' },
+];
 
 const STATS = [
   { i: 0, key: 'heroes.stat.durability', color: '#22c55e' },
@@ -38,54 +54,22 @@ function renderRichText(text: string): React.ReactNode[] {
   return nodes;
 }
 
-function HeroList({ heroes }: { heroes: any[] }) {
-  if (!heroes?.length) return null;
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-      {heroes.map((h, i) => (
-        <div
-          key={h.heroId ?? i}
-          className="flex items-center gap-2.5 rounded border border-line-subtle bg-surface-2/60 p-1.5 pr-3"
-        >
-          {h.image && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={mlbbImg(h.image, 72)}
-              alt={h.name || ''}
-              referrerPolicy="no-referrer"
-              className="h-10 w-10 shrink-0 rounded cut-corners-sm bg-surface-3 object-cover"
-            />
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-ink-1">{h.name ?? `#${h.heroId}`}</p>
-            <p
-              className={`text-xs font-medium ${
-                h.increaseWinRate >= 0 ? 'text-success' : 'text-danger'
-              }`}
-            >
-              {h.increaseWinRate > 0 ? '+' : ''}
-              {h.increaseWinRate}%
-            </p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export default function HeroDetailModal({
   heroId,
   onClose,
+  onSelectHero,
 }: {
   heroId: number | null;
   onClose: () => void;
+  /** Opens another hero (e.g. from the matchups lists). */
+  onSelectHero?: (heroId: number) => void;
 }) {
   const t = useT();
   const [hero, setHero] = useState<any>(null);
   const [meta, setMeta] = useState<any>(null);
   const [builds, setBuilds] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState<'skills' | 'counters' | 'builds'>('skills');
+  const [tab, setTab] = useState<TabId>('skills');
 
   useEffect(() => {
     if (heroId == null) return;
@@ -227,20 +211,14 @@ export default function HeroDetailModal({
                     </div>
                   </div>
 
-                  <div className="flex gap-1 overflow-x-auto whitespace-nowrap border-y border-line-subtle px-6 pt-2 md:px-8">
-                    {(['skills', 'counters', 'builds'] as const).map((tk) => (
-                      <button
-                        key={tk}
-                        onClick={() => setTab(tk)}
-                        className={`relative -mb-px shrink-0 whitespace-nowrap px-3 py-2.5 text-sm font-semibold transition-colors sm:px-4 ${
-                          tab === tk
-                            ? 'text-ink-1 after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-primary after:shadow-glow-cyan'
-                            : 'text-ink-3 hover:text-ink-2'
-                        }`}
-                      >
-                        {t(tk === 'skills' ? 'heroes.tab.skills' : tk === 'counters' ? 'heroes.tab.counters' : 'heroes.tab.builds')}
-                      </button>
-                    ))}
+                  <div className="border-y border-line-subtle px-4 pt-1 md:px-8">
+                    <Tabs
+                      variant="underline"
+                      tabs={TABS.map((tb) => ({ id: tb.id, label: t(tb.label) }))}
+                      active={tab}
+                      onChange={(id: TabId) => setTab(id)}
+                      className="border-b-0"
+                    />
                   </div>
 
                   {tab === 'skills' && (
@@ -368,7 +346,25 @@ export default function HeroDetailModal({
                     </div>
                   )}
 
-                  {tab === 'counters' && (
+                  {tab === 'stats' && (
+                    <div className="p-6 md:p-8">
+                      <HeroStatsPanel heroId={heroId} />
+                    </div>
+                  )}
+
+                  {tab === 'trends' && (
+                    <div className="p-6 md:p-8">
+                      <HeroTrendsPanel heroId={heroId} />
+                    </div>
+                  )}
+
+                  {tab === 'timeline' && (
+                    <div className="p-6 md:p-8">
+                      <HeroTimelinePanel heroId={heroId} />
+                    </div>
+                  )}
+
+                  {tab === 'matchups' && (
                     <div className="p-6 md:p-8">
                       {hero?.name && (
                         <Link
@@ -380,36 +376,19 @@ export default function HeroDetailModal({
                           {t('ai.counter.fromHero')}
                         </Link>
                       )}
-                      {(() => {
-                        const sections = [
-                          { key: 'heroes.strongAgainst', color: 'text-accent-green', list: meta?.counters?.strong },
-                          { key: 'heroes.weakAgainst', color: 'text-accent-red', list: meta?.counters?.weak },
-                          { key: 'heroes.bestTeammates', color: 'text-accent-cyan', list: meta?.synergy?.best },
-                          { key: 'heroes.worstTeammates', color: 'text-ink-2', list: meta?.synergy?.worst },
-                        ].filter((s) => s.list?.length);
-                        if (!sections.length) {
-                          return (
-                            <p className="py-10 text-center text-sm text-ink-3">
-                              {t('heroes.metaUnavailable')}
-                            </p>
-                          );
-                        }
-                        return (
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {sections.map((s) => (
-                              <div key={s.key}>
-                                <h4 className={`text-sm font-semibold ${s.color} mb-3`}>{t(s.key)}</h4>
-                                <HeroList heroes={s.list} />
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      })()}
+                      <HeroMatchupsPanel heroId={heroId} onPick={onSelectHero} />
                     </div>
                   )}
 
                   {tab === 'builds' && (
-                    <div className="p-6 md:p-8">
+                    <div className="space-y-8 p-6 md:p-8">
+                      <section>
+                        <h3 className="mb-1 font-display text-lg font-bold tracking-tight2 text-ink-1">{t('heroMeta.builds.metaTitle')}</h3>
+                        <p className="mb-4 text-sm text-ink-3">{t('heroMeta.builds.metaSubtitle')}</p>
+                        <HeroMetaBuildsPanel heroId={heroId} />
+                      </section>
+                      <section>
+                        <h3 className="mb-4 font-display text-lg font-bold tracking-tight2 text-ink-1">{t('heroMeta.builds.communityTitle')}</h3>
                       {builds?.length > 0 ? (
                         <div className="space-y-6">
                           {builds.map((build, i) => (
@@ -495,6 +474,7 @@ export default function HeroDetailModal({
                           {t('heroes.builds.empty')}
                         </p>
                       )}
+                      </section>
                     </div>
                   )}
                 </div>

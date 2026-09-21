@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Search, Swords } from 'lucide-react';
+import { LayoutGrid, Rows3, Search, Swords } from 'lucide-react';
 import { api } from '@/lib/api';
-import { PageHeader, SectionCard, EmptyState, Skeleton, StatTile, Tabs } from '@/components/ui';
+import { PageHeader, SectionCard, EmptyState, Skeleton, StatTile, Tabs, DataTable, type DataColumn } from '@/components/ui';
 import { HeroCard } from '@/components/game';
 import HeroDetailModal from '@/components/game/HeroDetailModal';
+import RoleIcon, { roleLabel } from '@/components/game/RoleIcon';
+import { HeroPortrait, RankTierTabs, WindowTabs, fmtPct } from '@/components/game/hero-meta/shared';
 import { useT } from '@/lib/i18n';
 import { still, transitionBase } from '@/lib/motion';
 import type { Variants } from 'framer-motion';
@@ -27,6 +29,8 @@ const ROLES: Array<{ key: string; labelKey: string }> = [
   { key: 'Support', labelKey: 'role.support' },
 ];
 
+type SortKey = 'name' | 'winRate' | 'pickRate' | 'banRate';
+
 export default function HeroesPage() {
   const t = useT();
   const reduce = useReducedMotion();
@@ -35,6 +39,13 @@ export default function HeroesPage() {
   const [role, setRole] = useState('all');
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<number | null>(null);
+  const [view, setView] = useState<'grid' | 'table'>('grid');
+  const [rank, setRank] = useState('all');
+  const [days, setDays] = useState(1);
+  const [sortKey, setSortKey] = useState<SortKey>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [rates, setRates] = useState<Map<number, any>>(new Map());
+  const [ratesLoading, setRatesLoading] = useState(true);
 
   useEffect(() => {
     api.mlbb
@@ -44,14 +55,114 @@ export default function HeroesPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Live win/pick/ban for the selected rank tier and window (cached server side).
+  useEffect(() => {
+    let alive = true;
+    setRatesLoading(true);
+    api.heroes
+      .metaRanking({ rank, days })
+      .then((d: any) => {
+        if (!alive) return;
+        setRates(new Map((d?.heroes || []).map((h: any) => [Number(h.heroId), h])));
+      })
+      .catch(() => alive && setRates(new Map()))
+      .finally(() => alive && setRatesLoading(false));
+    return () => {
+      alive = false;
+    };
+  }, [rank, days]);
+
+  const onSort = (key: string) => {
+    const k = key as SortKey;
+    if (k === sortKey) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else {
+      setSortKey(k);
+      setSortDir(k === 'name' ? 'asc' : 'desc');
+    }
+  };
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return heroes.filter((h) => {
-      const okRole = role === 'all' || (h.roles || []).includes(role);
-      const okName = !q || (h.name || '').toLowerCase().includes(q);
-      return okRole && okName;
+    const rows = heroes
+      .filter((h) => {
+        const okRole = role === 'all' || (h.roles || []).includes(role);
+        const okName = !q || (h.name || '').toLowerCase().includes(q);
+        return okRole && okName;
+      })
+      .map((h) => ({ ...h, meta: rates.get(Number(h.heroId)) ?? null }));
+    const dir = sortDir === 'asc' ? 1 : -1;
+    return rows.sort((a, b) => {
+      if (sortKey === 'name') return dir * String(a.name || '').localeCompare(String(b.name || ''));
+      const av = a.meta?.[sortKey];
+      const bv = b.meta?.[sortKey];
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1; // unknown rates always last
+      if (bv == null) return -1;
+      return dir * (av - bv);
     });
-  }, [heroes, role, query]);
+  }, [heroes, role, query, rates, sortKey, sortDir]);
+
+  const columns: DataColumn<any>[] = useMemo(
+    () => [
+      {
+        key: 'name',
+        header: t('heroMeta.table.hero'),
+        sortable: true,
+        render: (h: any, i: number) => (
+          <div className="flex items-center gap-2.5">
+            <HeroPortrait src={h.image} name={h.name} size={36} />
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-ink-1">{h.name}</p>
+              {sortKey !== 'name' && h.meta?.[sortKey] != null && (
+                <p className="text-[11px] text-ink-3 num">#{i + 1}</p>
+              )}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'roles',
+        header: t('heroMeta.table.role'),
+        hideBelow: 'sm',
+        render: (h: any) => (
+          <div className="flex flex-wrap gap-1.5">
+            {(h.roles || []).slice(0, 2).map((r: string) => (
+              <span key={r} className="inline-flex items-center gap-1 text-xs text-ink-2">
+                <RoleIcon role={r} size={13} />
+                {roleLabel(t, r)}
+              </span>
+            ))}
+          </div>
+        ),
+      },
+      {
+        key: 'winRate',
+        header: t('heroMeta.table.win'),
+        sortable: true,
+        align: 'right',
+        render: (h: any) => (
+          <span className={h.meta?.winRate >= 50 ? 'font-semibold text-accent-green' : 'text-ink-1'}>
+            {fmtPct(h.meta?.winRate, 2)}
+          </span>
+        ),
+      },
+      {
+        key: 'pickRate',
+        header: t('heroMeta.table.pick'),
+        sortable: true,
+        align: 'right',
+        render: (h: any) => <span className="text-accent-cyan">{fmtPct(h.meta?.pickRate, 2)}</span>,
+      },
+      {
+        key: 'banRate',
+        header: t('heroMeta.table.ban'),
+        sortable: true,
+        align: 'right',
+        render: (h: any) => <span className="text-accent-red">{fmtPct(h.meta?.banRate, 2)}</span>,
+      },
+    ],
+    [t, sortKey],
+  );
 
   const roleTabs = useMemo(
     () =>
@@ -96,6 +207,39 @@ export default function HeroesPage() {
             className="min-w-max whitespace-nowrap border-b-0"
           />
         </div>
+        <div className="flex flex-col gap-3 border-t border-line-subtle px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('heroMeta.filters.meta')}</span>
+            <RankTierTabs value={rank} onChange={setRank} />
+            <WindowTabs value={days} onChange={setDays} />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={`${sortKey}:${sortDir}`}
+              onChange={(e) => {
+                const [k, d] = e.target.value.split(':');
+                setSortKey(k as SortKey);
+                setSortDir(d as 'asc' | 'desc');
+              }}
+              aria-label={t('heroMeta.sort.label')}
+              className="rounded border border-line-strong bg-surface-1 px-2.5 py-1.5 text-xs text-ink-1 outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60"
+            >
+              <option value="name:asc">{t('heroMeta.sort.name')}</option>
+              <option value="winRate:desc">{t('heroMeta.sort.winRate')}</option>
+              <option value="pickRate:desc">{t('heroMeta.sort.pickRate')}</option>
+              <option value="banRate:desc">{t('heroMeta.sort.banRate')}</option>
+            </select>
+            <Tabs
+              size="sm"
+              tabs={[
+                { id: 'grid', label: t('heroMeta.view.grid'), icon: LayoutGrid },
+                { id: 'table', label: t('heroMeta.view.table'), icon: Rows3 },
+              ]}
+              active={view}
+              onChange={(id: 'grid' | 'table') => setView(id)}
+            />
+          </div>
+        </div>
       </SectionCard>
 
       {loading ? (
@@ -111,22 +255,47 @@ export default function HeroesPage() {
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState icon={<Search size={26} />} title={t('heroes.none')} />
+      ) : view === 'table' ? (
+        <DataTable
+          columns={columns}
+          rows={filtered}
+          rowKey={(h: any, i) => h.heroId ?? i}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onSort={onSort}
+          onRowClick={(h: any) => setSelected(h.heroId)}
+          loading={ratesLoading && rates.size === 0}
+          dense
+          maxHeight="70vh"
+        />
       ) : (
         <motion.div
-          key={`${role}-${query}`}
+          key={`${role}-${query}-${sortKey}-${sortDir}`}
           className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6"
           initial="hidden"
           animate="visible"
         >
           {filtered.map((h, i) => (
             <motion.div key={h.heroId ?? i} custom={i} variants={reduce ? still : cardIn}>
-              <HeroCard hero={h} size="sm" onClick={() => setSelected(h.heroId)} />
+              <div className="relative">
+                <HeroCard hero={h} size="sm" onClick={() => setSelected(h.heroId)} />
+                {h.meta?.winRate != null && (
+                  <span
+                    className={`pointer-events-none absolute right-2 top-2 rounded bg-surface-0/75 px-1.5 py-0.5 text-[10px] font-bold num backdrop-blur-sm ${
+                      h.meta.winRate >= 50 ? 'text-accent-green' : 'text-accent-red'
+                    }`}
+                    title={t('heroes.winRate')}
+                  >
+                    {fmtPct(h.meta.winRate)}
+                  </span>
+                )}
+              </div>
             </motion.div>
           ))}
         </motion.div>
       )}
 
-      <HeroDetailModal heroId={selected} onClose={() => setSelected(null)} />
+      <HeroDetailModal heroId={selected} onClose={() => setSelected(null)} onSelectHero={setSelected} />
     </div>
   );
 }
