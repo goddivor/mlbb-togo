@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Globe, ChevronDown, Menu, X, Home, Check,
-  Trophy, Handshake, Mail, Award,
+  Trophy, Mail, Award,
   LayoutDashboard, LogOut, Info, Flag,
 } from 'lucide-react';
 import { useLangStore, useAuthStore } from '@/store/useStore';
@@ -28,7 +28,6 @@ const SECTIONS: { key: string; href: string; icon: any }[] = [
   { key: 'nav.league', href: '/league', icon: Flag },
   { key: 'header.awards', href: '/awards', icon: Award },
   { key: 'nav.hallOfFame', href: '/hall-of-fame', icon: Trophy },
-  { key: 'nav.partners', href: '/sponsors', icon: Handshake },
   { key: 'nav.about', href: '/about', icon: Info },
   { key: 'nav.contact', href: '/contact', icon: Mail },
 ];

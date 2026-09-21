@@ -29,7 +29,7 @@ const features: { key: string; icon: any; href: string; accent: Accent }[] = [
   { key: 'matches', icon: Swords, href: '/matches', accent: 'cyan' },
   { key: 'events', icon: Calendar, href: '/events', accent: 'green' },
   { key: 'heroes', icon: Sparkles, href: '/heroes', accent: 'violet' },
-  { key: 'esport', icon: Flag, href: '#partners', accent: 'gold' },
+  { key: 'esport', icon: Flag, href: '/league', accent: 'gold' },
 ];
 
 export default function Features() {
