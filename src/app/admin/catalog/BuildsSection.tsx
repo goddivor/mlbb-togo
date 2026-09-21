@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Check, Swords } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { api, mlbbImg } from '@/lib/api';
+import { api, catalogIconSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { Badge, Button, EmptyState, Input, SectionCard, SectionTitle, Select, Skeleton, Textarea } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
@@ -177,18 +177,19 @@ export default function BuildsSection({
   };
 
   const heroOptions = heroes.map((h) => ({ value: heroRef(h), label: h.name }));
-  const itemOptions = [
+  // Pickers offer visible entries only, plus a hidden one the build already uses.
+  const pickable = (rows: CatalogEntity[], selected: string[]) => [
     { value: '', label: t('admin.catalog.noneOption') },
-    ...items.map((i) => ({ value: i.id, label: i.name })),
+    ...rows
+      .filter((r) => r.enabled !== false || selected.includes(r.id))
+      .map((r) => ({
+        value: r.id,
+        label: r.enabled === false ? `${r.name} (${t('admin.catalog.disabled')})` : r.name,
+      })),
   ];
-  const emblemOptions = [
-    { value: '', label: t('admin.catalog.noneOption') },
-    ...emblems.map((e) => ({ value: e.id, label: e.name })),
-  ];
-  const spellOptions = [
-    { value: '', label: t('admin.catalog.noneOption') },
-    ...battleSpells.map((s) => ({ value: s.id, label: s.name })),
-  ];
+  const itemOptions = pickable(items, form.itemIds);
+  const emblemOptions = pickable(emblems, [form.emblemId]);
+  const spellOptions = pickable(battleSpells, [form.battleSpellId]);
 
   return (
     <SectionCard>
@@ -258,12 +259,14 @@ export default function BuildsSection({
                   {(build.items || []).map((item, i) => (
                     <span
                       key={`${item.id}-${i}`}
-                      className="flex items-center gap-1 rounded border border-line-subtle bg-surface-1 px-2 py-1 text-xs text-ink-1"
+                      className={`flex items-center gap-1 rounded border border-line-subtle bg-surface-1 px-2 py-1 text-xs text-ink-1 ${
+                        item.enabled === false ? 'opacity-50' : ''
+                      }`}
                     >
                       {item.icon && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={mlbbImg(item.icon, 80)}
+                          src={catalogIconSrc(item.icon, 80)}
                           alt={item.name}
                           referrerPolicy="no-referrer"
                           className="h-4 w-4 rounded object-cover"
@@ -273,15 +276,27 @@ export default function BuildsSection({
                     </span>
                   ))}
                 </div>
-                {build.emblem && (
-                  <Badge size="sm" variant="outline">
-                    {t('heroes.builds.emblem')}: {build.emblem.name}
-                  </Badge>
-                )}
-                {build.battleSpell && (
-                  <Badge size="sm" variant="outline">
-                    {t('heroes.builds.battleSpell')}: {build.battleSpell.name}
-                  </Badge>
+                {[build.emblem, build.battleSpell].map(
+                  (entry, k) =>
+                    entry && (
+                      <Badge
+                        key={k}
+                        size="sm"
+                        variant="outline"
+                        className={`gap-1 ${entry.enabled === false ? 'opacity-50' : ''}`}
+                      >
+                        {entry.icon && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={catalogIconSrc(entry.icon, 64)}
+                            alt=""
+                            referrerPolicy="no-referrer"
+                            className="h-4 w-4 rounded object-cover"
+                          />
+                        )}
+                        {k === 0 ? t('heroes.builds.emblem') : t('heroes.builds.battleSpell')}: {entry.name}
+                      </Badge>
+                    ),
                 )}
               </div>
             </div>

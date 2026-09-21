@@ -16,6 +16,24 @@ export const avatarSrc = (url?: string | null, width = 96): string => {
   return url.includes('youngjoygame.com') ? mlbbImg(url, width) : url;
 };
 
+/** Catalog icon (item, emblem, battle spell): Moonton CDN through the proxy, custom URLs as-is. */
+export const catalogIconSrc = (url?: string | null, width = 80): string => avatarSrc(url, width);
+
+/** Counts returned by `POST /catalog/sync` for each catalog. */
+export interface CatalogSyncCounts {
+  total: number;
+  created: number;
+  updated: number;
+  unchanged: number;
+  failed: number;
+}
+export interface CatalogSyncResult {
+  items: CatalogSyncCounts;
+  emblems: CatalogSyncCounts;
+  battleSpells: CatalogSyncCounts;
+  syncedAt: string;
+}
+
 /** Rank tier (all, epic, legend, mythic, honor, glory) and window in days. */
 export type MetaParams = { rank?: string; days?: number; lang?: string };
 
@@ -551,6 +569,12 @@ export const api = {
     updateItem: (id: string, data: any) =>
       request(`/items/${id}`, { method: 'PATCH', body: data }),
     deleteItem: (id: string) => request(`/items/${id}`, { method: 'DELETE' }),
+    // Admin lists: include hidden entries (`enabled: false`).
+    itemsAll: () => request('/items/all'),
+    emblemsAll: () => request('/emblems/all'),
+    battleSpellsAll: () => request('/battle-spells/all'),
+    // Imports items, emblems and battle spells (icons, descriptions) from Moonton.
+    syncCatalog: (): Promise<CatalogSyncResult> => request('/catalog/sync', { method: 'POST' }),
 
     // Game emblems
     emblems: () => request('/emblems', { fallback: [], auth: false }),
