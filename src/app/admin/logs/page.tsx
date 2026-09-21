@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ScrollText, Search, Ban, Trash2, Trophy, FileText, Shield, Crown, Edit } from 'lucide-react';
+import { ScrollText, Search, Ban, Trash2, Trophy, FileText, Shield, Crown, Edit, Plug } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PageHeader, Card, Select, EmptyState } from '@/components/ui';
 import { fadeUp, stagger, still } from '@/lib/motion';
@@ -18,12 +18,16 @@ const actionIcons: Record<string, any> = {
   post_delete: { icon: FileText, color: 'text-accent-red', bg: 'bg-accent-red/10' },
   team_delete: { icon: Shield, color: 'text-accent-red', bg: 'bg-accent-red/10' },
   team_edit: { icon: Edit, color: 'text-accent-cyan', bg: 'bg-accent-cyan/10' },
+  'integration.update': { icon: Plug, color: 'text-accent-violet', bg: 'bg-accent-violet/10' },
+  'integration.remove': { icon: Plug, color: 'text-accent-red', bg: 'bg-accent-red/10' },
 };
 
 const actionLabelKeys: Record<string, string> = {
   user_ban: 'admin.logs.action.user_ban', user_unban: 'admin.logs.action.user_unban', user_delete: 'admin.logs.action.user_delete',
   user_promote: 'admin.logs.action.user_promote', tournament_create: 'admin.logs.action.tournament_create', tournament_delete: 'admin.logs.action.tournament_delete',
   post_delete: 'admin.logs.action.post_delete', team_delete: 'admin.logs.action.team_delete', team_edit: 'admin.logs.action.team_edit',
+  'integration.update': 'admin.logs.action.integration.update',
+  'integration.remove': 'admin.logs.action.integration.remove',
 };
 
 export default function AdminLogs() {

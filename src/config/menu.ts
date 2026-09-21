@@ -26,6 +26,7 @@ import {
   KeyRound,
   ScrollText,
   Gem,
+  Plug,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -116,6 +117,7 @@ export const adminMenuGroups: MenuGroupConfig[] = [
     items: [
       { href: '/admin/roles', labelKey: 'admin.roles.title', icon: KeyRound, permission: 'admin.roles' },
       { href: '/admin/logs', labelKey: 'admin.logs.title', icon: ScrollText, permission: 'admin.logs' },
+      { href: '/admin/integrations', labelKey: 'admin.integrations.title', icon: Plug, permission: 'admin.integrations' },
     ],
   },
 ];
