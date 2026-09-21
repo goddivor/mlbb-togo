@@ -77,13 +77,13 @@ export const USER_ROLES = {
 export const NAV_ITEMS = [
   { path: '/', label: 'Accueil', icon: 'Home' },
   { path: '/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
-  { path: '/players', label: 'Joueurs', icon: 'Users' },
-  { path: '/teams', label: 'Équipes', icon: 'Shield' },
-  { path: '/forum', label: 'Forum', icon: 'MessageSquare' },
-  { path: '/tournaments', label: 'Tournois', icon: 'Trophy' },
-  { path: '/events', label: 'Événements', icon: 'Calendar' },
-  { path: '/matches', label: 'Matchs', icon: 'Swords' },
-  { path: '/heroes', label: 'Héros', icon: 'Sparkles' },
+  { path: '/dashboard/players', label: 'Joueurs', icon: 'Users' },
+  { path: '/dashboard/teams', label: 'Équipes', icon: 'Shield' },
+  { path: '/dashboard/forum', label: 'Forum', icon: 'MessageSquare' },
+  { path: '/dashboard/tournaments', label: 'Tournois', icon: 'Trophy' },
+  { path: '/dashboard/events', label: 'Événements', icon: 'Calendar' },
+  { path: '/dashboard/matches', label: 'Matchs', icon: 'Swords' },
+  { path: '/dashboard/heroes', label: 'Héros', icon: 'Sparkles' },
 ];
 
 export const FORM_FIELD_TYPES = [

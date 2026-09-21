@@ -26,7 +26,7 @@ export default function DashboardSidebar({ sidebarOpen, setSidebarOpen }: Sideba
         name,
         subtitle: userProfile?.gameNickname || (userProfile?.username ? `@${userProfile.username}` : t('header.menu.profile')),
         avatarUrl: userProfile?.avatar ? avatarSrc(userProfile.avatar) : null,
-        href: '/profile',
+        href: '/dashboard/profile',
       }}
       // The header hides the season pill on phones: offer it in the drawer instead.
       footer={

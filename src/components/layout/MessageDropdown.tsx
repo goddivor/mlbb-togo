@@ -25,7 +25,7 @@ const nameOf = (o: any): string => o?.displayName || o?.username || '';
  * `message:new` socket event keeps the list and the dot live. Every row and
  * the footer button link to the messages page.
  */
-export default function MessageDropdown({ href = '/messages' }: MessageDropdownProps) {
+export default function MessageDropdown({ href = '/dashboard/messages' }: MessageDropdownProps) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const [threads, setThreads] = useState<any[]>([]);

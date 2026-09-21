@@ -158,7 +158,7 @@ export default function TournamentsTab() {
                 <li key={`${r.tournamentId}-${r.kind}-${r.userId}-${i}`} className="flex flex-wrap items-center gap-3 py-2.5">
                   <Avatar name={name} src={r.user?.avatar ? avatarSrc(r.user.avatar, 48) : undefined} size="sm" />
                   <div className="min-w-0 flex-1">
-                    <Link href={`/players/${r.userId}`} className="block truncate text-sm font-semibold text-ink-1 hover:text-primary">
+                    <Link href={`/dashboard/players/${r.userId}`} className="block truncate text-sm font-semibold text-ink-1 hover:text-primary">
                       {name}
                     </Link>
                     <p className="truncate text-xs text-ink-3">{names.get(r.tournamentId) ?? r.tournamentId}</p>

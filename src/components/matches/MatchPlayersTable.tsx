@@ -36,7 +36,7 @@ export default function MatchPlayersTable({
     <div className={`overflow-hidden rounded-lg border bg-surface-1 shadow-elev-1 ${won ? 'border-accent-green/40' : 'border-line-subtle'}`}>
       <div className="flex items-center gap-3 border-b border-line-subtle px-4 py-3">
         <TeamLogo team={team} size="sm" />
-        <Link href={`/teams/${team.id}`} className="truncate font-display font-bold text-ink-1 hover:text-primary">
+        <Link href={`/dashboard/teams/${team.id}`} className="truncate font-display font-bold text-ink-1 hover:text-primary">
           {team.name}
         </Link>
         {won && (
@@ -69,7 +69,7 @@ export default function MatchPlayersTable({
                   className={`border-b border-line-subtle last:border-b-0 transition-colors hover:bg-surface-2/60 ${p.isMvp ? 'bg-accent-gold/5' : ''}`}
                 >
                   <Td className="px-4 py-2">
-                    <Link href={`/players/${p.userId}`} className="flex items-center gap-2 hover:text-primary">
+                    <Link href={`/dashboard/players/${p.userId}`} className="flex items-center gap-2 hover:text-primary">
                       {p.user?.avatar ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img

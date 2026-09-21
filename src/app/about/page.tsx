@@ -74,7 +74,7 @@ export default function AboutPage() {
             <Button variant="primary" size="lg" onClick={() => scrollTo('sponsor')}>
               {c.hero.ctaPrimary} <ArrowRight size={18} />
             </Button>
-            <Button variant="outline" size="lg" onClick={() => router.push('/teams')}>
+            <Button variant="outline" size="lg" onClick={() => router.push('/dashboard/teams')}>
               {c.hero.ctaSecondary}
             </Button>
           </>

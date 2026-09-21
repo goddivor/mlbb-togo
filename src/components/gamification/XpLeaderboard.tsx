@@ -44,7 +44,7 @@ export default function XpLeaderboard({
         return (
           <motion.li key={e.user.id} variants={reduce ? still : fadeUp}>
             <Link
-              href={`/players/${e.user.id}`}
+              href={`/dashboard/players/${e.user.id}`}
               className={`relative flex items-center gap-3 px-2 py-2.5 transition-colors duration-fast hover:bg-surface-2/60 ${
                 me ? 'bg-primary/5' : ''
               }`}

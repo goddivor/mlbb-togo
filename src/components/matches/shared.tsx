@@ -218,7 +218,7 @@ export function MvpAvatar({
   );
   if (!link) return inner;
   return (
-    <Link href={`/players/${user.id}`} className="inline-flex" onClick={(e) => e.stopPropagation()}>
+    <Link href={`/dashboard/players/${user.id}`} className="inline-flex" onClick={(e) => e.stopPropagation()}>
       {inner}
     </Link>
   );

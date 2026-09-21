@@ -63,7 +63,7 @@ export function TeamLogo({ team, size = 32 }: { team: TeamRef; size?: number }) 
 export function TeamCell({ team, size = 32, muted = false }: { team: TeamRef; size?: number; muted?: boolean }) {
   return (
     <Link
-      href={`/teams/${team.id}`}
+      href={`/dashboard/teams/${team.id}`}
       className={`inline-flex min-w-0 items-center gap-2.5 transition-colors hover:text-primary ${
         muted ? 'text-xs text-ink-2' : 'font-semibold text-ink-1'
       }`}
@@ -102,19 +102,19 @@ export function PlayerCell({ user, team, size = 32 }: { user: UserRef; team?: Te
   const name = user.displayName || user.username;
   return (
     <div className="flex items-center gap-2.5 min-w-0">
-      <Link href={`/players/${user.id}`} className="shrink-0">
+      <Link href={`/dashboard/players/${user.id}`} className="shrink-0">
         <PlayerAvatar user={user} size={size} />
       </Link>
       <div className="min-w-0">
         <Link
-          href={`/players/${user.id}`}
+          href={`/dashboard/players/${user.id}`}
           className="block truncate font-semibold text-ink-1 transition-colors hover:text-primary"
         >
           {name}
         </Link>
         {team && (
           <Link
-            href={`/teams/${team.id}`}
+            href={`/dashboard/teams/${team.id}`}
             className="flex items-center gap-1 truncate text-[11px] text-ink-3 hover:text-primary"
           >
             <TeamLogo team={team} size={14} />

@@ -148,7 +148,7 @@ export default function MessagesInbox() {
     if (!ROOM_KINDS.includes(kind) || !scopeId) return;
     handledToRef.current = true;
     openRoom({ kind, scopeId });
-    router.replace('/messages');
+    router.replace('/dashboard/messages');
   }, [searchParams, loading, openRoom, router]);
 
   // Deep link: /messages?to=<userId>&name=<name>. Open the existing thread with
@@ -166,7 +166,7 @@ export default function MessagesInbox() {
       setActiveId(null);
       setThread(null);
     }
-    router.replace('/messages');
+    router.replace('/dashboard/messages');
   }, [searchParams, loading, threads, openThread, router]);
 
   const send = useCallback(async () => {

@@ -33,7 +33,7 @@ export default function LeaguePodium({ rows, t }: { rows: PodiumRow[]; t: TFn })
       {order.map((r) => (
         <Link
           key={r.rank}
-          href={`/teams/${r.team.id}`}
+          href={`/dashboard/teams/${r.team.id}`}
           className="group flex min-w-0 flex-col items-center gap-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
         >
           {r.rank === 1 && <Crown size={22} className="text-accent-gold" />}
