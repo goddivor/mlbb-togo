@@ -96,7 +96,10 @@ export default function EventsTab() {
     run(`${kind}:${event.id}`, async () => {
       if (kind === 'close') {
         const res: any = await api.rewards.admin.closeEvent(event.id);
-        toast.success(t('rewards.admin.ev.closed', { n: Number(res?.awarded ?? 0) }));
+        const remaining = Number(res?.remaining ?? 0);
+        // Large events: the daily job finishes the final pass.
+        if (remaining > 0) toast.success(t('rewards.admin.ev.closedPartial', { n: Number(res?.awarded ?? 0), rest: remaining }));
+        else toast.success(t('rewards.admin.ev.closed', { n: Number(res?.awarded ?? 0) }));
       } else {
         await api.rewards.admin.deleteEvent(event.id);
         toast.success(t('rewards.admin.ev.deleted'));

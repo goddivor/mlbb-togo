@@ -3524,6 +3524,7 @@ export const translations: Record<string, Dict> = {
     'frame.name.coupe_independance': 'Coupe de l’Indépendance',
     'frame.name.saison_pluies': 'Saison des pluies',
     'frame.name.lanternes': 'Lanternes de fin d’année',
+    'rewards.admin.ev.closedPartial': 'Fenêtre fermée : {n} membres récompensés, les {rest} restants seront traités par la tâche quotidienne.',
   },
 
   en: {
@@ -7045,6 +7046,7 @@ export const translations: Record<string, Dict> = {
     'frame.name.coupe_independance': 'Independence Cup',
     'frame.name.saison_pluies': 'Rainy Season',
     'frame.name.lanternes': 'Year-End Lanterns',
+    'rewards.admin.ev.closedPartial': 'Window closed: {n} members rewarded, the remaining {rest} will be processed by the daily job.',
   },
 };
 
