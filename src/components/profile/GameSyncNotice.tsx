@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { AlertTriangle, CloudOff, History, Link2 } from 'lucide-react';
+import { AlertTriangle, History, Link2 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/helpers';
 import { useLangStore } from '@/store/useStore';
@@ -32,9 +32,11 @@ export function useLastSyncLabel() {
 }
 
 /**
- * Discreet state line of the cached game data: why detailed stats may be
- * missing or stale, when they were last refreshed and, for the owner, a way
- * to reconnect an expired game session.
+ * Discreet state line of the cached game data: when it was last refreshed,
+ * whether the last refresh failed (owner only) and, for the owner, a way to
+ * reconnect an expired game session. A legacy `moonton_offline` status is
+ * treated as a normal sync: detailed stats are gone for good (MLBB Academy
+ * closed), there is nothing to wait for.
  */
 export default function GameSyncNotice({
   sync,
@@ -54,9 +56,9 @@ export default function GameSyncNotice({
 
   const expired = sync.tokenStatus === 'expired' || sync.status === 'token_expired';
   const status = expired ? 'token_expired' : sync.status;
-  const warn = status === 'token_expired' || status === 'unavailable';
-  const showStatus = status === 'moonton_offline' || warn;
-  const Icon = status === 'moonton_offline' ? CloudOff : warn ? AlertTriangle : History;
+  // Sync failures only concern the owner: visitors just see the last sync date.
+  const warn = !!isOwner && (status === 'token_expired' || status === 'unavailable');
+  const Icon = warn ? AlertTriangle : History;
 
   return (
     <div
@@ -72,7 +74,7 @@ export default function GameSyncNotice({
       <div className="flex min-w-0 items-start gap-2">
         <Icon size={14} className={cn('mt-0.5 shrink-0', warn ? 'text-accent-gold' : 'text-ink-3')} />
         <p className="min-w-0">
-          {showStatus && (isOwner || status === 'moonton_offline') && (
+          {warn && (
             <span className="text-ink-1">{t(`gameAccount.status.${status}`)} </span>
           )}
           <span className="num text-ink-3">{lastSync(sync.lastSyncAt)}</span>

@@ -12,6 +12,7 @@ import { avatarSrc } from '@/lib/api';
 import { notifContent, useT } from '@/lib/i18n';
 import { useLangStore } from '@/store/useStore';
 import GameSyncNotice from '@/components/profile/GameSyncNotice';
+import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 
 /* ------------------------------------------------------------------ */
 /* Shared helpers                                                      */
@@ -164,7 +165,9 @@ export function QuickStatsWidget({
   const t = useT();
   const s = stats || {};
   const linked = !!game?.linked && game?.visible !== false;
-  const career = linked ? game?.stats : null;
+  // Moonton only serves the base profile since MLBB Academy closed: the game
+  // block is limited to rank, peak rank and level; e-sport stats lead.
+  const profile = linked ? game?.profile : null;
   const streak: number = s.currentStreak ?? 0;
   const abs = Math.abs(streak);
   const streakLabel =
@@ -207,44 +210,6 @@ export function QuickStatsWidget({
       accent: 'gold',
     },
   ];
-  // Linked account with detailed stats: the game account leads, e-sport
-  // figures move to a secondary line.
-  const gameTiles: typeof tiles = career
-    ? [
-        {
-          key: 'games',
-          icon: <Swords size={16} />,
-          value: career.total ?? 0,
-          label: t('gameAccount.games'),
-          hint: t('dashboard.quick.record', { wins: career.wins ?? 0, losses: career.losses ?? 0 }),
-          accent: 'cyan',
-        },
-        {
-          key: 'winRate',
-          icon: <Trophy size={16} />,
-          value: `${career.winRate ?? 0}%`,
-          label: t('gameAccount.winRate'),
-          hint: `${t('gameAccount.avgScore')} ${career.avgScore ?? 0}`,
-          accent: 'green',
-        },
-        {
-          key: 'streak',
-          icon: <Flame size={16} />,
-          value: career.winStreak ?? 0,
-          label: t('gameAccount.bestStreak'),
-          hint: t('gameAccount.bestStreakHint', { n: career.winStreak ?? 0 }),
-          accent: 'violet',
-        },
-        {
-          key: 'mvp',
-          icon: <Crown size={16} />,
-          value: career.mvpCount ?? 0,
-          label: t('gameAccount.mvp'),
-          hint: t('gameAccount.gameTime', { n: Math.round(career.gameTime ?? 0) }),
-          accent: 'gold',
-        },
-      ]
-    : tiles;
   const form: string[] = Array.isArray(s.form) ? s.form : [];
 
   return (
@@ -252,8 +217,8 @@ export function QuickStatsWidget({
       title={
         <span className="inline-flex items-center gap-2">
           {t('dashboard.widgets.quickStats')}
-          <Badge variant={career ? 'neon' : 'default'} size="sm">
-            {t(career ? 'gameAccount.source.game' : 'gameAccount.source.esport')}
+          <Badge variant="default" size="sm">
+            {t('gameAccount.source.esport')}
           </Badge>
         </span>
       }
@@ -261,7 +226,7 @@ export function QuickStatsWidget({
       className={className}
     >
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {gameTiles.map((tile) => (
+        {tiles.map((tile) => (
           <div key={tile.key} className="rounded border border-line-subtle bg-surface-2/40 p-3.5">
             <div className="flex items-center justify-between gap-2">
               <StatTile label={tile.label} value={tile.value} accent={tile.accent} />
@@ -273,11 +238,6 @@ export function QuickStatsWidget({
           </div>
         ))}
       </div>
-      {career && (
-        <p className="mt-3 truncate text-xs num text-ink-2">
-          {t('gameAccount.esportLine', { games: s.games ?? 0, winRate: s.winRate ?? 0, kda: s.kda ?? 0 })}
-        </p>
-      )}
       {form.length > 0 && (
         <div className="mt-4 flex items-center gap-2">
           <span className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('dashboard.quick.form')}</span>
@@ -292,7 +252,37 @@ export function QuickStatsWidget({
           </div>
         </div>
       )}
-      {linked && <GameSyncNotice sync={game?.sync} isOwner className="mt-4" />}
+      {profile && (profile.rank || profile.peakRank || profile.level != null) && (
+        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded border border-line-subtle bg-surface-2/40 px-3 py-2.5">
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">
+            <Gamepad2 size={13} /> {t('gameAccount.title')}
+          </span>
+          {profile.rank && (
+            <span className="inline-flex items-center gap-2">
+              {hasRankBadge(profile.rank) && <RankBadge rank={profile.rank} size={24} />}
+              <span className="text-xs leading-tight">
+                <span className="block text-ink-3">{t('dashboard.currentRank')}</span>
+                <span className="font-semibold text-ink-1">{profile.rank}</span>
+              </span>
+            </span>
+          )}
+          {profile.peakRank && (
+            <span className="inline-flex items-center gap-2">
+              {hasRankBadge(profile.peakRank) && <RankBadge rank={profile.peakRank} size={24} />}
+              <span className="text-xs leading-tight">
+                <span className="block text-ink-3">{t('dashboard.peakRank')}</span>
+                <span className="font-semibold text-accent-gold">{profile.peakRank}</span>
+              </span>
+            </span>
+          )}
+          {profile.level != null && (
+            <Badge variant="neon" size="sm">
+              {t('dashboard.level')} {profile.level}
+            </Badge>
+          )}
+        </div>
+      )}
+      {linked && <GameSyncNotice sync={game?.sync} isOwner className="mt-3" />}
     </Widget>
   );
 }
