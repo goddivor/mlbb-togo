@@ -22,6 +22,7 @@ import SeasonSwitcher from '@/components/seasons/SeasonSwitcher';
 import TogoMap from '@/components/geo/TogoMap';
 import { useGeoCities } from '@/components/geo/CitySelect';
 import { layerCount, type MapCityBucket, type MapLayer, type MapPayload } from '@/components/geo/geo';
+import AvatarFrame from '@/components/game/AvatarFrame';
 
 const LAYERS: { id: MapLayer; icon: any; key: string }[] = [
   { id: 'players', icon: Users, key: 'geo.layer.players' },
@@ -297,7 +298,7 @@ function CityPanel({ bucket, onClose }: { bucket: MapCityBucket; onClose: () => 
                   href={`/players/${p.id}`}
                   className="flex items-center gap-2 rounded px-1.5 py-1 text-sm text-ink-1 transition-colors duration-fast hover:bg-surface-2"
                 >
-                  <Avatar name={p.username} src={avatarSrc(p.avatar, 64)} size="sm" />
+                  <AvatarFrame frame={p.equippedFrame} name={p.username} src={p.avatar ? avatarSrc(p.avatar, 64) : null} avatarSize={32} bleed showBadge={false} />
                   <span className="truncate">{p.username}</span>
                 </Link>
               </li>

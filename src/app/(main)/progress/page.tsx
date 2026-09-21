@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Award, History, Sparkles, Target, Trophy, Zap } from 'lucide-react';
+import { Award, Gem, History, Sparkles, Tag, Target, Trophy, Zap } from 'lucide-react';
 import {
+  Button,
   Card,
+  LoadingSpinner,
   PageHeader,
   EmptyState,
   StatCard,
@@ -22,6 +24,9 @@ import AchievementsGrid from '@/components/gamification/AchievementsGrid';
 import MissionsPanel from '@/components/gamification/MissionsPanel';
 import XpHistory from '@/components/gamification/XpHistory';
 import XpLeaderboard from '@/components/gamification/XpLeaderboard';
+import FrameCollection from '@/components/gamification/rewards/FrameCollection';
+import TitlesPanel from '@/components/gamification/rewards/TitlesPanel';
+import { useRewardsCollection } from '@/components/gamification/rewards/useRewardsCollection';
 
 const XP_RULE_TYPES = [
   'match_played',
@@ -33,7 +38,8 @@ const XP_RULE_TYPES = [
   'friend_added',
 ];
 
-type Tab = 'missions' | 'achievements' | 'history' | 'leaderboard';
+type Tab = 'missions' | 'achievements' | 'collection' | 'titles' | 'history' | 'leaderboard';
+const TABS: Tab[] = ['missions', 'achievements', 'collection', 'titles', 'history', 'leaderboard'];
 
 function ProgressSkeleton() {
   return (
@@ -61,6 +67,13 @@ export default function ProgressPage() {
   const [board, setBoard] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>('missions');
+  const rewards = useRewardsCollection(tab === 'collection' || tab === 'titles', t('common.error'));
+
+  // Deep link from the frame notifications: /progress?tab=collection
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get('tab') as Tab | null;
+    if (wanted && TABS.includes(wanted)) setTab(wanted);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -119,6 +132,8 @@ export default function ProgressPage() {
   const tabs = [
     { id: 'missions', label: t('progress.missions'), icon: Target, count: missions.length },
     { id: 'achievements', label: t('progress.achievements'), icon: Award, count: achievements.length },
+    { id: 'collection', label: t('rewards.tab.collection'), icon: Gem },
+    { id: 'titles', label: t('rewards.tab.titles'), icon: Tag },
     { id: 'history', label: t('progress.history'), icon: History },
     { id: 'leaderboard', label: t('progress.leaderboard'), icon: Trophy },
   ];
@@ -226,6 +241,27 @@ export default function ProgressPage() {
           <AchievementsGrid items={achievements} />
         </Card>
       )}
+
+      {(tab === 'collection' || tab === 'titles') &&
+        (rewards.data ? (
+          tab === 'collection' ? (
+            <FrameCollection data={rewards.data} pending={rewards.pending} onEquip={rewards.equipFrame} />
+          ) : (
+            <TitlesPanel data={rewards.data} pending={rewards.pending} onEquip={rewards.equipTitle} />
+          )
+        ) : rewards.failed ? (
+          <EmptyState
+            icon={<Gem size={26} />}
+            title={t('progress.loadError')}
+            action={
+              <Button variant="secondary" size="sm" onClick={rewards.reload}>
+                {t('rewards.retry')}
+              </Button>
+            }
+          />
+        ) : (
+          <LoadingSpinner size="lg" className="py-16" />
+        ))}
 
       {tab === 'history' && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

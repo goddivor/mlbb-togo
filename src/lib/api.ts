@@ -845,6 +845,38 @@ export const api = {
       }),
   },
 
+  // Avatar frames and titles (#124). Admin routes require `admin.rewards`.
+  rewards: {
+    catalog: () => request('/rewards/catalog', { fallback: { frames: [], titles: [] }, auth: false }),
+    collection: () => request('/rewards/me/collection', { fresh: true }),
+    equipFrame: (frameId: string | null, variant?: string | null) =>
+      request('/rewards/me/frame', { method: 'POST', body: { frameId, ...(variant ? { variant } : {}) } }),
+    equipTitle: (titleId: string | null) => request('/rewards/me/title', { method: 'POST', body: { titleId } }),
+    admin: {
+      timeline: () => request('/rewards/admin/timeline', { fresh: true }),
+      frames: () => request('/rewards/admin/frames', { fresh: true }),
+      temporary: () => request('/rewards/admin/temporary', { fresh: true }),
+      userCollection: (userId: string) =>
+        request(`/rewards/admin/users/${encodeURIComponent(userId)}/collection`, { fresh: true }),
+      grant: (data: { userId: string; frameId: string; variant?: string; days?: number }) =>
+        request('/rewards/admin/frames/grant', { method: 'POST', body: data }),
+      end: (data: { userId: string; frameId: string; variant?: string }) =>
+        request('/rewards/admin/frames/end', { method: 'POST', body: data }),
+      xpCorrection: (data: { userId: string; amount: number; reason: string }) =>
+        request('/rewards/admin/xp-correction', { method: 'POST', body: data }),
+      tournamentResults: (tournamentId?: string) =>
+        request(
+          `/rewards/admin/tournament-results${tournamentId ? `?tournamentId=${encodeURIComponent(tournamentId)}` : ''}`,
+          { fresh: true },
+        ),
+      recordTournamentResult: (data: { tournamentId: string; kind: 'winner' | 'finalist' | 'mvp'; userIds: string[] }) =>
+        request('/rewards/admin/tournament-results', { method: 'POST', body: data }),
+      setWeeklyMvp: (data: { userId: string; week?: string }) =>
+        request('/rewards/admin/mvp-week', { method: 'POST', body: data }),
+      recalculate: (userId: string) => request('/rewards/admin/recalculate', { method: 'POST', body: { userId } }),
+    },
+  },
+
   // Sponsoring (issue #52): public page data, partnership form, admin offers / inbox.
   sponsors: {
     // Active sponsors of a season (id, slug or 'current'), tiered.

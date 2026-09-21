@@ -25,6 +25,7 @@ import {
   MapPin,
   KeyRound,
   ScrollText,
+  Gem,
   Plug,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
@@ -102,6 +103,7 @@ export const adminMenuGroups: MenuGroupConfig[] = [
       { href: '/admin/users', labelKey: 'admin.users.title', icon: Users, permission: 'admin.users' },
       { href: '/admin/requests', labelKey: 'requests.title', icon: Inbox, permission: 'admin.requests' },
       { href: '/admin/messages', labelKey: 'header.messages', icon: MessageSquare, permission: 'admin.messages' },
+      { href: '/admin/rewards', labelKey: 'admin.rewards.title', icon: Gem, permission: 'admin.rewards' },
     ],
   },
   {
