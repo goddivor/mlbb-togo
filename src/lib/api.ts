@@ -37,6 +37,9 @@ export interface CatalogSyncResult {
 /** Rank tier (all, epic, legend, mythic, honor, glory) and window in days. */
 export type MetaParams = { rank?: string; days?: number; lang?: string };
 
+/** Catalog statistics filters: rank tier, lane (exp, mid, roam, jungle, gold) and list size. */
+export type CatalogStatsParams = { rank?: string; lane?: string; limit?: number };
+
 const metaQs = (params: Record<string, unknown>): string => {
   const qs = new URLSearchParams(
     Object.entries(params)
@@ -640,6 +643,21 @@ export const api = {
     updateBattleSpell: (id: string, data: any) =>
       request(`/battle-spells/${id}`, { method: 'PATCH', body: data }),
     deleteBattleSpell: (id: string) => request(`/battle-spells/${id}`, { method: 'DELETE' }),
+  },
+
+  // Public catalog pages (enabled entries). Statistics come from the cached
+  // Academy builds; `available: false` when Moonton could not be reached.
+  gameCatalog: {
+    items: () =>
+      request('/catalog/items', { fallback: { total: 0, categories: [], items: [] }, auth: false }),
+    itemHeroes: (gameId: number | string, params: CatalogStatsParams = {}) =>
+      request(`/catalog/items/${gameId}/heroes${metaQs(params)}`, { fallback: null, auth: false }),
+    synergies: (params: CatalogStatsParams & { item?: number | string } = {}) =>
+      request(`/catalog/items/synergies${metaQs(params)}`, { fallback: null, auth: false }),
+    spells: (params: CatalogStatsParams = {}) =>
+      request(`/catalog/spells${metaQs(params)}`, { fallback: null, auth: false }),
+    emblems: (params: CatalogStatsParams = {}) =>
+      request(`/catalog/emblems${metaQs(params)}`, { fallback: null, auth: false }),
   },
 
   builds: {

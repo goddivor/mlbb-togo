@@ -27,6 +27,8 @@ import {
   ScrollText,
   Gem,
   Plug,
+  Package,
+  Zap,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -38,6 +40,9 @@ export const playerMenuGroups: MenuGroupConfig[] = [
     items: [
       { href: '/dashboard', labelKey: 'header.dashboard', icon: LayoutDashboard },
       { href: '/heroes', labelKey: 'header.heroes', icon: Swords },
+      { href: '/items', labelKey: 'catalog.items.title', icon: Package },
+      { href: '/spells', labelKey: 'catalog.spells.title', icon: Zap },
+      { href: '/emblems', labelKey: 'catalog.emblems.title', icon: Gem },
       { href: '/players', labelKey: 'header.players', icon: Users },
       { href: '/leaderboard', labelKey: 'header.leaderboard', icon: Trophy },
       { href: '/progress', labelKey: 'header.progress', icon: Sparkles },
