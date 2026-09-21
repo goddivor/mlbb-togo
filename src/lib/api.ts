@@ -46,6 +46,8 @@ interface RequestOptions {
   fallback?: any;
 
   auth?: boolean;
+  /** GET only: skip the short read cache (e.g. re-checking permissions). */
+  fresh?: boolean;
 }
 
 // Lightweight in-memory cache + GET request de-duplication. Avoids repeated or
@@ -61,7 +63,7 @@ export function clearApiCache() {
 }
 
 async function request<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, fallback, auth = true } = options;
+  const { method = 'GET', body, fallback, auth = true, fresh = false } = options;
   const isGet = method === 'GET';
   const token = getToken();
 
@@ -72,7 +74,7 @@ async function request<T = any>(path: string, options: RequestOptions = {}): Pro
 
   if (isGet) {
     const cached = getCache.get(key);
-    if (cached && Date.now() - cached.at < GET_TTL) return cached.data as T;
+    if (cached && !fresh && Date.now() - cached.at < GET_TTL) return cached.data as T;
     const pending = inFlight.get(key);
     if (pending) return pending as Promise<T>;
   }
@@ -198,7 +200,7 @@ export type NotificationPage = {
 export const api = {
 
   auth: {
-    me: () => request('/auth/me'),
+    me: (fresh = false) => request('/auth/me', { fresh }),
 
     adminLogin: (data: { username: string; password: string }) =>
       request('/auth/admin/login', { method: 'POST', body: data, auth: false }),
@@ -283,6 +285,25 @@ export const api = {
       request(`/users/${id}/ban`, { method: 'PATCH', body: { isBanned } }),
     setRole: (id: string, roleUser: string) =>
       request(`/users/${id}/role`, { method: 'PATCH', body: { roleUser } }),
+    /** RBAC: replace the roles of a user (requires `admin.roles`). */
+    setRoles: (id: string, roleIds: string[]) =>
+      request(`/users/${id}/roles`, { method: 'PATCH', body: { roleIds } }),
+    setSystemAccount: (id: string, isSystemAccount: boolean) =>
+      request(`/users/${id}/system-account`, { method: 'PATCH', body: { isSystemAccount } }),
+  },
+
+  /** RBAC roles & permission catalogue (admin). */
+  roles: {
+    catalogue: () => request('/roles/permissions', { fallback: { groups: [], permissions: [] } }),
+    list: () => request('/roles', { fallback: [] }),
+    get: (id: string) => request(`/roles/${id}`),
+    create: (data: any) => request('/roles', { method: 'POST', body: data }),
+    update: (id: string, data: any) => request(`/roles/${id}`, { method: 'PATCH', body: data }),
+    remove: (id: string) => request(`/roles/${id}`, { method: 'DELETE' }),
+    addMember: (id: string, userId: string) =>
+      request(`/roles/${id}/members`, { method: 'POST', body: { userId } }),
+    removeMember: (id: string, userId: string) =>
+      request(`/roles/${id}/members/${userId}`, { method: 'DELETE' }),
   },
 
   teams: {

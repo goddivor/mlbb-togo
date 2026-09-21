@@ -1,11 +1,22 @@
 import { create } from 'zustand';
 
+/**
+ * Some endpoints (profile edit, game sync...) return the user without its RBAC
+ * `permissions`: keep the known ones for the same account so the admin entry
+ * points do not flicker away after a profile update.
+ */
+function keepAccess(prev: any, next: any) {
+  if (!next || !prev || next.id !== prev.id || Array.isArray(next.permissions)) return next;
+  return { ...next, permissions: prev.permissions, roleIds: next.roleIds ?? prev.roleIds };
+}
+
 export const useAuthStore = create<any>((set) => ({
   user: null,
   userProfile: null,
   loading: true,
-  setUser: (user: any) => set({ user, loading: false }),
-  setUserProfile: (userProfile: any) => set({ userProfile }),
+  setUser: (user: any) => set((s: any) => ({ user: keepAccess(s.user, user), loading: false })),
+  setUserProfile: (userProfile: any) =>
+    set((s: any) => ({ userProfile: keepAccess(s.userProfile, userProfile) })),
   setLoading: (loading: boolean) => set({ loading }),
   logout: () => set({ user: null, userProfile: null, loading: false }),
 }));

@@ -117,6 +117,7 @@ export interface MenuItemConfig {
   labelKey: string; // i18n key
   icon: ComponentType<{ size?: number | string; className?: string }>;
   descKey?: string; // i18n key of the description (optional)
+  permission?: string; // RBAC permission required to see the entry (admin menu)
 }
 
 export interface MenuGroupConfig {
