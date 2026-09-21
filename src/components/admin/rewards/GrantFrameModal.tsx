@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Gift } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { api } from '@/lib/api';
+import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { useLangStore } from '@/store/useStore';
 import { Button, Input } from '@/components/ui';
@@ -81,7 +81,7 @@ export default function GrantFrameModal({
             <AvatarFrame
               frame={preview}
               name={users[0]?.displayName || users[0]?.username || localName(frame.name, lang)}
-              src={users[0]?.avatar ?? null}
+              src={users[0]?.avatar ? avatarSrc(users[0].avatar, 144) : null}
               size={72}
               showBadge={false}
             />

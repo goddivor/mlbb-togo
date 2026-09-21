@@ -43,7 +43,7 @@ interface Item {
 
 /** Player collection of avatar frames (Progression > Collection). */
 export default function FrameCollection({
-  data,
+  data: raw,
   pending,
   onEquip,
 }: {
@@ -55,6 +55,8 @@ export default function FrameCollection({
   const lang = useLangStore((s: any) => s.lang);
   const profile = useAuthStore((s: any) => s.userProfile || s.user);
   const now = useNow();
+  // Frames that expire while the page is open stop being equipped / equippable.
+  const data = useMemo(() => withExpiry(raw, now), [raw, now]);
   const [own, setOwn] = useState<OwnFilter>('all');
   const [shape, setShape] = useState<ShapeFilter>('all');
 
@@ -393,4 +395,26 @@ function EquipButton({
       {t('rewards.equip')}
     </Button>
   );
+}
+
+/**
+ * Collection as of `now`: entries past their expiry become inactive (moved to
+ * the expired section) and an expired equipped frame falls back to the last
+ * permanent frame, else to the rank frame, like the server does.
+ */
+function withExpiry(data: Collection, now: number): Collection {
+  const lapsed = (e: FrameEntry) => e.active && !!e.expiresAt && new Date(e.expiresAt).getTime() <= now;
+  if (!data.frames.some((f) => f.entries.some(lapsed))) return data;
+  const frames = data.frames.map((f) => {
+    if (!f.entries.some(lapsed)) return f;
+    const entries = f.entries.map((e) => (lapsed(e) ? { ...e, active: false, expiredAt: e.expiresAt } : e));
+    return { ...f, entries, owned: entries.some((e) => e.active) };
+  });
+  const isActive = (key: string | null) =>
+    !!key && frames.some((f) => f.entries.some((e) => e.key === key && e.active));
+  let equippedFrame = data.equippedFrame;
+  if (equippedFrame && !isActive(equippedFrame)) {
+    equippedFrame = isActive(data.fallbackFrame) ? data.fallbackFrame : null;
+  }
+  return { ...data, frames, equippedFrame };
 }
