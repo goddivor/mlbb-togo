@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Globe, ChevronDown, Menu, X, Home, Check,
-  LayoutGrid, Trophy, Sparkles, Handshake, Mail,
+  Trophy, Mail, Award,
   LayoutDashboard, LogOut, Info, Flag,
 } from 'lucide-react';
 import { useLangStore, useAuthStore } from '@/store/useStore';
@@ -21,18 +21,15 @@ const LANGS = [
   { code: 'en', label: 'EN' },
 ];
 
-// Landing sections (scrolled to on `/`, otherwise navigated to as `/#id`)
-// plus standalone public pages (`href`).
-const SECTIONS: { key: string; id?: string; href?: string; icon: any }[] = [
-  { key: 'nav.home', id: '', icon: Home },
-  { key: 'nav.features', id: 'features', icon: LayoutGrid },
-  { key: 'nav.mtl', id: 'mtl', icon: Trophy },
-  { key: 'nav.heroes', id: 'heroes', icon: Sparkles },
+// Public pages only: the landing sections are reached by scrolling the home
+// page, so the header never mixes in-page anchors with page links.
+const SECTIONS: { key: string; href: string; icon: any }[] = [
+  { key: 'nav.home', href: '/', icon: Home },
   { key: 'nav.league', href: '/league', icon: Flag },
-  { key: 'nav.partners', id: 'partners', icon: Handshake },
-  { key: 'nav.about', href: '/about', icon: Info },
+  { key: 'header.awards', href: '/awards', icon: Award },
   { key: 'nav.hallOfFame', href: '/hall-of-fame', icon: Trophy },
-  { key: 'nav.contact', id: 'contact', icon: Mail },
+  { key: 'nav.about', href: '/about', icon: Info },
+  { key: 'nav.contact', href: '/contact', icon: Mail },
 ];
 
 type OpenMenu = 'lang' | 'profile' | 'sections' | null;
@@ -106,27 +103,22 @@ export default function LandingHeader() {
 
   const goTo = (s: (typeof SECTIONS)[number]) => {
     setOpenMenu(null);
-    if (s.href) {
-      router.push(s.href);
-      return;
-    }
-    const id = s.id ?? '';
-    // Sections only exist on the landing: navigate back to it from other pages.
-    if (pathname !== '/') {
-      router.push(id ? `/#${id}` : '/');
-      return;
-    }
-    if (!id) {
+    if (s.href === pathname) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    router.push(s.href);
   };
+
+  // White text only over the dark landing hero; everywhere else the header is
+  // solid and uses the theme ink colors (readable in light mode too).
+  const solid = scrolled || pathname !== '/';
+  const ink = solid ? 'text-ink-2 hover:text-ink-1' : 'text-white/80 hover:text-white';
 
   return (
     <header
       className={`fixed top-0 inset-x-0 z-40 h-20 transition-colors duration-300 ${
-        scrolled
+        solid
           ? 'bg-surface-0/85 backdrop-blur-md border-b border-line-subtle'
           : 'bg-gradient-to-b from-black/70 via-black/30 to-transparent'
       }`}
@@ -143,11 +135,11 @@ export default function LandingHeader() {
             <button
               key={s.key}
               onClick={() => goTo(s)}
-              aria-current={s.href && pathname === s.href ? 'page' : undefined}
+              aria-current={pathname === s.href ? 'page' : undefined}
               className={`relative px-3 py-2 rounded text-sm font-medium transition-colors ${
-                s.href && pathname === s.href
-                  ? 'text-white after:absolute after:inset-x-3 after:-bottom-0.5 after:h-0.5 after:bg-primary'
-                  : 'text-white/75 hover:text-white'
+                pathname === s.href
+                  ? `${solid ? 'text-ink-1' : 'text-white'} after:absolute after:inset-x-3 after:-bottom-0.5 after:h-0.5 after:bg-primary`
+                  : ink
               }`}
             >
               {t(s.key)}
@@ -160,7 +152,7 @@ export default function LandingHeader() {
           <div className="relative">
             <button
               onClick={() => toggle('lang')}
-              className="flex items-center gap-1.5 text-white/80 hover:text-white transition-colors"
+              className={`flex items-center gap-1.5 ${ink} transition-colors`}
               aria-label="Langue"
             >
               <Globe size={18} />
@@ -217,7 +209,7 @@ export default function LandingHeader() {
                     {(userProfile.displayName || userProfile.username)?.[0]?.toUpperCase() || 'U'}
                   </div>
                 )}
-                <ChevronDown size={14} className="text-white/80" />
+                <ChevronDown size={14} className={solid ? 'text-ink-2' : 'text-white/80'} />
               </button>
 
               <AnimatePresence>
@@ -261,7 +253,7 @@ export default function LandingHeader() {
             <button
               onClick={() => toggle('sections')}
               aria-label="Menu"
-              className="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+              className={`p-2 rounded-lg ${ink} ${solid ? 'hover:bg-surface-2' : 'hover:bg-white/10'} transition-colors`}
             >
               {openMenu === 'sections' ? <X size={22} /> : <Menu size={22} />}
             </button>

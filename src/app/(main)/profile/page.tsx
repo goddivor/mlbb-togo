@@ -5,7 +5,8 @@ import {
   Gamepad2, Check, Link2, Unlink, RefreshCw, ShieldCheck, User, Trophy, Star, Flame, Swords,
 } from 'lucide-react';
 import { Card, Badge, Button, PageHeader, StatCard, StatRing, SectionTitle, Skeleton } from '@/components/ui';
-import RankFrame from '@/components/game/RankFrame';
+import AvatarFrame from '@/components/game/AvatarFrame';
+import PlayerTitle from '@/components/gamification/PlayerTitle';
 import { cn } from '@/lib/helpers';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useAuthStore } from '@/store/useStore';
@@ -197,6 +198,11 @@ export default function ProfilePage() {
           <span className="inline-flex flex-wrap items-center gap-3">
             {name}
             <LevelBadge level={level} size="md" />
+            {userProfile.equippedTitle && (
+              <span className="basis-full leading-none">
+                <PlayerTitle id={userProfile.equippedTitle} className="text-sm" />
+              </span>
+            )}
           </span>
         }
         subtitle={
@@ -214,11 +220,12 @@ export default function ProfilePage() {
         banner={bannerSrc}
         breadcrumb={t('profile.title')}
         action={
-          <RankFrame
+          <AvatarFrame
+            frame={userProfile.equippedFrame}
             name={name}
             src={userProfile.avatar ? avatarSrc(userProfile.avatar, 200) : null}
             rank={userProfile.gameRank}
-            size={88}
+            avatarSize={88}
           />
         }
       >

@@ -37,13 +37,15 @@ const columns = [
   },
 ];
 
+// Official accounts: an icon is only shown once its URL is filled in, so the
+// footer never renders dead "#" links.
 const socials = [
-  { icon: Facebook, href: '#', label: 'Facebook' },
-  { icon: Instagram, href: '#', label: 'Instagram' },
-  { icon: Youtube, href: '#', label: 'YouTube' },
-  { icon: Twitch, href: '#', label: 'Twitch' },
-  { icon: Send, href: '#', label: 'WhatsApp' },
-];
+  { icon: Facebook, href: '', label: 'Facebook' },
+  { icon: Instagram, href: '', label: 'Instagram' },
+  { icon: Youtube, href: '', label: 'YouTube' },
+  { icon: Twitch, href: '', label: 'Twitch' },
+  { icon: Send, href: '', label: 'WhatsApp' },
+].filter((s) => s.href);
 
 export default function LandingFooter() {
   const t = useT();
@@ -58,6 +60,7 @@ export default function LandingFooter() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/mlbb-togo-logo.png" alt="MLBB Togo" className="h-9 w-auto mb-4" />
             <p className="text-sm text-ink-2 max-w-xs">{t('footer.desc')}</p>
+            {socials.length > 0 && (
             <div className="flex items-center gap-3 mt-5">
               {socials.map((s) => {
                 const Icon = s.icon;
@@ -75,6 +78,7 @@ export default function LandingFooter() {
                 );
               })}
             </div>
+            )}
           </div>
 
           {columns.map((col) => (

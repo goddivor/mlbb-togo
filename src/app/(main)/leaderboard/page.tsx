@@ -18,7 +18,7 @@ import {
   type DataColumn,
 } from '@/components/ui';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
-import RankFrame from '@/components/game/RankFrame';
+import AvatarFrame from '@/components/game/AvatarFrame';
 import RoleIcon from '@/components/game/RoleIcon';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/helpers';
@@ -110,7 +110,15 @@ export default function LeaderboardPage() {
       header: t('leaderboard.player'),
       render: (e) => (
         <Link href={`/players/${e.id}`} className="flex min-w-0 items-center gap-2.5 hover:text-primary">
-          <RankFrame name={e.displayName || e.username} src={e.avatar ? avatarSrc(e.avatar, 64) : null} rank={e.gameRank} size={32} showBadge={false} />
+          <AvatarFrame
+            frame={e.equippedFrame}
+            name={e.displayName || e.username}
+            src={e.avatar ? avatarSrc(e.avatar, 64) : null}
+            rank={e.gameRank}
+            avatarSize={32}
+            bleed
+            showBadge={false}
+          />
           <span className="truncate font-semibold text-ink-1">{e.displayName || e.username}</span>
           {hasRankBadge(e.gameRank) && <RankBadge rank={e.gameRank} size={16} />}
         </Link>
@@ -259,12 +267,13 @@ export default function LeaderboardPage() {
                     {i === 0 && (
                       <Crown size={22} className="absolute left-1/2 top-2 -translate-x-1/2 text-accent-gold" aria-hidden="true" />
                     )}
-                    <RankFrame
+                    <AvatarFrame
+                      frame={e.equippedFrame}
                       name={e.displayName || e.username}
                       src={e.avatar ? avatarSrc(e.avatar, 192) : null}
                       rank={e.gameRank}
                       tier={p.tier}
-                      size={p.size}
+                      avatarSize={p.size}
                     />
 
                     <Badge variant={p.badge} size="sm" className="mt-1">#{e.position}</Badge>

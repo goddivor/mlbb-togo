@@ -25,6 +25,7 @@ export const ADMIN_AREAS: AdminArea[] = [
   { permission: 'admin.users', href: '/admin/users' },
   { permission: 'admin.requests', href: '/admin/requests' },
   { permission: 'admin.messages', href: '/admin/messages' },
+  { permission: 'admin.rewards', href: '/admin/rewards' },
   { permission: 'admin.sponsors', href: '/admin/sponsors' },
   { permission: 'admin.logs', href: '/admin/logs' },
   { permission: 'admin.roles', href: '/admin/roles' },

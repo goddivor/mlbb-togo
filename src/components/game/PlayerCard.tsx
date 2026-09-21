@@ -5,7 +5,8 @@ import { cn } from '@/lib/helpers';
 import { useT } from '@/lib/i18n';
 import { avatarSrc } from '@/lib/api';
 import { Badge, StatRing, StatTile } from '@/components/ui';
-import RankFrame from './RankFrame';
+import AvatarFrame from './AvatarFrame';
+import PlayerTitle from '@/components/gamification/PlayerTitle';
 import RoleIcon, { roleLabel } from './RoleIcon';
 
 /** Subset of the `/users/:id` payload the card reads. */
@@ -19,6 +20,9 @@ export type PlayerCardUser = {
   gameRoles?: Array<{ role: string } | string> | null;
   country?: string | null;
   team?: { id?: string; name: string; image?: string | null } | null;
+  /** Equipped reward frame (`id` or `id:variant`) and level title. */
+  equippedFrame?: string | null;
+  equippedTitle?: string | null;
 };
 
 /** Subset of `/users/:id/stats`. */
@@ -60,7 +64,7 @@ export default function PlayerCard({
   const body = (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-lg border border-line-subtle bg-surface-1 shadow-elev-1 transition-[transform,box-shadow,border-color] duration-base ease-out hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-elev-2 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1',
+        'group relative flex h-full flex-col overflow-hidden rounded-lg border border-line-subtle bg-surface-1 shadow-elev-1 transition-[transform,box-shadow,border-color] duration-base ease-out hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-elev-2 dark:bg-gradient-to-b dark:from-surface-2/50 dark:to-surface-1',
         compact ? 'p-4' : 'p-5',
         className
       )}
@@ -69,14 +73,16 @@ export default function PlayerCard({
       <span aria-hidden="true" className="absolute -right-8 -top-8 h-16 w-16 rotate-45 bg-primary/10 transition-colors group-hover:bg-primary/20" />
 
       <div className="flex items-start gap-4">
-        <RankFrame
+        <AvatarFrame
+          frame={player.equippedFrame}
           name={name}
           src={player.avatar ? avatarSrc(player.avatar, 160) : null}
           rank={player.gameRank}
-          size={compact ? 56 : 72}
+          avatarSize={compact ? 56 : 72}
         />
         <div className="min-w-0 flex-1 pt-0.5">
           <h3 className="truncate font-display text-lg font-bold leading-tight tracking-tight2 text-ink-1">{name}</h3>
+          <PlayerTitle id={player.equippedTitle} size="xs" className="block max-w-full" />
           <p className="mt-0.5 truncate text-xs text-ink-2">
             {player.team?.name ? (
               <span className="inline-flex items-center gap-1.5">
@@ -110,6 +116,8 @@ export default function PlayerCard({
         )}
       </div>
 
+      {/* Keeps the footer aligned when a reward frame makes a card taller. */}
+      <div className="flex-1" aria-hidden="true" />
       {showStats && (
         <div className={cn('mt-4 grid grid-cols-3 gap-2 border-t border-line-subtle pt-3', compact && 'mt-3 pt-2.5')}>
           <StatTile label={t('stats.games')} value={stats?.games ?? '—'} />
@@ -122,7 +130,7 @@ export default function PlayerCard({
   );
 
   return link ? (
-    <Link href={link} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-lg">
+    <Link href={link} className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-lg">
       {body}
     </Link>
   ) : (

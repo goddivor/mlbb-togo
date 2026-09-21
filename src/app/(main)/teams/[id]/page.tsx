@@ -13,6 +13,7 @@ import {
   Badge, Button, Card, EmptyState, PageHeader, Skeleton, Tabs, Input, Textarea, Select,
 } from '@/components/ui';
 import { MatchScoreline, RankFrame, teamTag } from '@/components/game';
+import AvatarFrame from '@/components/game/AvatarFrame';
 import { cn } from '@/lib/helpers';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -71,7 +72,7 @@ function MemberCard({ m, t, highlight = false }: any) {
         highlight ? 'border-accent-gold/50 hover:border-accent-gold' : 'border-line-subtle hover:border-primary/40'
       )}
     >
-      <RankFrame name={name} src={u.avatar ? avatarSrc(u.avatar, 96) : null} rank={u.gameRank} size={52} />
+      <AvatarFrame frame={u.equippedFrame} name={name} src={u.avatar ? avatarSrc(u.avatar, 96) : null} rank={u.gameRank} avatarSize={52} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           {m.isCaptain && <Crown size={14} className="shrink-0 text-accent-gold" />}
@@ -491,7 +492,7 @@ export default function TeamDetailPage() {
                   return (
                     <div key={m.id ?? m.userId} className="flex flex-col gap-2 rounded-lg border border-line-subtle bg-surface-1 p-2.5 shadow-elev-1 sm:flex-row sm:items-center">
                       <div className="min-w-0 flex-1 flex items-center gap-2">
-                        <RankFrame name={u.displayName || u.username} src={u.avatar ? avatarSrc(u.avatar, 64) : null} rank={u.gameRank} size={32} showBadge={false} />
+                        <AvatarFrame frame={u.equippedFrame} name={u.displayName || u.username} src={u.avatar ? avatarSrc(u.avatar, 64) : null} rank={u.gameRank} avatarSize={32} bleed showBadge={false} />
                         <span className="truncate text-sm font-medium text-ink-1">{u.displayName || u.username}</span>
                         {isCap && <Badge variant="gold" size="sm" className="gap-1"><Crown size={11} /> {t('teams.detail.captain')}</Badge>}
                         {hasRankBadge(u.gameRank) && <RankBadge rank={u.gameRank} size={16} />}
