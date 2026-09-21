@@ -46,7 +46,7 @@ export default function DashboardHeader({ sidebarOpen, setSidebarOpen }: HeaderP
       sidebarOpen={sidebarOpen}
       setSidebarOpen={setSidebarOpen}
       homeHref="/dashboard"
-      messagesHref="/messages"
+      messagesHref="/dashboard/messages"
       // Global season selector (pages filter on it); the drawer carries it on phones.
       extra={
         <li className="hidden sm:block">
@@ -59,8 +59,8 @@ export default function DashboardHeader({ sidebarOpen, setSidebarOpen }: HeaderP
         logoutLabel: t('header.logout'),
         onLogout: logout,
         links: [
-          { href: '/profile', label: t('header.menu.profile'), icon: 'profile' },
-          { href: '/settings', label: t('header.menu.settings'), icon: 'settings' },
+          { href: '/dashboard/profile', label: t('header.menu.profile'), icon: 'profile' },
+          { href: '/dashboard/settings', label: t('header.menu.settings'), icon: 'settings' },
           // Staff shortcut: any admin area permission opens the admin interface.
           ...(hasAdminAccess(userProfile)
             ? [{ href: '/admin', label: t('admin.rbac.menuEntry'), icon: 'admin' } as ProfileMenuLink]

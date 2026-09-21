@@ -401,7 +401,7 @@ export default function AdminMatchesPage() {
                   )}
 
                   <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-line-subtle pt-3">
-                    <Link href={`/matches/${m.id}`} target="_blank" title={t('admin.matches.view')}>
+                    <Link href={`/dashboard/matches/${m.id}`} target="_blank" title={t('admin.matches.view')}>
                       <Button size="sm" variant="ghost">
                         <ExternalLink size={14} />
                       </Button>

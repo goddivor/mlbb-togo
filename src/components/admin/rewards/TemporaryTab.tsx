@@ -132,7 +132,7 @@ export default function TemporaryTab() {
                     />
                     <div className="min-w-0">
                       {r.user ? (
-                        <Link href={`/players/${r.user.id}`} className="block truncate text-sm font-semibold text-ink-1 hover:text-primary">
+                        <Link href={`/dashboard/players/${r.user.id}`} className="block truncate text-sm font-semibold text-ink-1 hover:text-primary">
                           {name}
                         </Link>
                       ) : (

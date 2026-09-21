@@ -258,7 +258,7 @@ export function AwardCard({ award, t, accent }: { award: AwardItem; t: TFn; acce
         <PlayerAvatar user={award.user} size="lg" />
         <div className="min-w-0 flex-1">
           {award.user ? (
-            <Link href={`/players/${award.user.id}`} className="block truncate font-display text-lg font-bold text-ink-1 transition-colors hover:text-primary">
+            <Link href={`/dashboard/players/${award.user.id}`} className="block truncate font-display text-lg font-bold text-ink-1 transition-colors hover:text-primary">
               {award.user.displayName || award.user.username}
             </Link>
           ) : (

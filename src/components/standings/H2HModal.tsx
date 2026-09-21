@@ -152,7 +152,7 @@ export default function H2HModal({
             );
           })}
           <div className="pt-2 text-right">
-            <Link href={`/teams/${team.id}`} className="text-sm font-semibold text-primary hover:underline">
+            <Link href={`/dashboard/teams/${team.id}`} className="text-sm font-semibold text-primary hover:underline">
               {t('standings.h2h.teamPage')}
             </Link>
           </div>

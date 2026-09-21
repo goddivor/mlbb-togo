@@ -91,7 +91,7 @@ export default function LeagueStream({ seasonId, t }: { seasonId: string | null;
         </div>
       )}
       <div className="px-4 py-3 text-sm">
-        <Link href="/stream" className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline">
+        <Link href="/dashboard/stream" className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline">
           <PlayCircle size={14} /> {t('league.stream.all')}
         </Link>
       </div>

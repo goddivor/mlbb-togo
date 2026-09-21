@@ -90,7 +90,7 @@ export default function GameSyncNotice({
         </button>
       ) : (
         <Link
-          href="/profile?relink=1"
+          href="/dashboard/profile?relink=1"
           className="inline-flex shrink-0 items-center gap-1 self-start whitespace-nowrap font-semibold text-primary hover:underline sm:self-auto"
         >
           <Link2 size={12} /> {t('gameAccount.reconnect')}

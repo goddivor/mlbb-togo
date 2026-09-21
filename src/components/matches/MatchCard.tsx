@@ -56,7 +56,7 @@ export default function MatchCard({
       }`}
     >
       {live && <span aria-hidden="true" className="absolute inset-x-0 top-0 h-0.5 bg-accent-red" />}
-      <Link href={`/matches/${match.id}`} className={`block ${pad} ${compact ? 'pt-3 pb-3' : 'pt-4 pb-4'}`}>
+      <Link href={`/dashboard/matches/${match.id}`} className={`block ${pad} ${compact ? 'pt-3 pb-3' : 'pt-4 pb-4'}`}>
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <MatchStatusBadge match={match} t={t} />
           {showStage && <StageBadge stage={match.stage} t={t} />}

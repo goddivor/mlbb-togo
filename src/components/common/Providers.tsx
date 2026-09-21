@@ -10,19 +10,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   const theme = useThemeStore((s: any) => s.theme);
   const palette = useThemeStore((s: any) => s.palette);
   const pathname = usePathname();
-  // Public/landing routes stay dark (gaming look); the dashboard defaults to
-  // light and follows the user's theme choice.
-  const isPublic =
-    pathname === '/' ||
-    pathname.startsWith('/admin-login') ||
-    pathname === '/about' ||
-    pathname.startsWith('/legal') ||
-    pathname.startsWith('/seasons') ||
-    pathname === '/sponsors' ||
-    pathname === '/league' ||
-    pathname.startsWith('/awards') ||
-    pathname.startsWith('/hall-of-fame') ||
-    pathname.startsWith('/ceremony');
+  // Public site pages stay dark (gaming look); the member dashboard and the
+  // admin area default to light and follow the user's theme choice.
+  const isPublic = !(
+    pathname.startsWith('/dashboard') ||
+    (pathname.startsWith('/admin') && !pathname.startsWith('/admin-login'))
+  );
   const dark = isPublic ? true : theme === 'dark';
 
   useEffect(() => {

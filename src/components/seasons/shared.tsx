@@ -271,7 +271,7 @@ export function SeasonPodium({
           </div>
         );
         return linkTeams && p.team.id ? (
-          <Link key={p.placement} href={`/teams/${p.team.id}`} className="block min-w-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+          <Link key={p.placement} href={`/dashboard/teams/${p.team.id}`} className="block min-w-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
             {col}
           </Link>
         ) : (

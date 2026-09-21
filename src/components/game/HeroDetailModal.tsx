@@ -382,7 +382,7 @@ export default function HeroDetailModal({
                     <div className="p-6 md:p-8">
                       {hero?.name && (
                         <Link
-                          href={`/ai?tab=counter&enemy=${encodeURIComponent(hero.name)}`}
+                          href={`/dashboard/ai?tab=counter&enemy=${encodeURIComponent(hero.name)}`}
                           onClick={onClose}
                           className="mb-4 inline-flex items-center gap-1.5 rounded border border-primary/60 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/15"
                         >

@@ -187,7 +187,7 @@ export default function NotificationDropdown() {
           )}
 
           <Link
-            href="/notifications"
+            href="/dashboard/notifications"
             onClick={() => setOpen(false)}
             className="mt-auto border-t border-line-subtle px-4 py-2.5 text-center text-xs font-semibold text-primary transition-colors hover:bg-primary/5"
           >

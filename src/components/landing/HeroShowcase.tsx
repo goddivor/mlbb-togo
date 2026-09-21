@@ -165,7 +165,7 @@ export default function HeroShowcase() {
             </div>
 
             <Link
-              href="/heroes"
+              href="/dashboard/heroes"
               className="inline-flex w-fit items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary transition-colors hover:text-ink-1"
             >
               {t('showcase.viewAll')} <ArrowRight size={14} />
