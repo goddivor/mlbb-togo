@@ -28,6 +28,7 @@ export const ADMIN_AREAS: AdminArea[] = [
   { permission: 'admin.sponsors', href: '/admin/sponsors' },
   { permission: 'admin.logs', href: '/admin/logs' },
   { permission: 'admin.roles', href: '/admin/roles' },
+  { permission: 'admin.integrations', href: '/admin/integrations' },
 ];
 
 type Subject = { permissions?: string[] | null; roleUser?: string | null } | null | undefined;
