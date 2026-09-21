@@ -59,9 +59,12 @@ export default function Modal({
       <AnimatePresence>
         {open && (
           <motion.div
+            key="modal-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            // Stop intercepting input as soon as the exit starts, and hide the
+            // layer once it ends, so a stalled exit can never lock the page.
+            exit={{ opacity: 0, pointerEvents: 'none', transitionEnd: { display: 'none' } }}
             onClick={onClose}
             className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/40 overflow-y-auto"
           >

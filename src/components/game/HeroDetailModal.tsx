@@ -93,6 +93,17 @@ export default function HeroDetailModal({
     };
   }, [heroId]);
 
+  // Close with Escape.
+  const open = heroId != null;
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
   const art = hero?.painting || hero?.imageBig || hero?.image;
   const rates = meta?.available
     ? [
@@ -107,9 +118,12 @@ export default function HeroDetailModal({
       <AnimatePresence>
         {heroId != null && (
           <motion.div
+            key="hero-detail-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            // Stop intercepting input as soon as the exit starts, and hide the
+            // layer once it ends, so a stalled exit can never lock the page.
+            exit={{ opacity: 0, pointerEvents: 'none', transitionEnd: { display: 'none' } }}
             onClick={onClose}
             className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-2 sm:p-4 bg-black/50"
           >
