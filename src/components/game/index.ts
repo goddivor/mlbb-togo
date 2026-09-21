@@ -7,6 +7,8 @@ export type { TeamCardTeam, TeamCardRecord, FormResult } from './TeamCard';
 export { default as MatchScoreline, scorelineStatus } from './MatchScoreline';
 export type { ScorelineMatch, ScorelineTeam } from './MatchScoreline';
 export { default as RankFrame } from './RankFrame';
+export { default as AvatarFrame } from './AvatarFrame';
+export * from './frames';
 export { default as RankBadge, hasRankBadge } from './RankBadge';
 export { default as RoleIcon, roleIconUrl, roleLabel } from './RoleIcon';
 export { StatRing, Sparkline } from '@/components/ui';

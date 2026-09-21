@@ -1,0 +1,363 @@
+/*
+ * Avatar frames (ported from tools/rewards-proposal/frames-preview.html).
+ * Everything is scoped under `.mlf` and keyframes are prefixed with `mlf-` so
+ * nothing clashes with Tailwind (`spin`, `pulse`...). Animations only touch
+ * `transform` and `opacity`. They play everywhere; only the OS
+ * `prefers-reduced-motion` setting freezes them (see the end of the file).
+ */
+
+.mlf {
+  position: relative;
+  width: var(--s);
+  height: var(--s);
+  flex: none;
+  max-width: 100%;
+}
+.mlf > svg,
+.mlf > .mlf-fx,
+.mlf > .mlf-av,
+.mlf > .mlf-fxw,
+.mlf > .mlf-fxs {
+  position: absolute;
+}
+.mlf > svg {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+/* The avatar occupies 68.75% of the frame box (inset 15.625%). */
+.mlf > .mlf-av {
+  inset: 15.625%;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.mlf.mlf-sq > .mlf-av {
+  border-radius: 11%;
+}
+
+/* Circular rotating conic halo. */
+.mlf-fx {
+  inset: 1%;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, var(--c));
+  -webkit-mask: radial-gradient(closest-side, transparent 74%, #000 77%, #000 95%, transparent 100%);
+  mask: radial-gradient(closest-side, transparent 74%, #000 77%, #000 95%, transparent 100%);
+  animation: mlf-spin var(--d, 6s) linear infinite;
+  pointer-events: none;
+}
+.mlf-fx.mlf-fx-blur {
+  filter: blur(calc(var(--s) * 0.04));
+  opacity: 0.85;
+}
+
+/* Square halo: mask ring with a rotating conic child. */
+.mlf-fxw {
+  inset: 0;
+  filter: blur(calc(var(--s) * 0.035));
+  opacity: 0.85;
+  pointer-events: none;
+}
+.mlf-fxs {
+  position: absolute;
+  inset: 4%;
+  border-radius: 17%;
+  padding: 5.5%;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+.mlf-fxs > i {
+  position: absolute;
+  inset: -45%;
+  background: conic-gradient(from 0deg, var(--c));
+  animation: mlf-spin var(--d, 6s) linear infinite;
+}
+
+/* SVG animation classes used by the renderers. */
+.mlf .spin,
+.mlf .spinr,
+.mlf .flick,
+.mlf .pulse,
+.mlf .wave,
+.mlf .sway {
+  transform-box: view-box;
+  transform-origin: 64px 64px;
+}
+.mlf .spin {
+  animation: mlf-spin var(--d, 20s) linear infinite;
+}
+.mlf .spinr {
+  animation: mlf-spin var(--d, 20s) linear infinite reverse;
+}
+@keyframes mlf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.mlf .tw {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mlf-tw 2.6s ease-in-out infinite;
+}
+@keyframes mlf-tw {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.45);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.mlf .flick {
+  animation: mlf-flick 0.7s ease-in-out infinite alternate;
+}
+@keyframes mlf-flick {
+  from {
+    transform: scale(0.94);
+    opacity: 0.78;
+  }
+  to {
+    transform: scale(1.045);
+    opacity: 1;
+  }
+}
+.mlf .bolt {
+  animation: mlf-bolt 2.4s steps(1, end) infinite;
+}
+@keyframes mlf-bolt {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  3% {
+    opacity: 1;
+  }
+  7% {
+    opacity: 0.15;
+  }
+  11% {
+    opacity: 1;
+  }
+  18% {
+    opacity: 0;
+  }
+}
+.mlf .pulse {
+  animation: mlf-pulse 3.2s ease-in-out infinite;
+}
+@keyframes mlf-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+.mlf .wave {
+  animation: mlf-wave 2.4s ease-out infinite;
+}
+@keyframes mlf-wave {
+  from {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+.mlf .sway {
+  animation: mlf-sway 4s ease-in-out infinite alternate;
+}
+@keyframes mlf-sway {
+  from {
+    transform: rotate(-3deg);
+  }
+  to {
+    transform: rotate(3deg);
+  }
+}
+.mlf .flapL {
+  transform-box: view-box;
+  transform-origin: 28px 62px;
+  animation: mlf-flapL 2.8s ease-in-out infinite;
+}
+.mlf .flapR {
+  transform-box: view-box;
+  transform-origin: 100px 62px;
+  animation: mlf-flapR 2.8s ease-in-out infinite;
+}
+@keyframes mlf-flapL {
+  50% {
+    transform: rotate(7deg);
+  }
+}
+@keyframes mlf-flapR {
+  50% {
+    transform: rotate(-7deg);
+  }
+}
+.mlf .lit {
+  animation: mlf-lit 3s ease-in-out infinite;
+}
+@keyframes mlf-lit {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+.mlf .beat {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mlf-beat 2.2s ease-in-out infinite;
+}
+@keyframes mlf-beat {
+  50% {
+    transform: scale(1.12);
+  }
+}
+.mlf .chev {
+  animation: mlf-chev 1.6s ease-in-out infinite;
+}
+@keyframes mlf-chev {
+  50% {
+    opacity: 0.3;
+  }
+}
+.mlf .sweep {
+  animation: mlf-sweep var(--d, 4.5s) ease-in-out infinite;
+}
+@keyframes mlf-sweep {
+  0% {
+    transform: translateX(0);
+  }
+  55%,
+  100% {
+    transform: translateX(190px);
+  }
+}
+.mlf .flk {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: mlf-flk 0.75s ease-in-out infinite alternate;
+}
+@keyframes mlf-flk {
+  from {
+    transform: scaleY(0.78);
+    opacity: 0.8;
+  }
+  to {
+    transform: scaleY(1.12);
+    opacity: 1;
+  }
+}
+.mlf .run {
+  animation: mlf-run var(--d, 2.4s) linear infinite;
+}
+@keyframes mlf-run {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  12%,
+  88% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(var(--dx, 60px));
+    opacity: 0;
+  }
+}
+.mlf .scan {
+  animation: mlf-scan 3.2s ease-in-out infinite alternate;
+}
+@keyframes mlf-scan {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(84px);
+  }
+}
+.mlf .rain {
+  animation: mlf-rain 1.5s linear infinite;
+}
+@keyframes mlf-rain {
+  0% {
+    transform: translateY(-5px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(13px);
+    opacity: 0;
+  }
+}
+.mlf .swing {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: mlf-swing 3.2s ease-in-out infinite alternate;
+}
+@keyframes mlf-swing {
+  from {
+    transform: rotate(-4deg);
+  }
+  to {
+    transform: rotate(4deg);
+  }
+}
+.mlf .rise {
+  animation: mlf-rise 2.2s ease-out infinite;
+}
+@keyframes mlf-rise {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-9px);
+    opacity: 0;
+  }
+}
+.mlf .bob {
+  animation: mlf-bob 2.6s ease-in-out infinite alternate;
+}
+@keyframes mlf-bob {
+  to {
+    transform: translateY(-1.6px);
+  }
+}
+.mlf .tongue {
+  transform-box: fill-box;
+  transform-origin: 100% 100%;
+  animation: mlf-tongue 3s ease-in-out infinite;
+}
+@keyframes mlf-tongue {
+  0%,
+  62%,
+  100% {
+    transform: scale(0);
+  }
+  70%,
+  86% {
+    transform: scale(1);
+  }
+}
+
+/* Reduced motion: every frame is frozen in its static pose. The selector is
+   more specific than the global reduced-motion rule of globals.css. */
+@media (prefers-reduced-motion: reduce) {
+  .mlf *,
+  .mlf *::before,
+  .mlf *::after {
+    animation: none !important;
+  }
+}
