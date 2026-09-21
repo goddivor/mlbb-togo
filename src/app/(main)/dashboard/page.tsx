@@ -43,7 +43,7 @@ function GameIdentityCard({ userProfile }: { userProfile: any }) {
             </span>
             <div>
               <p className="font-display text-lg font-bold tracking-tight2 text-ink-1">{t('dashboard.noGame.title')}</p>
-              <p className="text-sm text-ink-2">{t('dashboard.noGame.desc')}</p>
+              <p className="text-sm text-ink-2">{t('gameAccount.link.noGameDesc')}</p>
             </div>
           </div>
           <Link href="/profile">

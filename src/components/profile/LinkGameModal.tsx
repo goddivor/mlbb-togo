@@ -97,7 +97,7 @@ export default function LinkGameModal({
       size="sm"
       icon={<Gamepad2 size={18} />}
       title={t('linkGame.title')}
-      subtitle={t('linkGame.subtitle')}
+      subtitle={t('gameAccount.link.subtitle')}
       closeLabel={t('linkGame.close')}
     >
       <form onSubmit={link} className="space-y-4">

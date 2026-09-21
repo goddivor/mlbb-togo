@@ -2617,6 +2617,11 @@ export const translations: Record<string, Dict> = {
     'gameAccount.sync.moonton_offline': 'Profil synchronisé. Les statistiques détaillées restent indisponibles chez Moonton.',
     'gameAccount.sync.token_expired': 'Ta session de jeu a expiré. Reconnecte ton compte de jeu pour reprendre la synchronisation.',
     'gameAccount.sync.unavailable': 'Moonton ne répond pas. Tes données enregistrées sont conservées.',
+    'gameAccount.country': 'Pays d’inscription',
+    'gameAccount.sync.profileOk': 'Profil de jeu synchronisé.',
+    'gameAccount.link.subtitle': 'Connecte ton compte Mobile Legends pour afficher ton pseudo, ton niveau et ton rang.',
+    'gameAccount.link.noGameDesc': 'Lie ton compte Mobile Legends pour afficher ton pseudo, ton niveau, ton rang actuel et ton meilleur rang.',
+    'gameAccount.link.unlinkedDesc': 'Affiche ton pseudo, ton niveau et ton rang.',
   },
 
   en: {
@@ -5231,6 +5236,11 @@ export const translations: Record<string, Dict> = {
     'gameAccount.sync.moonton_offline': 'Profile synced. Detailed stats are still unavailable from Moonton.',
     'gameAccount.sync.token_expired': 'Your game session expired. Reconnect your game account to resume syncing.',
     'gameAccount.sync.unavailable': 'Moonton is not responding. Your stored data is kept.',
+    'gameAccount.country': 'Registration country',
+    'gameAccount.sync.profileOk': 'Game profile synced.',
+    'gameAccount.link.subtitle': 'Connect your Mobile Legends account to show your nickname, level and rank.',
+    'gameAccount.link.noGameDesc': 'Link your Mobile Legends account to show your nickname, level, current rank and peak rank.',
+    'gameAccount.link.unlinkedDesc': 'Show your nickname, level and rank.',
   },
 };
 
