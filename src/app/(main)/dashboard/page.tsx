@@ -283,7 +283,7 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className={grid}>
-          <QuickStatsWidget stats={data.quickStats} game={data.game} className="md:col-span-2" />
+          <QuickStatsWidget stats={data.quickStats} className="md:col-span-2" />
           <RankWidget rank={data.rank} />
           <ActivityWidget events={data.activity} className="md:col-span-2" />
           <LastMatchesWidget matches={data.lastMatches} userId={userProfile.id} />
