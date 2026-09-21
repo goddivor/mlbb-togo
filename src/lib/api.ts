@@ -242,6 +242,9 @@ export type IntegrationsStatus = {
     apiKeyHint: string | null;
     apiSecretHint: string | null;
     folder: string | null;
+    /** Values stored in the database (the form pre-fills these, not the env fallbacks). */
+    storedCloudName: string | null;
+    storedFolder: string | null;
   };
 };
 
@@ -250,6 +253,79 @@ export type IntegrationTestResult = {
   code: 'ok' | 'not_configured' | 'unauthorized' | 'model_not_found' | 'not_found' | 'rate_limited' | 'network' | 'error';
   message: string;
   detail?: string;
+};
+
+/** Image upload purposes (#131), mirrored from the API `media.logic.ts`. */
+export type MediaPurpose =
+  | 'avatar'
+  | 'team'
+  | 'team-staff'
+  | 'sponsor'
+  | 'tournament'
+  | 'season'
+  | 'award'
+  | 'match';
+export type MediaStatus = 'pending' | 'approved' | 'rejected';
+
+export type MediaAsset = {
+  id: string;
+  publicId: string;
+  url: string;
+  purpose: MediaPurpose;
+  targetType: string;
+  targetId: string | null;
+  uploadedById: string;
+  status: MediaStatus;
+  bytes: number;
+  width: number;
+  height: number;
+  format: string;
+  reviewedAt: string | null;
+  rejectReason: string | null;
+  destroyed: boolean;
+  createdAt: string;
+  /** Library only. */
+  inUse?: boolean;
+  uploader?: string | null;
+  reviewer?: string | null;
+  targetLabel?: string | null;
+};
+
+export type MediaConfig = { enabled: boolean; maxBytes: number; formats: string[] };
+
+export type MediaUploadTicket = {
+  uploadUrl: string;
+  cloudName: string;
+  apiKey: string;
+  params: Record<string, string | number>;
+  maxBytes: number;
+  formats: string[];
+  expiresAt: string;
+  status: 'approved' | 'pending';
+};
+
+export type MediaConfirmResult = {
+  asset: MediaAsset;
+  url: string;
+  status: MediaStatus;
+  /** True when the API already wrote the image into the target record. */
+  applied: boolean;
+};
+
+export type MediaTargetState = {
+  current: string | null;
+  pending: MediaAsset | null;
+  uploadStatus: 'approved' | 'pending';
+  canPasteUrl: boolean;
+};
+
+export type MediaLibraryPage = {
+  items: MediaAsset[];
+  total: number;
+  page: number;
+  pages: number;
+  limit: number;
+  counts: Record<MediaStatus, number>;
 };
 
 export const api = {
@@ -560,6 +636,33 @@ export const api = {
       test: (name: IntegrationName) =>
         request<IntegrationTestResult>(`/admin/integrations/${name}/test`, { method: 'POST' }),
     },
+
+    // Media library (#131): every tracked upload, moderation of pending images.
+    media: {
+      list: (params: { purpose?: string; status?: string; uploader?: string; page?: number; limit?: number } = {}) =>
+        request<MediaLibraryPage>(`/admin/media${qs(params)}`, { fresh: true }),
+      approve: (id: string) => request<MediaAsset>(`/admin/media/${id}/approve`, { method: 'POST' }),
+      reject: (id: string, reason?: string) =>
+        request<MediaAsset>(`/admin/media/${id}/reject`, { method: 'POST', body: { reason } }),
+      remove: (id: string) => request(`/admin/media/${id}`, { method: 'DELETE' }),
+    },
+  },
+
+  // Signed direct uploads to Cloudinary (#131): sign -> upload -> confirm.
+  media: {
+    config: () => request<MediaConfig>('/media/config', { fallback: { enabled: false, maxBytes: 0, formats: [] } }),
+    sign: (purpose: MediaPurpose, targetId?: string | null) =>
+      request<MediaUploadTicket>('/media/sign', { method: 'POST', body: { purpose, targetId: targetId || undefined } }),
+    confirm: (purpose: MediaPurpose, targetId: string | null | undefined, publicId: string) =>
+      request<MediaConfirmResult>('/media/confirm', {
+        method: 'POST',
+        body: { purpose, targetId: targetId || undefined, publicId },
+      }),
+    target: (purpose: MediaPurpose, targetId: string) =>
+      request<MediaTargetState>(`/media/targets/${purpose}/${targetId}`, { fresh: true }),
+    removeFromTarget: (purpose: MediaPurpose, targetId: string) =>
+      request(`/media/targets/${purpose}/${targetId}`, { method: 'DELETE' }),
+    remove: (id: string) => request(`/media/${id}`, { method: 'DELETE' }),
   },
 
   mlbb: {
