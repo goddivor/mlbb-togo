@@ -27,6 +27,7 @@ import XpLeaderboard from '@/components/gamification/XpLeaderboard';
 import FrameCollection from '@/components/gamification/rewards/FrameCollection';
 import TitlesPanel from '@/components/gamification/rewards/TitlesPanel';
 import { useRewardsCollection } from '@/components/gamification/rewards/useRewardsCollection';
+import EventBanner from '@/components/gamification/rewards/EventBanner';
 
 const XP_RULE_TYPES = [
   'match_played',
@@ -36,6 +37,13 @@ const XP_RULE_TYPES = [
   'daily_login',
   'forum_post',
   'friend_added',
+  'comment_posted',
+  'bracket_win',
+  'pickban_completed',
+  'ai_coach_used',
+  'event_joined',
+  'game_account_linked',
+  'profile_completed',
 ];
 
 type Tab = 'missions' | 'achievements' | 'collection' | 'titles' | 'history' | 'leaderboard';
@@ -126,6 +134,7 @@ export default function ProgressPage() {
   const missions: any[] = data.missions ?? [];
   const missionsDone = missions.filter((m) => m.completed).length;
   const rules: Record<string, number> = data.xpRules ?? {};
+  const ruleTypes = XP_RULE_TYPES.filter((type) => rules[type] !== undefined);
   const percent = Math.max(0, Math.min(100, Number(data.percent ?? 0)));
   const xpNumber = Number(data.xp ?? 0);
 
@@ -203,6 +212,8 @@ export default function ProgressPage() {
         </motion.div>
       </motion.div>
 
+      <EventBanner />
+
       <Card>
         <XpBar
           level={data.level}
@@ -272,7 +283,7 @@ export default function ProgressPage() {
           <Card>
             <SectionTitle eyebrow={t('progress.xp')} title={t('progress.rules')} className="mb-4" size="sm" />
             <ul className="divide-y divide-line-subtle">
-              {XP_RULE_TYPES.map((type) => (
+              {ruleTypes.map((type) => (
                 <li key={type} className="flex items-center justify-between gap-2 py-2 text-sm">
                   <span className="text-ink-2">{t(`xp.type.${type}`)}</span>
                   <span className="num font-semibold text-accent-green">+{rules[type] ?? 0} XP</span>

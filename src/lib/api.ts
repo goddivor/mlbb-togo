@@ -964,6 +964,8 @@ export const api = {
         fallback: { entries: [], total: 0 },
         auth: false,
       }),
+    // Stream page "watching" ping (spectator achievement, one count a day).
+    spectator: () => request('/gamification/me/spectator', { method: 'POST', fallback: null }),
   },
 
   // Avatar frames and titles (#124). Admin routes require `admin.rewards`.
@@ -973,6 +975,7 @@ export const api = {
     equipFrame: (frameId: string | null, variant?: string | null) =>
       request('/rewards/me/frame', { method: 'POST', body: { frameId, ...(variant ? { variant } : {}) } }),
     equipTitle: (titleId: string | null) => request('/rewards/me/title', { method: 'POST', body: { titleId } }),
+    myEvents: () => request('/rewards/me/events', { fallback: [], fresh: true }),
     admin: {
       timeline: () => request('/rewards/admin/timeline', { fresh: true }),
       frames: () => request('/rewards/admin/frames', { fresh: true }),
@@ -995,6 +998,20 @@ export const api = {
       setWeeklyMvp: (data: { userId: string; week?: string }) =>
         request('/rewards/admin/mvp-week', { method: 'POST', body: data }),
       recalculate: (userId: string) => request('/rewards/admin/recalculate', { method: 'POST', body: { userId } }),
+      recalculatePage: (cursor?: string | null, limit = 25) =>
+        request('/rewards/admin/recalculate', { method: 'POST', body: { ...(cursor ? { cursor } : {}), limit } }),
+      achievements: () => request('/rewards/admin/achievements', { fresh: true }),
+      events: () => request('/rewards/admin/events', { fresh: true }),
+      createEvent: (data: any) => request('/rewards/admin/events', { method: 'POST', body: data }),
+      updateEvent: (id: string, data: any) =>
+        request(`/rewards/admin/events/${encodeURIComponent(id)}`, { method: 'PATCH', body: data }),
+      closeEvent: (id: string) => request(`/rewards/admin/events/${encodeURIComponent(id)}/close`, { method: 'POST' }),
+      duplicateEvent: (id: string) =>
+        request(`/rewards/admin/events/${encodeURIComponent(id)}/duplicate`, { method: 'POST' }),
+      deleteEvent: (id: string) => request(`/rewards/admin/events/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+      eventEligible: (id: string) =>
+        request(`/rewards/admin/events/${encodeURIComponent(id)}/eligible`, { fresh: true }),
+      seedDefaultEvents: () => request('/rewards/admin/events/defaults', { method: 'POST' }),
     },
   },
 
