@@ -26,6 +26,7 @@ export const ADMIN_AREAS: AdminArea[] = [
   { permission: 'admin.requests', href: '/admin/requests' },
   { permission: 'admin.messages', href: '/admin/messages' },
   { permission: 'admin.rewards', href: '/admin/rewards' },
+  { permission: 'builds.moderate', href: '/admin/builds' },
   { permission: 'admin.sponsors', href: '/admin/sponsors' },
   { permission: 'admin.logs', href: '/admin/logs' },
   { permission: 'admin.roles', href: '/admin/roles' },
@@ -54,9 +55,15 @@ export function canAny(user: Subject, permissions: string[]): boolean {
   return permissions.some((p) => can(user, p));
 }
 
-/** True when the user may enter the admin interface (any `admin.*`). */
+/**
+ * Action permissions that open an admin page of their own (mirrors the API's
+ * ADMIN_PAGE_ACTIONS): a holder may enter the admin interface.
+ */
+export const ADMIN_PAGE_ACTIONS = ['builds.moderate'];
+
+/** True when the user may enter the admin interface (any `admin.*` or ADMIN_PAGE_ACTIONS). */
 export function hasAdminAccess(user: Subject): boolean {
-  return permissionsOf(user).some((p) => p.startsWith('admin.'));
+  return permissionsOf(user).some((p) => p.startsWith('admin.') || ADMIN_PAGE_ACTIONS.includes(p));
 }
 
 /** Permission required by an admin path (`/admin/users/...` -> `admin.users`). */
