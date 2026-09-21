@@ -52,7 +52,7 @@ export default function TeamCard({
   className?: string;
 }) {
   const t = useT();
-  const link = href === undefined ? `/teams/${team.id}` : href;
+  const link = href === undefined ? `/dashboard/teams/${team.id}` : href;
   const accent = team.color || 'rgb(var(--accent-cyan))';
   const played = record ? record.wins + record.losses + (record.draws ?? 0) : 0;
   const winRate = played ? Math.round((record!.wins / played) * 100) : null;

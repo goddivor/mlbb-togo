@@ -226,7 +226,7 @@ export default function AdminTournamentManagePage() {
                 {t('admin.tournaments.live')}
               </Badge>
             )}
-            <Link href={`/tournaments/${id}`} target="_blank">
+            <Link href={`/dashboard/tournaments/${id}`} target="_blank">
               <Button variant={tournament.banner ? 'outline' : 'ghost'} size="sm" className={tournament.banner ? 'border-white/40 text-white hover:border-white hover:text-white' : undefined}>
                 <ExternalLink size={14} /> {t('admin.tournaments.viewPublic')}
               </Button>

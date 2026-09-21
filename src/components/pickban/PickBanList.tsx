@@ -76,7 +76,7 @@ export default function PickBanList({
                 <Button size="sm" variant="ghost" onClick={() => onDelete(d)} aria-label={t('pickban.delete')}>
                   <Trash2 size={15} />
                 </Button>
-                <Link href={`/pick-ban/${d.shareCode}`}>
+                <Link href={`/dashboard/pick-ban/${d.shareCode}`}>
                   <Button size="sm" className="gap-1">
                     {t('pickban.openBoard')}
                     <ArrowRight size={14} />

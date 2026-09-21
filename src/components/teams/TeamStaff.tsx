@@ -35,7 +35,7 @@ export function StaffCard({ s, t }: { s: any; t: TFn }) {
         </div>
         {s.bio && <p className="mt-1 line-clamp-3 whitespace-pre-line text-xs text-ink-2">{s.bio}</p>}
         {s.userId && (
-          <Link href={`/players/${s.userId}`} className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+          <Link href={`/dashboard/players/${s.userId}`} className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
             <ExternalLink size={12} /> {t('teams.staff.viewProfile')}
           </Link>
         )}

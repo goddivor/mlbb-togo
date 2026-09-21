@@ -284,7 +284,7 @@ export default function AdminRequestsPage() {
                         )}
                         {r.status === 'approved' &&
                           (r.createdTeamId ? (
-                            <Link href={`/teams/${r.createdTeamId}`}>
+                            <Link href={`/dashboard/teams/${r.createdTeamId}`}>
                               <Button size="sm" variant="secondary">
                                 <ExternalLink size={14} /> {t('requests.viewTeam')}
                               </Button>

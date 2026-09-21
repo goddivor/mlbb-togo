@@ -129,7 +129,7 @@ export default function PlayerTab() {
                   avatarSize={72}
                 />
                 <div className="min-w-0 flex-1 text-center sm:text-left">
-                  <Link href={`/players/${user.id}`} className="font-display text-xl font-bold text-ink-1 hover:text-primary">
+                  <Link href={`/dashboard/players/${user.id}`} className="font-display text-xl font-bold text-ink-1 hover:text-primary">
                     {name}
                   </Link>
                   <PlayerTitle id={data.equippedTitle} className="block" />

@@ -374,7 +374,7 @@ export function RankWidget({ rank, className }: { rank: any; className?: string 
     <Widget
       title={t('dashboard.widgets.rank')}
       icon={<Trophy size={16} />}
-      href="/leaderboard"
+      href="/dashboard/leaderboard"
       hrefLabel={t('dashboard.rank.viewAll')}
       className={className}
     >
@@ -428,7 +428,7 @@ export function LastMatchesWidget({
     <Widget
       title={t('dashboard.widgets.lastMatches')}
       icon={<Swords size={16} />}
-      href={userId ? `/players/${userId}` : undefined}
+      href={userId ? `/dashboard/players/${userId}` : undefined}
       hrefLabel={t('dashboard.matches.viewAll')}
       className={className}
       bodyClassName="p-0"
@@ -569,7 +569,7 @@ export function UpcomingWidget({ items, className }: { items: any[]; className?:
           icon={<CalendarDays size={18} />}
           text={t('dashboard.upcoming.empty')}
           action={
-            <Link href="/draft" className="text-xs font-semibold text-primary hover:underline">
+            <Link href="/dashboard/draft" className="text-xs font-semibold text-primary hover:underline">
               {t('header.draft')}
             </Link>
           }
@@ -637,7 +637,7 @@ export function NotificationsWidget({
     <Widget
       title={t('dashboard.widgets.notifications')}
       icon={<Bell size={16} />}
-      href="/notifications"
+      href="/dashboard/notifications"
       hrefLabel={t('dashboard.notifications.viewAll')}
       className={className}
       bodyClassName="p-0"
@@ -693,10 +693,10 @@ export function NotificationsWidget({
 export function ShortcutsWidget({ className }: { className?: string }) {
   const t = useT();
   const items = [
-    { href: '/draft', icon: <Gamepad2 size={18} />, label: t('dashboard.shortcuts.draft'), desc: t('dashboard.shortcuts.draftDesc') },
-    { href: '/tournaments', icon: <Trophy size={18} />, label: t('dashboard.shortcuts.tournaments'), desc: t('dashboard.shortcuts.tournamentsDesc') },
-    { href: '/recruitment', icon: <Megaphone size={18} />, label: t('dashboard.shortcuts.recruitment'), desc: t('dashboard.shortcuts.recruitmentDesc') },
-    { href: '/leaderboard', icon: <Users size={18} />, label: t('dashboard.shortcuts.leaderboard'), desc: t('dashboard.shortcuts.leaderboardDesc') },
+    { href: '/dashboard/draft', icon: <Gamepad2 size={18} />, label: t('dashboard.shortcuts.draft'), desc: t('dashboard.shortcuts.draftDesc') },
+    { href: '/dashboard/tournaments', icon: <Trophy size={18} />, label: t('dashboard.shortcuts.tournaments'), desc: t('dashboard.shortcuts.tournamentsDesc') },
+    { href: '/dashboard/recruitment', icon: <Megaphone size={18} />, label: t('dashboard.shortcuts.recruitment'), desc: t('dashboard.shortcuts.recruitmentDesc') },
+    { href: '/dashboard/leaderboard', icon: <Users size={18} />, label: t('dashboard.shortcuts.leaderboard'), desc: t('dashboard.shortcuts.leaderboardDesc') },
   ];
   return (
     <Widget title={t('dashboard.widgets.shortcuts')} icon={<Zap size={16} />} className={className}>

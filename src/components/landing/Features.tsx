@@ -22,13 +22,13 @@ const ACCENT_SOFT: Record<Accent, string> = {
 };
 
 const features: { key: string; icon: any; href: string; accent: Accent }[] = [
-  { key: 'tournaments', icon: Trophy, href: '/tournaments', accent: 'gold' },
-  { key: 'rankings', icon: Users, href: '/players', accent: 'cyan' },
-  { key: 'teams', icon: Shield, href: '/teams', accent: 'violet' },
-  { key: 'forum', icon: MessageSquare, href: '/forum', accent: 'red' },
-  { key: 'matches', icon: Swords, href: '/matches', accent: 'cyan' },
-  { key: 'events', icon: Calendar, href: '/events', accent: 'green' },
-  { key: 'heroes', icon: Sparkles, href: '/heroes', accent: 'violet' },
+  { key: 'tournaments', icon: Trophy, href: '/dashboard/tournaments', accent: 'gold' },
+  { key: 'rankings', icon: Users, href: '/dashboard/players', accent: 'cyan' },
+  { key: 'teams', icon: Shield, href: '/dashboard/teams', accent: 'violet' },
+  { key: 'forum', icon: MessageSquare, href: '/dashboard/forum', accent: 'red' },
+  { key: 'matches', icon: Swords, href: '/dashboard/matches', accent: 'cyan' },
+  { key: 'events', icon: Calendar, href: '/dashboard/events', accent: 'green' },
+  { key: 'heroes', icon: Sparkles, href: '/dashboard/heroes', accent: 'violet' },
   { key: 'esport', icon: Flag, href: '/league', accent: 'gold' },
 ];
 

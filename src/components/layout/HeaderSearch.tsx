@@ -24,15 +24,15 @@ export type QuickLink = { href: string; key: string; icon: any };
 
 const PLAYER_LINKS: QuickLink[] = [
   { href: '/dashboard', key: 'header.dashboard', icon: LayoutDashboard },
-  { href: '/heroes', key: 'header.heroes', icon: Swords },
-  { href: '/players', key: 'header.players', icon: Users },
-  { href: '/leaderboard', key: 'header.leaderboard', icon: Trophy },
-  { href: '/teams', key: 'header.teams', icon: Shield },
-  { href: '/recruitment', key: 'header.recruitment', icon: Megaphone },
-  { href: '/stream', key: 'header.stream', icon: Radio },
-  { href: '/friends', key: 'header.friends', icon: Users2 },
-  { href: '/notifications', key: 'notif.title', icon: Bell },
-  { href: '/ai', key: 'header.ai', icon: Bot },
+  { href: '/dashboard/heroes', key: 'header.heroes', icon: Swords },
+  { href: '/dashboard/players', key: 'header.players', icon: Users },
+  { href: '/dashboard/leaderboard', key: 'header.leaderboard', icon: Trophy },
+  { href: '/dashboard/teams', key: 'header.teams', icon: Shield },
+  { href: '/dashboard/recruitment', key: 'header.recruitment', icon: Megaphone },
+  { href: '/dashboard/stream', key: 'header.stream', icon: Radio },
+  { href: '/dashboard/friends', key: 'header.friends', icon: Users2 },
+  { href: '/dashboard/notifications', key: 'notif.title', icon: Bell },
+  { href: '/dashboard/ai', key: 'header.ai', icon: Bot },
 ];
 
 type SearchResult = {
@@ -159,7 +159,7 @@ export default function HeaderSearch({
         id: user.id,
         label: user.displayName || user.username,
         icon: Users,
-        href: `/players/${user.id}`,
+        href: `/dashboard/players/${user.id}`,
         group: t('search.group.players'),
       });
     });
@@ -170,7 +170,7 @@ export default function HeaderSearch({
         id: hero.id,
         label: hero.name,
         icon: Swords,
-        href: `/heroes#${hero.id}`,
+        href: `/dashboard/heroes#${hero.id}`,
         group: t('search.group.heroes'),
       });
     });
@@ -181,7 +181,7 @@ export default function HeaderSearch({
         id: team.id,
         label: team.name,
         icon: Shield,
-        href: `/teams/${team.id}`,
+        href: `/dashboard/teams/${team.id}`,
         group: t('search.group.teams'),
       });
     });
@@ -192,7 +192,7 @@ export default function HeaderSearch({
         id: tournament.id,
         label: tournament.name,
         icon: Trophy,
-        href: `/tournaments/${tournament.id}`,
+        href: `/dashboard/tournaments/${tournament.id}`,
         group: t('search.group.tournaments'),
       });
     });
@@ -203,7 +203,7 @@ export default function HeaderSearch({
         id: event.id,
         label: event.title,
         icon: Calendar,
-        href: '/events',
+        href: '/dashboard/events',
         group: t('search.group.events'),
       });
     });
