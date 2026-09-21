@@ -15,6 +15,7 @@ import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import RankFrame from '@/components/game/RankFrame';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
+import { notifyGameSync } from '@/components/profile/gameSyncToast';
 import { getSocket, usePresence } from '@/lib/realtime';
 import {
   ActivityWidget,
@@ -225,7 +226,7 @@ export default function Dashboard() {
       const updated: any = await api.auth.syncGame();
       setUser(updated);
       setUserProfile(updated);
-      toast.success(t('dashboard.syncSuccess'));
+      notifyGameSync(t, updated?.gameSyncStatus);
       refresh();
     } catch (e: any) {
       toast.error(e?.message || t('dashboard.syncError'));
@@ -282,7 +283,7 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className={grid}>
-          <QuickStatsWidget stats={data.quickStats} className="md:col-span-2" />
+          <QuickStatsWidget stats={data.quickStats} game={data.game} className="md:col-span-2" />
           <RankWidget rank={data.rank} />
           <ActivityWidget events={data.activity} className="md:col-span-2" />
           <LastMatchesWidget matches={data.lastMatches} userId={userProfile.id} />

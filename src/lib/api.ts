@@ -245,6 +245,25 @@ export const api = {
         fallback: { items: [], total: 0, page, limit, hasMore: false },
         auth: false,
       }),
+    // Cached game account data (public, privacy-aware; the owner's session is
+    // sent when present so a private profile stays visible to its owner).
+    game: (id: string) => request(`/users/${id}/game`, { fallback: null }),
+    gameMatches: (
+      id: string,
+      params: { season?: number | null; hero?: number | null; page?: number; limit?: number } = {},
+    ) => {
+      const qs = new URLSearchParams(
+        Object.entries(params)
+          .filter(([, v]) => v !== undefined && v !== null)
+          .map(([k, v]) => [k, String(v)]),
+      ).toString();
+      const page = params.page ?? 1;
+      const limit = params.limit ?? 10;
+      return request(`/users/${id}/game/matches${qs ? `?${qs}` : ''}`, {
+        fallback: { items: [], total: 0, page, limit, hasMore: false },
+      });
+    },
+    gameMatch: (id: string, bid: string) => request(`/users/${id}/game/matches/${encodeURIComponent(bid)}`),
     update: (id: string, data: any) => request(`/users/${id}`, { method: 'PATCH', body: data }),
     remove: (id: string) => request(`/users/${id}`, { method: 'DELETE' }),
     deleteSelf: () => request('/users/me', { method: 'DELETE' }),

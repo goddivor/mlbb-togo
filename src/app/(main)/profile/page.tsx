@@ -16,6 +16,8 @@ import LinkGameModal from '@/components/profile/LinkGameModal';
 import LevelBadge from '@/components/gamification/LevelBadge';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
+import { notifyGameSync } from '@/components/profile/gameSyncToast';
+import GameSyncNotice from '@/components/profile/GameSyncNotice';
 
 export default function ProfilePage() {
   const userProfile = useAuthStore((s: any) => s.userProfile);
@@ -33,6 +35,11 @@ export default function ProfilePage() {
       .me()
       .then((g: any) => setLevel(g?.level ?? null))
       .catch(() => setLevel(null));
+  }, []);
+
+  // Reconnect CTA elsewhere (dashboard, notices) lands here with ?relink=1.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('relink') === '1') setLinkGameOpen(true);
   }, []);
 
   useEffect(() => {
@@ -113,7 +120,7 @@ export default function ProfilePage() {
     try {
       const updated: any = await api.auth.syncGame();
       apply(updated);
-      toast.success(t('profile.syncSuccess'));
+      notifyGameSync(t, updated?.gameSyncStatus);
     } catch (e: any) {
       toast.error(e?.message || t('profile.syncError'));
     } finally {
@@ -322,6 +329,17 @@ export default function ProfilePage() {
             className="mb-4"
           />
 
+          <GameSyncNotice
+            sync={{
+              status: userProfile.gameSyncStatus,
+              lastSyncAt: userProfile.gameSyncedAt,
+              tokenStatus: userProfile.mlbbTokenStatus === 'expired' ? 'expired' : 'valid',
+            }}
+            isOwner
+            onReconnect={() => setLinkGameOpen(true)}
+            className="mb-4"
+          />
+
           {heroes.length > 0 && (
             <>
               <p className="eyebrow mb-3">{t('profile.favoriteHeroes')}</p>
@@ -363,7 +381,12 @@ export default function ProfilePage() {
         </Card>
       )}
 
-      <LinkGameModal open={linkGameOpen} onClose={() => setLinkGameOpen(false)} />
+      <LinkGameModal
+        open={linkGameOpen}
+        onClose={() => setLinkGameOpen(false)}
+        initialGameId={userProfile.mlbbRoleId}
+        initialServerId={userProfile.mlbbZoneId}
+      />
 
       {/* Game account unlink confirmation */}
       <ConfirmModal

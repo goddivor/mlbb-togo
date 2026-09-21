@@ -11,6 +11,7 @@ import { cn } from '@/lib/helpers';
 import { avatarSrc } from '@/lib/api';
 import { notifContent, useT } from '@/lib/i18n';
 import { useLangStore } from '@/store/useStore';
+import GameSyncNotice from '@/components/profile/GameSyncNotice';
 
 /* ------------------------------------------------------------------ */
 /* Shared helpers                                                      */
@@ -150,9 +151,20 @@ const RESULT_STYLE: Record<string, { badge: string; bar: string }> = {
 /* Quick stats                                                         */
 /* ------------------------------------------------------------------ */
 
-export function QuickStatsWidget({ stats, className }: { stats: any; className?: string }) {
+export function QuickStatsWidget({
+  stats,
+  game,
+  className,
+}: {
+  stats: any;
+  /** Cached game account summary (GET /users/:id/game), when linked. */
+  game?: any;
+  className?: string;
+}) {
   const t = useT();
   const s = stats || {};
+  const linked = !!game?.linked && game?.visible !== false;
+  const career = linked ? game?.stats : null;
   const streak: number = s.currentStreak ?? 0;
   const abs = Math.abs(streak);
   const streakLabel =
@@ -195,12 +207,61 @@ export function QuickStatsWidget({ stats, className }: { stats: any; className?:
       accent: 'gold',
     },
   ];
+  // Linked account with detailed stats: the game account leads, e-sport
+  // figures move to a secondary line.
+  const gameTiles: typeof tiles = career
+    ? [
+        {
+          key: 'games',
+          icon: <Swords size={16} />,
+          value: career.total ?? 0,
+          label: t('gameAccount.games'),
+          hint: t('dashboard.quick.record', { wins: career.wins ?? 0, losses: career.losses ?? 0 }),
+          accent: 'cyan',
+        },
+        {
+          key: 'winRate',
+          icon: <Trophy size={16} />,
+          value: `${career.winRate ?? 0}%`,
+          label: t('gameAccount.winRate'),
+          hint: `${t('gameAccount.avgScore')} ${career.avgScore ?? 0}`,
+          accent: 'green',
+        },
+        {
+          key: 'streak',
+          icon: <Flame size={16} />,
+          value: career.winStreak ?? 0,
+          label: t('gameAccount.bestStreak'),
+          hint: t('gameAccount.bestStreakHint', { n: career.winStreak ?? 0 }),
+          accent: 'violet',
+        },
+        {
+          key: 'mvp',
+          icon: <Crown size={16} />,
+          value: career.mvpCount ?? 0,
+          label: t('gameAccount.mvp'),
+          hint: t('gameAccount.gameTime', { n: Math.round(career.gameTime ?? 0) }),
+          accent: 'gold',
+        },
+      ]
+    : tiles;
   const form: string[] = Array.isArray(s.form) ? s.form : [];
 
   return (
-    <Widget title={t('dashboard.widgets.quickStats')} icon={<Zap size={16} />} className={className}>
+    <Widget
+      title={
+        <span className="inline-flex items-center gap-2">
+          {t('dashboard.widgets.quickStats')}
+          <Badge variant={career ? 'neon' : 'default'} size="sm">
+            {t(career ? 'gameAccount.source.game' : 'gameAccount.source.esport')}
+          </Badge>
+        </span>
+      }
+      icon={<Zap size={16} />}
+      className={className}
+    >
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {tiles.map((tile) => (
+        {gameTiles.map((tile) => (
           <div key={tile.key} className="rounded border border-line-subtle bg-surface-2/40 p-3.5">
             <div className="flex items-center justify-between gap-2">
               <StatTile label={tile.label} value={tile.value} accent={tile.accent} />
@@ -212,6 +273,11 @@ export function QuickStatsWidget({ stats, className }: { stats: any; className?:
           </div>
         ))}
       </div>
+      {career && (
+        <p className="mt-3 truncate text-xs num text-ink-2">
+          {t('gameAccount.esportLine', { games: s.games ?? 0, winRate: s.winRate ?? 0, kda: s.kda ?? 0 })}
+        </p>
+      )}
       {form.length > 0 && (
         <div className="mt-4 flex items-center gap-2">
           <span className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('dashboard.quick.form')}</span>
@@ -226,6 +292,7 @@ export function QuickStatsWidget({ stats, className }: { stats: any; className?:
           </div>
         </div>
       )}
+      {linked && <GameSyncNotice sync={game?.sync} isOwner className="mt-4" />}
     </Widget>
   );
 }

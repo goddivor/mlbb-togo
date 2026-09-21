@@ -4,17 +4,17 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, MapPin, Trophy, UserPlus, UserCheck, UserMinus, Check, X, MessageSquare } from 'lucide-react';
-import { Card, Badge, Button, EmptyState, SectionTitle, Skeleton, StatTile } from '@/components/ui';
-import { api, avatarSrc, mlbbImg } from '@/lib/api';
+import { Card, Badge, Button, EmptyState, Skeleton, StatTile } from '@/components/ui';
+import { api, avatarSrc } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import RankFrame from '@/components/game/RankFrame';
 import RoleIcon, { roleLabel } from '@/components/game/RoleIcon';
 import PlayerStatsSection from '@/components/profile/PlayerStatsSection';
 import MatchHistory from '@/components/profile/MatchHistory';
+import GameAccountSection from '@/components/profile/GameAccountSection';
 import LevelBadge from '@/components/gamification/LevelBadge';
 import { useAuthStore } from '@/store/useStore';
 import { useT } from '@/lib/i18n';
-import { cn } from '@/lib/helpers';
 import toast from 'react-hot-toast';
 
 export default function PublicProfilePage() {
@@ -99,7 +99,6 @@ export default function PublicProfilePage() {
     );
   }
 
-  const heroes: any[] = user.gameFrequentHeroes || [];
   const roles: any[] = user.gameRoles || [];
   const name = user.displayName || user.username;
 
@@ -229,42 +228,7 @@ export default function PublicProfilePage() {
           {t('users.noGame')}
         </Card>
       ) : (
-        heroes.length > 0 && (
-          <Card>
-            <SectionTitle size="sm" title={t('users.favoriteHeroes')} className="mb-4" />
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              {heroes.map((h, i) => {
-                const wr = Number(h.winRate ?? 0);
-                return (
-                  <div
-                    key={h.heroId ?? i}
-                    className="group relative aspect-[4/5] overflow-hidden rounded-lg border border-line-subtle bg-surface-2"
-                  >
-                    {h.image && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={mlbbImg(h.image, 240)}
-                        alt={h.name}
-                        referrerPolicy="no-referrer"
-                        className="h-full w-full object-cover object-top transition-transform duration-slow ease-out group-hover:scale-105"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-surface-1 via-surface-1/40 to-transparent" />
-                    <div className="absolute inset-x-0 bottom-0 p-2.5">
-                      <p className="truncate font-display text-sm font-bold leading-tight text-ink-1">{h.name}</p>
-                      <p className="mt-0.5 text-[11px] num text-ink-2">
-                        {h.matches} {t('dashboard.favorites.matches')}
-                        <span className={cn('ml-1.5 font-semibold', wr >= 50 ? 'text-accent-green' : 'text-accent-red')}>
-                          {h.winRate}{t('dashboard.favorites.winRate')}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        )
+        <GameAccountSection userId={id} />
       )}
 
       {/* Esport stats computed from the platform's matches */}
