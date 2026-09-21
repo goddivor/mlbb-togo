@@ -19,21 +19,12 @@ import {
   useNow,
   type FrameEntry,
 } from '@/components/gamification/rewards/shared';
+import { previousWeekKey } from '@/lib/periods';
 import UserPicker, { type PickedUser } from './UserPicker';
 
 type TempRow = FrameEntry & { user: PickedUser | null };
 
 const WEEK = /^\d{4}-W\d{2}$/;
-
-/** ISO week key (`2026-W38`) of the week before `date` (Lomé = UTC). */
-export function previousWeekKey(date = new Date()): string {
-  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - 7));
-  const day = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
-  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
-}
 
 /** Active temporary frames (end now) and the weekly MVP override. */
 export default function TemporaryTab() {
