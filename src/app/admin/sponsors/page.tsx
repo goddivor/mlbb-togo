@@ -33,6 +33,7 @@ import {
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import toast from 'react-hot-toast';
+import ImageUpload from '@/components/ui/ImageUpload';
 
 type Tab = 'sponsors' | 'offers' | 'requests';
 type Tier = 'title' | 'gold' | 'silver' | 'partner';
@@ -171,7 +172,10 @@ export default function AdminSponsorsPage() {
 
   const submitSponsor = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sponsorForm.logo.trim()) return;
+    if (!sponsorForm.logo.trim()) {
+      toast.error(t('admin.esport.sponsorLogo'));
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -585,10 +589,15 @@ export default function AdminSponsorsPage() {
         headerVariant={sponsorId ? 'plain' : 'gradient'}
       >
         <form onSubmit={submitSponsor} className="space-y-3">
-          <div>
-            <label className={labelCls}>{t('admin.esport.sponsorLogo')}</label>
-            <input className={inputCls} value={sponsorForm.logo} onChange={(e) => setSponsorForm({ ...sponsorForm, logo: e.target.value })} required />
-          </div>
+          <ImageUpload
+            purpose="sponsor"
+            targetId={sponsorId}
+            label={t('admin.esport.sponsorLogo')}
+            value={sponsorForm.logo}
+            onChange={(logo) => setSponsorForm((f) => ({ ...f, logo }))}
+            removable={false}
+            allowUrl
+          />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>{t('admin.esport.sponsorName')}</label>

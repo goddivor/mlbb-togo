@@ -33,8 +33,10 @@ function formsFrom(s: IntegrationsStatus): Record<IntegrationName, Form> {
     anthropic: { ...EMPTY_ANTHROPIC, model: s.anthropic.storedModel ?? '' },
     cloudinary: {
       ...EMPTY_CLOUDINARY,
-      cloudName: s.cloudinary.cloudName ?? '',
-      folder: s.cloudinary.folder ?? '',
+      // Only stored values: an env fallback shows as placeholder, so saving
+      // the form never copies it into the database.
+      cloudName: s.cloudinary.storedCloudName ?? '',
+      folder: s.cloudinary.storedFolder ?? '',
     },
   };
 }
@@ -285,7 +287,7 @@ export default function AdminIntegrationsPage() {
                 label={t('admin.integrations.cloudName')}
                 value={forms.cloudinary.cloudName}
                 onChange={(e: any) => setField('cloudinary', 'cloudName', e.target.value)}
-                placeholder="my-cloud"
+                placeholder={status.cloudinary.cloudName ?? 'my-cloud'}
               />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
@@ -294,7 +296,7 @@ export default function AdminIntegrationsPage() {
                   autoComplete="new-password"
                   value={forms.cloudinary.apiKey}
                   onChange={(e: any) => setField('cloudinary', 'apiKey', e.target.value)}
-                  placeholder={secretPlaceholder(status.cloudinary.apiKeyHint, '123456789012345')}
+                  placeholder={secretPlaceholder(status.cloudinary.apiKeyHint, 'api-key')}
                 />
                 <Input
                   label={t('admin.integrations.apiSecret')}
@@ -310,7 +312,7 @@ export default function AdminIntegrationsPage() {
                 label={t('admin.integrations.folder')}
                 value={forms.cloudinary.folder}
                 onChange={(e: any) => setField('cloudinary', 'folder', e.target.value)}
-                placeholder="mlbb-togo"
+                placeholder={status.cloudinary.folder ?? 'mlbb-togo'}
               />
             </>,
           )}

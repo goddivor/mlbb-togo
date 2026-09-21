@@ -16,6 +16,7 @@ import { isPushSupported, isPushEnabled, enablePush, disablePush } from '@/lib/p
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
 import CitySelect from '@/components/geo/CitySelect';
+import ImageUpload from '@/components/ui/ImageUpload';
 
 const DEFAULT_NOTIFS = { friends: true, messages: true, teams: true };
 const DEFAULT_PRIVACY = { profilePublic: true, showStats: true, showOnline: true, allowInvites: true };
@@ -83,6 +84,19 @@ export default function Settings() {
   const t = useT();
 
   const [activeTab, setActiveTab] = useState('profile');
+
+  // The API already saved the uploaded / removed avatar: reload the profile.
+  const refreshProfile = async () => {
+    try {
+      const me = await api.auth.me(true);
+      if (me) {
+        setUserProfile(me);
+        setUser(me);
+      }
+    } catch {
+      //
+    }
+  };
   const [showDelete, setShowDelete] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -227,6 +241,17 @@ export default function Settings() {
               description={t('settings.subtitle')}
             />
           </div>
+          {userProfile?.id && (
+            <ImageUpload
+              purpose="avatar"
+              targetId={userProfile.id}
+              shape="round"
+              label={t('settings.avatar')}
+              hint={t('settings.avatarHint', { max: 8 })}
+              value={userProfile.customAvatar || ''}
+              onChange={refreshProfile}
+            />
+          )}
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Input

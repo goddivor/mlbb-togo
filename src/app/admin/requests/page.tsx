@@ -22,6 +22,7 @@ import {
 } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
+import ImageUpload from '@/components/ui/ImageUpload';
 
 const STATUSES = ['pending', 'in_review', 'approved', 'rejected'] as const;
 
@@ -360,10 +361,12 @@ export default function AdminRequestsPage() {
             onChange={(e: any) => setCreateForm({ ...createForm, name: e.target.value })}
             required
           />
-          <Input
+          <ImageUpload
+            purpose="team"
             label={t('admin.esport.teamImage')}
             value={createForm.image}
-            onChange={(e: any) => setCreateForm({ ...createForm, image: e.target.value })}
+            onChange={(image) => setCreateForm((f: any) => ({ ...f, image }))}
+            allowUrl
           />
           <Textarea
             label={t('admin.esport.teamDesc')}

@@ -30,6 +30,7 @@ import {
   type TeamRef,
   type UserRef,
 } from '@/components/awards/shared';
+import ImageUpload from '@/components/ui/ImageUpload';
 
 /** Compact field classes (dense admin forms). */
 const inputCls =
@@ -558,10 +559,15 @@ export default function AdminAwardsPage() {
               <label className={labelCls}>{t('admin.awards.description')}</label>
               <textarea className={inputCls} rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={1000} />
             </div>
-            <div className="sm:col-span-2">
-              <label className={labelCls}>{t('admin.awards.imageUrl')}</label>
-              <input className={inputCls} value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://" />
-            </div>
+            <ImageUpload
+              className="sm:col-span-2"
+              purpose="award"
+              targetId={editId}
+              label={t('admin.awards.imageUrl')}
+              value={form.imageUrl}
+              onChange={(imageUrl) => setForm((f) => ({ ...f, imageUrl }))}
+              allowUrl
+            />
           </div>
           {form.criteria && (
             <label className="flex flex-wrap items-center gap-2 text-sm text-ink-1">

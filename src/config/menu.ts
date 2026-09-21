@@ -27,6 +27,7 @@ import {
   ScrollText,
   Gem,
   Plug,
+  Images,
   Package,
   Zap,
 } from 'lucide-react';
@@ -123,6 +124,7 @@ export const adminMenuGroups: MenuGroupConfig[] = [
       { href: '/admin/roles', labelKey: 'admin.roles.title', icon: KeyRound, permission: 'admin.roles' },
       { href: '/admin/logs', labelKey: 'admin.logs.title', icon: ScrollText, permission: 'admin.logs' },
       { href: '/admin/integrations', labelKey: 'admin.integrations.title', icon: Plug, permission: 'admin.integrations' },
+      { href: '/admin/media', labelKey: 'admin.media.title', icon: Images, permission: 'admin.media' },
     ],
   },
 ];
