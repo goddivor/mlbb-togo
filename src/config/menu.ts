@@ -25,6 +25,11 @@ import {
   MapPin,
   KeyRound,
   ScrollText,
+  Gem,
+  Plug,
+  Images,
+  Package,
+  Zap,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -36,6 +41,9 @@ export const playerMenuGroups: MenuGroupConfig[] = [
     items: [
       { href: '/dashboard', labelKey: 'header.dashboard', icon: LayoutDashboard },
       { href: '/heroes', labelKey: 'header.heroes', icon: Swords },
+      { href: '/items', labelKey: 'catalog.items.title', icon: Package },
+      { href: '/spells', labelKey: 'catalog.spells.title', icon: Zap },
+      { href: '/emblems', labelKey: 'catalog.emblems.title', icon: Gem },
       { href: '/players', labelKey: 'header.players', icon: Users },
       { href: '/leaderboard', labelKey: 'header.leaderboard', icon: Trophy },
       { href: '/progress', labelKey: 'header.progress', icon: Sparkles },
@@ -101,6 +109,7 @@ export const adminMenuGroups: MenuGroupConfig[] = [
       { href: '/admin/users', labelKey: 'admin.users.title', icon: Users, permission: 'admin.users' },
       { href: '/admin/requests', labelKey: 'requests.title', icon: Inbox, permission: 'admin.requests' },
       { href: '/admin/messages', labelKey: 'header.messages', icon: MessageSquare, permission: 'admin.messages' },
+      { href: '/admin/rewards', labelKey: 'admin.rewards.title', icon: Gem, permission: 'admin.rewards' },
     ],
   },
   {
@@ -114,6 +123,8 @@ export const adminMenuGroups: MenuGroupConfig[] = [
     items: [
       { href: '/admin/roles', labelKey: 'admin.roles.title', icon: KeyRound, permission: 'admin.roles' },
       { href: '/admin/logs', labelKey: 'admin.logs.title', icon: ScrollText, permission: 'admin.logs' },
+      { href: '/admin/integrations', labelKey: 'admin.integrations.title', icon: Plug, permission: 'admin.integrations' },
+      { href: '/admin/media', labelKey: 'admin.media.title', icon: Images, permission: 'admin.media' },
     ],
   },
 ];

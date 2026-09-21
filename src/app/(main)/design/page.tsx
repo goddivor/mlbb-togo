@@ -25,8 +25,10 @@ import {
   Tooltip,
   type DataColumn,
 } from '@/components/ui';
-import { HeroCard, MatchScoreline, PlayerCard, RankFrame, TeamCard } from '@/components/game';
+import { HeroCard, MatchScoreline, RankFrame, TeamCard } from '@/components/game';
+import PlayerCard from '@/components/game/PlayerCard';
 import DarkModeToggle from '@/components/layout/DarkModeToggle';
+import FramesShowcase from './FramesShowcase';
 
 /* Dev-only showcase of the design system (issue #61). Hidden from menus and
    returns 404 in production. Copy is intentionally not translated. */
@@ -260,6 +262,10 @@ export default function DesignShowcasePage() {
           <RankFrame name="Yao K" rank="Elite" size={56} />
           <RankFrame name="New" size={48} />
         </SectionCard>
+      </Block>
+
+      <Block title="Avatar frames" hint="The 64 reward frames (AvatarFrame): sizes, rank badge placement, every frame at 128 and 40 px.">
+        <FramesShowcase />
       </Block>
 
       <Block title="Player card" hint="Reads /users/:id and /users/:id/stats shapes.">

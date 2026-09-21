@@ -42,6 +42,7 @@ import RoleSelect from '@/components/game/RoleSelect';
 import toast from 'react-hot-toast';
 import { StaffPanel, HonoursPanel } from './TeamExtrasPanels';
 import CitySelect from '@/components/geo/CitySelect';
+import ImageUpload from '@/components/ui/ImageUpload';
 
 const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
 
@@ -534,10 +535,14 @@ function TeamFormModal({
           <label className={labelCls}>{t('admin.esport.teamName')}</label>
           <input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
         </div>
-        <div>
-          <label className={labelCls}>{t('admin.esport.teamImage')}</label>
-          <input className={inputCls} value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} />
-        </div>
+        <ImageUpload
+          purpose="team"
+          targetId={team?.id}
+          label={t('admin.esport.teamImage')}
+          value={form.image}
+          onChange={(image) => setForm((f) => ({ ...f, image }))}
+          allowUrl
+        />
         <div>
           <label className={labelCls}>{t('admin.esport.teamDesc')}</label>
           <textarea

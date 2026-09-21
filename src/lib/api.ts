@@ -16,8 +16,29 @@ export const avatarSrc = (url?: string | null, width = 96): string => {
   return url.includes('youngjoygame.com') ? mlbbImg(url, width) : url;
 };
 
+/** Catalog icon (item, emblem, battle spell): Moonton CDN through the proxy, custom URLs as-is. */
+export const catalogIconSrc = (url?: string | null, width = 80): string => avatarSrc(url, width);
+
+/** Counts returned by `POST /catalog/sync` for each catalog. */
+export interface CatalogSyncCounts {
+  total: number;
+  created: number;
+  updated: number;
+  unchanged: number;
+  failed: number;
+}
+export interface CatalogSyncResult {
+  items: CatalogSyncCounts;
+  emblems: CatalogSyncCounts;
+  battleSpells: CatalogSyncCounts;
+  syncedAt: string;
+}
+
 /** Rank tier (all, epic, legend, mythic, honor, glory) and window in days. */
 export type MetaParams = { rank?: string; days?: number; lang?: string };
+
+/** Catalog statistics filters: rank tier, lane (exp, mid, roam, jungle, gold) and list size. */
+export type CatalogStatsParams = { rank?: string; lane?: string; limit?: number };
 
 const metaQs = (params: Record<string, unknown>): string => {
   const qs = new URLSearchParams(
@@ -195,6 +216,119 @@ export type NotificationPage = {
   page: number;
   limit: number;
   pages: number;
+};
+
+export type IntegrationName = 'anthropic' | 'cloudinary';
+
+type IntegrationMeta = {
+  configured: boolean;
+  /** Where the effective secret comes from. */
+  source: 'db' | 'env' | null;
+  /** True when values are stored in the database (removable). */
+  stored: boolean;
+  /** Stored values exist but cannot be decrypted (ENCRYPTION_KEY changed). */
+  unreadable: boolean;
+  updatedAt: string | null;
+  updatedBy: string | null;
+};
+
+export type IntegrationsStatus = {
+  encryptionReady: boolean;
+  anthropic: IntegrationMeta & {
+    apiKeyHint: string | null;
+    model: string;
+    storedModel: string | null;
+    defaultModel: string;
+  };
+  cloudinary: IntegrationMeta & {
+    cloudName: string | null;
+    apiKeyHint: string | null;
+    apiSecretHint: string | null;
+    folder: string | null;
+    /** Values stored in the database (the form pre-fills these, not the env fallbacks). */
+    storedCloudName: string | null;
+    storedFolder: string | null;
+  };
+};
+
+export type IntegrationTestResult = {
+  ok: boolean;
+  code: 'ok' | 'not_configured' | 'unauthorized' | 'model_not_found' | 'not_found' | 'rate_limited' | 'network' | 'error';
+  message: string;
+  detail?: string;
+};
+
+/** Image upload purposes (#131), mirrored from the API `media.logic.ts`. */
+export type MediaPurpose =
+  | 'avatar'
+  | 'team'
+  | 'team-staff'
+  | 'sponsor'
+  | 'tournament'
+  | 'season'
+  | 'award'
+  | 'match';
+export type MediaStatus = 'pending' | 'approved' | 'rejected';
+
+export type MediaAsset = {
+  id: string;
+  publicId: string;
+  url: string;
+  purpose: MediaPurpose;
+  targetType: string;
+  targetId: string | null;
+  uploadedById: string;
+  status: MediaStatus;
+  bytes: number;
+  width: number;
+  height: number;
+  format: string;
+  reviewedAt: string | null;
+  rejectReason: string | null;
+  destroyed: boolean;
+  createdAt: string;
+  /** Library only. */
+  inUse?: boolean;
+  uploader?: string | null;
+  reviewer?: string | null;
+  targetLabel?: string | null;
+};
+
+export type MediaConfig = { enabled: boolean; maxBytes: number; formats: string[] };
+
+export type MediaUploadTicket = {
+  uploadUrl: string;
+  cloudName: string;
+  apiKey: string;
+  params: Record<string, string | number>;
+  maxBytes: number;
+  formats: string[];
+  expiresAt: string;
+  status: 'approved' | 'pending';
+};
+
+export type MediaConfirmResult = {
+  asset: MediaAsset;
+  url: string;
+  status: MediaStatus;
+  /** True when the API already wrote the image into the target record. */
+  applied: boolean;
+};
+
+export type MediaTargetState = {
+  current: string | null;
+  pending: MediaAsset | null;
+  uploadStatus: 'approved' | 'pending';
+  canPasteUrl: boolean;
+};
+
+export type MediaLibraryPage = {
+  items: MediaAsset[];
+  total: number;
+  page: number;
+  pages: number;
+  limit: number;
+  counts: Record<MediaStatus, number>;
 };
 
 export const api = {
@@ -493,6 +627,45 @@ export const api = {
       recompute: (seasonId?: string | null) =>
         request(`/admin/league/recompute${seasonId ? `?seasonId=${encodeURIComponent(seasonId)}` : ''}`, { method: 'POST' }),
     },
+
+    // Third-party integrations (#130): secrets are write-only, the API only
+    // returns masked hints. Secret fields: '' keeps the stored value, null removes it.
+    integrations: {
+      status: () => request<IntegrationsStatus>('/admin/integrations', { fresh: true }),
+      update: (name: IntegrationName, data: Record<string, string | null>) =>
+        request<IntegrationsStatus>(`/admin/integrations/${name}`, { method: 'PUT', body: data }),
+      remove: (name: IntegrationName) =>
+        request<IntegrationsStatus>(`/admin/integrations/${name}`, { method: 'DELETE' }),
+      test: (name: IntegrationName) =>
+        request<IntegrationTestResult>(`/admin/integrations/${name}/test`, { method: 'POST' }),
+    },
+
+    // Media library (#131): every tracked upload, moderation of pending images.
+    media: {
+      list: (params: { purpose?: string; status?: string; uploader?: string; page?: number; limit?: number } = {}) =>
+        request<MediaLibraryPage>(`/admin/media${qs(params)}`, { fresh: true }),
+      approve: (id: string) => request<MediaAsset>(`/admin/media/${id}/approve`, { method: 'POST' }),
+      reject: (id: string, reason?: string) =>
+        request<MediaAsset>(`/admin/media/${id}/reject`, { method: 'POST', body: { reason } }),
+      remove: (id: string) => request(`/admin/media/${id}`, { method: 'DELETE' }),
+    },
+  },
+
+  // Signed direct uploads to Cloudinary (#131): sign -> upload -> confirm.
+  media: {
+    config: () => request<MediaConfig>('/media/config', { fallback: { enabled: false, maxBytes: 0, formats: [] } }),
+    sign: (purpose: MediaPurpose, targetId?: string | null) =>
+      request<MediaUploadTicket>('/media/sign', { method: 'POST', body: { purpose, targetId: targetId || undefined } }),
+    confirm: (purpose: MediaPurpose, targetId: string | null | undefined, publicId: string) =>
+      request<MediaConfirmResult>('/media/confirm', {
+        method: 'POST',
+        body: { purpose, targetId: targetId || undefined, publicId },
+      }),
+    target: (purpose: MediaPurpose, targetId: string) =>
+      request<MediaTargetState>(`/media/targets/${purpose}/${targetId}`, { fresh: true }),
+    removeFromTarget: (purpose: MediaPurpose, targetId: string) =>
+      request(`/media/targets/${purpose}/${targetId}`, { method: 'DELETE' }),
+    remove: (id: string) => request(`/media/${id}`, { method: 'DELETE' }),
   },
 
   mlbb: {
@@ -551,6 +724,12 @@ export const api = {
     updateItem: (id: string, data: any) =>
       request(`/items/${id}`, { method: 'PATCH', body: data }),
     deleteItem: (id: string) => request(`/items/${id}`, { method: 'DELETE' }),
+    // Admin lists: include hidden entries (`enabled: false`).
+    itemsAll: () => request('/items/all'),
+    emblemsAll: () => request('/emblems/all'),
+    battleSpellsAll: () => request('/battle-spells/all'),
+    // Imports items, emblems and battle spells (icons, descriptions) from Moonton.
+    syncCatalog: (): Promise<CatalogSyncResult> => request('/catalog/sync', { method: 'POST' }),
 
     // Game emblems
     emblems: () => request('/emblems', { fallback: [], auth: false }),
@@ -567,6 +746,21 @@ export const api = {
     updateBattleSpell: (id: string, data: any) =>
       request(`/battle-spells/${id}`, { method: 'PATCH', body: data }),
     deleteBattleSpell: (id: string) => request(`/battle-spells/${id}`, { method: 'DELETE' }),
+  },
+
+  // Public catalog pages (enabled entries). Statistics come from the cached
+  // Academy builds; `available: false` when Moonton could not be reached.
+  gameCatalog: {
+    items: () =>
+      request('/catalog/items', { fallback: { total: 0, categories: [], items: [] }, auth: false }),
+    itemHeroes: (gameId: number | string, params: CatalogStatsParams = {}) =>
+      request(`/catalog/items/${gameId}/heroes${metaQs(params)}`, { fallback: null, auth: false }),
+    synergies: (params: CatalogStatsParams & { item?: number | string } = {}) =>
+      request(`/catalog/items/synergies${metaQs(params)}`, { fallback: null, auth: false }),
+    spells: (params: CatalogStatsParams = {}) =>
+      request(`/catalog/spells${metaQs(params)}`, { fallback: null, auth: false }),
+    emblems: (params: CatalogStatsParams = {}) =>
+      request(`/catalog/emblems${metaQs(params)}`, { fallback: null, auth: false }),
   },
 
   builds: {
@@ -770,6 +964,38 @@ export const api = {
         fallback: { entries: [], total: 0 },
         auth: false,
       }),
+  },
+
+  // Avatar frames and titles (#124). Admin routes require `admin.rewards`.
+  rewards: {
+    catalog: () => request('/rewards/catalog', { fallback: { frames: [], titles: [] }, auth: false }),
+    collection: () => request('/rewards/me/collection', { fresh: true }),
+    equipFrame: (frameId: string | null, variant?: string | null) =>
+      request('/rewards/me/frame', { method: 'POST', body: { frameId, ...(variant ? { variant } : {}) } }),
+    equipTitle: (titleId: string | null) => request('/rewards/me/title', { method: 'POST', body: { titleId } }),
+    admin: {
+      timeline: () => request('/rewards/admin/timeline', { fresh: true }),
+      frames: () => request('/rewards/admin/frames', { fresh: true }),
+      temporary: () => request('/rewards/admin/temporary', { fresh: true }),
+      userCollection: (userId: string) =>
+        request(`/rewards/admin/users/${encodeURIComponent(userId)}/collection`, { fresh: true }),
+      grant: (data: { userId: string; frameId: string; variant?: string; days?: number }) =>
+        request('/rewards/admin/frames/grant', { method: 'POST', body: data }),
+      end: (data: { userId: string; frameId: string; variant?: string }) =>
+        request('/rewards/admin/frames/end', { method: 'POST', body: data }),
+      xpCorrection: (data: { userId: string; amount: number; reason: string }) =>
+        request('/rewards/admin/xp-correction', { method: 'POST', body: data }),
+      tournamentResults: (tournamentId?: string) =>
+        request(
+          `/rewards/admin/tournament-results${tournamentId ? `?tournamentId=${encodeURIComponent(tournamentId)}` : ''}`,
+          { fresh: true },
+        ),
+      recordTournamentResult: (data: { tournamentId: string; kind: 'winner' | 'finalist' | 'mvp'; userIds: string[] }) =>
+        request('/rewards/admin/tournament-results', { method: 'POST', body: data }),
+      setWeeklyMvp: (data: { userId: string; week?: string }) =>
+        request('/rewards/admin/mvp-week', { method: 'POST', body: data }),
+      recalculate: (userId: string) => request('/rewards/admin/recalculate', { method: 'POST', body: { userId } }),
+    },
   },
 
   // Sponsoring (issue #52): public page data, partnership form, admin offers / inbox.

@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { LayoutGrid, Pencil, Check, RefreshCw, Sword, Shield, Sparkles, Users, Map, Swords } from 'lucide-react';
+import { LayoutGrid, Pencil, Check, RefreshCw, Sword, Shield, Sparkles, Users, Map, Swords, CloudDownload } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { useCan } from '@/lib/permissions';
 import { fadeUp, stagger, still } from '@/lib/motion';
 import {
   Card,
@@ -59,6 +60,8 @@ export default function AdminCatalogPage() {
   const [battleSpells, setBattleSpells] = useState<CatalogEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const canCatalog = useCan().can('admin.catalog');
 
   const [editKey, setEditKey] = useState<string | null>(null);
   const [form, setForm] = useState<LaneForm | null>(null);
@@ -71,9 +74,10 @@ export default function AdminCatalogPage() {
         api.catalog.lanes(),
         api.catalog.heroes(),
         api.catalog.roles(),
-        api.game.items(),
-        api.game.emblems(),
-        api.game.battleSpells(),
+        // Admin lists include hidden entries so they can be shown again.
+        api.game.itemsAll(),
+        api.game.emblemsAll(),
+        api.game.battleSpellsAll(),
       ]);
       setLanes(Array.isArray(ls) ? ls : []);
       setHeroCount(Array.isArray(hs) ? hs.length : 0);
@@ -154,6 +158,30 @@ export default function AdminCatalogPage() {
     }
   };
 
+  const syncFromMoonton = async () => {
+    setSyncing(true);
+    try {
+      const res = await api.game.syncCatalog();
+      const all = [res.items, res.emblems, res.battleSpells];
+      const sum = (k: 'created' | 'updated' | 'failed') => all.reduce((n, c) => n + (c?.[k] ?? 0), 0);
+      toast.success(
+        t('admin.catalog.syncDone', {
+          items: res.items.total,
+          emblems: res.emblems.total,
+          spells: res.battleSpells.total,
+          created: sum('created'),
+          updated: sum('updated'),
+        }),
+      );
+      if (sum('failed') > 0) toast.error(t('admin.catalog.syncPartial', { count: sum('failed') }));
+      await load();
+    } catch (err: any) {
+      toast.error(err?.message || t('admin.catalog.syncFailed'));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -163,9 +191,16 @@ export default function AdminCatalogPage() {
         subtitle={t('admin.catalog.subtitle')}
         variant="purple"
         action={
-          <Button onClick={refreshHeroes} loading={refreshing} disabled={refreshing || loading}>
-            <RefreshCw size={16} /> {t('admin.catalog.refreshFromMlbb')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {canCatalog && (
+              <Button variant="secondary" onClick={syncFromMoonton} loading={syncing} disabled={syncing || loading}>
+                <CloudDownload size={16} /> {t('admin.catalog.syncFromMoonton')}
+              </Button>
+            )}
+            <Button onClick={refreshHeroes} loading={refreshing} disabled={refreshing || loading}>
+              <RefreshCw size={16} /> {t('admin.catalog.refreshFromMlbb')}
+            </Button>
+          </div>
         }
       />
 

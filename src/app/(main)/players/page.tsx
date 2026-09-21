@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { MapPin, Search, Users } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PageHeader, SectionCard, Badge, EmptyState, Skeleton, StatTile } from '@/components/ui';
-import { PlayerCard } from '@/components/game';
+import PlayerCard from '@/components/game/PlayerCard';
 import LevelBadge from '@/components/gamification/LevelBadge';
 import { useT } from '@/lib/i18n';
 import { fadeUp, stagger, still } from '@/lib/motion';
@@ -92,7 +92,7 @@ export default function PlayersPage() {
           animate="visible"
         >
           {filtered.map((u) => (
-            <motion.div key={u.id} variants={reduce ? still : fadeUp}>
+            <motion.div key={u.id} variants={reduce ? still : fadeUp} className="h-full">
               <PlayerCard
                 player={u}
                 stats={u.hasGame ? { winRate: u.winRate ?? 0 } : null}

@@ -35,6 +35,7 @@ import { fadeUp, stagger, still } from '@/lib/motion';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import toast from 'react-hot-toast';
+import ImageUpload from '@/components/ui/ImageUpload';
 
 const TYPES = ['friendly', 'training', 'official'];
 const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
@@ -1087,6 +1088,14 @@ function ResultModal({
               <Camera size={13} /> {t('admin.matches.screenshots')}
               <span className="font-normal normal-case text-ink-3">{screenshots.length}/10</span>
             </div>
+            <ImageUpload
+              purpose="match"
+              targetId={match.id}
+              value=""
+              addOnly
+              disabled={screenshots.length >= 10}
+              onChange={(url) => url && setScreenshots((list) => (list.includes(url) || list.length >= 10 ? list : [...list, url]))}
+            />
             <div className="flex gap-2">
               <input
                 type="url"

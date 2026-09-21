@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { X, ChevronsRight, Sparkles } from 'lucide-react';
-import { api, mlbbImg } from '@/lib/api';
+import { api, catalogIconSrc, mlbbImg } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import Portal from '@/components/ui/Portal';
 import { Tabs } from '@/components/ui';
@@ -424,12 +424,15 @@ export default function HeroDetailModal({
                                       {build.items.map((item: any, j: number) => (
                                         <div
                                           key={item.id || j}
-                                          className="flex items-center gap-1.5 rounded border border-line-subtle bg-surface-1 p-2"
+                                          title={item.description || undefined}
+                                          className={`flex items-center gap-1.5 rounded border border-line-subtle bg-surface-1 p-2 ${
+                                            item.enabled === false ? 'opacity-50' : ''
+                                          }`}
                                         >
                                           {item.icon && (
                                             // eslint-disable-next-line @next/next/no-img-element
                                             <img
-                                              src={mlbbImg(item.icon, 80)}
+                                              src={catalogIconSrc(item.icon, 80)}
                                               alt={item.name}
                                               referrerPolicy="no-referrer"
                                               className="h-8 w-8 rounded object-cover"
@@ -446,11 +449,16 @@ export default function HeroDetailModal({
                                   {build.emblem && (
                                     <div>
                                       <p className="mb-2 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('heroes.builds.emblem')}</p>
-                                      <div className="flex items-center gap-2 rounded border border-line-subtle bg-surface-1 p-2">
+                                      <div
+                                        title={build.emblem.description || undefined}
+                                        className={`flex items-center gap-2 rounded border border-line-subtle bg-surface-1 p-2 ${
+                                          build.emblem.enabled === false ? 'opacity-50' : ''
+                                        }`}
+                                      >
                                         {build.emblem.icon && (
                                           // eslint-disable-next-line @next/next/no-img-element
                                           <img
-                                            src={mlbbImg(build.emblem.icon, 80)}
+                                            src={catalogIconSrc(build.emblem.icon, 80)}
                                             alt={build.emblem.name}
                                             referrerPolicy="no-referrer"
                                             className="h-8 w-8 rounded object-cover"
@@ -464,11 +472,16 @@ export default function HeroDetailModal({
                                   {build.battleSpell && (
                                     <div>
                                       <p className="mb-2 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('heroes.builds.battleSpell')}</p>
-                                      <div className="flex items-center gap-2 rounded border border-line-subtle bg-surface-1 p-2">
+                                      <div
+                                        title={build.battleSpell.description || undefined}
+                                        className={`flex items-center gap-2 rounded border border-line-subtle bg-surface-1 p-2 ${
+                                          build.battleSpell.enabled === false ? 'opacity-50' : ''
+                                        }`}
+                                      >
                                         {build.battleSpell.icon && (
                                           // eslint-disable-next-line @next/next/no-img-element
                                           <img
-                                            src={mlbbImg(build.battleSpell.icon, 80)}
+                                            src={catalogIconSrc(build.battleSpell.icon, 80)}
                                             alt={build.battleSpell.name}
                                             referrerPolicy="no-referrer"
                                             className="h-8 w-8 rounded object-cover"

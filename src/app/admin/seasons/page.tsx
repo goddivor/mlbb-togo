@@ -28,6 +28,7 @@ import { useSeasonLifecycle } from '@/components/admin/seasons/useSeasonLifecycl
 import SeasonLifecycleButtons from '@/components/admin/seasons/SeasonLifecycleButtons';
 import SeasonLifecycleModals from '@/components/admin/seasons/SeasonLifecycleModals';
 import toast from 'react-hot-toast';
+import ImageUpload from '@/components/ui/ImageUpload';
 
 type SeasonForm = {
   name: string;
@@ -398,17 +399,16 @@ export default function AdminSeasonsPage() {
               <Input type="date" className={fieldCls} value={form.endDate} onChange={(e: any) => setForm({ ...form, endDate: e.target.value })} />,
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_8rem] gap-3">
-            {field(
-              t('admin.seasons.banner'),
-              <Input
-                type="url"
-                className={fieldCls}
-                value={form.banner}
-                placeholder="https://…"
-                onChange={(e: any) => setForm({ ...form, banner: e.target.value })}
-              />,
-            )}
+          <ImageUpload
+            purpose="season"
+            targetId={editId}
+            shape="wide"
+            label={t('admin.seasons.banner')}
+            value={form.banner}
+            onChange={(banner) => setForm((f) => ({ ...f, banner }))}
+            allowUrl
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_8rem] gap-3">
             {field(
               t('admin.seasons.slug'),
               <Input

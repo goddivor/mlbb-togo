@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Pencil, Trash2, Check } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Plus, Pencil, Trash2, Check, Eye, EyeOff, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { mlbbImg } from '@/lib/api';
+import { catalogIconSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { Badge, Button, EmptyState, Input, SectionCard, SectionTitle, Textarea } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
@@ -19,7 +19,14 @@ export interface CatalogEntity {
   gold?: number | null;
   cooldown?: string | null;
   sort?: number | null;
+  /** `false` hides the entry from players and build pickers; missing = visible. */
+  enabled?: boolean | null;
+  /** Moonton id, set by the catalog sync. */
+  gameId?: number | null;
 }
+
+/** Rows shown before "show all", so a synced catalog (150+ items) stays short. */
+const PREVIEW_COUNT = 24;
 
 /** Optional fields the section renders on top of name/description/icon/sort. */
 export type ExtraField = 'type' | 'gold' | 'cooldown';
@@ -72,6 +79,30 @@ export default function CatalogEntitySection({
   const [saving, setSaving] = useState(false);
   const [toDelete, setToDelete] = useState<CatalogEntity | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [query, setQuery] = useState('');
+  const [expanded, setExpanded] = useState(false);
+  const [toggling, setToggling] = useState<string | null>(null);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((r) => r.name.toLowerCase().includes(q) || (r.type || '').toLowerCase().includes(q));
+  }, [rows, query]);
+  const visibleRows = expanded || query.trim() ? filtered : filtered.slice(0, PREVIEW_COUNT);
+
+  const toggleEnabled = async (row: CatalogEntity) => {
+    const next = row.enabled === false;
+    setToggling(row.id);
+    try {
+      await onUpdate(row.id, { enabled: next });
+      toast.success(t(next ? 'admin.catalog.entryEnabled' : 'admin.catalog.entryDisabled', { name: row.name }));
+      await onChanged();
+    } catch (err: any) {
+      toast.error(err?.message || t('admin.catalog.saveFailed'));
+    } finally {
+      setToggling(null);
+    }
+  };
 
   const openCreate = () => {
     setEditing(null);
@@ -153,19 +184,37 @@ export default function CatalogEntitySection({
         }
       />
 
+      {rows.length > PREVIEW_COUNT && (
+        <div className="relative mb-3 max-w-sm">
+          <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t('admin.catalog.search')}
+            aria-label={t('admin.catalog.search')}
+            className="w-full rounded-lg border border-line-subtle bg-surface-2 py-2 pl-9 pr-3 text-sm text-ink-1 placeholder:text-ink-3 outline-none focus:border-primary focus:ring-2 focus:ring-primary/25"
+          />
+        </div>
+      )}
+
       {rows.length === 0 ? (
         <EmptyState className="!min-h-0 py-8" title={t('admin.catalog.emptyList')} />
+      ) : filtered.length === 0 ? (
+        <EmptyState className="!min-h-0 py-8" title={t('admin.catalog.noMatch')} />
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {rows.map((row) => (
+          {visibleRows.map((row) => (
             <div
               key={row.id}
-              className="flex items-start gap-3 rounded-lg border border-line-subtle bg-surface-2 p-3"
+              className={`flex items-start gap-3 rounded-lg border border-line-subtle bg-surface-2 p-3 ${
+                row.enabled === false ? 'opacity-60' : ''
+              }`}
             >
               {row.icon ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={mlbbImg(row.icon, 80)}
+                  src={catalogIconSrc(row.icon, 80)}
                   alt={row.name}
                   referrerPolicy="no-referrer"
                   className="h-10 w-10 shrink-0 rounded object-cover"
@@ -179,9 +228,27 @@ export default function CatalogEntitySection({
                   {row.type && <Badge size="sm" variant="outline">{row.type}</Badge>}
                   {row.gold != null && <span className="num text-accent-gold">{row.gold} g</span>}
                   {row.cooldown && <span className="num">{row.cooldown}</span>}
+                  {row.enabled === false && (
+                    <Badge size="sm" variant="outline">
+                      {t('admin.catalog.disabled')}
+                    </Badge>
+                  )}
                 </div>
+                {row.description && (
+                  <p className="mt-1 line-clamp-2 whitespace-pre-line text-xs text-ink-3">{row.description}</p>
+                )}
               </div>
               <div className="flex shrink-0 gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => toggleEnabled(row)}
+                  disabled={toggling === row.id}
+                  aria-label={row.enabled === false ? t('admin.catalog.enable') : t('admin.catalog.disable')}
+                  title={row.enabled === false ? t('admin.catalog.enable') : t('admin.catalog.disable')}
+                >
+                  {row.enabled === false ? <EyeOff size={14} className="text-ink-3" /> : <Eye size={14} />}
+                </Button>
                 <Button size="sm" variant="ghost" onClick={() => openEdit(row)} aria-label={t('admin.catalog.edit')}>
                   <Pencil size={14} />
                 </Button>
@@ -191,6 +258,13 @@ export default function CatalogEntitySection({
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {!query.trim() && filtered.length > PREVIEW_COUNT && (
+        <div className="mt-3 flex justify-center">
+          <Button size="sm" variant="ghost" onClick={() => setExpanded((v) => !v)}>
+            {expanded ? t('admin.catalog.showLess') : t('admin.catalog.showAll', { count: filtered.length })}
+          </Button>
         </div>
       )}
 
