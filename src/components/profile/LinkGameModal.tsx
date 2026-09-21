@@ -12,9 +12,14 @@ import { Button, Input } from '@/components/ui';
 export default function LinkGameModal({
   open,
   onClose,
+  initialGameId,
+  initialServerId,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Prefill (reconnecting an already linked account whose session expired). */
+  initialGameId?: number | string | null;
+  initialServerId?: number | string | null;
 }) {
   const [form, setForm] = useState({ gameId: '', serverId: '', code: '' });
   const [sending, setSending] = useState(false);
@@ -26,8 +31,14 @@ export default function LinkGameModal({
     if (!open) {
       setForm({ gameId: '', serverId: '', code: '' });
       setCooldown(0);
+    } else if (initialGameId || initialServerId) {
+      setForm((f) => ({
+        ...f,
+        gameId: f.gameId || (initialGameId ? String(initialGameId) : ''),
+        serverId: f.serverId || (initialServerId ? String(initialServerId) : ''),
+      }));
     }
-  }, [open]);
+  }, [open, initialGameId, initialServerId]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -86,7 +97,7 @@ export default function LinkGameModal({
       size="sm"
       icon={<Gamepad2 size={18} />}
       title={t('linkGame.title')}
-      subtitle={t('linkGame.subtitle')}
+      subtitle={t('gameAccount.link.subtitle')}
       closeLabel={t('linkGame.close')}
     >
       <form onSubmit={link} className="space-y-4">
