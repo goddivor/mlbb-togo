@@ -215,6 +215,43 @@ export type NotificationPage = {
   pages: number;
 };
 
+export type IntegrationName = 'anthropic' | 'cloudinary';
+
+type IntegrationMeta = {
+  configured: boolean;
+  /** Where the effective secret comes from. */
+  source: 'db' | 'env' | null;
+  /** True when values are stored in the database (removable). */
+  stored: boolean;
+  /** Stored values exist but cannot be decrypted (ENCRYPTION_KEY changed). */
+  unreadable: boolean;
+  updatedAt: string | null;
+  updatedBy: string | null;
+};
+
+export type IntegrationsStatus = {
+  encryptionReady: boolean;
+  anthropic: IntegrationMeta & {
+    apiKeyHint: string | null;
+    model: string;
+    storedModel: string | null;
+    defaultModel: string;
+  };
+  cloudinary: IntegrationMeta & {
+    cloudName: string | null;
+    apiKeyHint: string | null;
+    apiSecretHint: string | null;
+    folder: string | null;
+  };
+};
+
+export type IntegrationTestResult = {
+  ok: boolean;
+  code: 'ok' | 'not_configured' | 'unauthorized' | 'model_not_found' | 'not_found' | 'rate_limited' | 'network' | 'error';
+  message: string;
+  detail?: string;
+};
+
 export const api = {
 
   auth: {
@@ -510,6 +547,18 @@ export const api = {
         request('/admin/league/announce', { method: 'POST', body: data }),
       recompute: (seasonId?: string | null) =>
         request(`/admin/league/recompute${seasonId ? `?seasonId=${encodeURIComponent(seasonId)}` : ''}`, { method: 'POST' }),
+    },
+
+    // Third-party integrations (#130): secrets are write-only, the API only
+    // returns masked hints. Secret fields: '' keeps the stored value, null removes it.
+    integrations: {
+      status: () => request<IntegrationsStatus>('/admin/integrations', { fresh: true }),
+      update: (name: IntegrationName, data: Record<string, string | null>) =>
+        request<IntegrationsStatus>(`/admin/integrations/${name}`, { method: 'PUT', body: data }),
+      remove: (name: IntegrationName) =>
+        request<IntegrationsStatus>(`/admin/integrations/${name}`, { method: 'DELETE' }),
+      test: (name: IntegrationName) =>
+        request<IntegrationTestResult>(`/admin/integrations/${name}/test`, { method: 'POST' }),
     },
   },
 
