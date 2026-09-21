@@ -6,6 +6,7 @@ import { api, avatarSrc } from '@/lib/api';
 import { Avatar, Badge, Button, LoadingSpinner } from '@/components/ui';
 import toast from 'react-hot-toast';
 import { STAFF_ROLES } from '@/components/teams/TeamStaff';
+import ImageUpload from '@/components/ui/ImageUpload';
 
 type TFn = (k: string, params?: Record<string, string | number>) => string;
 
@@ -147,10 +148,14 @@ export function StaffPanel({ team, t, errMsg, onAsk }: { team: any; t: TFn; errM
               </select>
             </div>
           </div>
-          <div>
-            <label className={labelCls}>{t('admin.esport.staffAvatar')}</label>
-            <input className={inputCls} value={form.avatar} onChange={(e) => setForm({ ...form, avatar: e.target.value })} />
-          </div>
+          <ImageUpload
+            purpose="team-staff"
+            targetId={editing === 'new' ? null : editing.id}
+            label={t('admin.esport.staffAvatar')}
+            value={form.avatar}
+            onChange={(avatar) => setForm((f) => ({ ...f, avatar }))}
+            allowUrl
+          />
           <div>
             <label className={labelCls}>{t('admin.esport.staffBio')}</label>
             <textarea className={`${inputCls} min-h-[60px] resize-y`} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />

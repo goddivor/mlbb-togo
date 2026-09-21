@@ -13,6 +13,7 @@ import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { TOURNAMENT_STATUS_VARIANT } from '@/components/tournaments/tournament-utils';
 import toast from 'react-hot-toast';
+import ImageUpload from '@/components/ui/ImageUpload';
 
 const STATUSES = ['upcoming', 'ongoing', 'completed'];
 
@@ -278,9 +279,17 @@ export default function AdminTournamentsPage() {
             <Input label={t('admin.tournaments.form.prizePool')} value={form.prizePool} onChange={set('prizePool')} />
             <Input type="number" min={2} label={t('admin.tournaments.form.maxTeams')} value={form.maxTeams} onChange={set('maxTeams')} />
             <Input label={t('admin.tournaments.form.format')} value={form.format} onChange={set('format')} />
-            <Input label={t('admin.tournaments.form.banner')} value={form.banner} onChange={set('banner')} />
             <CitySelect label={t('admin.tournaments.form.city')} value={form.city} onChange={(city) => setForm((f) => ({ ...f, city }))} />
           </div>
+          <ImageUpload
+            purpose="tournament"
+            targetId={editing?.id}
+            shape="wide"
+            label={t('admin.tournaments.form.banner')}
+            value={form.banner}
+            onChange={(banner) => setForm((f) => ({ ...f, banner }))}
+            allowUrl
+          />
           <Input label={t('admin.tournaments.form.streamUrl')} value={form.streamUrl} onChange={set('streamUrl')} />
           <Textarea label={t('admin.tournaments.form.rules')} value={form.rules} onChange={set('rules')} />
           <div className="flex justify-end gap-2">

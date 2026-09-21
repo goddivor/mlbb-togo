@@ -30,6 +30,7 @@ import TeamHistory from '@/components/teams/TeamHistory';
 import TeamHonours from '@/components/teams/TeamHonours';
 import TeamSchedule from '@/components/teams/TeamSchedule';
 import { can } from '@/lib/permissions';
+import ImageUpload from '@/components/ui/ImageUpload';
 
 const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
 // Application life cycle, mirrored from the API (GET /recruitment/meta).
@@ -458,6 +459,20 @@ export default function TeamDetailPage() {
       {team.description && (
         <Card className="!p-4 sm:!p-5">
           <p className="whitespace-pre-line text-sm text-ink-2">{team.description}</p>
+        </Card>
+      )}
+
+      {/* Captain: team logo (community teams: shown once an admin approves it). */}
+      {amCaptain && (
+        <Card className="!p-4 sm:!p-5">
+          <ImageUpload
+            purpose="team"
+            targetId={id}
+            label={t('teams.detail.logo')}
+            hint={t('teams.detail.logoHint')}
+            value={team.image || ''}
+            onChange={() => api.esport.team(id).then(setTeam).catch(() => undefined)}
+          />
         </Card>
       )}
 

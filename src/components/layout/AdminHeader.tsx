@@ -14,6 +14,7 @@ import {
   KeyRound,
   Flag,
   Plug,
+  Images,
 } from 'lucide-react';
 import { disconnectSocket } from '@/lib/realtime';
 import { useT } from '@/lib/i18n';
@@ -36,6 +37,7 @@ const ADMIN_LINKS: QuickLink[] = [
   { href: '/admin/sponsors', key: 'admin.sponsors.title', icon: Handshake },
   { href: '/admin/roles', key: 'admin.roles.title', icon: KeyRound },
   { href: '/admin/integrations', key: 'admin.integrations.title', icon: Plug },
+  { href: '/admin/media', key: 'admin.media.title', icon: Images },
 ];
 
 interface HeaderProps {
