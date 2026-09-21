@@ -3,7 +3,7 @@
 import { mlbbImg } from '@/lib/api';
 import { MLBB_ROLE_ICONS } from '@/lib/constants';
 
-// Les rôles esport (lanes) réutilisent les icônes de classe du jeu.
+// Esport roles (lanes) reuse the game's class icons.
 const LANE_TO_CLASS: Record<string, string> = {
   roam: 'tank',
   exp: 'fighter',
@@ -11,6 +11,17 @@ const LANE_TO_CLASS: Record<string, string> = {
   mid: 'mage',
   gold: 'marksman',
 };
+
+const CLASS_ROLES = ['tank', 'fighter', 'assassin', 'mage', 'marksman', 'support'];
+
+/** Short label for a class ("Mage") or a lane ("Jungle", "EXP"); classes go through i18n. */
+export function roleLabel(t: (key: string) => string, role?: string | null): string {
+  const k = String(role || '').toLowerCase();
+  if (!k) return '';
+  if (CLASS_ROLES.includes(k)) return t(`role.${k}`);
+  if (k === 'exp') return 'EXP';
+  return k.charAt(0).toUpperCase() + k.slice(1);
+}
 
 export function roleIconUrl(role?: string | null): string | null {
   if (!role) return null;

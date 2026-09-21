@@ -1,44 +1,81 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Pencil, Trash2, Check, CalendarDays } from 'lucide-react';
+import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Check,
+  CalendarDays,
+  Flag,
+  Lock,
+  Trophy,
+  Sparkles,
+  ExternalLink,
+} from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Card, Button } from '@/components/ui';
+import { useLangStore } from '@/store/useStore';
+import { useSeasonStore, isLiveSeason, type Season, type SeasonSummary } from '@/store/useSeasonStore';
+import { Card, Button, PageHeader, EmptyState, LoadingSpinner, Input, Textarea } from '@/components/ui';
+import { fadeUp, stagger, still } from '@/lib/motion';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import { SeasonStatusBadge, SeasonPodium, seasonPeriod, fmtSeasonDate } from '@/components/seasons/shared';
+import { useSeasonLifecycle } from '@/components/admin/seasons/useSeasonLifecycle';
+import SeasonLifecycleButtons from '@/components/admin/seasons/SeasonLifecycleButtons';
+import SeasonLifecycleModals from '@/components/admin/seasons/SeasonLifecycleModals';
 import toast from 'react-hot-toast';
 
 type SeasonForm = {
   name: string;
+  slug: string;
+  number: string;
+  theme: string;
+  slogan: string;
   description: string;
   startDate: string;
   endDate: string;
-  isActive: boolean;
+  playoffsStartDate: string;
+  banner: string;
+  color: string;
 };
-const emptyForm: SeasonForm = { name: '', description: '', startDate: '', endDate: '', isActive: false };
-
-const inputCls =
-  'w-full px-3 py-2 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue';
-
-const fmtDate = (v: any) => {
-  if (!v) return null;
-  const d = new Date(v);
-  if (isNaN(d.getTime())) return null;
-  return d.toLocaleDateString();
+const emptyForm: SeasonForm = {
+  name: '',
+  slug: '',
+  number: '',
+  theme: '',
+  slogan: '',
+  description: '',
+  startDate: '',
+  endDate: '',
+  playoffsStartDate: '',
+  banner: '',
+  color: '',
 };
+
+// Compact field sizing for the modal form (primitives default to a taller field).
+const fieldCls = '!px-3 !py-2 text-sm';
+
+const day = (v: string | null) => (v ? v.slice(0, 10) : '');
 
 export default function AdminSeasonsPage() {
   const t = useT();
-  const [seasons, setSeasons] = useState<any[]>([]);
+  const lang = useLangStore((s: any) => s.lang);
+  const reduce = useReducedMotion();
+  const refreshStore = useSeasonStore((s) => s.load);
+  const [seasons, setSeasons] = useState<Season[]>([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<SeasonForm>(emptyForm);
   const [saving, setSaving] = useState(false);
-  const [pending, setPending] = useState<{ id: string } | null>(null);
+  const [deleting, setDeleting] = useState<Season | null>(null);
   const [confirming, setConfirming] = useState(false);
+  // Frozen summary viewer for closed seasons.
+  const [viewing, setViewing] = useState<Season | null>(null);
 
   const errMsg = (e: any) => e?.message || t('admin.esport.errorGeneric');
 
@@ -46,10 +83,14 @@ export default function AdminSeasonsPage() {
     try {
       const data = await api.esport.seasons();
       setSeasons(Array.isArray(data) ? data : []);
+      void refreshStore(true);
     } catch (e: any) {
       toast.error(errMsg(e));
     }
   };
+
+  // Lifecycle actions (activate / playoffs / close / reopen / settings) shared with /admin/league.
+  const lifecycle = useSeasonLifecycle(load);
 
   useEffect(() => {
     (async () => {
@@ -66,14 +107,20 @@ export default function AdminSeasonsPage() {
     setFormOpen(true);
   };
 
-  const openEdit = (s: any) => {
+  const openEdit = (s: Season) => {
     setEditId(s.id);
     setForm({
       name: s.name || '',
+      slug: s.slug || '',
+      number: s.number ? String(s.number) : '',
+      theme: s.theme || '',
+      slogan: s.slogan || '',
       description: s.description || '',
-      startDate: s.startDate ? s.startDate.slice(0, 10) : '',
-      endDate: s.endDate ? s.endDate.slice(0, 10) : '',
-      isActive: !!s.isActive,
+      startDate: day(s.startDate),
+      endDate: day(s.endDate),
+      playoffsStartDate: day(s.playoffsStartDate),
+      banner: s.banner || '',
+      color: s.color || '',
     });
     setFormOpen(true);
   };
@@ -83,15 +130,32 @@ export default function AdminSeasonsPage() {
     if (!form.name.trim()) return;
     setSaving(true);
     try {
-      const payload = {
+      const num = form.number.trim() ? Number(form.number) : null;
+      const base = {
         name: form.name.trim(),
-        description: form.description.trim() || undefined,
-        startDate: form.startDate || undefined,
-        endDate: form.endDate || undefined,
-        isActive: form.isActive,
+        theme: form.theme.trim() || null,
+        slogan: form.slogan.trim() || null,
+        description: form.description.trim() || null,
+        startDate: form.startDate || null,
+        endDate: form.endDate || null,
+        playoffsStartDate: form.playoffsStartDate || null,
+        banner: form.banner.trim() || null,
+        color: form.color.trim() || null,
       };
-      if (editId) await api.esport.updateSeason(editId, payload);
-      else await api.esport.createSeason(payload);
+      if (editId) {
+        await api.esport.updateSeason(editId, {
+          ...base,
+          ...(form.slug.trim() ? { slug: form.slug.trim() } : {}),
+          ...(num && Number.isFinite(num) ? { number: num } : {}),
+        });
+      } else {
+        // Create: omit nulls (the DTO only accepts strings / undefined).
+        const payload: any = {};
+        for (const [k, v] of Object.entries(base)) if (v != null) payload[k] = v;
+        if (form.slug.trim()) payload.slug = form.slug.trim();
+        if (num && Number.isFinite(num)) payload.number = num;
+        await api.esport.createSeason(payload);
+      }
       toast.success(t('admin.esport.saved'));
       setFormOpen(false);
       await load();
@@ -103,135 +167,283 @@ export default function AdminSeasonsPage() {
   };
 
   const confirmDelete = async () => {
-    if (!pending) return;
+    if (!deleting) return;
     setConfirming(true);
     try {
-      await api.esport.deleteSeason(pending.id);
+      await api.esport.deleteSeason(deleting.id);
       toast.success(t('admin.esport.deleted'));
       await load();
     } catch (err: any) {
       toast.error(errMsg(err));
     } finally {
       setConfirming(false);
-      setPending(null);
+      setDeleting(null);
     }
   };
 
+  const field = (label: string, node: React.ReactNode, hint?: string) => (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-ink-2">{label}</label>
+      {node}
+      {hint && <p className="mt-1 text-[11px] text-ink-3">{hint}</p>}
+    </div>
+  );
+
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white">{t('admin.seasons.title')}</h1>
-        <Button size="sm" onClick={openCreate}>
-          <Plus size={16} /> {t('admin.seasons.new')}
-        </Button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        icon={<CalendarDays size={28} />}
+        eyebrow={t('nav.section.esport')}
+        title={t('admin.seasons.title')}
+        subtitle={t('admin.seasons.subtitle')}
+        variant="cyan"
+        action={
+          <Button size="sm" onClick={openCreate}>
+            <Plus size={16} /> {t('admin.seasons.new')}
+          </Button>
+        }
+      />
 
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
-        </div>
+        <LoadingSpinner size="lg" className="py-24" />
       ) : seasons.length === 0 ? (
-        <div className="text-center py-16 text-gray-500">{t('admin.seasons.none')}</div>
+        <EmptyState icon={<CalendarDays size={28} />} title={t('admin.seasons.none')} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {seasons.map((s, i) => {
-            const start = fmtDate(s.startDate);
-            const end = fmtDate(s.endDate);
-            const period = start || end ? `${start || '—'} → ${end || '—'}` : null;
+        <motion.div
+          className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+          variants={reduce ? still : stagger()}
+          initial="hidden"
+          animate="visible"
+        >
+          {seasons.map((s) => {
+            const period = seasonPeriod(s, lang);
+            const accent = s.color || undefined;
+            const live = isLiveSeason(s);
             return (
-              <motion.div
-                key={s.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.03, 0.3) }}
-              >
-                <Card hover={false} className="!p-4 flex flex-col gap-2 h-full">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-semibold text-white truncate">{s.name || '—'}</p>
-                        {s.isActive && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-500/15 text-green-400 border border-green-500/30">
-                            {t('admin.seasons.active')}
-                          </span>
+              <motion.div key={s.id} variants={reduce ? still : fadeUp} className="h-full">
+                <Card glow={live} className="flex h-full flex-col overflow-hidden !p-0">
+                  {/* Banner / colour strip */}
+                  <div
+                    className="relative h-28 bg-gradient-to-r from-primary/80 to-accent-violet/70"
+                    style={
+                      s.banner
+                        ? { backgroundImage: `url(${s.banner})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                        : accent
+                          ? { background: `linear-gradient(135deg, ${accent}, ${accent}66)` }
+                          : undefined
+                    }
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0e19]/85 via-[#0a0e19]/30 to-transparent" />
+                    <div className="absolute inset-x-4 bottom-3 flex items-end justify-between gap-2">
+                      <div className="min-w-0">
+                        {s.number != null && (
+                          <p className="eyebrow mb-1 num !text-white/75">{t('seasons.numberLabel', { n: s.number })}</p>
                         )}
+                        <p className="truncate font-display text-lg font-bold tracking-tight2 text-white">{s.name}</p>
                       </div>
-                      {period && (
-                        <p className="mt-1 inline-flex items-center gap-1 text-xs text-gray-400">
-                          <CalendarDays size={12} /> {period}
-                        </p>
-                      )}
+                      <SeasonStatusBadge status={s.status} t={t} className="shrink-0 bg-[#0a0e19]/70 backdrop-blur-sm" />
                     </div>
-                    <div className="flex flex-col gap-1 shrink-0">
+                  </div>
+
+                  <div className="flex flex-1 flex-col gap-2 p-4">
+                    {(s.theme || s.slogan) && (
+                      <div>
+                        {s.theme && (
+                          <p className="inline-flex items-center gap-1 text-sm font-semibold text-ink-1">
+                            <Sparkles size={13} className="text-accent-gold" /> {s.theme}
+                          </p>
+                        )}
+                        {s.slogan && <p className="text-xs italic text-ink-2">« {s.slogan} »</p>}
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-2 num">
+                      {period && (
+                        <span className="inline-flex items-center gap-1">
+                          <CalendarDays size={12} /> {period}
+                        </span>
+                      )}
+                      {s.playoffsStartDate && (
+                        <span className="inline-flex items-center gap-1">
+                          <Flag size={12} /> {t('seasons.playoffsFrom', { date: fmtSeasonDate(s.playoffsStartDate, lang) || '' })}
+                        </span>
+                      )}
+                      {s.closedAt && (
+                        <span className="inline-flex items-center gap-1">
+                          <Lock size={12} /> {t('seasons.closedOn', { date: fmtSeasonDate(s.closedAt, lang) || '' })}
+                        </span>
+                      )}
+                      {s.slug && <span className="font-mono text-ink-3">/{s.slug}</span>}
+                    </div>
+                    {s.description && (
+                      <p className="line-clamp-3 whitespace-pre-line text-xs text-ink-2">{s.description}</p>
+                    )}
+                    {s.summary?.champion && (
+                      <p className="inline-flex items-center gap-1 text-xs text-accent-gold">
+                        <Trophy size={12} /> {t('seasons.champion')} : <b>{s.summary.champion.team.name}</b>
+                      </p>
+                    )}
+
+                    {/* Lifecycle actions */}
+                    <div className="mt-auto flex flex-wrap gap-1.5 border-t border-line-subtle pt-3">
+                      <SeasonLifecycleButtons season={s} lifecycle={lifecycle} />
+                      {s.status === 'closed' && (
+                        <Button size="sm" variant="outline" onClick={() => setViewing(s)}>
+                          <Trophy size={14} /> {t('admin.seasons.summary.view')}
+                        </Button>
+                      )}
+                      <span className="flex-1" />
+                      {s.slug && (
+                        <Link
+                          href={`/seasons/${s.slug}`}
+                          target="_blank"
+                          className="inline-flex items-center rounded px-2 py-1.5 text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink-1"
+                          title={t('seasons.viewPublic')}
+                        >
+                          <ExternalLink size={14} />
+                        </Link>
+                      )}
                       <Button size="sm" variant="ghost" onClick={() => openEdit(s)}>
                         <Pencil size={14} />
                       </Button>
-                      <Button size="sm" variant="danger" onClick={() => setPending({ id: s.id })}>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        disabled={s.status === 'active' || s.status === 'playoffs'}
+                        onClick={() => setDeleting(s)}
+                      >
                         <Trash2 size={14} />
                       </Button>
                     </div>
                   </div>
-                  {s.description && (
-                    <p className="text-xs text-gray-400 whitespace-pre-line">{s.description}</p>
-                  )}
                 </Card>
               </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
+      {/* Create / edit */}
       <Modal
         open={formOpen}
         onClose={() => setFormOpen(false)}
         closeLabel={t('common.close')}
         title={editId ? t('admin.seasons.edit') : t('admin.seasons.new')}
+        icon={<CalendarDays size={20} />}
+        headerVariant={editId ? 'plain' : 'gradient'}
+        size="lg"
       >
         <form onSubmit={submit} className="space-y-3">
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('admin.seasons.name')}</label>
-            <input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('admin.seasons.description')}</label>
-            <textarea
-              className={inputCls}
-              rows={3}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_6rem] gap-3">
+            {field(
+              t('admin.seasons.name'),
+              <Input className={fieldCls} value={form.name} onChange={(e: any) => setForm({ ...form, name: e.target.value })} required />,
+            )}
+            {field(
+              t('admin.seasons.number'),
+              <Input
+                type="number"
+                min={1}
+                className={fieldCls}
+                value={form.number}
+                placeholder={t('admin.seasons.auto')}
+                onChange={(e: any) => setForm({ ...form, number: e.target.value })}
+              />,
+            )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">{t('admin.seasons.startDate')}</label>
-              <input
-                type="date"
-                className={inputCls}
-                value={form.startDate}
-                onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">{t('admin.seasons.endDate')}</label>
-              <input
-                type="date"
-                className={inputCls}
-                value={form.endDate}
-                onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-              />
-            </div>
+            {field(
+              t('admin.seasons.theme'),
+              <Input
+                className={fieldCls}
+                value={form.theme}
+                placeholder={t('admin.seasons.themePlaceholder')}
+                onChange={(e: any) => setForm({ ...form, theme: e.target.value })}
+              />,
+            )}
+            {field(
+              t('admin.seasons.slogan'),
+              <Input
+                className={fieldCls}
+                value={form.slogan}
+                placeholder={t('admin.seasons.sloganPlaceholder')}
+                onChange={(e: any) => setForm({ ...form, slogan: e.target.value })}
+              />,
+            )}
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-            <input
-              type="checkbox"
-              className="w-4 h-4 rounded border-gaming-border bg-gaming-surface accent-neon-blue"
-              checked={form.isActive}
-              onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
-            />
-            {t('admin.seasons.active')}
-          </label>
+          {field(
+            t('admin.seasons.description'),
+            <Textarea
+              className={fieldCls}
+              rows={3}
+              value={form.description}
+              onChange={(e: any) => setForm({ ...form, description: e.target.value })}
+            />,
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {field(
+              t('admin.seasons.startDate'),
+              <Input type="date" className={fieldCls} value={form.startDate} onChange={(e: any) => setForm({ ...form, startDate: e.target.value })} />,
+            )}
+            {field(
+              t('admin.seasons.playoffsDate'),
+              <Input
+                type="date"
+                className={fieldCls}
+                value={form.playoffsStartDate}
+                onChange={(e: any) => setForm({ ...form, playoffsStartDate: e.target.value })}
+              />,
+            )}
+            {field(
+              t('admin.seasons.endDate'),
+              <Input type="date" className={fieldCls} value={form.endDate} onChange={(e: any) => setForm({ ...form, endDate: e.target.value })} />,
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_8rem] gap-3">
+            {field(
+              t('admin.seasons.banner'),
+              <Input
+                type="url"
+                className={fieldCls}
+                value={form.banner}
+                placeholder="https://…"
+                onChange={(e: any) => setForm({ ...form, banner: e.target.value })}
+              />,
+            )}
+            {field(
+              t('admin.seasons.slug'),
+              <Input
+                className={fieldCls}
+                value={form.slug}
+                placeholder={t('admin.seasons.auto')}
+                pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                onChange={(e: any) => setForm({ ...form, slug: e.target.value })}
+              />,
+              t('admin.seasons.slugHint'),
+            )}
+            {field(
+              t('admin.seasons.color'),
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  className="h-9 w-10 shrink-0 rounded border border-line-strong bg-transparent p-0.5"
+                  value={form.color || '#3c50e0'}
+                  onChange={(e) => setForm({ ...form, color: e.target.value })}
+                />
+                <Input
+                  className={fieldCls}
+                  value={form.color}
+                  placeholder="#RRGGBB"
+                  onChange={(e: any) => setForm({ ...form, color: e.target.value })}
+                />
+              </div>,
+            )}
+          </div>
+          {form.banner && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={form.banner} alt="" className="h-20 w-full rounded-lg border border-line-subtle object-cover" />
+          )}
           <div className="flex gap-2 pt-2">
-            <Button size="sm" type="submit" disabled={saving}>
+            <Button size="sm" type="submit" disabled={saving} loading={saving}>
               <Check size={16} /> {editId ? t('admin.esport.save') : t('admin.esport.create')}
             </Button>
             <Button size="sm" variant="ghost" type="button" onClick={() => setFormOpen(false)}>
@@ -241,13 +453,38 @@ export default function AdminSeasonsPage() {
         </form>
       </Modal>
 
+      {/* Frozen summary viewer */}
+      <Modal
+        open={!!viewing}
+        onClose={() => setViewing(null)}
+        closeLabel={t('common.close')}
+        title={t('admin.seasons.summary.title')}
+        subtitle={viewing?.name}
+        icon={<Trophy size={20} />}
+        size="lg"
+      >
+        {viewing?.summary ? (
+          <div className="space-y-4">
+            <p className="text-xs text-ink-3 num">
+              {t('seasons.frozenAt', { date: fmtSeasonDate(viewing.summary.frozenAt, lang) || '' })} ·{' '}
+              {t('admin.seasons.summary.matches', { n: viewing.summary.matches.completed, total: viewing.summary.matches.total })}
+            </p>
+            <SeasonPodium podium={viewing.summary.podium} t={t} compact />
+          </div>
+        ) : (
+          <p className="text-sm text-ink-2">{t('seasons.podium.empty')}</p>
+        )}
+      </Modal>
+
+      <SeasonLifecycleModals lifecycle={lifecycle} />
+
       <ConfirmModal
-        open={!!pending}
-        onClose={() => setPending(null)}
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
         onConfirm={confirmDelete}
         loading={confirming}
-        danger
-        title={t('admin.confirm.title')}
+        variant="danger"
+        title={deleting ? `${t('admin.confirm.title')} · ${deleting.name}` : ''}
         message={t('admin.seasons.deleteConfirm')}
         confirmLabel={t('admin.esport.delete')}
         cancelLabel={t('admin.esport.cancel')}

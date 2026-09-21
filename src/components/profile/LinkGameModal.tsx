@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, ArrowRight } from 'lucide-react';
+import { ArrowRight, Gamepad2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/useStore';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
+import Modal from '@/components/ui/Modal';
+import { Button, Input } from '@/components/ui';
 
 export default function LinkGameModal({
   open,
@@ -79,87 +80,59 @@ export default function LinkGameModal({
   };
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.94, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 12 }}
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-md rounded-2xl border border-[#1e3f66] bg-gradient-to-b from-[#0c2038] to-[#0a1626] p-7 sm:p-8 shadow-2xl"
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="sm"
+      icon={<Gamepad2 size={18} />}
+      title={t('linkGame.title')}
+      subtitle={t('linkGame.subtitle')}
+      closeLabel={t('linkGame.close')}
+    >
+      <form onSubmit={link} className="space-y-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Input
+            label={t('linkGame.gameId')}
+            placeholder="123456789"
+            inputMode="numeric"
+            className="num"
+            value={form.gameId}
+            onChange={handle('gameId')}
+          />
+          <Input
+            label={t('linkGame.serverId')}
+            placeholder="2201"
+            inputMode="numeric"
+            className="num"
+            value={form.serverId}
+            onChange={handle('serverId')}
+          />
+        </div>
+        <div className="flex items-end gap-2">
+          <Input
+            label={t('linkGame.code')}
+            placeholder="000000"
+            inputMode="numeric"
+            className="num tracking-[0.2em]"
+            value={form.code}
+            onChange={handle('code')}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={sendCode}
+            disabled={sending || cooldown > 0}
+            loading={sending}
+            className="mb-px h-[50px] shrink-0 whitespace-nowrap num"
           >
-            <button
-              onClick={onClose}
-               aria-label={t('linkGame.close')}
-              className="absolute top-4 right-4 text-[#6f9fd6] hover:text-white transition-colors"
-            >
-              <X size={22} />
-            </button>
+            {cooldown > 0 ? `${cooldown}s` : t('linkGame.getCode')}
+          </Button>
+        </div>
 
-              <h2 className="text-center text-xl font-bold tracking-wide text-[#7fb3ff] mb-2">
-                {t('linkGame.title')}
-              </h2>
-              <p className="text-center text-xs text-[#6f9fd6] mb-6">
-                {t('linkGame.subtitle')}
-              </p>
-
-            <form onSubmit={link} className="space-y-4">
-              <input
-                className="w-full px-4 py-3 rounded-lg bg-[#0a1a2e] border border-[#1e3f66] text-white placeholder-[#5a7ba6] focus:outline-none focus:border-[#3f7ad1]"
-                placeholder={t('linkGame.gameId')}
-                inputMode="numeric"
-                value={form.gameId}
-                onChange={handle('gameId')}
-              />
-              <input
-                className="w-full px-4 py-3 rounded-lg bg-[#0a1a2e] border border-[#1e3f66] text-white placeholder-[#5a7ba6] focus:outline-none focus:border-[#3f7ad1]"
-                placeholder={t('linkGame.serverId')}
-                inputMode="numeric"
-                value={form.serverId}
-                onChange={handle('serverId')}
-              />
-              <div className="flex gap-0">
-                <input
-                  className="flex-1 px-4 py-3 rounded-l-lg bg-[#0a1a2e] border border-[#1e3f66] border-r-0 text-white placeholder-[#5a7ba6] focus:outline-none focus:border-[#3f7ad1]"
-                  placeholder={t('linkGame.code')}
-                  inputMode="numeric"
-                  value={form.code}
-                  onChange={handle('code')}
-                />
-                <button
-                  type="button"
-                  onClick={sendCode}
-                  disabled={sending || cooldown > 0}
-                  className="px-4 rounded-r-lg text-white text-sm font-medium border border-[#1e3f66] disabled:opacity-60 transition-all"
-                  style={{ background: 'linear-gradient(180deg, #2f7ad1 0%, #1f5aa8 100%)' }}
-                >
-                  {cooldown > 0 ? `${cooldown}s` : sending ? '…' : t('linkGame.getCode')}
-                </button>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-lg text-white font-bold border border-yellow-700/40 transition-all hover:brightness-110 disabled:opacity-70"
-                style={{ background: 'linear-gradient(180deg, #f0b32a 0%, #d4901a 100%)' }}
-              >
-                {loading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>{t('linkGame.submit')} <ArrowRight size={18} /></>
-                )}
-              </button>
-            </form>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        <Button type="submit" loading={loading} disabled={loading} className="w-full" size="lg">
+          {t('linkGame.submit')} <ArrowRight size={18} />
+        </Button>
+      </form>
+    </Modal>
   );
 }

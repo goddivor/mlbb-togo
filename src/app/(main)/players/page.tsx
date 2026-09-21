@@ -1,15 +1,18 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Search, MapPin } from 'lucide-react';
-import { api, avatarSrc } from '@/lib/api';
-import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
+import { motion, useReducedMotion } from 'framer-motion';
+import { MapPin, Search, Users } from 'lucide-react';
+import { api } from '@/lib/api';
+import { PageHeader, SectionCard, Badge, EmptyState, Skeleton, StatTile } from '@/components/ui';
+import { PlayerCard } from '@/components/game';
+import LevelBadge from '@/components/gamification/LevelBadge';
 import { useT } from '@/lib/i18n';
+import { fadeUp, stagger, still } from '@/lib/motion';
 
 export default function PlayersPage() {
   const t = useT();
+  const reduce = useReducedMotion();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -32,87 +35,90 @@ export default function PlayersPage() {
     );
   }, [users, query]);
 
+  const linked = users.filter((u) => u.hasGame).length;
+
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">{t('users.title')}</h1>
-          <p className="text-sm text-gray-400">
-            {loading ? '…' : `${users.length} ${t('users.count')}`}
-          </p>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow={t('nav.section.community')}
+        icon={<Users size={20} />}
+        title={t('users.title')}
+        subtitle={loading ? '…' : `${users.length} ${t('users.count')}`}
+      />
+
+      {/* Search + counters */}
+      <SectionCard className="!p-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-sm">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t('users.search')}
+              className="w-full rounded border border-line-strong bg-surface-1 py-2.5 pl-9 pr-3 text-sm text-ink-1 placeholder:text-ink-3 outline-none transition-[border-color,box-shadow] duration-base focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60"
+            />
+          </div>
+          <div className="flex items-center gap-6">
+            <StatTile label={t('users.title')} value={loading ? '—' : users.length} />
+            <StatTile label={t('nav.section.esport')} value={loading ? '—' : linked} accent="cyan" />
+            {query.trim() && <StatTile label={t('users.search').replace(/…$/, '')} value={filtered.length} accent="violet" />}
+          </div>
         </div>
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t('users.search')}
-            className="pl-9 pr-3 py-2 w-full sm:w-64 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue"
-          />
-        </div>
-      </div>
+      </SectionCard>
 
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">{t('users.none')}</div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filtered.map((u, i) => (
-            <motion.div
-              key={u.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.02, 0.4) }}
-            >
-              <Link
-                href={`/players/${u.id}`}
-                className="flex items-center gap-3 rounded-xl border border-gaming-border bg-gaming-surface/40 hover:border-neon-blue transition-colors p-3"
-              >
-                {u.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={avatarSrc(u.avatar, 96)}
-                    alt={u.displayName}
-                    referrerPolicy="no-referrer"
-                    className="w-12 h-12 rounded-xl object-cover border border-gaming-border"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-lg font-bold text-white">
-                    {(u.displayName || u.username)?.[0]?.toUpperCase() || 'J'}
-                  </div>
-                )}
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-white truncate">{u.displayName || u.username}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {u.hasGame ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-gray-300">
-                        {hasRankBadge(u.gameRank) && <RankBadge rank={u.gameRank} size={16} />}
-                        {u.gameRank || `${t('dashboard.level')} ${u.gameLevel ?? '?'}`}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-gray-500">{t('users.noGame')}</span>
-                    )}
-                    {u.country && (
-                      <span className="inline-flex items-center gap-0.5 text-xs text-gray-500">
-                        <MapPin size={11} /> {u.country}
-                      </span>
-                    )}
-                  </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="rounded-lg border border-line-subtle bg-surface-1 p-5">
+              <div className="flex items-start gap-4">
+                <Skeleton className="h-[72px] w-[72px] rounded-md" />
+                <div className="flex-1 space-y-2 pt-1">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-1/3" />
+                  <Skeleton className="h-3 w-1/2" />
                 </div>
-
-                {u.roleUser && u.roleUser !== 'user' && (
-                  <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-neon-purple/15 text-neon-purple border border-neon-purple/30">
-                    {u.roleUser}
-                  </span>
-                )}
-              </Link>
-            </motion.div>
+              </div>
+              <Skeleton className="mt-4 h-8 w-full" />
+            </div>
           ))}
         </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState icon={<Users size={26} />} title={t('users.none')} />
+      ) : (
+        <motion.div
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
+          variants={reduce ? still : stagger(0.03)}
+          initial="hidden"
+          animate="visible"
+        >
+          {filtered.map((u) => (
+            <motion.div key={u.id} variants={reduce ? still : fadeUp}>
+              <PlayerCard
+                player={u}
+                stats={u.hasGame ? { winRate: u.winRate ?? 0 } : null}
+                showStats={false}
+                action={
+                  <span className="flex w-full items-center justify-between gap-2">
+                    {u.country ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-ink-3">
+                        <MapPin size={11} /> {u.country}
+                      </span>
+                    ) : (
+                      <span />
+                    )}
+                    <span className="flex items-center gap-2">
+                      {!u.hasGame && <span className="text-xs text-ink-3">{t('users.noGame')}</span>}
+                      {u.roleUser && u.roleUser !== 'user' && (
+                        <Badge variant="purple" size="sm" className="uppercase">{u.roleUser}</Badge>
+                      )}
+                      <LevelBadge level={u.level} size="xs" />
+                    </span>
+                  </span>
+                }
+              />
+            </motion.div>
+          ))}
+        </motion.div>
       )}
     </div>
   );

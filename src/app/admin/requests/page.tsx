@@ -1,29 +1,47 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Check, X, Eye, MessageSquare, Inbox, Plus, ExternalLink } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Card, Badge, Button } from '@/components/ui';
+import { fadeUp, stagger, still } from '@/lib/motion';
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Input,
+  PageHeader,
+  Skeleton,
+  StatCard,
+  Tabs,
+  Textarea,
+} from '@/components/ui';
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
-
-const inputCls =
-  'w-full px-3 py-2 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue';
 
 const STATUSES = ['pending', 'in_review', 'approved', 'rejected'] as const;
 
 const statusVariant: Record<string, string> = {
-  pending: 'default',
+  pending: 'outline',
   in_review: 'neon',
+  approved: 'green',
+  rejected: 'red',
+};
+
+/** Card edge colour per status (mirrors the badge). */
+const statusAccent: Record<string, 'cyan' | 'green' | 'red' | undefined> = {
+  in_review: 'cyan',
   approved: 'green',
   rejected: 'red',
 };
 
 export default function AdminRequestsPage() {
   const t = useT();
+  const reduce = useReducedMotion();
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('');
@@ -34,9 +52,9 @@ export default function AdminRequestsPage() {
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
 
-  // Modal de création d'équipe (depuis une demande)
+  // Team creation modal (from a request)
   const [createReq, setCreateReq] = useState<any | null>(null);
-  const [createForm, setCreateForm] = useState({ name: '', image: '', description: '', isRecruiting: false });
+  const [createForm, setCreateForm] = useState({ name: '', image: '', description: '' });
   const [creating, setCreating] = useState(false);
 
   const errMsg = (e: any) => e?.message || t('admin.esport.errorGeneric');
@@ -74,10 +92,10 @@ export default function AdminRequestsPage() {
 
   const openCreate = (r: any) => {
     setCreateReq(r);
-    setCreateForm({ name: r.proposedName || '', image: '', description: '', isRecruiting: false });
+    setCreateForm({ name: r.proposedName || '', image: '', description: '' });
   };
 
-  // Accepter : on marque approuvée puis on ouvre le modal de création prérempli.
+  // Accept: mark as approved then open the prefilled creation modal.
   const approveAndCreate = async (r: any) => {
     setActing(r.id + 'approved');
     try {
@@ -100,7 +118,6 @@ export default function AdminRequestsPage() {
         name: createForm.name.trim(),
         image: createForm.image.trim() || undefined,
         description: createForm.description.trim() || undefined,
-        isRecruiting: createForm.isRecruiting,
         type: 'community',
         requestId: createReq.id,
       });
@@ -146,95 +163,95 @@ export default function AdminRequestsPage() {
     }
   };
 
-  return (
-    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
-      <div className="flex items-center gap-2 mb-6">
-        <Inbox size={22} className="text-neon-blue" />
-        <h1 className="text-2xl font-bold text-white">{t('requests.title')}</h1>
-      </div>
+  // Counts of the currently loaded list (the API already filters by status).
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { pending: 0, in_review: 0, approved: 0, rejected: 0 };
+    requests.forEach((r) => {
+      if (r.status in c) c[r.status] += 1;
+    });
+    return c;
+  }, [requests]);
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        <button
-          onClick={() => setFilter('')}
-          className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-            filter === ''
-              ? 'bg-neon-blue/20 text-neon-blue border-neon-blue/30'
-              : 'bg-gaming-surface text-gray-400 border-gaming-border hover:text-gray-200'
-          }`}
-        >
-          {t('requests.filterAll')}
-        </button>
-        {STATUSES.map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-              filter === s
-                ? 'bg-neon-blue/20 text-neon-blue border-neon-blue/30'
-                : 'bg-gaming-surface text-gray-400 border-gaming-border hover:text-gray-200'
-            }`}
-          >
-            {t('requests.status.' + s)}
-          </button>
-        ))}
+  const tabs = [
+    { id: '', label: t('requests.filterAll') },
+    ...STATUSES.map((s) => ({ id: s, label: t('requests.status.' + s) })),
+  ];
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        icon={<Inbox size={28} />}
+        eyebrow={t('nav.section.community')}
+        title={t('requests.title')}
+        variant="blue"
+      />
+
+      {!loading && filter === '' && requests.length > 0 && (
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+          <StatCard label={t('requests.status.pending')} value={counts.pending} accent="gold" />
+          <StatCard label={t('requests.status.in_review')} value={counts.in_review} accent="cyan" />
+          <StatCard label={t('requests.status.approved')} value={counts.approved} accent="green" />
+          <StatCard label={t('requests.status.rejected')} value={counts.rejected} accent="red" />
+        </div>
+      )}
+
+      <div className="overflow-x-auto whitespace-nowrap">
+        <Tabs variant="underline" tabs={tabs} active={filter} onChange={setFilter} />
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="!p-4">
+              <div className="flex items-start gap-3">
+                <Skeleton circle className="h-12 w-12 shrink-0" />
+                <Skeleton lines={3} className="flex-1" />
+              </div>
+            </Card>
+          ))}
         </div>
       ) : requests.length === 0 ? (
-        <div className="text-center py-16 text-gray-500">{t('requests.none')}</div>
+        <EmptyState icon={<Inbox size={28} />} title={t('requests.none')} />
       ) : (
-        <div className="space-y-3">
-          {requests.map((r, i) => {
+        <motion.div
+          className="space-y-3"
+          variants={reduce ? still : stagger()}
+          initial="hidden"
+          animate="visible"
+        >
+          {requests.map((r) => {
             const requester = r.requester;
             const name = requester?.displayName || requester?.username || '—';
-            const initial = (name || '?').charAt(0).toUpperCase();
             return (
-              <motion.div
-                key={r.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.03, 0.3) }}
-              >
-                <Card hover={false} className="!p-4">
+              <motion.div key={r.id} variants={reduce ? still : fadeUp}>
+                <Card hover={false} accent={statusAccent[r.status]} className="!p-4">
                   <div className="flex items-start gap-3">
-                    {requester?.avatar ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={avatarSrc(requester.avatar, 64)}
-                        alt={name}
-                        referrerPolicy="no-referrer"
-                        className="w-12 h-12 rounded-full object-cover bg-gaming-surface border border-gaming-border shrink-0"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-gaming-surface border border-gaming-border shrink-0 flex items-center justify-center text-sm font-bold text-gray-300">
-                        {initial}
-                      </div>
-                    )}
+                    <Avatar
+                      name={name}
+                      src={requester?.avatar ? avatarSrc(requester.avatar, 64) : undefined}
+                      size="lg"
+                      className="shrink-0"
+                    />
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm text-gray-400 truncate">{name}</p>
+                        <p className="truncate text-sm text-ink-2">{name}</p>
                         <Badge variant={statusVariant[r.status] || 'default'} size="sm">
                           {t('requests.status.' + r.status)}
                         </Badge>
                       </div>
 
-                      <p className="text-base font-semibold text-white mt-0.5">
+                      <p className="mt-0.5 font-display text-base font-bold tracking-tight2 text-ink-1">
                         {r.proposedName}
                       </p>
 
                       {r.message && (
-                        <p className="text-sm text-gray-400 mt-1 whitespace-pre-line break-words">{r.message}</p>
+                        <p className="mt-1 whitespace-pre-line break-words text-sm text-ink-2">{r.message}</p>
                       )}
 
-                      <p className="text-xs text-gray-600 mt-1">
-                        {new Date(r.createdAt).toLocaleString()}
-                      </p>
+                      <p className="mt-1 text-xs text-ink-3 num">{new Date(r.createdAt).toLocaleString()}</p>
 
-                      <div className="flex flex-wrap gap-2 mt-3">
+                      <div className="mt-3 flex flex-wrap gap-2">
                         {(r.status === 'pending' || r.status === 'in_review') && (
                           <>
                             {r.status === 'pending' && (
@@ -288,36 +305,27 @@ export default function AdminRequestsPage() {
               </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
       <Modal
         open={!!contact}
         onClose={closeContact}
         closeLabel={t('common.close')}
+        icon={<MessageSquare size={20} />}
         title={`${t('messages.newMessageTo')} ${
           contact?.requester?.displayName || contact?.requester?.username || ''
         }`}
       >
         <form onSubmit={sendMessage} className="space-y-3">
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('messages.subject')}</label>
-            <input
-              className={inputCls}
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('messages.body')}</label>
-            <textarea
-              className={inputCls}
-              rows={5}
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              required
-            />
-          </div>
+          <Input label={t('messages.subject')} value={subject} onChange={(e: any) => setSubject(e.target.value)} />
+          <Textarea
+            label={t('messages.body')}
+            rows={5}
+            value={body}
+            onChange={(e: any) => setBody(e.target.value)}
+            required
+          />
           <div className="flex gap-2 pt-2">
             <Button size="sm" type="submit" disabled={sending || !body.trim()}>
               <MessageSquare size={16} /> {t('messages.send')}
@@ -334,50 +342,34 @@ export default function AdminRequestsPage() {
         onClose={() => setCreateReq(null)}
         closeLabel={t('common.close')}
         title={t('admin.teams.createTitle')}
+        icon={<Plus size={20} />}
+        headerVariant="gradient"
       >
         {createReq?.requester && (
-          <p className="text-sm text-gray-400 mb-4">
+          <p className="mb-4 text-sm text-ink-2">
             {t('admin.teams.fromRequest')}{' '}
-            <span className="text-gray-200 font-medium">
+            <span className="font-medium text-ink-1">
               {createReq.requester.displayName || createReq.requester.username}
             </span>
           </p>
         )}
         <form onSubmit={submitCreate} className="space-y-3">
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('admin.esport.teamName')}</label>
-            <input
-              className={inputCls}
-              value={createForm.name}
-              onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('admin.esport.teamImage')}</label>
-            <input
-              className={inputCls}
-              value={createForm.image}
-              onChange={(e) => setCreateForm({ ...createForm, image: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">{t('admin.esport.teamDesc')}</label>
-            <textarea
-              className={`${inputCls} min-h-[80px] resize-y`}
-              value={createForm.description}
-              onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-            />
-          </div>
-          <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-            <input
-              type="checkbox"
-              className="accent-neon-blue"
-              checked={createForm.isRecruiting}
-              onChange={(e) => setCreateForm({ ...createForm, isRecruiting: e.target.checked })}
-            />
-            {t('admin.esport.recruiting')}
-          </label>
+          <Input
+            label={t('admin.esport.teamName')}
+            value={createForm.name}
+            onChange={(e: any) => setCreateForm({ ...createForm, name: e.target.value })}
+            required
+          />
+          <Input
+            label={t('admin.esport.teamImage')}
+            value={createForm.image}
+            onChange={(e: any) => setCreateForm({ ...createForm, image: e.target.value })}
+          />
+          <Textarea
+            label={t('admin.esport.teamDesc')}
+            value={createForm.description}
+            onChange={(e: any) => setCreateForm({ ...createForm, description: e.target.value })}
+          />
           <div className="flex gap-2 pt-2">
             <Button size="sm" type="submit" disabled={creating || !createForm.name.trim()}>
               <Check size={16} /> {t('admin.esport.create')}

@@ -11,12 +11,12 @@ export const MLBB_RANKS = [
 ];
 
 export const MLBB_ROLE_ICONS: Record<string, string> = {
-  tank: 'https://akmweb.youngjoygame.com/web/gms/image/a3dbb075b4d8186c29f02f7d47da236a.svg',
-  fighter: 'https://akmweb.youngjoygame.com/web/gms/image/6a246099f7eb83a8856306d8b4c84fc2.svg',
-  assassin: 'https://akmweb.youngjoygame.com/web/gms/image/de611167c7310681135f0b4198137bfa.svg',
-  mage: 'https://akmweb.youngjoygame.com/web/gms/image/facab1eacb218d767b5acb80304bfafd.svg',
-  marksman: 'https://akmweb.youngjoygame.com/web/gms/image/91f817c656908a83c2e24eecb3b70986.svg',
-  support: 'https://akmweb.youngjoygame.com/web/gms/image/a3dbb075b4d8186c29f02f7d47da236a.svg',
+  tank: 'https://akmweb.youngjoygame.com/web/gms/image/60638c59536d9505c9c731af13f7fdfd.png',
+  support: 'https://akmweb.youngjoygame.com/web/gms/image/1e4609b25a4cd63ee5a13015d4058159.png',
+  fighter: 'https://akmweb.youngjoygame.com/web/gms/image/629e282165d4b63deceaf350426ea440.png',
+  assassin: 'https://akmweb.youngjoygame.com/web/gms/image/d0b8b65a47fc43dc7bb2bac447072fd2.png',
+  mage: 'https://akmweb.youngjoygame.com/web/gms/image/1c6985dd0caec2028ccb6d1b8ca95e0f.png',
+  marksman: 'https://akmweb.youngjoygame.com/web/gms/image/025c69a764924f4bac526a2662f1a0b9.png',
 };
 
 export const MLBB_ARROW_LEFT = 'https://akmweb.youngjoygame.com/web/gms/image/b5e4de459ce7ea23df0ae3c69b5e4807.svg';
@@ -84,16 +84,6 @@ export const NAV_ITEMS = [
   { path: '/events', label: 'Événements', icon: 'Calendar' },
   { path: '/matches', label: 'Matchs', icon: 'Swords' },
   { path: '/heroes', label: 'Héros', icon: 'Sparkles' },
-];
-
-export const ADMIN_NAV_ITEMS = [
-  { path: '/admin', label: 'Dashboard', icon: 'BarChart3' },
-  { path: '/admin/users', label: 'Utilisateurs', icon: 'Users' },
-  { path: '/admin/teams', label: 'Équipes', icon: 'Shield' },
-  { path: '/admin/tournaments', label: 'Tournois', icon: 'Trophy' },
-  { path: '/admin/posts', label: 'Posts', icon: 'FileText' },
-  { path: '/admin/forms', label: 'Formulaires', icon: 'FileInput' },
-  { path: '/admin/logs', label: 'Logs', icon: 'ScrollText' },
 ];
 
 export const FORM_FIELD_TYPES = [

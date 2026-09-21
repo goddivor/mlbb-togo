@@ -1,66 +1,75 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LogOut, ExternalLink, MessageSquare } from 'lucide-react';
-import LanguageSwitcher from '@/components/common/LanguageSwitcher';
-import NotificationBell from '@/components/common/NotificationBell';
+import {
+  Shield,
+  CalendarDays,
+  Swords,
+  Radio,
+  Users,
+  Inbox,
+  MessageSquare,
+  Handshake,
+  LayoutGrid,
+} from 'lucide-react';
 import { disconnectSocket } from '@/lib/realtime';
 import { useT } from '@/lib/i18n';
-import { setToken } from '@/lib/api';
+import { setToken, avatarSrc } from '@/lib/api';
 import { useAuthStore } from '@/store/useStore';
+import AppHeader from './AppHeader';
+import { type QuickLink } from './HeaderSearch';
 
-export default function AdminHeader() {
+const ADMIN_LINKS: QuickLink[] = [
+  { href: '/admin/catalog', key: 'admin.catalog.title', icon: LayoutGrid },
+  { href: '/admin/esport', key: 'admin.esport.title', icon: Shield },
+  { href: '/admin/seasons', key: 'admin.seasons.title', icon: CalendarDays },
+  { href: '/admin/matches', key: 'admin.matches.title', icon: Swords },
+  { href: '/admin/stream', key: 'admin.stream.title', icon: Radio },
+  { href: '/admin/users', key: 'admin.users.title', icon: Users },
+  { href: '/admin/requests', key: 'requests.title', icon: Inbox },
+  { href: '/admin/messages', key: 'header.messages', icon: MessageSquare },
+  { href: '/admin/sponsors', key: 'admin.sponsors.title', icon: Handshake },
+];
+
+interface HeaderProps {
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+}
+
+/** Admin top bar. */
+export default function AdminHeader({ sidebarOpen, setSidebarOpen }: HeaderProps) {
   const t = useT();
   const router = useRouter();
   const user = useAuthStore((s: any) => s.user);
-  const logout = useAuthStore((s: any) => s.logout);
+  const storeLogout = useAuthStore((s: any) => s.logout);
 
+  // Same logout logic as before: drop the socket + token, clear the auth
+  // store, then bounce back to the admin login.
   const signOut = () => {
     disconnectSocket();
     setToken(null);
-    logout?.();
+    storeLogout?.();
     router.replace('/admin-login');
   };
 
+  const name = user?.username || user?.displayName || 'Admin';
+  const avatarUrl = user?.avatar ? avatarSrc(user.avatar) : null;
+
   return (
-    <header className="sticky top-0 z-30 h-14 shrink-0 border-b border-gaming-border bg-gaming-dark/90 backdrop-blur-sm flex items-center justify-between px-4 sm:px-6">
-      <h2 className="text-sm font-semibold text-white">{t('admin.area')}</h2>
-
-      <div className="flex items-center gap-3">
-        <Link
-          href="/admin/messages"
-          title={t('header.messages')}
-          className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-300 hover:text-white hover:bg-gaming-surface transition-colors"
-        >
-          <MessageSquare size={18} />
-        </Link>
-        <NotificationBell />
-        <LanguageSwitcher />
-
-        <Link
-          href="/"
-          className="hidden sm:inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors"
-        >
-          <ExternalLink size={14} /> {t('admin.backToSite')}
-        </Link>
-
-        {user?.username && (
-          <span className="hidden sm:inline text-xs text-gray-500 max-w-[10rem] truncate">
-            {user.username}
-          </span>
-        )}
-
-        <button
-          type="button"
-          onClick={signOut}
-          title={t('header.logout')}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
-        >
-          <LogOut size={15} />
-          <span className="hidden sm:inline">{t('header.logout')}</span>
-        </button>
-      </div>
-    </header>
+    <AppHeader
+      sidebarOpen={sidebarOpen}
+      setSidebarOpen={setSidebarOpen}
+      homeHref="/admin/league"
+      searchLinks={ADMIN_LINKS}
+      messagesHref="/admin/messages"
+      profile={{
+        name,
+        subtitle: t('admin.area'),
+        avatarUrl,
+        logoutLabel: t('header.logout'),
+        onLogout: signOut,
+        links: [{ href: '/', label: t('admin.backToSite'), icon: 'external' }],
+      }}
+    />
   );
 }

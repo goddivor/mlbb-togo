@@ -1,15 +1,20 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight,
-  Plus, Swords, BookOpen, Trophy,
+  Plus, Swords, BookOpen, Trophy, MapPin, CalendarDays, CalendarClock,
 } from 'lucide-react';
-import { Card, Badge, Button, Tabs } from '@/components/ui';
-import { useThemeStore, useEventStore } from '@/store/useStore';
+import { Badge, Button, Tabs, Card, PageHeader, EmptyState, Input, Textarea, Select, StatCard } from '@/components/ui';
+import Modal from '@/components/ui/Modal';
+import { useEventStore } from '@/store/useStore';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { cn, formatDate } from '@/lib/helpers';
+import { fadeUp, stagger, still } from '@/lib/motion';
+import CitySelect from '@/components/geo/CitySelect';
+import toast from 'react-hot-toast';
 
 const DAY_KEYS = [
   'events.day.sun', 'events.day.mon', 'events.day.tue', 'events.day.wed',
@@ -21,30 +26,60 @@ const MONTH_KEYS = [
   'events.month.sep', 'events.month.oct', 'events.month.nov', 'events.month.dec',
 ];
 
-const eventTypeColors: Record<string, any> = {
-  scrim: { bg: 'bg-neon-blue/20', text: 'text-neon-blue', border: 'border-neon-blue/30' },
-  coaching: { bg: 'bg-neon-purple/20', text: 'text-neon-purple', border: 'border-neon-purple/30' },
-  tournament: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
+type EventKind = 'scrim' | 'coaching' | 'tournament';
+
+/** Per-type accent (card edge, calendar dot, badge). */
+const EVENT_META: Record<EventKind, { accent: 'cyan' | 'violet' | 'gold'; badge: string; dot: string; icon: any; labelKey: string }> = {
+  scrim: { accent: 'cyan', badge: 'neon', dot: 'bg-accent-cyan', icon: Swords, labelKey: 'events.form.typeScrim' },
+  coaching: { accent: 'violet', badge: 'purple', dot: 'bg-accent-violet', icon: BookOpen, labelKey: 'events.form.typeCoaching' },
+  tournament: { accent: 'gold', badge: 'gold', dot: 'bg-accent-gold', icon: Trophy, labelKey: 'events.form.typeTournament' },
 };
 
-const eventTypeIcons: Record<string, any> = {
-  scrim: Swords,
-  coaching: BookOpen,
-  tournament: Trophy,
-};
+const metaOf = (type: string) => EVENT_META[(type as EventKind) in EVENT_META ? (type as EventKind) : 'scrim'];
 
 export default function Events() {
   const t = useT();
-  const { theme } = useThemeStore();
+  const reduce = useReducedMotion();
   const { events, setEvents } = useEventStore();
-  const [currentDate, setCurrentDate] = useState(new Date(2024, 2, 1));
+  const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState('calendar');
   const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState({ type: 'scrim', title: '', date: '', time: '', description: '', city: '' });
+  const [saving, setSaving] = useState(false);
+
+  const loadEvents = () => api.events.list().then((l: any) => setEvents(Array.isArray(l) ? l : []));
 
   useEffect(() => {
-    api.events.list().then(setEvents);
-  }, [setEvents]);
+    loadEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const createEvent = async () => {
+    if (!form.title.trim() || !form.date) {
+      toast.error(t('events.form.required'));
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.events.create({
+        title: form.title.trim(),
+        type: form.type,
+        date: form.date,
+        time: form.time || null,
+        description: form.description.trim() || null,
+        city: form.city || null,
+      });
+      await loadEvents();
+      setForm({ type: 'scrim', title: '', date: '', time: '', description: '', city: '' });
+      setShowCreate(false);
+      toast.success(t('events.created'));
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error'));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -76,227 +111,278 @@ export default function Events() {
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
-  return (
-    <div className="p-6 max-w-7xl mx-auto">
+  // KPIs: upcoming (today or later), this month, next event.
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
+  const upcoming = useMemo(
+    () => events.filter((e: any) => typeof e.date === 'string' && e.date >= todayStr).sort((a: any, b: any) => (a.date > b.date ? 1 : -1)),
+    [events, todayStr],
+  );
+  const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+  const thisMonth = events.filter((e: any) => typeof e.date === 'string' && e.date.startsWith(monthPrefix)).length;
+  const nextEvent = upcoming[0];
 
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            <CalendarIcon className="inline w-8 h-8 mr-2 text-neon-green" />
-            {t('events.title')}
-          </h1>
-          <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            {t('events.subtitle')}
-          </p>
+  const listVariants = reduce ? still : stagger(0.04);
+  const itemVariants = reduce ? still : fadeUp;
+
+  /** Date block: day number in display type, month abbreviation under it. */
+  const DateBlock = ({ date, accent }: { date: string; accent: 'cyan' | 'violet' | 'gold' }) => {
+    const d = new Date(date + 'T00:00:00');
+    const ok = !isNaN(d.getTime());
+    const ring = { cyan: 'border-accent-cyan/40 text-accent-cyan', violet: 'border-accent-violet/40 text-accent-violet', gold: 'border-accent-gold/40 text-accent-gold' }[accent];
+    return (
+      <div className={cn('flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded border bg-surface-2 cut-corners-sm', ring)}>
+        <span className="font-display text-2xl font-bold leading-none num">{ok ? d.getDate() : '—'}</span>
+        <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">
+          {ok ? t(MONTH_KEYS[d.getMonth()]).slice(0, 3) : ''}
+        </span>
+      </div>
+    );
+  };
+
+  const EventCard = ({ event }: { event: any }) => {
+    const meta = metaOf(event.type);
+    const Icon = meta.icon;
+    return (
+      <Card hover accent={meta.accent} className="!p-4">
+        <div className="flex items-start gap-4">
+          <DateBlock date={event.date} accent={meta.accent} />
+          <div className="min-w-0 flex-1">
+            <div className="mb-1.5 flex flex-wrap items-center gap-2">
+              <Badge variant={meta.badge} size="sm" className="gap-1">
+                <Icon size={12} /> {t(meta.labelKey)}
+              </Badge>
+            </div>
+            <h4 className="truncate font-display text-base font-bold tracking-tight2 text-ink-1">{event.title}</h4>
+            {event.description && <p className="mt-1 line-clamp-2 text-xs text-ink-2">{event.description}</p>}
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-3 num">
+              {event.time && (
+                <span className="inline-flex items-center gap-1">
+                  <Clock size={12} /> {event.time}
+                </span>
+              )}
+              {event.city && (
+                <span className="inline-flex items-center gap-1">
+                  <MapPin size={12} /> {event.city}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="flex gap-3">
-          <Tabs
-            tabs={[
-              { id: 'calendar', label: t('events.tab.calendar') },
-              { id: 'list', label: t('events.tab.list') },
-            ]}
-            active={viewMode}
-            onChange={setViewMode}
-          />
+      </Card>
+    );
+  };
+
+  const eventList = (
+    <motion.div variants={listVariants} initial="hidden" animate="visible" className="space-y-3">
+      {selectedEvents.map((event: any) => (
+        <motion.div key={event.id} variants={itemVariants}>
+          <EventCard event={event} />
+        </motion.div>
+      ))}
+      {selectedEvents.length === 0 && (
+        <EmptyState className="min-h-0 py-10" icon={<CalendarIcon size={28} />} title={t('events.noneToday')} />
+      )}
+    </motion.div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow={t('events.eyebrow')}
+        icon={<CalendarIcon size={22} />}
+        title={t('events.title')}
+        subtitle={t('events.subtitle')}
+        variant="green"
+        action={
           <Button onClick={() => setShowCreate(true)}>
             <Plus size={16} />
             {t('events.new')}
           </Button>
-        </div>
+        }
+      >
+        <StatCard label={t('events.kpi.upcoming')} value={upcoming.length} icon={<CalendarDays size={18} />} accent="green" />
+        <StatCard label={t('events.kpi.thisMonth')} value={thisMonth} hint={`${t(MONTH_KEYS[month])} ${year}`} icon={<CalendarIcon size={18} />} accent="cyan" />
+        <StatCard
+          label={t('events.kpi.next')}
+          value={nextEvent ? <span className="text-xl">{formatDate(nextEvent.date)}</span> : '—'}
+          hint={nextEvent?.title}
+          icon={<CalendarClock size={18} />}
+          accent="gold"
+        />
+        <StatCard label={t('events.kpi.total')} value={events.length} icon={<Trophy size={18} />} accent="violet" />
+      </PageHeader>
+
+      <div className="overflow-x-auto whitespace-nowrap">
+        <Tabs
+          variant="underline"
+          tabs={[
+            { id: 'calendar', label: t('events.tab.calendar'), icon: CalendarIcon },
+            { id: 'list', label: t('events.tab.list'), icon: CalendarDays, count: events.length },
+          ]}
+          active={viewMode}
+          onChange={setViewMode}
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {viewMode === 'list' ? (
+        <div className="mx-auto max-w-3xl">{eventList}</div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <Card>
+              <div className="mb-5 flex items-center justify-between">
+                <button
+                  onClick={prevMonth}
+                  aria-label={t('events.prevMonth')}
+                  className="rounded p-2 text-ink-2 transition-colors duration-fast hover:bg-surface-2 hover:text-ink-1"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <h2 className="font-display text-xl font-bold tracking-tight2 text-ink-1">
+                  {t(MONTH_KEYS[month])} <span className="num text-ink-3">{year}</span>
+                </h2>
+                <button
+                  onClick={nextMonth}
+                  aria-label={t('events.nextMonth')}
+                  className="rounded p-2 text-ink-2 transition-colors duration-fast hover:bg-surface-2 hover:text-ink-1"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
 
-        <div className="lg:col-span-2">
-          <Card hover={false}>
+              <div className="mb-1 grid grid-cols-7 gap-1">
+                {DAY_KEYS.map((dayKey) => (
+                  <div key={dayKey} className="py-1.5 text-center text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">
+                    {t(dayKey)}
+                  </div>
+                ))}
+              </div>
 
-            <div className="flex items-center justify-between mb-6">
-              <button onClick={prevMonth} className={`p-2 rounded-lg transition-colors ${theme === 'dark' ? 'hover:bg-gaming-surface' : 'hover:bg-gray-100'}`}>
-                <ChevronLeft size={20} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} />
-              </button>
-              <h2 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                {t(MONTH_KEYS[month])} {year}
-              </h2>
-              <button onClick={nextMonth} className={`p-2 rounded-lg transition-colors ${theme === 'dark' ? 'hover:bg-gaming-surface' : 'hover:bg-gray-100'}`}>
-                <ChevronRight size={20} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} />
-              </button>
-            </div>
+              <div className="grid grid-cols-7 gap-1">
+                {calendarDays.map((day, index) => {
+                  const dayEvents = getEventsForDay(day);
+                  const isSelected = selectedDate === day;
+                  const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
 
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {DAY_KEYS.map((dayKey) => (
-                <div key={dayKey} className="text-center text-xs font-medium text-gray-400 py-2">
-                  {t(dayKey)}
-                </div>
-              ))}
-            </div>
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => day && setSelectedDate(isSelected ? null : day)}
+                      disabled={!day}
+                      aria-pressed={day ? isSelected : undefined}
+                      className={cn(
+                        'relative flex aspect-square flex-col items-center justify-start rounded border p-1 transition-[background-color,border-color] duration-fast',
+                        !day && 'border-transparent',
+                        day && isSelected && 'border-primary/50 bg-primary/10',
+                        day && !isSelected && isToday && 'border-primary/30 bg-surface-2',
+                        day && !isSelected && !isToday && 'border-transparent hover:bg-surface-2',
+                        day && dayEvents.length > 0 && !isSelected && 'border-line-subtle',
+                      )}
+                    >
+                      {day && (
+                        <>
+                          <span
+                            className={cn(
+                              'text-sm num',
+                              isSelected ? 'font-bold text-primary' : isToday ? 'font-bold text-primary' : 'font-medium text-ink-2',
+                            )}
+                          >
+                            {day}
+                          </span>
+                          {dayEvents.length > 0 && (
+                            <div className="mt-1 flex gap-0.5">
+                              {dayEvents.slice(0, 3).map((evt: any, i: number) => (
+                                <span key={i} className={cn('h-1.5 w-1.5 rounded-full', metaOf(evt.type).dot)} />
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
 
-            <div className="grid grid-cols-7 gap-1">
-              {calendarDays.map((day, index) => {
-                const dayEvents = getEventsForDay(day);
-                const isSelected = selectedDate === day;
-                const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
+              <div className="mt-4 flex flex-wrap gap-4 border-t border-line-subtle pt-3 text-xs text-ink-3">
+                {(Object.keys(EVENT_META) as EventKind[]).map((k) => (
+                  <span key={k} className="inline-flex items-center gap-1.5">
+                    <span className={cn('h-1.5 w-1.5 rounded-full', EVENT_META[k].dot)} />
+                    {t(EVENT_META[k].labelKey)}
+                  </span>
+                ))}
+              </div>
+            </Card>
+          </div>
 
-                return (
-                  <motion.button
-                    key={index}
-                    whileHover={day ? { scale: 1.05 } : {}}
-                    whileTap={day ? { scale: 0.95 } : {}}
-                    onClick={() => day && setSelectedDate(isSelected ? null : day)}
-                    disabled={!day}
-                    className={`aspect-square rounded-lg p-1 flex flex-col items-center justify-start transition-all relative ${
-                      !day
-                        ? ''
-                        : isSelected
-                          ? 'bg-neon-blue/20 border border-neon-blue/40'
-                          : isToday
-                            ? 'bg-gaming-surface border border-neon-blue/20'
-                            : theme === 'dark'
-                              ? 'hover:bg-gaming-surface border border-transparent'
-                              : 'hover:bg-gray-50 border border-transparent'
-                    }`}
-                  >
-                    {day && (
-                      <>
-                        <span className={`text-sm font-medium ${
-                          isSelected
-                            ? 'text-neon-blue'
-                            : isToday
-                              ? 'text-neon-blue font-bold'
-                              : theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                        }`}>
-                          {day}
-                        </span>
-                        {dayEvents.length > 0 && (
-                          <div className="flex gap-0.5 mt-1">
-                            {dayEvents.slice(0, 3).map((evt: any, i: number) => (
-                              <div key={i} className={`w-1.5 h-1.5 rounded-full ${
-                                evt.type === 'scrim' ? 'bg-neon-blue' :
-                                evt.type === 'tournament' ? 'bg-yellow-400' : 'bg-neon-purple'
-                              }`} />
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </motion.button>
-                );
-              })}
-            </div>
-          </Card>
-        </div>
-
-        <div>
-          <Card hover={false}>
-            <h3 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+          <div>
+            <p className="eyebrow mb-3">
               {selectedDate ? `${t('events.eventsOfDayPrefix')} ${selectedDate} ${t(MONTH_KEYS[month])}` : t('events.allEvents')}
-            </h3>
-            <div className="space-y-3">
-              {selectedEvents.map((event: any) => {
-                const colors = eventTypeColors[event.type] || eventTypeColors.scrim;
-                const Icon = eventTypeIcons[event.type] || Swords;
-
-                return (
-                  <motion.div
-                    key={event.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`p-3 rounded-lg border ${colors.bg} ${colors.border}`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <Icon size={14} className={colors.text} />
-                      <Badge variant={event.type === 'tournament' ? 'gold' : event.type === 'scrim' ? 'neon' : 'purple'} size="sm">
-                        {event.type}
-                      </Badge>
-                    </div>
-                    <h4 className={`font-semibold text-sm mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                      {event.title}
-                    </h4>
-                    <p className={`text-xs mb-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {event.description}
-                    </p>
-                    <div className="flex items-center gap-3 text-xs text-gray-400">
-                      <span className="flex items-center gap-1">
-                        <CalendarIcon size={12} />
-                        {event.date}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock size={12} />
-                        {event.time}
-                      </span>
-                    </div>
-                  </motion.div>
-                );
-              })}
-
-              {selectedEvents.length === 0 && (
-                <div className="text-center py-8">
-                  <CalendarIcon className="w-8 h-8 mx-auto mb-2 text-gray-500" />
-                  <p className="text-sm text-gray-400">{t('events.noneToday')}</p>
-                </div>
-              )}
-            </div>
-          </Card>
-        </div>
-      </div>
-
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className={`w-full max-w-lg rounded-2xl border p-6 ${
-              theme === 'dark' ? 'bg-gaming-card border-gaming-border' : 'bg-white border-gray-200'
-            }`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              {t('events.new')}
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('events.form.type')}</label>
-                <select className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white focus:outline-none focus:border-neon-blue/50 ${
-                  theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                }`}>
-                  <option value="scrim">⚔️ {t('events.form.typeScrim')}</option>
-                  <option value="tournament">🏆 {t('events.form.typeTournament')}</option>
-                  <option value="coaching">📚 {t('events.form.typeCoaching')}</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('events.form.title')}</label>
-                <input type="text" placeholder={t('events.form.namePlaceholder')} className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 ${
-                  theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                }`} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('events.form.date')}</label>
-                  <input type="date" className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white focus:outline-none focus:border-neon-blue/50 ${
-                    theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                  }`} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('events.form.time')}</label>
-                  <input type="time" className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white focus:outline-none focus:border-neon-blue/50 ${
-                    theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                  }`} />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('events.form.description')}</label>
-                <textarea rows={3} placeholder={t('events.form.descriptionPlaceholder')} className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 resize-none ${
-                  theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                }`} />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button variant="ghost" onClick={() => setShowCreate(false)} className="flex-1">{t('events.cancel')}</Button>
-                <Button onClick={() => setShowCreate(false)} className="flex-1">{t('events.create')}</Button>
-              </div>
-            </div>
-          </motion.div>
+            </p>
+            {eventList}
+          </div>
         </div>
       )}
+
+      {/* Event creation modal */}
+      <Modal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title={t('events.new')}
+        icon={<CalendarIcon size={20} />}
+        size="md"
+      >
+        <div className="space-y-4">
+          <Select
+            label={t('events.form.type')}
+            value={form.type}
+            onChange={(e: any) => setForm({ ...form, type: e.target.value })}
+          >
+            <option value="scrim">{t('events.form.typeScrim')}</option>
+            <option value="tournament">{t('events.form.typeTournament')}</option>
+            <option value="coaching">{t('events.form.typeCoaching')}</option>
+          </Select>
+          <Input
+            label={t('events.form.title')}
+            type="text"
+            placeholder={t('events.form.namePlaceholder')}
+            value={form.title}
+            onChange={(e: any) => setForm({ ...form, title: e.target.value })}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label={t('events.form.date')}
+              type="date"
+              value={form.date}
+              onChange={(e: any) => setForm({ ...form, date: e.target.value })}
+            />
+            <Input
+              label={t('events.form.time')}
+              type="time"
+              value={form.time}
+              onChange={(e: any) => setForm({ ...form, time: e.target.value })}
+            />
+          </div>
+          <CitySelect
+            label={t('events.form.city')}
+            value={form.city}
+            onChange={(city) => setForm({ ...form, city })}
+          />
+          <Textarea
+            label={t('events.form.description')}
+            rows={3}
+            placeholder={t('events.form.descriptionPlaceholder')}
+            value={form.description}
+            onChange={(e: any) => setForm({ ...form, description: e.target.value })}
+          />
+          <div className="flex gap-3 pt-2">
+            <Button variant="ghost" onClick={() => setShowCreate(false)} className="flex-1">{t('events.cancel')}</Button>
+            <Button onClick={createEvent} loading={saving} className="flex-1">{t('events.create')}</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

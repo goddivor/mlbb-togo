@@ -2,6 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Satoshi font (TailAdmin dashboard) */
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/Satoshi-Light.woff2') format('woff2'), url('/fonts/Satoshi-Light.woff') format('woff');
+  font-weight: 300;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/Satoshi-Regular.woff2') format('woff2'), url('/fonts/Satoshi-Regular.woff') format('woff');
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/Satoshi-Medium.woff2') format('woff2'), url('/fonts/Satoshi-Medium.woff') format('woff');
+  font-weight: 500;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/Satoshi-Bold.woff2') format('woff2'), url('/fonts/Satoshi-Bold.woff') format('woff');
+  font-weight: 700;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/Satoshi-Black.woff2') format('woff2'), url('/fonts/Satoshi-Black.woff') format('woff');
+  font-weight: 900;
+  font-display: swap;
+  font-style: normal;
+}
+
 @layer base {
   :root {
     --color-neon-blue: #00d4ff;
@@ -13,7 +50,7 @@
     --color-gaming-border: #1e1e3f;
     --color-gaming-surface: #1a1a3e;
 
-    /* Palette pilotée (triplets RGB) — valeurs SOMBRES par défaut. */
+    /* Driven palette (RGB triplets) - DARK values by default. */
     --gaming-dark: 10 10 26;
     --gaming-darker: 5 5 16;
     --gaming-card: 18 18 42;
@@ -21,9 +58,45 @@
     --gaming-surface: 26 26 62;
     --page-bg: #0a0a1a;
     --page-text: #e2e8f0;
+
+    /* ---------------------------------------------------------------
+       Esport design system tokens (issue #61). RGB triplets so Tailwind
+       alpha modifiers work (bg-surface-1/80). Dark values by default;
+       the light block below overrides them.
+       --------------------------------------------------------------- */
+    --surface-0: 10 14 25;
+    --surface-1: 17 23 38;
+    --surface-2: 24 32 52;
+    --surface-3: 32 43 68;
+    --line-subtle: 146 160 196;
+    --line-subtle-a: 0.14;
+    --line-strong-a: 0.3;
+    --ink-1: 238 242 248;
+    --ink-2: 166 176 198;
+    --ink-3: 110 122 149;
+    --accent-cyan: 0 212 255;
+    --accent-violet: 168 85 247;
+    --accent-gold: 242 181 68;
+    --accent-red: 255 70 85;
+    --accent-green: 34 197 94;
+    --primary: 0 212 255;
+    --on-primary: 6 12 24;
+    --glow-cyan: 0 0 0 1px rgb(0 212 255 / 0.35), 0 0 24px rgb(0 212 255 / 0.25);
+    --glow-violet: 0 0 0 1px rgb(168 85 247 / 0.35), 0 0 24px rgb(168 85 247 / 0.25);
+    --glow-gold: 0 0 0 1px rgb(242 181 68 / 0.4), 0 0 24px rgb(242 181 68 / 0.25);
+    --elev-1: 0 1px 2px rgb(0 0 0 / 0.35), 0 0 0 1px rgb(146 160 196 / 0.08);
+    --elev-2: 0 8px 24px -8px rgb(0 0 0 / 0.55), 0 0 0 1px rgb(146 160 196 / 0.1);
+    --elev-3: 0 20px 48px -12px rgb(0 0 0 / 0.65), 0 0 0 1px rgb(146 160 196 / 0.12);
+    --dur-fast: 150ms;
+    --dur-base: 220ms;
+    --dur-slow: 320ms;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
-  /* Thème SOMBRE (classe .dark présente sur <html>). */
+  /* DARK theme (.dark class present on <html>). */
   .dark {
     --gaming-dark: 10 10 26;
     --gaming-darker: 5 5 16;
@@ -34,7 +107,7 @@
     --page-text: #e2e8f0;
   }
 
-  /* Thème CLAIR (pas de classe .dark). */
+  /* LIGHT theme (no .dark class). */
   html:not(.dark) {
     --gaming-dark: 243 244 248;
     --gaming-darker: 248 250 252;
@@ -43,6 +116,30 @@
     --gaming-surface: 241 245 249;
     --page-bg: #f3f4f8;
     --page-text: #0f172a;
+
+    --surface-0: 238 241 247;
+    --surface-1: 255 255 255;
+    --surface-2: 245 247 251;
+    --surface-3: 232 236 244;
+    --line-subtle: 15 23 42;
+    --line-subtle-a: 0.1;
+    --line-strong-a: 0.22;
+    --ink-1: 15 23 42;
+    --ink-2: 75 85 103;
+    --ink-3: 125 135 153;
+    --accent-cyan: 8 145 178;
+    --accent-violet: 124 58 237;
+    --accent-gold: 183 121 31;
+    --accent-red: 225 29 72;
+    --accent-green: 21 128 61;
+    --primary: 8 145 178;
+    --on-primary: 255 255 255;
+    --glow-cyan: 0 0 0 1px rgb(8 145 178 / 0.35), 0 0 20px rgb(8 145 178 / 0.18);
+    --glow-violet: 0 0 0 1px rgb(124 58 237 / 0.35), 0 0 20px rgb(124 58 237 / 0.18);
+    --glow-gold: 0 0 0 1px rgb(183 121 31 / 0.4), 0 0 20px rgb(183 121 31 / 0.18);
+    --elev-1: 0 1px 2px rgb(15 23 42 / 0.06), 0 0 0 1px rgb(15 23 42 / 0.05);
+    --elev-2: 0 8px 24px -8px rgb(15 23 42 / 0.16), 0 0 0 1px rgb(15 23 42 / 0.06);
+    --elev-3: 0 20px 48px -12px rgb(15 23 42 / 0.22), 0 0 0 1px rgb(15 23 42 / 0.06);
   }
 
   * {
@@ -68,7 +165,7 @@
   }
 
   body {
-    font-family: 'Inter', 'Poppins', system-ui, sans-serif;
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
     background-color: var(--page-bg);
     color: var(--page-text);
     overflow-x: hidden;
@@ -78,6 +175,21 @@
   ::selection {
     background: rgba(0, 212, 255, 0.3);
     color: white;
+  }
+
+  /* Motion: honour the OS preference everywhere. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
@@ -222,6 +334,170 @@
   }
 }
 
+
+@layer components {
+  /* Display typography: esport headline face, tight tracking. */
+  .font-display-tight {
+    font-family: 'Chakra Petch', 'Space Grotesk', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  /* Uppercase eyebrow label above headings. */
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase leading-none;
+    letter-spacing: 0.18em;
+    color: rgb(var(--accent-cyan));
+  }
+
+  /* Tabular numerals for stats and tables. */
+  .num {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+  }
+
+  /* Chamfered corners (top-right + bottom-left): the design system's signature cut. */
+  .cut-corners {
+    --cut: 10px;
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--cut)) 0,
+      100% var(--cut),
+      100% 100%,
+      var(--cut) 100%,
+      0 calc(100% - var(--cut))
+    );
+  }
+  .cut-corners-sm {
+    --cut: 6px;
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--cut)) 0,
+      100% var(--cut),
+      100% 100%,
+      var(--cut) 100%,
+      0 calc(100% - var(--cut))
+    );
+  }
+  /* Angled bottom edge for banners. */
+  .cut-banner {
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 48px) 100%, 0 100%);
+  }
+
+  /* Page background: navy gradient + subtle noise (dark) or soft gradient (light). */
+  .app-surface {
+    position: relative;
+    isolation: isolate;
+    background-color: rgb(var(--surface-0));
+    background-image:
+      radial-gradient(1200px 600px at 10% -10%, rgb(var(--accent-cyan) / 0.08), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgb(var(--accent-violet) / 0.07), transparent 55%);
+    background-attachment: fixed;
+  }
+  .dark .app-surface::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background-image: var(--noise);
+    opacity: 0.35;
+    mix-blend-mode: overlay;
+  }
+
+  /* Elevation + glow helpers driven by tokens. */
+  .elev-1 { box-shadow: var(--elev-1); }
+  .elev-2 { box-shadow: var(--elev-2); }
+  .elev-3 { box-shadow: var(--elev-3); }
+  .glow-cyan { box-shadow: var(--glow-cyan); }
+  .glow-violet { box-shadow: var(--glow-violet); }
+  .glow-gold { box-shadow: var(--glow-gold); }
+
+  /* Chamfered button: the fill lives on a clipped pseudo-element so the focus
+     ring and hover glow (box-shadow) stay visible around the cut shape. */
+  .btn-cut {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: transparent;
+  }
+  .btn-cut::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--btn-bg, rgb(var(--primary)));
+    clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+    transition: filter var(--dur-base) var(--ease-out);
+  }
+  .btn-cut:hover::before {
+    filter: brightness(1.08);
+  }
+  .btn-cut::after {
+    /* Sheen that sweeps on hover. */
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+    background: linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.22) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform var(--dur-slow) var(--ease-out);
+  }
+  .btn-cut:hover::after {
+    transform: translateX(100%);
+  }
+
+  /* Primary fills use the accent with a readable foreground in both themes. */
+  .text-on-primary { color: rgb(var(--on-primary)); }
+
+  /* Live pulse dot. */
+  .live-dot {
+    @apply relative inline-flex h-2 w-2;
+  }
+  .live-dot::before {
+    content: '';
+    @apply absolute inline-flex h-full w-full rounded-full opacity-60;
+    background: currentColor;
+    animation: ping 1.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  .live-dot::after {
+    content: '';
+    @apply relative inline-flex h-2 w-2 rounded-full;
+    background: currentColor;
+  }
+
+  /* Rank tier metallic surfaces (badges, frames). */
+  .tier-gold {
+    color: #fde68a;
+    background: linear-gradient(135deg, rgba(242, 181, 68, 0.28), rgba(242, 181, 68, 0.08));
+    border: 1px solid rgba(242, 181, 68, 0.55);
+  }
+  .tier-silver {
+    color: #e5e7eb;
+    background: linear-gradient(135deg, rgba(203, 213, 225, 0.28), rgba(203, 213, 225, 0.06));
+    border: 1px solid rgba(203, 213, 225, 0.5);
+  }
+  .tier-bronze {
+    color: #fdba74;
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.3), rgba(205, 127, 50, 0.08));
+    border: 1px solid rgba(205, 127, 50, 0.55);
+  }
+  html:not(.dark) .tier-gold { color: #92400e; }
+  html:not(.dark) .tier-silver { color: #475569; }
+  html:not(.dark) .tier-bronze { color: #9a3412; }
+
+  /* Dark mode: cyan fills paired with a bare `text-white` get the dark foreground
+     instead. Covers the same element, a white child inside a primary fill
+     (chat bubbles, team-colour headers, avatar initials) and primary gradients
+     (level badge, XP ring, achievements). */
+  html.dark .bg-primary.text-white,
+  html.dark .from-primary.text-white,
+  html.dark .bg-primary .text-white,
+  html.dark .from-primary .text-white {
+    color: rgb(var(--on-primary));
+  }
+}
+
 /* Particles background */
 .particles-container {
   position: fixed;
@@ -327,11 +603,11 @@
 .role-support { color: #1abc9c; }
 
 /* ============================================================
-   THÈME CLAIR — ajustements (les fonds/bordures gaming-* basculent
-   déjà via les variables CSS ; ici on traite cartes, inputs et texte).
+   LIGHT THEME - adjustments (gaming-* backgrounds/borders already
+   switch via CSS variables; here we handle cards, inputs and text).
    ============================================================ */
 
-/* Cartes */
+/* Cards */
 html:not(.dark) .card-gaming {
   background: #ffffff;
   border-color: rgb(226 232 240);
@@ -342,7 +618,7 @@ html:not(.dark) .card-gaming:hover {
   box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
 }
 
-/* Champs de saisie */
+/* Input fields */
 html:not(.dark) .input-gaming {
   background: #ffffff;
   color: #0f172a;
@@ -350,41 +626,176 @@ html:not(.dark) .input-gaming {
 html:not(.dark) .input-gaming::placeholder { color: #94a3b8; }
 html:not(.dark) .input-gaming:focus { background: #ffffff; }
 
-/* Squelette de chargement */
+/* Loading skeleton */
 html:not(.dark) .skeleton { background: rgb(226 232 240); }
 
-/* Barre de défilement claire */
+/* Light scrollbar */
 html:not(.dark) *::-webkit-scrollbar-track { background: #e2e8f0; }
 html:not(.dark) *::-webkit-scrollbar-thumb { background: #94a3b8; }
 
-/* Texte : bascule des blancs/gris codés en dur */
-html:not(.dark) .text-white { color: #0f172a; }
-html:not(.dark) .text-gray-200 { color: #1e293b; }
-html:not(.dark) .text-gray-300 { color: #475569; }
-html:not(.dark) .text-gray-400 { color: #64748b; }
-html:not(.dark) .text-gray-500 { color: #64748b; }
-html:not(.dark) .text-gray-600 { color: #475569; }
+/* Note: the old light-mode text-white/text-gray overrides were removed. Public
+   routes are forced dark, and the dashboard uses proper text-black/dark:text-white
+   semantics (TailAdmin), so forcing whites to dark broke the dark sidebar. */
 
-/* Conserver le texte BLANC sur les éléments colorés / dégradés */
-html:not(.dark) .btn-primary,
-html:not(.dark) .text-white.bg-gradient-to-br,
-html:not(.dark) .text-white.bg-gradient-to-r,
-html:not(.dark) .text-white.bg-gradient-to-l,
-html:not(.dark) .text-white.bg-gradient-to-t,
-html:not(.dark) .text-white.bg-gradient-to-b,
-html:not(.dark) .text-white[class*="bg-neon"],
-html:not(.dark) .text-white[class*="bg-red-5"],
-html:not(.dark) .text-white[class*="bg-red-6"],
-html:not(.dark) .text-white[class*="bg-green-5"],
-html:not(.dark) .text-white[class*="bg-green-6"],
-html:not(.dark) .text-white[class*="bg-blue-5"],
-html:not(.dark) .text-white[class*="bg-blue-6"],
-html:not(.dark) .text-white[class*="bg-purple-5"],
-html:not(.dark) .text-white[class*="bg-purple-6"],
-html:not(.dark) .text-white[class*="bg-pink-5"],
-html:not(.dark) .text-white[class*="bg-pink-6"],
-html:not(.dark) .text-white[class*="bg-yellow-5"],
-html:not(.dark) .text-white[class*="bg-orange-5"],
-html:not(.dark) .text-white[class*="bg-indigo-5"] {
-  color: #ffffff !important;
+/* ============================================================
+   ADDITIVE COLOR THEMES (opt-in)
+   Default (no theme-* class) keeps the current TailAdmin look.
+   Neon / Gold / Night re-skin the app only when selected.
+   ============================================================ */
+@layer base {
+  html.theme-neon.dark {
+    --t-page-bg: #060612; --t-page-text: #e2e8f0; --t-card-bg: rgba(15,15,42,0.85);
+    --t-card-border: rgba(0,212,255,0.14); --t-surface-bg: rgba(26,26,62,0.6);
+    --t-muted-text: #94a3b8; --t-accent: #00d4ff;
+  }
+  html.theme-gold.dark {
+    --t-page-bg: #0a0a0a; --t-page-text: #f5f0e8; --t-card-bg: rgba(20,18,15,0.92);
+    --t-card-border: rgba(212,168,67,0.16); --t-surface-bg: rgba(30,28,22,0.6);
+    --t-muted-text: #a0998c; --t-accent: #d4a843;
+  }
+  html.theme-night.dark {
+    --t-page-bg: #0f0d0a; --t-page-text: #d4cfc7; --t-card-bg: rgba(20,18,15,0.92);
+    --t-card-border: rgba(180,140,100,0.14); --t-surface-bg: rgba(26,24,20,0.6);
+    --t-muted-text: #a0988c; --t-accent: #c4a868;
+  }
+}
+
+/* Remaps active ONLY when a theme-* class is present (default is untouched). */
+html[class*="theme-"].dark body { background: var(--t-page-bg) !important; }
+html[class*="theme-"].dark .bg-gaming-dark,
+html[class*="theme-"].dark .bg-gaming-darker { background: var(--t-page-bg) !important; }
+html[class*="theme-"].dark .bg-boxdark,
+html[class*="theme-"].dark .dark\:bg-boxdark,
+html[class*="theme-"].dark .bg-white.dark\:bg-boxdark,
+html[class*="theme-"].dark .bg-gaming-card,
+html[class*="theme-"].dark .bg-surface-1,
+html[class*="theme-"].dark .dark\:bg-surface-1 { background: var(--t-card-bg) !important; }
+html[class*="theme-"].dark .bg-boxdark-2,
+html[class*="theme-"].dark .dark\:bg-boxdark-2,
+html[class*="theme-"].dark .bg-gray-2,
+html[class*="theme-"].dark .bg-gray,
+html[class*="theme-"].dark .bg-meta-4,
+html[class*="theme-"].dark .dark\:bg-meta-4,
+html[class*="theme-"].dark .bg-gaming-surface,
+html[class*="theme-"].dark .bg-surface-2,
+html[class*="theme-"].dark .bg-surface-3 { background: var(--t-surface-bg) !important; }
+html[class*="theme-"].dark .app-surface { background-image: none !important; }
+html[class*="theme-"].dark .border-stroke,
+html[class*="theme-"].dark .dark\:border-strokedark,
+html[class*="theme-"].dark .border-gaming-border,
+html[class*="theme-"].dark .border-line-subtle { border-color: var(--t-card-border) !important; }
+html[class*="theme-"].dark .text-black.dark\:text-white,
+html[class*="theme-"].dark .dark\:text-white { color: var(--t-page-text) !important; }
+html[class*="theme-"].dark .text-body,
+html[class*="theme-"].dark .dark\:text-bodydark,
+html[class*="theme-"].dark .text-bodydark2 { color: var(--t-muted-text) !important; }
+html[class*="theme-"].dark .text-primary,
+html[class*="theme-"].dark .text-neon-blue,
+html[class*="theme-"].dark .text-accent-cyan,
+html[class*="theme-"].dark .eyebrow { color: var(--t-accent) !important; }
+html[class*="theme-"].dark .dark\:hover\:bg-meta-4:hover { background: var(--t-surface-bg) !important; }
+html[class*="theme-"].dark .dark\:hover\:text-white:hover { color: var(--t-page-text) !important; }
+
+/* ============================================================
+   SHELL (issue #61 step 2): sidebar rail + app header.
+   The rail is always dark (esport cockpit) whatever the theme: it
+   re-declares the dark tokens locally so every primitive rendered
+   inside it (Avatar, Badge, pills) uses the dark palette.
+   ============================================================ */
+@layer components {
+  .sidebar-rail {
+    --surface-0: 10 14 25;
+    --surface-1: 17 23 38;
+    --surface-2: 24 32 52;
+    --surface-3: 32 43 68;
+    --line-subtle: 146 160 196;
+    --line-subtle-a: 0.14;
+    --line-strong-a: 0.3;
+    --ink-1: 238 242 248;
+    --ink-2: 166 176 198;
+    --ink-3: 110 122 149;
+    --accent-cyan: 0 212 255;
+    --accent-violet: 168 85 247;
+    --accent-gold: 242 181 68;
+    --accent-red: 255 70 85;
+    --accent-green: 34 197 94;
+    --primary: 0 212 255;
+    --on-primary: 6 12 24;
+    --glow-cyan: 0 0 0 1px rgb(0 212 255 / 0.35), 0 0 24px rgb(0 212 255 / 0.25);
+    color-scheme: dark;
+    background-color: rgb(var(--surface-0));
+    background-image:
+      radial-gradient(420px 260px at 0% 0%, rgb(var(--accent-cyan) / 0.1), transparent 70%),
+      linear-gradient(180deg, rgb(var(--surface-1) / 0.35), transparent 40%);
+    border-right: 1px solid rgb(var(--line-subtle) / 0.12);
+  }
+
+  /* Active item: soft fill + left glow bar (rendered by the component). */
+  .rail-active {
+    background: linear-gradient(90deg, rgb(var(--primary) / 0.14), rgb(var(--primary) / 0.03) 70%, transparent);
+  }
+
+  /* Sticky app header: translucent surface with blur. */
+  .app-header {
+    background-color: rgb(var(--surface-1) / 0.82);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
+    border-bottom: 1px solid rgb(var(--line-subtle) / var(--line-subtle-a));
+  }
+
+  /* Square icon button used across the header (bell, chat, palette, search). */
+  .header-btn {
+    @apply relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-line-subtle bg-surface-2/60 text-ink-2 transition-[color,border-color,background-color] duration-fast ease-out hover:border-line-strong hover:bg-surface-2 hover:text-ink-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50;
+  }
+
+  /* Dropdown panel anchored under a header button. */
+  .header-menu {
+    @apply rounded-lg border border-line-subtle bg-surface-1 shadow-elev-3;
+  }
+}
+
+/* Palette-specific primary for the gold / night skins (dark only): buttons,
+   focus rings, tabs and the sidebar glow follow the palette accent. */
+@layer base {
+  html.theme-gold.dark {
+    --primary: 212 168 67;
+    --on-primary: 20 18 15;
+    --accent-cyan: 212 168 67;
+    --glow-cyan: 0 0 0 1px rgb(212 168 67 / 0.4), 0 0 24px rgb(212 168 67 / 0.25);
+  }
+  html.theme-night.dark {
+    --primary: 196 168 104;
+    --on-primary: 15 13 10;
+    --accent-cyan: 196 168 104;
+    --glow-cyan: 0 0 0 1px rgb(196 168 104 / 0.4), 0 0 24px rgb(196 168 104 / 0.22);
+  }
+  /* The rail re-declares its tokens: keep it on the palette accent as well. */
+  html.theme-gold.dark .sidebar-rail {
+    --primary: 212 168 67;
+    --on-primary: 20 18 15;
+    --accent-cyan: 212 168 67;
+    --glow-cyan: 0 0 0 1px rgb(212 168 67 / 0.4), 0 0 24px rgb(212 168 67 / 0.25);
+  }
+  html.theme-night.dark .sidebar-rail {
+    --primary: 196 168 104;
+    --on-primary: 15 13 10;
+    --accent-cyan: 196 168 104;
+    --glow-cyan: 0 0 0 1px rgb(196 168 104 / 0.4), 0 0 24px rgb(196 168 104 / 0.22);
+  }
+}
+
+/* Shell surfaces follow the selected skin like the other cards do. */
+html[class*="theme-"].dark .sidebar-rail { background-color: var(--t-page-bg); background-image: none; border-right-color: var(--t-card-border); }
+html[class*="theme-"].dark .app-header { background-color: var(--t-card-bg); border-bottom-color: var(--t-card-border); }
+html[class*="theme-"].dark .header-menu { background: var(--t-card-bg) !important; border-color: var(--t-card-border) !important; }
+
+/* Scrollable rows without a visible scrollbar (tabs, rails). */
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }

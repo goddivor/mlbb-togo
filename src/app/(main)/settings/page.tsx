@@ -1,323 +1,409 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   Settings as SettingsIcon, User, Bell, Shield, Palette,
-  Trash2, Save, Moon, Sun, Eye, EyeOff,
+  Trash2, Save, Moon, Sun, Sparkles, Zap, Crown,
 } from 'lucide-react';
-import { Card, Button, Input, Badge, Tabs } from '@/components/ui';
-import { useThemeStore } from '@/store/useStore';
-import { MLBB_RANKS, MLBB_ROLES } from '@/lib/constants';
+import { Card, Button, Input, Textarea, Tabs, PageHeader, SectionTitle, Avatar } from '@/components/ui';
+import { cn } from '@/lib/helpers';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import { useThemeStore, useAuthStore } from '@/store/useStore';
+import { api, setToken, avatarSrc } from '@/lib/api';
+import { isPushSupported, isPushEnabled, enablePush, disablePush } from '@/lib/push';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
+import CitySelect from '@/components/geo/CitySelect';
+
+const DEFAULT_NOTIFS = { friends: true, messages: true, teams: true };
+const DEFAULT_PRIVACY = { profilePublic: true, showStats: true, showOnline: true, allowInvites: true };
+
+const PALETTES: { id: string; label: string; icon: any; color: string; swatch: string }[] = [
+  { id: 'default', label: 'Défaut', icon: Sparkles, color: '#00d4ff', swatch: 'linear-gradient(135deg, #0a0e19 0%, #111726 55%, #00d4ff 140%)' },
+  { id: 'neon', label: 'Néon', icon: Zap, color: '#00d4ff', swatch: 'linear-gradient(135deg, #060612 0%, #0f0f2a 55%, #a855f7 140%)' },
+  { id: 'gold', label: 'Gold', icon: Crown, color: '#d4a843', swatch: 'linear-gradient(135deg, #0a0a0a 0%, #14120f 55%, #d4a843 140%)' },
+  { id: 'night', label: 'Night', icon: Moon, color: '#c4a868', swatch: 'linear-gradient(135deg, #0f0d0a 0%, #1a1814 55%, #c4a868 140%)' },
+];
+
+/** Accessible switch shared by every toggle row. */
+function Switch({ checked, onChange, disabled, label, size = 'md' }: { checked: boolean; onChange: () => void; disabled?: boolean; label: string; size?: 'md' | 'lg' }) {
+  const w = size === 'lg' ? 'h-7 w-14' : 'h-6 w-12';
+  const knob = size === 'lg' ? 'h-5 w-5' : 'h-4 w-4';
+  const travel = size === 'lg' ? 28 : 24;
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={onChange}
+      disabled={disabled}
+      className={cn(
+        'relative shrink-0 rounded-full transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-60',
+        w,
+        checked ? 'bg-primary' : 'bg-surface-3 ring-1 ring-inset ring-line-strong',
+      )}
+    >
+      <motion.span
+        animate={{ x: checked ? travel : 2 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+        className={cn('absolute top-1 flex items-center justify-center rounded-full bg-white shadow-elev-1', knob)}
+      />
+    </button>
+  );
+}
+
+/** Setting row: label + description on the left, control on the right. */
+function SettingRow({ label, desc, control, highlight }: { label: string; desc: string; control: React.ReactNode; highlight?: boolean }) {
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-between gap-4 rounded border p-4',
+        highlight ? 'border-primary/30 bg-primary/5' : 'border-line-subtle bg-surface-2/60',
+      )}
+    >
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-ink-1">{label}</p>
+        <p className="mt-0.5 text-xs text-ink-2">{desc}</p>
+      </div>
+      {control}
+    </div>
+  );
+}
 
 export default function Settings() {
-  const { theme, toggleTheme } = useThemeStore();
-  const [activeTab, setActiveTab] = useState('profile');
-  const [showPassword, setShowPassword] = useState(false);
+  const { theme, toggleTheme, palette, setPalette } = useThemeStore();
+  const userProfile = useAuthStore((s: any) => s.userProfile);
+  const setUserProfile = useAuthStore((s: any) => s.setUserProfile);
+  const setUser = useAuthStore((s: any) => s.setUser);
+  const logout = useAuthStore((s: any) => s.logout);
+  const router = useRouter();
   const t = useT();
 
+  const [activeTab, setActiveTab] = useState('profile');
+  const [showDelete, setShowDelete] = useState(false);
+  const [saving, setSaving] = useState<string | null>(null);
+
   const [profile, setProfile] = useState({
-    username: 'TogoKing',
-    email: 'togoking@mlbb.tg',
-    bio: 'Meilleur assassin du Togo 🇹🇬 | Mythic 800+',
-    rank: 'mythic',
-    role: 'assassin',
-    country: 'Togo',
-    city: 'Lomé',
+    username: '', email: '', bio: '', country: '', city: '',
   });
+  const [notifications, setNotifications] = useState<any>(DEFAULT_NOTIFS);
+  const [privacy, setPrivacy] = useState<any>(DEFAULT_PRIVACY);
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
 
-  const [notifications, setNotifications] = useState<any>({
-    matches: true,
-    tournaments: true,
-    teams: true,
-    forum: true,
-    email: false,
-  });
+  useEffect(() => {
+    setPushSupported(isPushSupported());
+    isPushEnabled().then(setPushOn);
+  }, []);
 
-  const [privacy, setPrivacy] = useState<any>({
-    profilePublic: true,
-    showStats: true,
-    showOnline: true,
-    allowInvites: true,
-  });
-
-  const handleSave = () => {
-    toast.success(t('settings.saved'));
+  const togglePush = async () => {
+    setPushBusy(true);
+    try {
+      if (pushOn) {
+        await disablePush();
+        setPushOn(false);
+        toast.success(t('settings.push.disabled'));
+      } else {
+        await enablePush();
+        setPushOn(true);
+        toast.success(t('settings.push.enabled'));
+      }
+    } catch (e: any) {
+      const code = e?.message;
+      toast.error(
+        code === 'push-denied'
+          ? t('settings.push.denied')
+          : code === 'push-unconfigured'
+            ? t('settings.push.unavailable')
+            : t('common.error'),
+      );
+    } finally {
+      setPushBusy(false);
+    }
   };
 
+  // Hydrate the form from the real profile.
+  useEffect(() => {
+    if (!userProfile) return;
+    setProfile({
+      username: userProfile.username || '',
+      email: userProfile.email || '',
+      bio: userProfile.bio || '',
+      country: userProfile.country || '',
+      city: userProfile.city || '',
+    });
+    setNotifications({ ...DEFAULT_NOTIFS, ...(userProfile.notifPrefs || {}) });
+    setPrivacy({ ...DEFAULT_PRIVACY, ...(userProfile.privacy || {}) });
+  }, [userProfile?.id]);
+
+  const myId = userProfile?.id;
+
+  const persist = async (key: string, patch: any) => {
+    if (!myId) return;
+    setSaving(key);
+    try {
+      const updated: any = await api.users.update(myId, patch);
+      setUser(updated);
+      setUserProfile(updated);
+      toast.success(t('settings.saved'));
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error'));
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const saveProfile = () =>
+    persist('profile', {
+      username: profile.username,
+      bio: profile.bio,
+      city: profile.city,
+      country: profile.country,
+    });
+  const saveNotifications = () => persist('notifications', { notifPrefs: notifications });
+  const savePrivacy = () => persist('privacy', { privacy });
+
+  const deleteAccount = async () => {
+    setSaving('delete');
+    try {
+      await api.users.deleteSelf();
+      setShowDelete(false);
+      logout();
+      setToken(null);
+      toast.success(t('settings.accountDeleted'));
+      router.push('/');
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error'));
+      setSaving(null);
+    }
+  };
+
+  const TABS = [
+    { id: 'profile', label: t('settings.tabProfile'), icon: User },
+    { id: 'notifications', label: t('settings.tabNotifications'), icon: Bell },
+    { id: 'privacy', label: t('settings.tabPrivacy'), icon: Shield },
+    { id: 'appearance', label: t('settings.tabAppearance'), icon: Palette },
+  ];
+
+  const saveBar = (key: string, onClick: () => void) => (
+    <div className="flex justify-end border-t border-line-subtle pt-4">
+      <Button onClick={onClick} loading={saving === key}>
+        <Save size={16} />
+        {t('settings.save')}
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-
-      <div className="mb-8">
-        <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-          <SettingsIcon className="inline w-8 h-8 mr-2 text-gray-400" />
-          {t('settings.title')}
-        </h1>
-        <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-          {t('settings.subtitle')}
-        </p>
-      </div>
-
-      <Tabs
-        tabs={[
-          { id: 'profile', label: t('settings.tabProfile'), icon: User },
-          { id: 'notifications', label: t('settings.tabNotifications'), icon: Bell },
-          { id: 'privacy', label: t('settings.tabPrivacy'), icon: Shield },
-          { id: 'appearance', label: t('settings.tabAppearance'), icon: Palette },
-        ]}
-        active={activeTab}
-        onChange={setActiveTab}
-        className="mb-6"
+    <div className="mx-auto max-w-4xl space-y-6">
+      <PageHeader
+        eyebrow={t('settings.eyebrow')}
+        icon={<SettingsIcon size={22} />}
+        title={t('settings.title')}
+        subtitle={t('settings.subtitle')}
+        variant="cyan"
       />
 
+      <div className="overflow-x-auto whitespace-nowrap">
+        <Tabs variant="underline" tabs={TABS} active={activeTab} onChange={setActiveTab} />
+      </div>
+
       {activeTab === 'profile' && (
-        <div className="space-y-6">
-          <Card>
-            <h3 className={`font-bold text-lg mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              {t('settings.profileInfo')}
-            </h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label={t('settings.username')}
-                  value={profile.username}
-                  onChange={(e: any) => setProfile({ ...profile, username: e.target.value })}
-                />
-                <Input
-                  label={t('settings.email')}
-                  type="email"
-                  value={profile.email}
-                  onChange={(e: any) => setProfile({ ...profile, email: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('settings.bio')}</label>
-                <textarea
-                  value={profile.bio}
-                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                  rows={3}
-                  className={`w-full px-4 py-3 rounded-lg border bg-gaming-card text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 resize-none ${
-                    theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                  }`}
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('settings.mlbbRank')}</label>
-                  <select
-                    value={profile.rank}
-                    onChange={(e) => setProfile({ ...profile, rank: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-lg border bg-gaming-card text-white focus:outline-none focus:border-neon-blue/50 ${
-                      theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                    }`}
-                  >
-                    {MLBB_RANKS.map((r) => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('settings.mainRole')}</label>
-                  <select
-                    value={profile.role}
-                    onChange={(e) => setProfile({ ...profile, role: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-lg border bg-gaming-card text-white focus:outline-none focus:border-neon-blue/50 ${
-                      theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                    }`}
-                  >
-                    {MLBB_ROLES.map((r) => (
-                      <option key={r.id} value={r.id}>{r.icon} {r.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <h3 className={`font-bold text-lg mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              {t('settings.changePassword')}
-            </h3>
-            <div className="space-y-4">
-              <div className="relative">
-                <Input label={t('settings.currentPassword')} type={showPassword ? 'text' : 'password'} placeholder="••••••••" />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-9 text-gray-500 hover:text-gray-300"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input label={t('settings.newPassword')} type="password" placeholder="••••••••" />
-                <Input label={t('settings.confirmPassword')} type="password" placeholder="••••••••" />
-              </div>
-            </div>
-          </Card>
-
-          <div className="flex justify-end">
-            <Button onClick={handleSave}>
-              <Save size={16} />
-              {t('settings.save')}
-            </Button>
+        <Card className="space-y-6">
+          <div className="flex items-center gap-4">
+            <Avatar
+              name={userProfile?.displayName || userProfile?.username || '?'}
+              src={userProfile?.avatar ? avatarSrc(userProfile.avatar, 160) : undefined}
+              size="xl"
+              ring
+            />
+            <SectionTitle
+              eyebrow={userProfile?.username ? `@${userProfile.username}` : undefined}
+              title={t('settings.profileInfo')}
+              description={t('settings.subtitle')}
+            />
           </div>
-        </div>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Input
+                label={t('settings.username')}
+                value={profile.username}
+                onChange={(e: any) => setProfile({ ...profile, username: e.target.value })}
+              />
+              <Input
+                label={t('settings.email')}
+                type="email"
+                value={profile.email}
+                disabled
+                readOnly
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <CitySelect
+                label={t('settings.city')}
+                value={profile.city}
+                onChange={(city) => setProfile({ ...profile, city })}
+              />
+              <Input
+                label={t('settings.country')}
+                value={profile.country}
+                onChange={(e: any) => setProfile({ ...profile, country: e.target.value })}
+              />
+            </div>
+            <p className="-mt-2 text-xs text-ink-3">{t('settings.cityHint')}</p>
+            <Textarea
+              label={t('settings.bio')}
+              value={profile.bio}
+              onChange={(e: any) => setProfile({ ...profile, bio: e.target.value })}
+              rows={3}
+            />
+          </div>
+          {saveBar('profile', saveProfile)}
+        </Card>
       )}
 
       {activeTab === 'notifications' && (
-        <Card>
-          <h3 className={`font-bold text-lg mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            {t('settings.notifications.title')}
-          </h3>
-          <div className="space-y-4">
+        <Card className="space-y-6">
+          <SectionTitle title={t('settings.notifications.title')} />
+
+          <div className="space-y-3">
+            {pushSupported && (
+              <SettingRow
+                highlight
+                label={t('settings.push.title')}
+                desc={t('settings.push.desc')}
+                control={<Switch checked={pushOn} onChange={togglePush} disabled={pushBusy} label={t('settings.push.title')} />}
+              />
+            )}
             {[
-              { key: 'matches', label: t('settings.notifications.matches'), desc: t('settings.notifications.matchesDesc') },
-              { key: 'tournaments', label: t('settings.notifications.tournaments'), desc: t('settings.notifications.tournamentsDesc') },
+              { key: 'friends', label: t('settings.notifications.friends'), desc: t('settings.notifications.friendsDesc') },
+              { key: 'messages', label: t('settings.notifications.messages'), desc: t('settings.notifications.messagesDesc') },
               { key: 'teams', label: t('settings.notifications.teams'), desc: t('settings.notifications.teamsDesc') },
-              { key: 'forum', label: t('settings.notifications.forum'), desc: t('settings.notifications.forumDesc') },
-              { key: 'email', label: t('settings.notifications.email'), desc: t('settings.notifications.emailDesc') },
             ].map((item) => (
-              <div key={item.key} className="flex items-center justify-between p-3 rounded-lg bg-gaming-surface/30">
-                <div>
-                  <p className={`font-medium text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{item.label}</p>
-                  <p className="text-xs text-gray-400">{item.desc}</p>
-                </div>
-                <button
-                  onClick={() => setNotifications({ ...notifications, [item.key]: !notifications[item.key] })}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${
-                    notifications[item.key] ? 'bg-neon-blue' : 'bg-gaming-border'
-                  }`}
-                >
-                  <motion.div
-                    animate={{ x: notifications[item.key] ? 24 : 2 }}
-                    className="absolute top-1 w-4 h-4 rounded-full bg-white"
+              <SettingRow
+                key={item.key}
+                label={item.label}
+                desc={item.desc}
+                control={
+                  <Switch
+                    checked={!!notifications[item.key]}
+                    onChange={() => setNotifications({ ...notifications, [item.key]: !notifications[item.key] })}
+                    label={item.label}
                   />
-                </button>
-              </div>
+                }
+              />
             ))}
           </div>
-          <div className="flex justify-end mt-6">
-            <Button onClick={handleSave}>
-              <Save size={16} />
-              {t('settings.save')}
-            </Button>
-          </div>
+          {saveBar('notifications', saveNotifications)}
         </Card>
       )}
 
       {activeTab === 'privacy' && (
-        <Card>
-          <h3 className={`font-bold text-lg mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            {t('settings.privacy.title')}
-          </h3>
-          <div className="space-y-4">
-            {[
-              { key: 'profilePublic', label: t('settings.privacy.publicProfile'), desc: t('settings.privacy.publicProfileDesc') },
-              { key: 'showStats', label: t('settings.privacy.showStats'), desc: t('settings.privacy.showStatsDesc') },
-              { key: 'showOnline', label: t('settings.privacy.showOnline'), desc: t('settings.privacy.showOnlineDesc') },
-              { key: 'allowInvites', label: t('settings.privacy.allowInvites'), desc: t('settings.privacy.allowInvitesDesc') },
-            ].map((item) => (
-              <div key={item.key} className="flex items-center justify-between p-3 rounded-lg bg-gaming-surface/30">
-                <div>
-                  <p className={`font-medium text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{item.label}</p>
-                  <p className="text-xs text-gray-400">{item.desc}</p>
-                </div>
-                <button
-                  onClick={() => setPrivacy({ ...privacy, [item.key]: !privacy[item.key] })}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${
-                    privacy[item.key] ? 'bg-neon-blue' : 'bg-gaming-border'
-                  }`}
-                >
-                  <motion.div
-                    animate={{ x: privacy[item.key] ? 24 : 2 }}
-                    className="absolute top-1 w-4 h-4 rounded-full bg-white"
-                  />
-                </button>
-              </div>
-            ))}
-          </div>
+        <div className="space-y-6">
+          <Card className="space-y-6">
+            <SectionTitle title={t('settings.privacy.title')} />
+            <div className="space-y-3">
+              {[
+                { key: 'profilePublic', label: t('settings.privacy.publicProfile'), desc: t('settings.privacy.publicProfileDesc') },
+                { key: 'showStats', label: t('settings.privacy.showStats'), desc: t('settings.privacy.showStatsDesc') },
+                { key: 'showOnline', label: t('settings.privacy.showOnline'), desc: t('settings.privacy.showOnlineDesc') },
+                { key: 'allowInvites', label: t('settings.privacy.allowInvites'), desc: t('settings.privacy.allowInvitesDesc') },
+              ].map((item) => (
+                <SettingRow
+                  key={item.key}
+                  label={item.label}
+                  desc={item.desc}
+                  control={
+                    <Switch
+                      checked={!!privacy[item.key]}
+                      onChange={() => setPrivacy({ ...privacy, [item.key]: !privacy[item.key] })}
+                      label={item.label}
+                    />
+                  }
+                />
+              ))}
+            </div>
+            {saveBar('privacy', savePrivacy)}
+          </Card>
 
-          <div className="mt-8 pt-6 border-t border-gaming-border">
-            <h4 className="text-red-400 font-bold mb-3">{t('settings.privacy.dangerZone')}</h4>
-            <Button variant="danger">
+          <Card accent="red" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="eyebrow mb-1 !text-accent-red">{t('settings.privacy.dangerZone')}</p>
+              <p className="text-sm text-ink-2">{t('settings.deleteConfirm')}</p>
+            </div>
+            <Button variant="danger" size="sm" onClick={() => setShowDelete(true)} className="shrink-0">
               <Trash2 size={16} />
               {t('settings.privacy.deleteAccount')}
             </Button>
-          </div>
-
-          <div className="flex justify-end mt-6">
-            <Button onClick={handleSave}>
-              <Save size={16} />
-              {t('settings.save')}
-            </Button>
-          </div>
-        </Card>
+          </Card>
+        </div>
       )}
 
       {activeTab === 'appearance' && (
-        <Card>
-          <h3 className={`font-bold text-lg mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            {t('settings.appearance.title')}
-          </h3>
+        <Card className="space-y-6">
+          <SectionTitle title={t('settings.appearance.title')} />
 
-          <div className="space-y-6">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-gaming-surface/30">
+          <SettingRow
+            label={t('settings.appearance.darkTheme')}
+            desc={theme === 'dark' ? t('settings.appearance.darkDesc') : t('settings.appearance.lightDesc')}
+            control={
               <div className="flex items-center gap-3">
-                {theme === 'dark' ? <Moon size={20} className="text-neon-blue" /> : <Sun size={20} className="text-yellow-400" />}
-                <div>
-                  <p className={`font-medium text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                    {t('settings.appearance.darkTheme')}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {theme === 'dark' ? t('settings.appearance.darkDesc') : t('settings.appearance.lightDesc')}
-                  </p>
-                </div>
+                {theme === 'dark' ? <Moon size={18} className="text-primary" /> : <Sun size={18} className="text-accent-gold" />}
+                <Switch size="lg" checked={theme === 'dark'} onChange={toggleTheme} label={t('settings.appearance.darkTheme')} />
               </div>
-              <button
-                onClick={toggleTheme}
-                className={`relative w-14 h-7 rounded-full transition-colors ${
-                  theme === 'dark' ? 'bg-neon-blue' : 'bg-yellow-400'
-                }`}
-              >
-                <motion.div
-                  animate={{ x: theme === 'dark' ? 28 : 2 }}
-                  className="absolute top-1 w-5 h-5 rounded-full bg-white flex items-center justify-center"
-                >
-                  {theme === 'dark' ? <Moon size={12} className="text-neon-blue" /> : <Sun size={12} className="text-yellow-500" />}
-                </motion.div>
-              </button>
-            </div>
+            }
+          />
 
-            <div>
-              <p className="text-sm text-gray-400 mb-3">{t('settings.appearance.preview')}</p>
-              <div className="grid grid-cols-2 gap-4">
-                <div className={`p-4 rounded-xl border ${
-                  theme === 'dark'
-                    ? 'bg-gaming-card border-gaming-border'
-                    : 'bg-white border-gray-200'
-                }`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-blue to-neon-purple" />
-                    <div>
-                      <p className={`text-sm font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('settings.appearance.previewCard')}</p>
-                      <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('settings.appearance.previewStyle')}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 rounded-xl bg-gradient-to-br from-neon-blue/20 to-neon-purple/20 border border-neon-blue/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="neon" size="sm">{t('settings.appearance.previewGlow')}</Badge>
-                  </div>
-                  <p className="text-sm text-white font-bold">{t('settings.appearance.previewEffect')}</p>
-                </div>
-              </div>
+          <div>
+            <p className="eyebrow mb-3">{t('settings.appearance.colorTheme')}</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {PALETTES.map((p) => {
+                const active = (palette || 'default') === p.id;
+                const Icon = p.icon;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setPalette(p.id)}
+                    aria-pressed={active}
+                    className={cn(
+                      'group flex flex-col overflow-hidden rounded border text-left transition-[border-color,box-shadow,transform] duration-base ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+                      active ? 'border-primary shadow-glow-cyan' : 'border-line-subtle hover:border-line-strong',
+                    )}
+                  >
+                    <span aria-hidden="true" className="relative block h-16 w-full cut-corners-sm" style={{ background: p.swatch }}>
+                      <span className="absolute bottom-2 left-2 h-1.5 w-8 rounded-sm" style={{ background: p.color }} />
+                      <span className="absolute bottom-2 left-11 h-1.5 w-4 rounded-sm bg-white/30" />
+                    </span>
+                    <span className="flex items-center gap-2 px-3 py-2.5">
+                      <Icon size={14} style={{ color: p.color }} />
+                      <span className={cn('text-sm font-semibold', active ? 'text-ink-1' : 'text-ink-2')}>
+                        {p.id === 'default' ? t('settings.appearance.paletteDefault') : p.label}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </Card>
       )}
+
+      {/* Account deletion confirmation */}
+      <ConfirmModal
+        open={showDelete}
+        onClose={() => setShowDelete(false)}
+        onConfirm={deleteAccount}
+        loading={saving === 'delete'}
+        variant="danger"
+        title={t('settings.privacy.deleteAccount')}
+        message={t('settings.deleteConfirm')}
+        confirmLabel={t('settings.privacy.deleteAccount')}
+      />
     </div>
   );
 }

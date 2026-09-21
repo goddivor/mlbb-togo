@@ -2,26 +2,32 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { ArrowLeft, MapPin, Trophy, Target, Star, Flame, TrendingUp, UserPlus, UserCheck, UserMinus, Check, X } from 'lucide-react';
-import { Card, Badge, StatCard, Button } from '@/components/ui';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, MapPin, Trophy, UserPlus, UserCheck, UserMinus, Check, X, MessageSquare } from 'lucide-react';
+import { Card, Badge, Button, EmptyState, SectionTitle, Skeleton, StatTile } from '@/components/ui';
 import { api, avatarSrc, mlbbImg } from '@/lib/api';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
-import RoleIcon from '@/components/game/RoleIcon';
+import RankFrame from '@/components/game/RankFrame';
+import RoleIcon, { roleLabel } from '@/components/game/RoleIcon';
+import PlayerStatsSection from '@/components/profile/PlayerStatsSection';
+import MatchHistory from '@/components/profile/MatchHistory';
+import LevelBadge from '@/components/gamification/LevelBadge';
 import { useAuthStore } from '@/store/useStore';
 import { useT } from '@/lib/i18n';
+import { cn } from '@/lib/helpers';
 import toast from 'react-hot-toast';
 
 export default function PublicProfilePage() {
   const t = useT();
   const params = useParams();
+  const router = useRouter();
   const id = String(params?.id || '');
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const myId = useAuthStore((s: any) => s.user?.id);
   const [fstatus, setFstatus] = useState<string>('none');
   const [fbusy, setFbusy] = useState(false);
+  const [level, setLevel] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -31,6 +37,10 @@ export default function PublicProfilePage() {
       .then(setUser)
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
+    api.gamification
+      .user(id)
+      .then((g: any) => setLevel(g?.level ?? null))
+      .catch(() => setLevel(null));
   }, [id]);
 
   useEffect(() => {
@@ -51,62 +61,122 @@ export default function PublicProfilePage() {
     }
   };
 
+  const backLink = (
+    <Link href="/players" className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-2 transition-colors hover:text-ink-1">
+      <ArrowLeft size={16} /> {t('users.back')}
+    </Link>
+  );
+
   if (loading) {
     return (
-      <div className="p-6 max-w-4xl mx-auto flex items-center justify-center min-h-[50vh]">
-        <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
+      <div className="space-y-6" aria-busy="true">
+        {backLink}
+        <Card>
+          <div className="flex flex-col items-center gap-5 sm:flex-row">
+            <Skeleton className="h-24 w-24 rounded-md" />
+            <div className="flex-1 space-y-3">
+              <Skeleton className="h-7 w-1/3" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-1/4" />
+            </div>
+          </div>
+        </Card>
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-lg" />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="p-6 max-w-4xl mx-auto">
-        <Link href="/players" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-6">
-          <ArrowLeft size={16} /> {t('users.back')}
-        </Link>
-        <p className="text-center text-gray-500 py-20">{t('users.notFound')}</p>
+      <div className="space-y-6">
+        {backLink}
+        <EmptyState icon={<UserPlus size={26} />} title={t('users.notFound')} />
       </div>
     );
   }
 
-  const stats = user.gameStats || {};
   const heroes: any[] = user.gameFrequentHeroes || [];
   const roles: any[] = user.gameRoles || [];
   const name = user.displayName || user.username;
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-      <Link href="/players" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-4">
-        <ArrowLeft size={16} /> {t('users.back')}
-      </Link>
+    <div className="space-y-6">
+      {backLink}
 
-      <Card className="mb-6" hover={false}>
-        <div className="flex flex-col sm:flex-row items-center gap-5">
-          {user.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarSrc(user.avatar, 160)}
-              alt={name}
-              referrerPolicy="no-referrer"
-              className="w-24 h-24 rounded-2xl object-cover border-2 border-neon-blue/40"
-            />
-          ) : (
-            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-3xl font-bold text-white">
-              {name?.[0]?.toUpperCase() || 'J'}
-            </div>
-          )}
+      {/* Profile header */}
+      <Card className="relative overflow-hidden">
+        <span aria-hidden="true" className="absolute -right-8 -top-8 h-16 w-16 rotate-45 bg-primary/10" />
+        <div className="relative flex flex-col items-center gap-5 sm:flex-row sm:items-start">
+          <RankFrame name={name} src={user.avatar ? avatarSrc(user.avatar, 200) : null} rank={user.gameRank} size={96} />
 
-          <div className="flex-1 text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-start gap-2">
-              <h1 className="text-2xl md:text-3xl font-bold text-white">{name}</h1>
+          <div className="min-w-0 flex-1 text-center sm:text-left">
+            <p className="eyebrow mb-1.5">
+              {t('nav.section.community')}
+              {user.username && <span className="ml-2 normal-case tracking-normal text-ink-3">@{user.username}</span>}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+              <h1 className="font-display text-2xl font-bold tracking-tight2 text-ink-1 md:text-3xl">{name}</h1>
+              <LevelBadge level={level} />
               {user.roleUser && user.roleUser !== 'user' && (
-                <Badge variant="purple" size="sm">{user.roleUser}</Badge>
+                <Badge variant="purple" size="sm" className="uppercase">{user.roleUser}</Badge>
               )}
             </div>
 
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 sm:justify-start">
+              {user.gameRank && (
+                <div className="flex items-center gap-2">
+                  {hasRankBadge(user.gameRank) ? (
+                    <RankBadge rank={user.gameRank} size={36} />
+                  ) : (
+                    <Trophy size={18} className="text-accent-gold" />
+                  )}
+                  <StatTile
+                    label={t('dashboard.currentRank')}
+                    value={
+                      <span className="text-base">
+                        {user.gameRank}
+                        {user.gameRankLevel != null && <span className="ml-1.5 text-xs font-semibold text-ink-3">{user.gameRankLevel} pts</span>}
+                      </span>
+                    }
+                  />
+                </div>
+              )}
+              {user.gamePeakRank && (
+                <div className="flex items-center gap-2">
+                  {hasRankBadge(user.gamePeakRank) ? (
+                    <RankBadge rank={user.gamePeakRank} size={30} />
+                  ) : (
+                    <Trophy size={16} className="text-accent-gold" />
+                  )}
+                  <StatTile label={t('dashboard.peakRank')} value={<span className="text-base">{user.gamePeakRank}</span>} accent="gold" />
+                </div>
+              )}
+              {user.gameLevel != null && <Badge variant="neon" size="sm">{t('dashboard.level')} {user.gameLevel}</Badge>}
+              {user.country && (
+                <span className="inline-flex items-center gap-1 text-xs text-ink-2">
+                  <MapPin size={12} /> {user.country}
+                </span>
+              )}
+            </div>
+
+            {roles.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 sm:justify-start">
+                <span className="text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('users.roles')}</span>
+                {roles.map((r: any) => (
+                  <span key={r.role} className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-1 text-[11px] font-semibold text-ink-2">
+                    <RoleIcon role={r.role} size={13} />
+                    {roleLabel(t, r.role)}
+                  </span>
+                ))}
+              </div>
+            )}
+
             {myId && id !== myId && (
-              <div className="flex items-center justify-center sm:justify-start gap-2 mt-3">
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                 {fstatus === 'none' && (
                   <Button size="sm" disabled={fbusy} onClick={() => friendAct(() => api.friends.request(id), 'pending_out', t('friends.sent'))}>
                     <UserPlus size={15} /> {t('friends.add')}
@@ -132,6 +202,17 @@ export default function PublicProfilePage() {
                     <Badge variant="green" size="md" className="gap-1">
                       <UserCheck size={14} /> {t('friends.friends')}
                     </Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() =>
+                        router.push(
+                          `/messages?to=${id}&name=${encodeURIComponent(user.displayName || user.username)}`,
+                        )
+                      }
+                    >
+                      <MessageSquare size={14} /> {t('friends.chat')}
+                    </Button>
                     <Button size="sm" variant="ghost" disabled={fbusy} onClick={() => friendAct(() => api.friends.remove(id), 'none', t('friends.removed'))}>
                       <UserMinus size={14} /> {t('friends.remove')}
                     </Button>
@@ -139,93 +220,56 @@ export default function PublicProfilePage() {
                 )}
               </div>
             )}
-
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-2">
-              {user.gameRank && (
-                <div className="flex items-center gap-2">
-                  {hasRankBadge(user.gameRank) ? (
-                    <RankBadge rank={user.gameRank} size={34} />
-                  ) : (
-                    <Trophy size={18} className="text-yellow-400" />
-                  )}
-                  <div className="leading-tight text-left">
-                    <p className="text-sm font-bold text-white">{user.gameRank}</p>
-                    {user.gameRankLevel != null && (
-                      <p className="text-[11px] text-gray-400">{user.gameRankLevel} pts</p>
-                    )}
-                  </div>
-                </div>
-              )}
-              {user.gameLevel != null && <Badge variant="neon" size="sm">{t('dashboard.level')} {user.gameLevel}</Badge>}
-              {user.country && (
-                <span className="inline-flex items-center gap-1 text-xs text-gray-400">
-                  <MapPin size={12} /> {user.country}
-                </span>
-              )}
-            </div>
-
-            {roles.length > 0 && (
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-2">
-                <span className="text-xs text-gray-500">{t('users.roles')} :</span>
-                {roles.map((r: any) => (
-                  <Badge key={r.role} variant="purple" size="sm" className="gap-1">
-                    <RoleIcon role={r.role} size={14} />
-                    {t(`role.${r.role}`)}
-                  </Badge>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       </Card>
 
       {!user.hasGame ? (
-        <Card className="text-center py-10 text-gray-500" hover={false}>
+        <Card className="py-10 text-center text-sm text-ink-3">
           {t('users.noGame')}
         </Card>
       ) : (
-        <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatCard label={t('dashboard.detail.wins')} value={stats.wins ?? 0} icon={<TrendingUp size={16} />} />
-            <StatCard label={t('heroes.winRate')} value={`${stats.winRate ?? 0}%`} icon={<Target size={16} />} />
-            <StatCard label="MVP" value={stats.mvpCount ?? 0} icon={<Star size={16} />} />
-            <StatCard label="Streak" value={`${stats.winStreak ?? 0} 🔥`} icon={<Flame size={16} />} />
-          </div>
-
-          {heroes.length > 0 && (
-            <Card hover={false}>
-              <h3 className="font-bold text-white mb-4">{t('users.favoriteHeroes')}</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {heroes.map((h, i) => (
+        heroes.length > 0 && (
+          <Card>
+            <SectionTitle size="sm" title={t('users.favoriteHeroes')} className="mb-4" />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              {heroes.map((h, i) => {
+                const wr = Number(h.winRate ?? 0);
+                return (
                   <div
                     key={h.heroId ?? i}
-                    className="flex items-center gap-3 rounded-lg border border-gaming-border bg-gaming-surface/30 p-2.5"
+                    className="group relative aspect-[4/5] overflow-hidden rounded-lg border border-line-subtle bg-surface-2"
                   >
-                    {h.image ? (
+                    {h.image && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={mlbbImg(h.image, 80)}
+                        src={mlbbImg(h.image, 240)}
                         alt={h.name}
                         referrerPolicy="no-referrer"
-                        className="w-12 h-12 rounded-lg object-cover bg-gaming-dark"
+                        className="h-full w-full object-cover object-top transition-transform duration-slow ease-out group-hover:scale-105"
                       />
-                    ) : (
-                      <div className="w-12 h-12 rounded-lg bg-gaming-dark" />
                     )}
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-white truncate">{h.name}</p>
-                      <p className="text-xs text-gray-400">{h.matches} {t('dashboard.favorites.matches')}</p>
-                      <p className={`text-xs font-medium ${h.winRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
-                        {h.winRate}{t('dashboard.favorites.winRate')}
+                    <div className="absolute inset-0 bg-gradient-to-t from-surface-1 via-surface-1/40 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-2.5">
+                      <p className="truncate font-display text-sm font-bold leading-tight text-ink-1">{h.name}</p>
+                      <p className="mt-0.5 text-[11px] num text-ink-2">
+                        {h.matches} {t('dashboard.favorites.matches')}
+                        <span className={cn('ml-1.5 font-semibold', wr >= 50 ? 'text-accent-green' : 'text-accent-red')}>
+                          {h.winRate}{t('dashboard.favorites.winRate')}
+                        </span>
                       </p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </Card>
-          )}
-        </>
+                );
+              })}
+            </div>
+          </Card>
+        )
       )}
+
+      {/* Esport stats computed from the platform's matches */}
+      <PlayerStatsSection userId={id} />
+      <MatchHistory userId={id} />
     </div>
   );
 }

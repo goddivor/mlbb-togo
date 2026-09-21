@@ -1,14 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
-  Gamepad2, Check, Link2, Unlink, RefreshCw, ShieldCheck, Trophy, Star, Target, Flame,
+  Gamepad2, Check, Link2, Unlink, RefreshCw, ShieldCheck, User, Trophy, Star, Flame, Swords,
 } from 'lucide-react';
-import { Card, Badge, Button } from '@/components/ui';
+import { Card, Badge, Button, PageHeader, StatCard, StatRing, SectionTitle, Skeleton } from '@/components/ui';
+import RankFrame from '@/components/game/RankFrame';
+import { cn } from '@/lib/helpers';
+import { fadeUp, stagger, still } from '@/lib/motion';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useAuthStore } from '@/store/useStore';
 import { api, avatarSrc, mlbbImg } from '@/lib/api';
 import LinkGameModal from '@/components/profile/LinkGameModal';
+import LevelBadge from '@/components/gamification/LevelBadge';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
 
@@ -17,8 +22,18 @@ export default function ProfilePage() {
   const setUserProfile = useAuthStore((s: any) => s.setUserProfile);
   const setUser = useAuthStore((s: any) => s.setUser);
   const [linkGameOpen, setLinkGameOpen] = useState(false);
+  const [unlinkOpen, setUnlinkOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [level, setLevel] = useState<number | null>(null);
   const t = useT();
+  const reduce = useReducedMotion();
+
+  useEffect(() => {
+    api.gamification
+      .me()
+      .then((g: any) => setLevel(g?.level ?? null))
+      .catch(() => setLevel(null));
+  }, []);
 
   useEffect(() => {
     if (document.getElementById('gis-script')) return;
@@ -32,8 +47,14 @@ export default function ProfilePage() {
 
   if (!userProfile) {
     return (
-      <div className="p-6 max-w-4xl mx-auto flex items-center justify-center min-h-[50vh]">
-        <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
+      <div className="space-y-6">
+        <Skeleton className="h-52 w-full rounded-lg" />
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-lg" />
+          ))}
+        </div>
+        <Skeleton className="h-40 rounded-lg" />
       </div>
     );
   }
@@ -100,13 +121,13 @@ export default function ProfilePage() {
     }
   };
 
-  const unlinkGame = async () => {
-    if (!window.confirm(t('profile.gameUnlinkConfirm'))) return;
+  const doUnlinkGame = async () => {
     setBusy('unlink');
     try {
       const updated: any = await api.auth.unlinkMlbb();
       apply(updated);
       toast.success(t('profile.gameUnlinkSuccess'));
+      setUnlinkOpen(false);
     } catch (e: any) {
       toast.error(e?.message || t('profile.gameUnlinkError'));
     } finally {
@@ -114,205 +135,247 @@ export default function ProfilePage() {
     }
   };
 
-  const stats = userProfile.gameStats || {};
   const heroes: any[] = userProfile.gameFrequentHeroes || [];
   const name = userProfile.displayName || userProfile.username;
+  const games = (userProfile.wins || 0) + (userProfile.losses || 0);
+  const winRate = games ? Math.round(((userProfile.wins || 0) / games) * 100) : Number(userProfile.winRate || 0);
+  const streak = Number(userProfile.streak || 0);
+  const bannerHero = heroes.find((h) => h.image)?.image;
+  const bannerSrc = bannerHero ? mlbbImg(bannerHero, 1200) : undefined;
+
+  const sourceCard = (
+    key: 'game' | 'google',
+    enabled: boolean,
+    icon: React.ReactNode,
+    title: string,
+    desc: string,
+  ) => {
+    const active = userProfile.profileSource === key;
+    return (
+      <button
+        onClick={() => chooseSource(key)}
+        disabled={!enabled || busy === `source-${key}`}
+        aria-pressed={active}
+        className={cn(
+          'flex items-center gap-3 rounded border p-4 text-left transition-[border-color,background-color] duration-fast disabled:cursor-not-allowed disabled:opacity-50',
+          active ? 'border-primary bg-primary/10' : 'border-line-subtle bg-surface-2/60 hover:border-line-strong',
+        )}
+      >
+        <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded cut-corners-sm', active ? 'bg-primary/15 text-primary' : 'bg-surface-3 text-ink-2')}>
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-ink-1">{title}</p>
+          <p className="truncate text-xs text-ink-2">{desc}</p>
+        </div>
+        {active && <Check size={16} className="shrink-0 text-primary" />}
+      </button>
+    );
+  };
+
+  const linkedRow = (icon: React.ReactNode, title: string, desc: string, right: React.ReactNode, linked: boolean) => (
+    <div className={cn('flex flex-wrap items-center gap-3 rounded border p-4', linked ? 'border-accent-green/30 bg-accent-green/5' : 'border-line-subtle bg-surface-2/60')}>
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded cut-corners-sm bg-surface-1 ring-1 ring-inset ring-line-subtle">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-ink-1">{title}</p>
+        <p className="truncate text-xs text-ink-2 num">{desc}</p>
+      </div>
+      <div className="flex items-center gap-2">{right}</div>
+    </div>
+  );
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-white mb-1">{t('profile.title')}</h1>
-      <p className="text-sm text-gray-400 mb-6">
-        {t('profile.subtitle')}
-      </p>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow={userProfile.gameRank || t('profile.title')}
+        icon={<User size={22} />}
+        title={
+          <span className="inline-flex flex-wrap items-center gap-3">
+            {name}
+            <LevelBadge level={level} size="md" />
+          </span>
+        }
+        subtitle={
+          <>
+            {t('profile.displayedProfile')}{' '}
+            <span className="font-semibold text-white">
+              {userProfile.profileSource === 'google' ? t('profile.googleProfile') : t('profile.gameProfile')}
+            </span>
+            {userProfile.gameNickname && userProfile.hasGame && (
+              <span className="num"> · {t('dashboard.gameId')} {userProfile.mlbbRoleId} · {t('dashboard.gameServer')} {userProfile.mlbbZoneId}</span>
+            )}
+          </>
+        }
+        variant="purple"
+        banner={bannerSrc}
+        breadcrumb={t('profile.title')}
+        action={
+          <RankFrame
+            name={name}
+            src={userProfile.avatar ? avatarSrc(userProfile.avatar, 200) : null}
+            rank={userProfile.gameRank}
+            size={88}
+          />
+        }
+      >
+        <StatCard
+          label={t('profile.winrate')}
+          value={`${winRate}%`}
+          hint={`${userProfile.wins || 0} ${t('profile.wins')}`}
+          icon={<Trophy size={18} />}
+          accent="cyan"
+          sparkline={<StatRing value={winRate} size={44} stroke={4} accent={winRate >= 50 ? 'cyan' : 'red'} label={`${t('profile.winrate')} ${winRate}%`} />}
+        />
+        <StatCard label={t('stats.games')} value={games} icon={<Swords size={18} />} accent="violet" />
+        <StatCard label={t('profile.mvp')} value={userProfile.mvpCount || 0} icon={<Star size={18} />} accent="gold" />
+        <StatCard
+          label={t('profile.streak')}
+          value={streak > 0 ? `+${streak}` : streak}
+          icon={<Flame size={18} />}
+          accent={streak > 0 ? 'green' : streak < 0 ? 'red' : 'cyan'}
+        />
+      </PageHeader>
 
-      <Card className="mb-6" hover={false}>
-        <div className="flex items-center gap-4">
-          {userProfile.avatar ? (
-            <img
-              src={avatarSrc(userProfile.avatar, 160)}
-              alt={name}
-              referrerPolicy="no-referrer"
-              className="w-20 h-20 rounded-2xl object-cover border-2 border-neon-blue/40"
-            />
-          ) : (
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-2xl font-bold text-white">
-              {name?.[0]?.toUpperCase() || 'J'}
-            </div>
+      <Card>
+        <SectionTitle title={t('profile.shownProfile')} description={t('profile.subtitle')} className="mb-4" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {sourceCard(
+            'game',
+            !!userProfile.hasGame,
+            <Gamepad2 size={20} />,
+            t('profile.gameProfile'),
+            userProfile.gameNickname || (userProfile.hasGame ? `${t('dashboard.gameId')} ${userProfile.mlbbRoleId} · ${t('dashboard.gameServer')} ${userProfile.mlbbZoneId}` : t('profile.profileSource.nonLinked')),
           )}
-          <div>
-            <h2 className="text-xl font-bold text-white">{name}</h2>
-            <p className="text-sm text-gray-400">
-              {t('profile.displayedProfile')}{' '}
-              <span className="text-neon-blue font-medium">
-                {userProfile.profileSource === 'google' ? t('profile.googleProfile') : t('profile.gameProfile')}
-              </span>
-            </p>
-          </div>
+          {sourceCard(
+            'google',
+            !!userProfile.hasGoogle,
+            <GoogleGlyph />,
+            t('profile.googleProfile'),
+            userProfile.googleName || (userProfile.hasGoogle ? userProfile.googleEmail || t('profile.googleLinked') : t('profile.googleDescUnlinked')),
+          )}
         </div>
       </Card>
 
-      <Card className="mb-6" hover={false}>
-        <h3 className="font-bold text-white mb-1">{t('profile.shownProfile')}</h3>
-        <p className="text-sm text-gray-400 mb-4">
-          {t('profile.subtitle')}
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button
-            onClick={() => chooseSource('game')}
-            disabled={!userProfile.hasGame || busy === 'source-game'}
-            className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-              userProfile.profileSource === 'game'
-                ? 'border-neon-blue bg-neon-blue/10'
-                : 'border-gaming-border hover:bg-gaming-surface'
-            }`}
-          >
-            <Gamepad2 size={20} className="text-neon-blue shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white">{t('profile.gameProfile')}</p>
-              <p className="text-xs text-gray-400 truncate">
-                {userProfile.gameNickname || (userProfile.hasGame ? `${t('dashboard.gameId')} ${userProfile.mlbbRoleId} · ${t('dashboard.gameServer')} ${userProfile.mlbbZoneId}` : t('profile.profileSource.nonLinked'))}
-              </p>
-            </div>
-            {userProfile.profileSource === 'game' && <Check size={16} className="text-neon-blue" />}
-          </button>
-
-          <button
-            onClick={() => chooseSource('google')}
-            disabled={!userProfile.hasGoogle || busy === 'source-google'}
-            className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-              userProfile.profileSource === 'google'
-                ? 'border-neon-blue bg-neon-blue/10'
-                : 'border-gaming-border hover:bg-gaming-surface'
-            }`}
-          >
-            <GoogleGlyph />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white">{t('profile.googleProfile')}</p>
-              <p className="text-xs text-gray-400 truncate">
-                {userProfile.googleName || (userProfile.hasGoogle ? userProfile.googleEmail || t('profile.googleLinked') : t('profile.googleDescUnlinked'))}
-              </p>
-            </div>
-            {userProfile.profileSource === 'google' && <Check size={16} className="text-neon-blue" />}
-          </button>
-        </div>
-      </Card>
-
-      <Card className="mb-6" hover={false}>
-        <h3 className="font-bold text-white mb-4">{t('profile.linkedAccounts')}</h3>
+      <Card>
+        <SectionTitle title={t('profile.linkedAccounts')} className="mb-4" />
         <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3 rounded-xl border border-gaming-border">
-            <GoogleGlyph />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white">{t('profile.google')}</p>
-              <p className="text-xs text-gray-400 truncate">
-                {userProfile.hasGoogle
-                  ? userProfile.googleEmail || userProfile.googleName || t('profile.googleLinked')
-                  : t('profile.googleDescUnlinked')}
-              </p>
-            </div>
-            {userProfile.hasGoogle ? (
-              <Badge variant="green" size="sm"><ShieldCheck size={12} className="mr-1" /> {t('profile.googleLinked')}</Badge>
+          {linkedRow(
+            <GoogleGlyph />,
+            t('profile.google'),
+            userProfile.hasGoogle
+              ? userProfile.googleEmail || userProfile.googleName || t('profile.googleLinked')
+              : t('profile.googleDescUnlinked'),
+            userProfile.hasGoogle ? (
+              <Badge variant="green" size="sm" className="gap-1"><ShieldCheck size={12} /> {t('profile.googleLinked')}</Badge>
             ) : (
               <Button variant="secondary" size="sm" onClick={linkGoogle} disabled={busy === 'google'}>
                 <Link2 size={14} /> {t('profile.googleLink')}
               </Button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3 p-3 rounded-xl border border-gaming-border">
-            <Gamepad2 size={22} className="text-neon-blue shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white">{t('profile.gameAccount')}</p>
-              <p className="text-xs text-gray-400 truncate">
-                {userProfile.hasGame
-                  ? `${t('dashboard.gameId')} ${userProfile.mlbbRoleId} · ${t('dashboard.gameServer')} ${userProfile.mlbbZoneId}`
-                  : t('profile.gameDescUnlinked')}
-              </p>
-            </div>
-            {userProfile.hasGame ? (
-              <div className="flex items-center gap-2">
-                <Badge variant="green" size="sm"><ShieldCheck size={12} className="mr-1" /> {t('profile.gameLinked')}</Badge>
+            ),
+            !!userProfile.hasGoogle,
+          )}
+          {linkedRow(
+            <Gamepad2 size={20} className="text-primary" />,
+            t('profile.gameAccount'),
+            userProfile.hasGame
+              ? `${t('dashboard.gameId')} ${userProfile.mlbbRoleId} · ${t('dashboard.gameServer')} ${userProfile.mlbbZoneId}`
+              : t('profile.gameDescUnlinked'),
+            userProfile.hasGame ? (
+              <>
+                <Badge variant="green" size="sm" className="gap-1"><ShieldCheck size={12} /> {t('profile.gameLinked')}</Badge>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={unlinkGame}
+                  onClick={() => setUnlinkOpen(true)}
                   disabled={busy === 'unlink' || !userProfile.hasGoogle}
                   title={!userProfile.hasGoogle ? t('profile.gameUnlinkNeedsGoogle') : undefined}
                 >
                   <Unlink size={14} /> {t('profile.gameUnlink')}
                 </Button>
-              </div>
+              </>
             ) : (
               <Button variant="secondary" size="sm" onClick={() => setLinkGameOpen(true)}>
                 <Link2 size={14} /> {t('profile.gameLink')}
               </Button>
-            )}
-          </div>
+            ),
+            !!userProfile.hasGame,
+          )}
         </div>
       </Card>
 
       {userProfile.hasGame && (
-        <Card hover={false}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-white">{t('profile.gameData')}</h3>
-              <Badge variant="neon" size="sm">{t('dashboard.stats.allModes')}</Badge>
-            </div>
-            <Button variant="ghost" size="sm" onClick={sync} disabled={busy === 'sync'}>
-              <RefreshCw size={14} className={busy === 'sync' ? 'animate-spin' : ''} />
-              {busy === 'sync' ? t('profile.syncing') : t('profile.sync')}
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-            <MiniStat icon={<Trophy size={14} />} label={t('profile.wins')} value={stats.wins ?? 0} color="text-green-400" />
-            <MiniStat icon={<Target size={14} />} label={t('profile.winrate')} value={`${stats.winRate ?? 0}%`} color="text-neon-blue" />
-            <MiniStat icon={<Star size={14} />} label={t('profile.mvp')} value={stats.mvpCount ?? 0} color="text-amber-400" />
-            <MiniStat icon={<Flame size={14} />} label={t('profile.streak')} value={stats.winStreak ?? 0} color="text-red-400" />
-          </div>
+        <Card>
+          <SectionTitle
+            title={
+              <span className="inline-flex items-center gap-2">
+                {t('profile.gameData')}
+                <Badge variant="neon" size="sm">{t('dashboard.stats.allModes')}</Badge>
+              </span>
+            }
+            description={userProfile.gamePeakRank ? `${t('profile.peakRank')} : ${userProfile.gamePeakRank}` : undefined}
+            action={
+              <Button variant="outline" size="sm" onClick={sync} disabled={busy === 'sync'}>
+                <RefreshCw size={14} className={busy === 'sync' ? 'animate-spin' : ''} />
+                {busy === 'sync' ? t('profile.syncing') : t('profile.sync')}
+              </Button>
+            }
+            className="mb-4"
+          />
 
           {heroes.length > 0 && (
             <>
-              <p className="text-sm font-medium text-gray-300 mb-2">{t('profile.favoriteHeroes')}</p>
-              <div className="flex flex-wrap gap-2">
+              <p className="eyebrow mb-3">{t('profile.favoriteHeroes')}</p>
+              <motion.div
+                variants={reduce ? still : stagger(0.04)}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+              >
                 {heroes.slice(0, 8).map((h, i) => (
                   <motion.div
                     key={h.heroId ?? i}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.03 }}
-                    className="flex items-center gap-2 rounded-lg border border-gaming-border bg-gaming-surface/30 pr-3"
-                    title={`${h.name} — ${h.winRate}% sur ${h.matches} parties`}
+                    variants={reduce ? still : fadeUp}
+                    className="flex items-center gap-3 overflow-hidden rounded border border-line-subtle bg-surface-2/60"
+                    title={`${h.name} — ${h.winRate}% / ${h.matches}`}
                   >
-                    {h.image && (
+                    {h.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={mlbbImg(h.image, 64)}
+                        src={mlbbImg(h.image, 96)}
                         alt={h.name}
                         referrerPolicy="no-referrer"
-                        className="w-9 h-9 rounded-l-lg object-cover bg-gaming-dark"
+                        className="h-14 w-14 shrink-0 object-cover"
                       />
+                    ) : (
+                      <div className="h-14 w-14 shrink-0 bg-surface-3" />
                     )}
-                    <span className="text-xs text-gray-200">{h.name}</span>
+                    <div className="min-w-0 flex-1 pr-3">
+                      <p className="truncate text-sm font-semibold text-ink-1">{h.name}</p>
+                      <p className="text-xs text-ink-2 num">
+                        <span className={h.winRate >= 50 ? 'text-accent-green' : 'text-accent-red'}>{h.winRate}%</span> · {h.matches}
+                      </p>
+                    </div>
                   </motion.div>
                 ))}
-              </div>
+              </motion.div>
             </>
           )}
         </Card>
       )}
 
       <LinkGameModal open={linkGameOpen} onClose={() => setLinkGameOpen(false)} />
-    </div>
-  );
-}
 
-function MiniStat({ icon, label, value, color }: any) {
-  return (
-    <div className="rounded-lg border border-gaming-border bg-gaming-surface/30 p-3 text-center">
-      <div className={`flex items-center justify-center gap-1 ${color} mb-1`}>
-        {icon} <span className="text-lg font-bold">{value}</span>
-      </div>
-      <p className="text-xs text-gray-400">{label}</p>
+      {/* Game account unlink confirmation */}
+      <ConfirmModal
+        open={unlinkOpen}
+        onClose={() => setUnlinkOpen(false)}
+        onConfirm={doUnlinkGame}
+        variant="danger"
+        title={t('profile.gameUnlink')}
+        message={t('profile.gameUnlinkConfirm')}
+        confirmLabel={t('profile.gameUnlink')}
+        loading={busy === 'unlink'}
+      />
     </div>
   );
 }

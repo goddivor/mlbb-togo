@@ -1,175 +1,274 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Ban, Trash2, ChevronLeft, ChevronRight, Crown, Eye } from 'lucide-react';
-import { usePlayerStore, useAdminStore } from '@/store/useStore';
-import { api } from '@/lib/api';
-import { getRankColor, getInitials } from '@/lib/helpers';
+import { useEffect, useMemo, useState } from 'react';
+import { Users, Search, Shield, ShieldCheck, Ban, CheckCircle2, Trash2 } from 'lucide-react';
+import { api, avatarSrc } from '@/lib/api';
+import { useT } from '@/lib/i18n';
+import { useAuthStore } from '@/store/useStore';
+import { Card, Badge, Avatar, Button, PageHeader, EmptyState, LoadingSpinner, Tabs, DataTable, StatTile, type DataColumn } from '@/components/ui';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import toast from 'react-hot-toast';
 
+const ROLE_BADGE: Record<string, { label: string; variant: any }> = {
+  admin: { label: 'admin.users.role.admin', variant: 'red' },
+  moderator: { label: 'admin.users.role.moderator', variant: 'gold' },
+  user: { label: 'admin.users.role.user', variant: 'neon' },
+};
+
+const ROLE_CYCLE: Record<string, string> = {
+  user: 'moderator',
+  moderator: 'admin',
+  admin: 'user',
+};
+
 export default function AdminUsers() {
-  const { players, setPlayers, updatePlayer, deletePlayer } = usePlayerStore();
+  const t = useT();
+  const me = useAuthStore((s: any) => s.userProfile);
+  const isAdmin = me?.roleUser === 'admin';
+
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [showModal, setShowModal] = useState(false);
-  const { addAdminLog } = useAdminStore();
-  const perPage = 5;
+  const [roleTab, setRoleTab] = useState('all');
+  const [busy, setBusy] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<any>(null);
+
+  const load = () =>
+    api.users
+      .adminList()
+      .then((l: any) => setUsers(Array.isArray(l) ? l : []))
+      .catch(() => setUsers([]));
 
   useEffect(() => {
-    api.users.list().then(setPlayers);
-  }, [setPlayers]);
+    setLoading(true);
+    load().finally(() => setLoading(false));
+  }, []);
 
-  const filtered = players.filter((u: any) => {
-    const matchSearch = u.username.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
-    const matchRole = roleFilter === 'all' || u.role_user === roleFilter;
-    return matchSearch && matchRole;
-  });
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return users.filter((u) => {
+      if (roleTab === 'banned' ? !u.isBanned : roleTab !== 'all' && u.roleUser !== roleTab) return false;
+      if (!q) return true;
+      return (
+        (u.displayName || '').toLowerCase().includes(q) ||
+        (u.username || '').toLowerCase().includes(q) ||
+        (u.email || '').toLowerCase().includes(q)
+      );
+    });
+  }, [users, search, roleTab]);
 
-  const paginated = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
-  const totalPages = Math.ceil(filtered.length / perPage);
-
-  const handleBan = (user: any) => {
-    const newBanned = !user.banned;
-    updatePlayer(user.id, { isOnline: false, banned: newBanned });
-    api.users.setBan(user.id, newBanned).catch(() => {});
-    addAdminLog({ action: user.banned ? 'user_unban' : 'user_ban', admin: 'TogoKing', target: user.username, details: user.banned ? 'Compte réactivé' : 'Compte suspendu' });
-    toast.success(user.banned ? `${user.username} réactivé` : `${user.username} suspendu`);
+  const act = async (key: string, fn: () => Promise<any>, done?: string) => {
+    setBusy(key);
+    try {
+      await fn();
+      if (done) toast.success(done);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error'));
+    } finally {
+      setBusy(null);
+    }
   };
 
-  const handlePromote = (user: any) => {
-    const roles = ['user', 'moderator', 'admin'];
-    const currentIdx = roles.indexOf(user.role_user || 'user');
-    const newRole = roles[Math.min(currentIdx + 1, roles.length - 1)];
-    updatePlayer(user.id, { role_user: newRole });
-    api.users.setRole(user.id, newRole).catch(() => {});
-    addAdminLog({ action: 'user_promote', admin: 'TogoKing', target: user.username, details: `Promu ${newRole}` });
-    toast.success(`${user.username} promu ${newRole}`);
+  const toggleBan = (u: any) =>
+    act(u.id + 'b', () => api.users.setBan(u.id, !u.isBanned), u.isBanned ? t('admin.users.unbanned') : t('admin.users.banned'));
+
+  const cycleRole = (u: any) =>
+    act(u.id + 'r', () => api.users.setRole(u.id, ROLE_CYCLE[u.roleUser] || 'user'), t('admin.users.roleChanged'));
+
+  const runDelete = async () => {
+    if (!confirmDelete) return;
+    await act(confirmDelete.id + 'd', () => api.users.remove(confirmDelete.id), t('admin.users.deleted'));
+    setConfirmDelete(null);
   };
 
-  const handleDelete = (user: any) => {
-    deletePlayer(user.id);
-    api.users.remove(user.id).catch(() => {});
-    addAdminLog({ action: 'user_delete', admin: 'TogoKing', target: user.username, details: 'Compte supprimé' });
-    toast.success(`${user.username} supprimé`);
+  const fmtDate = (v: any) => {
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? '' : d.toLocaleDateString();
   };
 
-  const roleColors: Record<string, string> = { admin: 'bg-red-500/20 text-red-400', moderator: 'bg-yellow-500/20 text-yellow-400', user: 'bg-blue-500/20 text-blue-400' };
+  const counts = useMemo(
+    () => ({
+      total: users.length,
+      mods: users.filter((u) => u.roleUser === 'moderator').length,
+      admins: users.filter((u) => u.roleUser === 'admin').length,
+      banned: users.filter((u) => u.isBanned).length,
+    }),
+    [users],
+  );
+
+  const columns: DataColumn<any>[] = [
+    {
+      key: 'user',
+      header: t('admin.users.colUser'),
+      render: (u) => {
+        const self = u.id === me?.id;
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar
+              name={u.displayName || u.username}
+              src={u.avatar ? avatarSrc(u.avatar, 64) : undefined}
+              size="sm"
+              online={u.isOnline}
+            />
+            <div className="min-w-0">
+              <p className="truncate font-medium text-ink-1">
+                {u.displayName || u.username}
+                {self && <span className="ml-1 text-xs text-ink-3">({t('admin.users.you')})</span>}
+              </p>
+              <p className="truncate text-xs text-ink-2">{u.email}</p>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'role',
+      header: t('admin.users.colRole'),
+      render: (u) => {
+        const rb = ROLE_BADGE[u.roleUser] || ROLE_BADGE.user;
+        return <Badge variant={rb.variant} size="sm">{t(rb.label)}</Badge>;
+      },
+    },
+    {
+      key: 'status',
+      header: t('admin.users.colStatus'),
+      hideBelow: 'sm',
+      render: (u) =>
+        u.isBanned ? (
+          <Badge variant="red" size="sm">{t('admin.users.bannedTag')}</Badge>
+        ) : (
+          <Badge variant="green" size="sm">{t('admin.users.active')}</Badge>
+        ),
+    },
+    {
+      key: 'joined',
+      header: t('admin.users.colJoined'),
+      hideBelow: 'md',
+      className: 'text-xs text-ink-2 num',
+      render: (u) => fmtDate(u.joinedAt),
+    },
+    {
+      key: 'actions',
+      header: t('admin.users.colActions'),
+      align: 'right',
+      render: (u) => {
+        const self = u.id === me?.id;
+        return (
+          <div className="flex items-center justify-end gap-1">
+            {/* Ban / unban: admin + moderator */}
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={self || busy === u.id + 'b'}
+              onClick={() => toggleBan(u)}
+              title={u.isBanned ? t('admin.users.unban') : t('admin.users.ban')}
+            >
+              {u.isBanned ? <CheckCircle2 size={15} className="text-accent-green" /> : <Ban size={15} className="text-accent-red" />}
+            </Button>
+
+            {/* Change role + delete: admin only */}
+            {isAdmin && (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={self || busy === u.id + 'r'}
+                  onClick={() => cycleRole(u)}
+                  title={t('admin.users.changeRole')}
+                >
+                  {u.roleUser === 'admin' ? <ShieldCheck size={15} className="text-accent-red" /> : <Shield size={15} />}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={self || busy === u.id + 'd'}
+                  onClick={() => setConfirmDelete(u)}
+                  title={t('admin.users.delete')}
+                >
+                  <Trash2 size={15} className="text-accent-red" />
+                </Button>
+              </>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="space-y-6">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3"><Users className="text-neon-blue" size={32} /> Gestion des Utilisateurs</h1>
-          <p className="text-gray-400 mt-1">{filtered.length} utilisateurs trouvés</p>
-        </div>
-      </motion.div>
+      <PageHeader
+        icon={<Users size={28} />}
+        eyebrow={t('nav.section.community')}
+        title={t('admin.users.title')}
+        variant="blue"
+      />
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher un joueur..." className="w-full pl-10 pr-4 py-2.5 bg-gaming-card border border-gaming-border rounded-lg text-white placeholder-gray-500 focus:border-neon-blue focus:outline-none" />
+      {!loading && (
+        <Card className="!p-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <StatTile label={t('admin.users.all')} value={counts.total} />
+            <StatTile label={t('admin.users.mods')} value={counts.mods} accent="gold" />
+            <StatTile label={t('admin.users.admins')} value={counts.admins} accent="red" />
+            <StatTile label={t('admin.users.banned2')} value={counts.banned} accent={counts.banned ? 'red' : undefined} />
+          </div>
+        </Card>
+      )}
+
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('admin.users.search')}
+              className="w-full rounded border border-line-strong bg-surface-1 py-2.5 pl-10 pr-4 text-sm text-ink-1 placeholder:text-ink-3 outline-none transition-[border-color,box-shadow] duration-base focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60"
+            />
+          </div>
+          <div className="overflow-x-auto whitespace-nowrap">
+            <Tabs
+              variant="underline"
+              size="sm"
+              tabs={[
+                { id: 'all', label: t('admin.users.all') },
+                { id: 'user', label: t('admin.users.players') },
+                { id: 'moderator', label: t('admin.users.mods') },
+                { id: 'admin', label: t('admin.users.admins') },
+                { id: 'banned', label: t('admin.users.banned2') },
+              ]}
+              active={roleTab}
+              onChange={setRoleTab}
+            />
+          </div>
         </div>
-        <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="px-4 py-2.5 bg-gaming-card border border-gaming-border rounded-lg text-white focus:border-neon-blue focus:outline-none">
-          <option value="all">Tous les rôles</option>
-          <option value="user">Utilisateur</option>
-          <option value="moderator">Modérateur</option>
-          <option value="admin">Admin</option>
-        </select>
+
+        {loading ? (
+          <LoadingSpinner size="lg" className="py-16" />
+        ) : filtered.length === 0 ? (
+          <EmptyState icon={<Users size={28} />} title={t('admin.users.none')} className="!min-h-0 py-12" />
+        ) : (
+          <DataTable
+            columns={columns}
+            rows={filtered}
+            rowKey={(u) => u.id}
+            emptyMessage={t('admin.users.none')}
+          />
+        )}
       </div>
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-gaming-card border border-gaming-border rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gaming-border">
-                <th className="text-left p-4 text-gray-400 text-sm font-medium">Joueur</th>
-                <th className="text-left p-4 text-gray-400 text-sm font-medium hidden md:table-cell">Rang</th>
-                <th className="text-left p-4 text-gray-400 text-sm font-medium hidden lg:table-cell">Rôle MLBB</th>
-                <th className="text-left p-4 text-gray-400 text-sm font-medium">Statut</th>
-                <th className="text-left p-4 text-gray-400 text-sm font-medium">Rôle</th>
-                <th className="text-right p-4 text-gray-400 text-sm font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <AnimatePresence>
-                {paginated.map((user: any, i: number) => (
-                  <motion.tr key={user.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: i * 0.05 }} className="border-b border-gaming-border/50 hover:bg-gaming-darker/30 transition-colors">
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold" style={{ backgroundColor: getRankColor(user.rank) + '30', color: getRankColor(user.rank) }}>
-                          {getInitials(user.username)}
-                        </div>
-                        <div>
-                          <p className="text-white font-medium">{user.username}</p>
-                          <p className="text-gray-500 text-xs">{user.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-4 hidden md:table-cell">
-                      <span className="px-2 py-1 rounded text-xs font-medium" style={{ backgroundColor: getRankColor(user.rank) + '20', color: getRankColor(user.rank) }}>
-                        {user.rank?.charAt(0).toUpperCase() + user.rank?.slice(1)}
-                      </span>
-                    </td>
-                    <td className="p-4 hidden lg:table-cell text-gray-400 text-sm capitalize">{user.role}</td>
-                    <td className="p-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs ${user.isOnline ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${user.isOnline ? 'bg-green-400' : 'bg-gray-400'}`} />
-                        {user.isOnline ? 'En ligne' : 'Hors ligne'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${roleColors[user.role_user || 'user']}`}>
-                        {user.role_user === 'admin' ? 'Admin' : user.role_user === 'moderator' ? 'Mod' : 'User'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => { setSelectedUser(user); setShowModal(true); }} className="p-2 rounded-lg hover:bg-gaming-darker text-gray-400 hover:text-white transition-colors" title="Voir"><Eye size={16} /></button>
-                        <button onClick={() => handlePromote(user)} className="p-2 rounded-lg hover:bg-gaming-darker text-gray-400 hover:text-yellow-400 transition-colors" title="Promouvoir"><Crown size={16} /></button>
-                        <button onClick={() => handleBan(user)} className="p-2 rounded-lg hover:bg-gaming-darker text-gray-400 hover:text-orange-400 transition-colors" title={user.banned ? 'Réactiver' : 'Suspendre'}><Ban size={16} /></button>
-                        <button onClick={() => handleDelete(user)} className="p-2 rounded-lg hover:bg-gaming-darker text-gray-400 hover:text-red-400 transition-colors" title="Supprimer"><Trash2 size={16} /></button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </AnimatePresence>
-            </tbody>
-          </table>
-        </div>
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between p-4 border-t border-gaming-border">
-            <p className="text-sm text-gray-400">Page {currentPage} sur {totalPages}</p>
-            <div className="flex gap-2">
-              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-lg bg-gaming-darker text-gray-400 hover:text-white disabled:opacity-30"><ChevronLeft size={16} /></button>
-              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-lg bg-gaming-darker text-gray-400 hover:text-white disabled:opacity-30"><ChevronRight size={16} /></button>
-            </div>
-          </div>
-        )}
-      </motion.div>
-
-      <AnimatePresence>
-        {showModal && selectedUser && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} onClick={e => e.stopPropagation()} className="bg-gaming-card border border-gaming-border rounded-xl p-6 max-w-md w-full">
-              <h3 className="text-xl font-bold text-white mb-4">Profil de {selectedUser.username}</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between"><span className="text-gray-400">Email</span><span className="text-white">{selectedUser.email}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Rang</span><span className="text-white">{selectedUser.rank}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Rôle</span><span className="text-white">{selectedUser.role}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Victoires</span><span className="text-green-400">{selectedUser.wins}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Défaites</span><span className="text-red-400">{selectedUser.losses}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Win Rate</span><span className="text-neon-blue">{selectedUser.winRate}%</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Ville</span><span className="text-white">{selectedUser.city}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Inscrit le</span><span className="text-white">{selectedUser.joinedAt}</span></div>
-              </div>
-              <button onClick={() => setShowModal(false)} className="mt-6 w-full py-2 bg-gaming-darker text-gray-300 rounded-lg hover:text-white transition-colors">Fermer</button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ConfirmModal
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={runDelete}
+        loading={!!busy}
+        variant="danger"
+        title={t('admin.users.delete')}
+        message={`${confirmDelete?.displayName || confirmDelete?.username || ''} — ${t('admin.users.deleteWarn')}`}
+        confirmLabel={t('admin.users.delete')}
+      />
     </div>
   );
 }

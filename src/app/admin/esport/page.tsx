@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   Users,
   Plus,
@@ -13,16 +13,35 @@ import {
   Check,
   Star,
   Rocket,
+  Trophy,
+  UserCog,
+  Medal,
+  Target,
+  Shield,
 } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { Badge, Button } from '@/components/ui';
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  PageHeader,
+  EmptyState,
+  LoadingSpinner,
+  StatCard,
+  Tabs,
+} from '@/components/ui';
+import { teamTag } from '@/components/game/TeamCard';
+import { fadeUp, stagger, still } from '@/lib/motion';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import RoleIcon from '@/components/game/RoleIcon';
 import RoleSelect from '@/components/game/RoleSelect';
 import toast from 'react-hot-toast';
+import { StaffPanel, HonoursPanel } from './TeamExtrasPanels';
+import CitySelect from '@/components/geo/CitySelect';
 
 const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
 
@@ -30,18 +49,19 @@ type TeamForm = {
   name: string;
   image: string;
   description: string;
-  isRecruiting: boolean;
+  city: string;
 };
 
 const emptyTeamForm: TeamForm = {
   name: '',
   image: '',
   description: '',
-  isRecruiting: false,
+  city: '',
 };
 
 const inputCls =
-  'w-full px-3 py-2 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue';
+  'w-full rounded border border-line-strong bg-surface-1 px-3 py-2 text-sm text-ink-1 placeholder:text-ink-3 outline-none transition-[border-color,box-shadow] duration-base ease-out focus:border-primary focus:ring-2 focus:ring-primary/25 disabled:opacity-60 dark:bg-surface-0/60';
+const labelCls = 'mb-1.5 block text-xs font-medium text-ink-2';
 
 type Pending = {
   message: string;
@@ -52,6 +72,7 @@ type Pending = {
 
 export default function AdminEsportPage() {
   const t = useT();
+  const reduce = useReducedMotion();
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<any[]>([]);
 
@@ -80,6 +101,8 @@ export default function AdminEsportPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editTeam, setEditTeam] = useState<any>(null);
   const [membersId, setMembersId] = useState<string | null>(null);
+  const [staffId, setStaffId] = useState<string | null>(null);
+  const [honoursId, setHonoursId] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending>(null);
   const [confirming, setConfirming] = useState(false);
 
@@ -88,10 +111,22 @@ export default function AdminEsportPage() {
     [teams, tab],
   );
 
+  // KPI strip derived from the already loaded list (no extra request).
+  const kpis = useMemo(() => {
+    const esport = teams.filter((tm) => tm.type === 'esport').length;
+    const members = teams.reduce(
+      (acc, tm) => acc + (tm.memberCount ?? tm.members?.length ?? 0),
+      0,
+    );
+    return { total: teams.length, esport, community: teams.length - esport, members };
+  }, [teams]);
+
   const membersTeam = useMemo(
     () => teams.find((tm) => tm.id === membersId) || null,
     [teams, membersId],
   );
+  const staffTeam = useMemo(() => teams.find((tm) => tm.id === staffId) || null, [teams, staffId]);
+  const honoursTeam = useMemo(() => teams.find((tm) => tm.id === honoursId) || null, [teams, honoursId]);
 
   const runConfirm = async () => {
     if (!pending) return;
@@ -131,114 +166,143 @@ export default function AdminEsportPage() {
     });
 
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-white">{t('header.teams')}</h1>
-        <Button
-          size="sm"
-          onClick={() => {
-            setEditTeam(null);
-            setFormOpen(true);
-          }}
-        >
-          <Plus size={16} /> {t('admin.esport.newTeam')}
-        </Button>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow={t('nav.section.esport')}
+        icon={<Trophy size={28} />}
+        title={t('header.teams')}
+        variant="default"
+        action={
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditTeam(null);
+              setFormOpen(true);
+            }}
+          >
+            <Plus size={16} /> {t('admin.esport.newTeam')}
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <StatCard label={t('header.teams')} value={loading ? '…' : kpis.total} icon={<Shield size={16} />} />
+        <StatCard
+          label={t('admin.esport.type.esport')}
+          value={loading ? '…' : kpis.esport}
+          icon={<Trophy size={16} />}
+          accent="gold"
+        />
+        <StatCard
+          label={t('admin.esport.type.community')}
+          value={loading ? '…' : kpis.community}
+          icon={<Users size={16} />}
+          accent="violet"
+        />
+        <StatCard
+          label={t('teams.members')}
+          value={loading ? '…' : kpis.members}
+          icon={<UserCog size={16} />}
+          accent="green"
+        />
       </div>
 
-      <div className="flex gap-2 mb-6">
-        {(['community', 'esport'] as const).map((tb) => (
-          <button
-            key={tb}
-            onClick={() => setTab(tb)}
-            className={`px-4 py-2 text-sm font-semibold rounded-lg border transition-colors ${
-              tab === tb
-                ? 'bg-neon-blue/15 border-neon-blue text-neon-blue'
-                : 'bg-gaming-surface/40 border-gaming-border text-gray-400 hover:text-gray-200'
-            }`}
-          >
-            {t('admin.esport.type.' + tb)}
-          </button>
-        ))}
+      <FiguresPanel t={t} errMsg={errMsg} />
+
+      <div className="overflow-x-auto whitespace-nowrap">
+        <Tabs
+          variant="underline"
+          active={tab}
+          onChange={(id: 'community' | 'esport') => setTab(id)}
+          tabs={[
+            { id: 'community', label: t('admin.esport.type.community'), count: kpis.community },
+            { id: 'esport', label: t('admin.esport.type.esport'), count: kpis.esport },
+          ]}
+        />
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
-        </div>
+        <LoadingSpinner size="lg" className="py-24" />
       ) : visibleTeams.length === 0 ? (
-        <div className="text-center py-16 text-gray-500">{t('admin.esport.noTeams')}</div>
+        <EmptyState icon={<Users size={28} />} title={t('admin.esport.noTeams')} />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {visibleTeams.map((team, i) => (
-            <motion.div
-              key={team.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.03, 0.3) }}
-              className="rounded-xl border border-gaming-border bg-gaming-surface/40 overflow-hidden flex flex-col"
-            >
-              <div className="relative aspect-video w-full bg-gaming-dark">
-                {team.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={team.image}
-                    alt={team.name}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-gray-600">
-                    {team.name?.[0]?.toUpperCase() || 'T'}
-                  </div>
-                )}
-                {team.isRecruiting && (
-                  <span className="absolute top-2 right-2 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
-                    {t('admin.esport.recruiting')}
-                  </span>
-                )}
-              </div>
-
-              <div className="p-3 flex-1 flex flex-col">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm font-semibold text-white truncate">{team.name}</p>
-                  <Badge variant={team.type === 'esport' ? 'gold' : 'default'} size="sm">
-                    {t('admin.esport.badge.' + (team.type || 'community'))}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-1 mt-1 mb-3 text-xs text-gray-400">
-                  <Users size={13} /> {team.memberCount ?? team.members?.length ?? 0} {t('teams.members')}
-                </div>
-
-                <div className="mt-auto flex flex-col gap-2">
-                  {team.type !== 'esport' && (
-                    <Button size="sm" variant="secondary" onClick={() => askTransform(team)}>
-                      <Rocket size={14} /> {t('admin.esport.transform')}
-                    </Button>
+        <motion.div
+          variants={reduce ? still : stagger()}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+        >
+          {visibleTeams.map((team) => (
+            <motion.div key={team.id} variants={reduce ? still : fadeUp} className="h-full">
+              <Card className="!p-0 flex h-full flex-col overflow-hidden" accent={team.type === 'esport' ? 'gold' : 'cyan'}>
+                <div className="relative aspect-video w-full bg-surface-2">
+                  {team.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={team.image}
+                      alt={team.name}
+                      referrerPolicy="no-referrer"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center font-display text-3xl font-bold tracking-tight2 text-ink-3">
+                      {teamTag(team)}
+                    </div>
                   )}
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" variant="secondary" className="flex-1" onClick={() => setMembersId(team.id)}>
-                      <Users size={14} /> {t('admin.esport.members')}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      title={t('admin.esport.editTeam')}
-                      onClick={() => {
-                        setEditTeam(team);
-                        setFormOpen(true);
-                      }}
-                    >
-                      <Pencil size={14} />
-                    </Button>
-                    <Button size="sm" variant="danger" title={t('admin.esport.delete')} onClick={() => askDeleteTeam(team)}>
-                      <Trash2 size={14} />
-                    </Button>
+                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-surface-1 to-transparent" />
+                </div>
+
+                <div className="flex flex-1 flex-col p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="truncate font-display text-base font-bold tracking-tight2 text-ink-1">{team.name}</h3>
+                    <Badge variant={team.type === 'esport' ? 'gold' : 'default'} size="sm">
+                      {t('admin.esport.badge.' + (team.type || 'community'))}
+                    </Badge>
+                  </div>
+                  <div className="mb-4 mt-1 flex items-center gap-1 text-xs text-ink-2">
+                    <Users size={13} />
+                    <span className="num">{team.memberCount ?? team.members?.length ?? 0}</span> {t('teams.members')}
+                  </div>
+
+                  <div className="mt-auto flex flex-col gap-2">
+                    {team.type !== 'esport' && (
+                      <Button size="sm" variant="secondary" onClick={() => askTransform(team)}>
+                        <Rocket size={14} /> {t('admin.esport.transform')}
+                      </Button>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" className="flex-1" onClick={() => setStaffId(team.id)}>
+                        <UserCog size={14} /> {t('admin.esport.staff')}
+                      </Button>
+                      <Button size="sm" variant="outline" className="flex-1" onClick={() => setHonoursId(team.id)}>
+                        <Medal size={14} /> {t('admin.esport.honours')}
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="secondary" className="flex-1" onClick={() => setMembersId(team.id)}>
+                        <Users size={14} /> {t('admin.esport.members')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        title={t('admin.esport.editTeam')}
+                        onClick={() => {
+                          setEditTeam(team);
+                          setFormOpen(true);
+                        }}
+                      >
+                        <Pencil size={14} />
+                      </Button>
+                      <Button size="sm" variant="danger" title={t('admin.esport.delete')} onClick={() => askDeleteTeam(team)}>
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </Card>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       <TeamFormModal
@@ -263,6 +327,28 @@ export default function AdminEsportPage() {
         )}
       </Modal>
 
+      <Modal
+        open={!!staffTeam}
+        onClose={() => setStaffId(null)}
+        maxWidth="max-w-2xl"
+        closeLabel={t('common.close')}
+        icon={<UserCog size={20} />}
+        title={staffTeam ? `${t('admin.esport.staffTitle')} · ${staffTeam.name}` : ''}
+      >
+        {staffTeam && <StaffPanel team={staffTeam} t={t} errMsg={errMsg} onAsk={setPending} />}
+      </Modal>
+
+      <Modal
+        open={!!honoursTeam}
+        onClose={() => setHonoursId(null)}
+        maxWidth="max-w-2xl"
+        closeLabel={t('common.close')}
+        icon={<Medal size={20} />}
+        title={honoursTeam ? `${t('admin.esport.honoursTitle')} · ${honoursTeam.name}` : ''}
+      >
+        {honoursTeam && <HonoursPanel team={honoursTeam} t={t} errMsg={errMsg} onSaved={() => setHonoursId(null)} />}
+      </Modal>
+
       <ConfirmModal
         open={!!pending}
         onClose={() => setPending(null)}
@@ -276,6 +362,100 @@ export default function AdminEsportPage() {
         closeLabel={t('common.close')}
       />
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Public target figures (About page)                                  */
+/* ------------------------------------------------------------------ */
+
+const FIGURE_KEYS = ['streamAudience', 'socialReach', 'teams', 'offlineEvents'] as const;
+type FigureKey = (typeof FIGURE_KEYS)[number];
+type FiguresForm = Record<FigureKey, string>;
+
+const emptyFigures: FiguresForm = { streamAudience: '', socialReach: '', teams: '', offlineEvents: '' };
+
+function FiguresPanel({ t, errMsg }: { t: (k: string) => string; errMsg: (e: any) => string }) {
+  const [form, setForm] = useState<FiguresForm>(emptyFigures);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    api.esport
+      .figures()
+      .then((f: any) => {
+        if (f && typeof f === 'object') {
+          const next = { ...emptyFigures };
+          for (const k of FIGURE_KEYS) next[k] = f[k] != null ? String(f[k]) : '';
+          setForm(next);
+        }
+      })
+      .finally(() => setLoaded(true));
+  }, []);
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload: Record<string, number> = {};
+      for (const k of FIGURE_KEYS) if (form[k] !== '') payload[k] = Number(form[k]);
+      const saved = await api.esport.updateFigures(payload);
+      const next = { ...emptyFigures };
+      for (const k of FIGURE_KEYS) next[k] = saved?.[k] != null ? String(saved[k]) : '';
+      setForm(next);
+      toast.success(t('admin.esport.figures.saved'));
+    } catch (err: any) {
+      toast.error(errMsg(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card className="!p-4">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 text-left"
+      >
+        <span className="flex items-center gap-2 text-sm font-semibold text-ink-1">
+          <span className="flex h-7 w-7 items-center justify-center rounded cut-corners-sm bg-accent-cyan/10 text-accent-cyan">
+            <Target size={14} />
+          </span>
+          {t('admin.esport.figures.title')}
+        </span>
+        <span className="text-xs text-ink-3">{open ? '−' : '+'}</span>
+      </button>
+      {open && (
+        <form onSubmit={save} className="mt-4 space-y-4">
+          <p className="text-xs text-ink-2">{t('admin.esport.figures.desc')}</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {FIGURE_KEYS.map((k) => (
+              <label key={k} className="block">
+                <span className={labelCls}>{t(`admin.esport.figures.${k}`)}</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  inputMode="numeric"
+                  className={`${inputCls} num`}
+                  value={form[k]}
+                  disabled={!loaded}
+                  onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))}
+                />
+              </label>
+            ))}
+          </div>
+          <div className="flex justify-end">
+            <Button type="submit" size="sm" loading={saving} disabled={!loaded}>
+              <Check size={14} /> {t('common.save')}
+            </Button>
+          </div>
+        </form>
+      )}
+    </Card>
   );
 }
 
@@ -311,7 +491,7 @@ function TeamFormModal({
             name: team.name || '',
             image: team.image || '',
             description: team.description || '',
-            isRecruiting: !!team.isRecruiting,
+            city: team.city || '',
           }
         : emptyTeamForm,
     );
@@ -326,7 +506,7 @@ function TeamFormModal({
         name: form.name.trim(),
         image: form.image.trim() || undefined,
         description: form.description.trim() || undefined,
-        isRecruiting: form.isRecruiting,
+        city: form.city || null,
       };
       if (team) await api.esport.updateTeam(team.id, payload);
       else await api.esport.createTeam({ ...payload, type });
@@ -346,33 +526,32 @@ function TeamFormModal({
       onClose={onClose}
       closeLabel={t('common.close')}
       title={team ? t('admin.esport.editTeam') : t('admin.esport.newTeam')}
+      icon={<Users size={20} />}
+      headerVariant={team ? 'plain' : 'gradient'}
     >
       <form onSubmit={submit} className="space-y-3">
         <div>
-          <label className="block text-xs text-gray-400 mb-1">{t('admin.esport.teamName')}</label>
+          <label className={labelCls}>{t('admin.esport.teamName')}</label>
           <input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
         </div>
         <div>
-          <label className="block text-xs text-gray-400 mb-1">{t('admin.esport.teamImage')}</label>
+          <label className={labelCls}>{t('admin.esport.teamImage')}</label>
           <input className={inputCls} value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} />
         </div>
         <div>
-          <label className="block text-xs text-gray-400 mb-1">{t('admin.esport.teamDesc')}</label>
+          <label className={labelCls}>{t('admin.esport.teamDesc')}</label>
           <textarea
             className={`${inputCls} min-h-[80px] resize-y`}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
         </div>
-        <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-          <input
-            type="checkbox"
-            className="accent-neon-blue"
-            checked={form.isRecruiting}
-            onChange={(e) => setForm({ ...form, isRecruiting: e.target.checked })}
-          />
-          {t('admin.esport.recruiting')}
-        </label>
+        <CitySelect
+          label={t('admin.esport.teamCity')}
+          value={form.city}
+          onChange={(city) => setForm({ ...form, city })}
+          className="py-2 px-3 text-sm"
+        />
         <div className="flex gap-2 pt-2">
           <Button size="sm" type="submit" disabled={saving}>
             <Check size={16} /> {team ? t('admin.esport.save') : t('admin.esport.create')}
@@ -460,7 +639,7 @@ function MembersPanel({
   return (
     <div className="space-y-4">
       {members.length === 0 ? (
-        <div className="text-sm text-gray-500">{t('admin.esport.noMembers')}</div>
+        <div className="text-sm text-ink-3">{t('admin.esport.noMembers')}</div>
       ) : (
         <div className="space-y-2">
           {members.map((m) => {
@@ -468,25 +647,19 @@ function MembersPanel({
             return (
               <div
                 key={m.id ?? m.userId}
-                className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-gaming-border bg-gaming-surface/40 p-2.5"
+                className="flex flex-col gap-3 rounded-md border border-line-subtle bg-surface-2/60 p-2.5 sm:flex-row sm:items-center"
               >
-                {u.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={avatarSrc(u.avatar, 64)}
-                    alt={u.displayName || u.username}
-                    referrerPolicy="no-referrer"
-                    className="w-10 h-10 rounded-lg object-cover border border-gaming-border shrink-0"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-sm font-bold text-white shrink-0">
-                    {(u.displayName || u.username)?.[0]?.toUpperCase() || 'J'}
-                  </div>
-                )}
+                <Avatar
+                  name={u.displayName || u.username || 'J'}
+                  src={u.avatar ? avatarSrc(u.avatar, 64) : undefined}
+                  size="md"
+                  square
+                  className="shrink-0"
+                />
 
-                <div className="min-w-0 flex-1 flex items-center gap-2">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
                   {m.role && <RoleIcon role={m.role} size={16} />}
-                  <span className="text-sm text-white truncate">{u.displayName || u.username}</span>
+                  <span className="truncate text-sm font-medium text-ink-1">{u.displayName || u.username}</span>
                   {hasRankBadge(u.gameRank) && <RankBadge rank={u.gameRank} size={16} />}
                   {m.isCaptain && (
                     <Badge variant="gold" size="sm">
@@ -508,10 +681,10 @@ function MembersPanel({
                   <button
                     onClick={() => toggleSub(m)}
                     disabled={busy}
-                    className={`px-2 py-1 text-xs rounded-lg border transition-colors ${
+                    className={`rounded border px-2 py-1 text-xs font-semibold transition-colors duration-fast ${
                       m.isSubstitute
-                        ? 'bg-gaming-surface border-gaming-border text-gray-400'
-                        : 'bg-neon-blue/15 border-neon-blue text-neon-blue'
+                        ? 'border-line-strong bg-surface-2 text-ink-2'
+                        : 'border-primary bg-primary/10 text-primary'
                     }`}
                   >
                     {m.isSubstitute ? t('admin.esport.substitute') : t('admin.esport.starter')}
@@ -522,7 +695,7 @@ function MembersPanel({
                       onClick={() => makeCaptain(m)}
                       disabled={busy}
                       title={t('admin.esport.setCaptain')}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg border border-gaming-border text-gray-400 hover:text-neon-gold hover:border-neon-gold transition-colors"
+                      className="inline-flex items-center gap-1 rounded border border-line-strong px-2 py-1 text-xs text-ink-2 transition-colors duration-fast hover:border-accent-gold hover:text-accent-gold"
                     >
                       <Star size={11} />
                     </button>
@@ -532,7 +705,7 @@ function MembersPanel({
                     onClick={() => askRemove(m)}
                     disabled={busy}
                     title={t('admin.esport.remove')}
-                    className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors"
+                    className="inline-flex items-center gap-1 rounded border border-accent-red/30 px-2 py-1 text-xs text-accent-red transition-colors duration-fast hover:bg-accent-red/10"
                   >
                     <X size={11} />
                   </button>
@@ -543,10 +716,10 @@ function MembersPanel({
         </div>
       )}
 
-      <div className="pt-3 border-t border-gaming-border">
-        <p className="text-xs font-medium text-gray-300 mb-2">{t('admin.esport.addMember')}</p>
+      <div className="border-t border-line-subtle pt-3">
+        <p className="eyebrow mb-2">{t('admin.esport.addMember')}</p>
         <div className="relative mb-3">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -556,7 +729,7 @@ function MembersPanel({
         </div>
 
         {results.length === 0 ? (
-          <div className="text-sm text-gray-500">{t('admin.esport.noPlayers')}</div>
+          <div className="text-sm text-ink-3">{t('admin.esport.noPlayers')}</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto">
             {results.map((p) => (
@@ -564,23 +737,17 @@ function MembersPanel({
                 key={p.id}
                 onClick={() => addPlayer(p)}
                 disabled={busy}
-                className="flex items-center gap-2 rounded-lg border border-gaming-border bg-gaming-surface/40 p-2 text-left hover:border-neon-blue transition-colors"
+                className="flex items-center gap-2 rounded-md border border-line-subtle bg-surface-2/60 p-2 text-left transition-colors duration-fast hover:border-primary"
               >
-                {p.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={avatarSrc(p.avatar, 64)}
-                    alt={p.displayName || p.username}
-                    referrerPolicy="no-referrer"
-                    className="w-8 h-8 rounded-lg object-cover border border-gaming-border shrink-0"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-xs font-bold text-white shrink-0">
-                    {(p.displayName || p.username)?.[0]?.toUpperCase() || 'J'}
-                  </div>
-                )}
-                <span className="text-sm text-gray-200 truncate">{p.displayName || p.username}</span>
-                <Plus size={14} className="ml-auto text-neon-blue shrink-0" />
+                <Avatar
+                  name={p.displayName || p.username || 'J'}
+                  src={p.avatar ? avatarSrc(p.avatar, 64) : undefined}
+                  size="sm"
+                  square
+                  className="shrink-0"
+                />
+                <span className="truncate text-sm text-ink-1">{p.displayName || p.username}</span>
+                <Plus size={14} className="ml-auto text-primary shrink-0" />
               </button>
             ))}
           </div>

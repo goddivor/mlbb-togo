@@ -21,24 +21,61 @@ export const useLangStore = create<any>((set) => ({
 export const useThemeStore = create<any>((set) => ({
   theme:
     typeof window !== 'undefined'
-      ? localStorage.getItem('mlbb-theme') || 'dark'
-      : 'dark',
+      ? localStorage.getItem('mlbb-theme') || 'light'
+      : 'light',
   toggleTheme: () =>
     set((state: any) => {
       const newTheme = state.theme === 'dark' ? 'light' : 'dark';
+      const patch: any = { theme: newTheme };
       if (typeof window !== 'undefined') {
         localStorage.setItem('mlbb-theme', newTheme);
         document.documentElement.classList.toggle('dark', newTheme === 'dark');
+        // Alternate palettes are dark-only: switching to light resets to default.
+        if (newTheme === 'light') {
+          localStorage.setItem('mlbb-palette', 'default');
+          document.documentElement.classList.remove('theme-neon', 'theme-gold', 'theme-night');
+          patch.palette = 'default';
+        }
       }
-      return { theme: newTheme };
+      return patch;
     }),
-  setTheme: (theme: string) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('mlbb-theme', theme);
-      document.documentElement.classList.toggle('dark', theme === 'dark');
-    }
-    set({ theme });
-  },
+  setTheme: (theme: string) =>
+    set(() => {
+      const patch: any = { theme };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mlbb-theme', theme);
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+        if (theme === 'light') {
+          localStorage.setItem('mlbb-palette', 'default');
+          document.documentElement.classList.remove('theme-neon', 'theme-gold', 'theme-night');
+          patch.palette = 'default';
+        }
+      }
+      return patch;
+    }),
+
+  // Additive color palette: 'default' keeps the current theme untouched;
+  // 'neon' | 'gold' | 'night' re-skin the app (dark aesthetics).
+  palette:
+    typeof window !== 'undefined'
+      ? localStorage.getItem('mlbb-palette') || 'default'
+      : 'default',
+  setPalette: (palette: string) =>
+    set((state: any) => {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mlbb-palette', palette);
+        const el = document.documentElement;
+        el.classList.remove('theme-neon', 'theme-gold', 'theme-night');
+        if (palette !== 'default') {
+          el.classList.add('theme-' + palette);
+          el.classList.add('dark');
+          localStorage.setItem('mlbb-theme', 'dark');
+        }
+      }
+      return palette !== 'default' && state.theme !== 'dark'
+        ? { palette, theme: 'dark' }
+        : { palette };
+    }),
 }));
 
 export const useAppStore = create<any>((set) => ({
@@ -157,68 +194,3 @@ export const useMatchStore = create<any>((set) => ({
   addMatch: (match: any) => set((state: any) => ({ matches: [...state.matches, match] })),
 }));
 
-export const useAdminStore = create<any>((set) => ({
-  stats: {
-    totalUsers: 8,
-    totalTeams: 3,
-    totalTournaments: 3,
-    totalPosts: 4,
-    activeUsers: 5,
-    totalMatches: 3,
-    onlineNow: 4,
-    newUsersToday: 2,
-  },
-  adminLogs: [],
-  formTemplates: [],
-  formResponses: [],
-  selectedUsers: [],
-
-  setStats: (stats: any) => set({ stats }),
-  updateStat: (key: string, value: any) =>
-    set((state: any) => ({ stats: { ...state.stats, [key]: value } })),
-
-  addAdminLog: (log: any) =>
-    set((state: any) => ({
-      adminLogs: [
-        { id: 'log_' + Date.now(), timestamp: new Date().toISOString(), ...log },
-        ...state.adminLogs,
-      ],
-    })),
-  setAdminLogs: (logs: any[]) => set({ adminLogs: logs }),
-
-  addFormTemplate: (template: any) =>
-    set((state: any) => ({
-      formTemplates: [
-        ...state.formTemplates,
-        { id: 'form_' + Date.now(), createdAt: new Date().toISOString(), ...template },
-      ],
-    })),
-  updateFormTemplate: (id: string, data: any) =>
-    set((state: any) => ({
-      formTemplates: state.formTemplates.map((f: any) =>
-        f.id === id ? { ...f, ...data } : f,
-      ),
-    })),
-  deleteFormTemplate: (id: string) =>
-    set((state: any) => ({
-      formTemplates: state.formTemplates.filter((f: any) => f.id !== id),
-    })),
-  setFormTemplates: (templates: any[]) => set({ formTemplates: templates }),
-
-  addFormResponse: (response: any) =>
-    set((state: any) => ({
-      formResponses: [
-        ...state.formResponses,
-        { id: 'resp_' + Date.now(), submittedAt: new Date().toISOString(), ...response },
-      ],
-    })),
-  setFormResponses: (responses: any[]) => set({ formResponses: responses }),
-
-  toggleUserSelection: (id: string) =>
-    set((state: any) => ({
-      selectedUsers: state.selectedUsers.includes(id)
-        ? state.selectedUsers.filter((u: any) => u !== id)
-        : [...state.selectedUsers, id],
-    })),
-  clearSelection: () => set({ selectedUsers: [] }),
-}));

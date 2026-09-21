@@ -1,9 +1,13 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Trophy } from 'lucide-react';
+import Link from 'next/link';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useT } from '@/lib/i18n';
+import { Badge, SectionTitle } from '@/components/ui';
+import { DURATION, EASE_OUT } from '@/lib/motion';
 
 interface MtlImage {
   id: string;
@@ -20,6 +24,8 @@ interface Mtl {
 }
 
 export default function MtlSection() {
+  const t = useT();
+  const reduce = useReducedMotion();
   const [mtl, setMtl] = useState<Mtl | null>(null);
   const [active, setActive] = useState(0);
 
@@ -36,72 +42,85 @@ export default function MtlSection() {
   );
 
   useEffect(() => {
-    if (images.length < 2) return;
+    if (images.length < 2 || reduce) return;
     const id = setInterval(() => setActive((a) => (a + 1) % images.length), 6000);
     return () => clearInterval(id);
-  }, [images.length]);
+  }, [images.length, reduce]);
 
   if (!mtl || !images.length) return null;
 
   return (
-    <div>
-
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-2 text-neon-gold mb-3">
-          <Trophy size={20} />
-          <span className="text-sm font-bold uppercase tracking-[0.2em]">MTL{mtl.season ? ` · ${mtl.season}` : ''}</span>
-        </div>
-        <h2 className="text-2xl sm:text-4xl font-bold text-white">{mtl.name}</h2>
-        {mtl.description && (
-          <p className="text-gray-400 mt-3 max-w-2xl mx-auto">{mtl.description}</p>
-        )}
+    <div className="grid gap-8 lg:grid-cols-12 lg:items-center">
+      <div className="lg:col-span-4">
+        <Badge variant="gold" size="sm" className="mb-4 uppercase tracking-eyebrow">
+          MTL{mtl.season ? ` ${mtl.season}` : ''}
+        </Badge>
+        <SectionTitle
+          size="lg"
+          eyebrow={t('mtl.eyebrow')}
+          title={<span className="uppercase">{mtl.name}</span>}
+          description={mtl.description ? <span className="block text-base leading-relaxed">{mtl.description}</span> : undefined}
+        />
+        <Link
+          href="/league"
+          className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent-gold transition-colors hover:text-ink-1"
+        >
+          {t('hero.cta.league')} <ArrowRight size={14} />
+        </Link>
       </div>
 
-      <div className="relative w-full rounded-2xl border border-gaming-border overflow-hidden bg-gaming-darker">
-        <div className="relative aspect-video w-full">
-
-          <AnimatePresence mode="wait">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <motion.img
-              key={images[active].id}
-              src={images[active].image}
-              alt={`${mtl.name} ${active + 1}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          </AnimatePresence>
+      <div className="relative lg:col-span-8">
+        <div className="cut-corners relative w-full overflow-hidden border border-line-subtle bg-surface-0">
+          <div className="relative aspect-video w-full">
+            <AnimatePresence mode="wait">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <motion.img
+                key={images[active].id}
+                src={images[active].image}
+                alt={`${mtl.name} ${active + 1}`}
+                initial={reduce ? { opacity: 1 } : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: DURATION.slow, ease: EASE_OUT }}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            </AnimatePresence>
+          </div>
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-surface-0/90 to-transparent px-4 py-3">
+            <span className="num font-display text-xs font-bold text-white/80">
+              {String(active + 1).padStart(2, '0')}
+              <span className="text-white/40"> / {String(images.length).padStart(2, '0')}</span>
+            </span>
+            <div className="flex items-center gap-1.5">
+              {images.map((im, i) => (
+                <button
+                  key={im.id}
+                  onClick={() => setActive(i)}
+                  aria-label={`Visuel ${i + 1}`}
+                  aria-current={i === active}
+                  className={`h-1.5 -skew-x-12 transition-[width,background-color] duration-base ${
+                    i === active ? 'w-8 bg-accent-gold' : 'w-3 bg-white/30 hover:bg-white/60'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
         </div>
 
         <button
           onClick={() => go(-1)}
           aria-label="Précédent"
-          className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 flex items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white hover:bg-black/70 transition-colors"
+          className="absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center border border-white/20 bg-surface-0/60 text-white/80 backdrop-blur transition-colors hover:border-white/60 hover:text-white"
         >
-          <ChevronLeft size={28} />
+          <ChevronLeft size={20} />
         </button>
         <button
           onClick={() => go(1)}
           aria-label="Suivant"
-          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 flex items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white hover:bg-black/70 transition-colors"
+          className="absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center border border-white/20 bg-surface-0/60 text-white/80 backdrop-blur transition-colors hover:border-white/60 hover:text-white"
         >
-          <ChevronRight size={28} />
+          <ChevronRight size={20} />
         </button>
-
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
-          {images.map((im, i) => (
-            <button
-              key={im.id}
-              onClick={() => setActive(i)}
-              aria-label={`Visuel ${i + 1}`}
-              className={`h-2 rounded-full transition-all ${
-                i === active ? 'w-6 bg-neon-gold' : 'w-2 bg-white/40 hover:bg-white/70'
-              }`}
-            />
-          ))}
-        </div>
       </div>
     </div>
   );

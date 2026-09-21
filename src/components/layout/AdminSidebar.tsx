@@ -1,59 +1,45 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import {
-  Trophy,
-  Handshake,
-  ShieldCheck,
-  CalendarDays,
-  Swords,
-  Inbox,
-  MessageSquare,
-} from 'lucide-react';
+import { adminMenuGroups } from '@/config/menu';
 import { useT } from '@/lib/i18n';
+import { avatarSrc } from '@/lib/api';
+import { useAuthStore } from '@/store/useStore';
+import { Badge } from '@/components/ui';
+import SidebarRail from './sidebar/SidebarRail';
 
-const NAV = [
-  { href: '/admin/esport', key: 'admin.esport.title', icon: Trophy },
-  { href: '/admin/seasons', key: 'admin.seasons.title', icon: CalendarDays },
-  { href: '/admin/matches', key: 'admin.matches.title', icon: Swords },
-  { href: '/admin/requests', key: 'requests.title', icon: Inbox },
-  { href: '/admin/messages', key: 'header.messages', icon: MessageSquare },
-  { href: '/admin/sponsors', key: 'admin.sponsors.title', icon: Handshake },
-];
+interface SidebarProps {
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+}
 
-export default function AdminSidebar() {
-  const pathname = usePathname();
+const ROLE_KEY: Record<string, string> = {
+  admin: 'admin.users.role.admin',
+  moderator: 'admin.users.role.moderator',
+};
+
+/** Admin rail: declarative admin menu + "Admin" tag + signed-in staff card. */
+export default function AdminSidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
   const t = useT();
+  const user = useAuthStore((s: any) => s.user);
+  const name = user?.username || user?.displayName || 'Admin';
+  const roleKey = ROLE_KEY[user?.roleUser] ?? ROLE_KEY.admin;
 
   return (
-    <aside className="sticky top-0 h-screen w-16 md:w-60 shrink-0 border-r border-gaming-border bg-gaming-card/60 flex flex-col p-2 md:p-3">
-      <Link href="/admin/esport" className="flex items-center gap-2 px-2 py-3 mb-2">
-        <ShieldCheck className="text-neon-blue shrink-0" size={22} />
-        <span className="hidden md:block font-bold text-white truncate">{t('admin.area')}</span>
-      </Link>
-
-      <nav className="flex flex-col gap-1">
-        {NAV.map((item) => {
-          const Icon = item.icon;
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={t(item.key)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                active
-                  ? 'text-neon-blue bg-neon-blue/10'
-                  : 'text-gray-300 hover:text-white hover:bg-gaming-surface'
-              }`}
-            >
-              <Icon size={18} className="shrink-0" />
-              <span className="hidden md:inline">{t(item.key)}</span>
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
+    <SidebarRail
+      groups={adminMenuGroups}
+      homeHref="/admin/league"
+      tag={
+        <Badge variant="neon" size="sm" className="shrink-0">
+          {t('admin.users.role.admin')}
+        </Badge>
+      }
+      user={{
+        name,
+        subtitle: t(roleKey),
+        avatarUrl: user?.avatar ? avatarSrc(user.avatar) : null,
+      }}
+      sidebarOpen={sidebarOpen}
+      setSidebarOpen={setSidebarOpen}
+    />
   );
 }

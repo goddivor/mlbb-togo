@@ -1,240 +1,198 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import {
-  Swords, Clock, Star, TrendingUp, BarChart3,
-} from 'lucide-react';
-import { Card, Badge, Tabs, StatCard } from '@/components/ui';
-import { useThemeStore, useMatchStore } from '@/store/useStore';
+import { useEffect, useMemo, useState } from 'react';
+import { CalendarDays, Flame, ListChecks, Swords, Trophy } from 'lucide-react';
+import { PageHeader, SectionCard, Skeleton, StatCard, Tabs } from '@/components/ui';
+import MatchCalendar, { CalendarView, monthRange } from '@/components/matches/MatchCalendar';
+import MatchResults, { ResultsFilter } from '@/components/matches/MatchResults';
+import { EsportMatch, MatchStage, displayStatus } from '@/components/matches/shared';
 import { api } from '@/lib/api';
-import { formatDate } from '@/lib/helpers';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS, CategoryScale, LinearScale, PointElement,
-  LineElement, Title, Tooltip, Filler, Legend,
-} from 'chart.js';
+import { useT } from '@/lib/i18n';
+import { useLangStore } from '@/store/useStore';
+import { useSelectedSeason } from '@/store/useSeasonStore';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend);
+type StageTab = 'all' | MatchStage;
+type View = 'calendar' | 'results';
 
-export default function Matches() {
-  const { theme } = useThemeStore();
-  const { matches, setMatches } = useMatchStore();
-  const [activeTab, setActiveTab] = useState('all');
-  const [selectedMatch, setSelectedMatch] = useState<any>(null);
+const VIEW_KEY = 'mlbb-matches-view';
+const CAL_VIEW_KEY = 'mlbb-matches-calendar-view';
 
+function readPref<T extends string>(key: string, allowed: T[], fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const v = localStorage.getItem(key) as T | null;
+    return v && allowed.includes(v) ? v : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function savePref(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export default function MatchesPage() {
+  const t = useT();
+  const lang = useLangStore((s: any) => s.lang) as string;
+  const { seasonId, season, ready } = useSelectedSeason();
+
+  const [stage, setStage] = useState<StageTab>('all');
+  const [view, setView] = useState<View>('calendar');
+  const [calView, setCalView] = useState<CalendarView>('grid');
+  const [filter, setFilter] = useState<ResultsFilter>({ teamId: '', status: '' });
+
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth());
+
+  const [matches, setMatches] = useState<EsportMatch[]>([]);
+  const [calendar, setCalendar] = useState<EsportMatch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [calLoading, setCalLoading] = useState(false);
+
+  // Restore view preferences after mount (avoids hydration mismatch).
   useEffect(() => {
-    api.matches.list().then(setMatches);
-  }, [setMatches]);
+    setView(readPref<View>(VIEW_KEY, ['calendar', 'results'], 'calendar'));
+    setCalView(readPref<CalendarView>(CAL_VIEW_KEY, ['grid', 'list'], window.innerWidth < 640 ? 'list' : 'grid'));
+  }, []);
 
-  const filtered = matches.filter((m: any) => {
-    if (activeTab === 'completed') return m.status === 'completed';
-    if (activeTab === 'upcoming') return m.status === 'upcoming';
-    return true;
-  });
-
-  const match = selectedMatch ? matches.find((m: any) => m.id === selectedMatch) : null;
-
-  const performanceChart = {
-    labels: ['Game 1', 'Game 2', 'Game 3', 'Game 4', 'Game 5', 'Game 6', 'Game 7', 'Game 8'],
-    datasets: [
-      {
-        label: 'KDA',
-        data: [5.2, 3.8, 7.1, 4.5, 6.3, 8.2, 4.1, 7.8],
-        borderColor: '#00d4ff',
-        backgroundColor: 'rgba(0, 212, 255, 0.1)',
-        fill: true,
-        tension: 0.4,
-        pointBackgroundColor: '#00d4ff',
-      },
-      {
-        label: 'Damage',
-        data: [45, 38, 62, 41, 55, 70, 35, 65],
-        borderColor: '#a855f7',
-        backgroundColor: 'rgba(168, 85, 247, 0.1)',
-        fill: true,
-        tension: 0.4,
-        pointBackgroundColor: '#a855f7',
-      },
-    ],
+  const changeView = (v: View) => {
+    setView(v);
+    savePref(VIEW_KEY, v);
+  };
+  const changeCalView = (v: CalendarView) => {
+    setCalView(v);
+    savePref(CAL_VIEW_KEY, v);
   };
 
-  const chartOptions: any = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { labels: { color: '#9ca3af', font: { size: 11 } } },
-    },
-    scales: {
-      x: {
-        grid: { color: 'rgba(255,255,255,0.05)' },
-        ticks: { color: '#6b7280', font: { size: 11 } },
-      },
-      y: {
-        grid: { color: 'rgba(255,255,255,0.05)' },
-        ticks: { color: '#6b7280', font: { size: 11 } },
-      },
-    },
-  };
+  // Full list of the selection (results view + counters).
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    setLoading(true);
+    api.esport
+      .matches({ seasonId: seasonId || undefined, stage: stage === 'all' ? undefined : stage })
+      .then((l: any) => {
+        if (!cancelled) setMatches(Array.isArray(l) ? l : []);
+      })
+      .catch(() => {
+        if (!cancelled) setMatches([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, seasonId, stage]);
+
+  // Month window for the calendar view (API groups by day; we regroup by
+  // local day on the client to respect the viewer's timezone).
+  useEffect(() => {
+    if (!ready || view !== 'calendar') return;
+    let cancelled = false;
+    setCalLoading(true);
+    const { from, to } = monthRange(year, month);
+    api.esport
+      .matchesCalendar({
+        seasonId: seasonId || undefined,
+        stage: stage === 'all' ? undefined : stage,
+        from: from.toISOString(),
+        to: to.toISOString(),
+      })
+      .then((res: any) => {
+        if (cancelled) return;
+        const days = Array.isArray(res?.days) ? res.days : [];
+        setCalendar(days.flatMap((d: any) => (Array.isArray(d.matches) ? d.matches : [])));
+      })
+      .catch(() => {
+        if (!cancelled) setCalendar([]);
+      })
+      .finally(() => {
+        if (!cancelled) setCalLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, view, seasonId, stage, year, month]);
+
+  const counters = useMemo(() => {
+    const c = { total: matches.length, live: 0, upcoming: 0, completed: 0 };
+    for (const m of matches) {
+      const s = displayStatus(m);
+      if (s === 'live') c.live++;
+      else if (s === 'scheduled') c.upcoming++;
+      else if (s === 'completed') c.completed++;
+    }
+    return c;
+  }, [matches]);
+
+  const stageTabs = [
+    { id: 'all', label: t('matches.stage.all') },
+    { id: 'scrim', label: t('matches.stage.scrim') },
+    { id: 'league', label: t('matches.stage.league') },
+    { id: 'playoff', label: t('matches.stage.playoff') },
+  ];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow={season ? season.name : t('nav.section.esport')}
+        icon={<Swords size={20} />}
+        title={t('matches.title')}
+        subtitle={season ? t('matches.subtitleSeason', { season: season.name }) : t('matches.subtitle')}
+      >
+        <StatCard icon={<Swords size={18} />} label={t('matches.stage.' + stage)} value={counters.total} hint={t('matches.counters.total', { n: counters.total })} />
+        <StatCard icon={<Flame size={18} />} accent="red" label={t('matches.status.live')} value={counters.live} hint={t('matches.counters.live', { n: counters.live })} />
+        <StatCard icon={<CalendarDays size={18} />} accent="cyan" label={t('matches.status.scheduled')} value={counters.upcoming} hint={t('matches.counters.upcoming', { n: counters.upcoming })} />
+        <StatCard icon={<Trophy size={18} />} accent="green" label={t('matches.status.completed')} value={counters.completed} hint={t('matches.counters.completed', { n: counters.completed })} />
+      </PageHeader>
 
-      <div className="mb-8">
-        <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-          <Swords className="inline w-8 h-8 mr-2 text-neon-blue" />
-          Matchs
-        </h1>
-        <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-          Historique et suivi des matchs
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Matchs joués" value={matches.filter((m: any) => m.status === 'completed').length} icon={<Swords size={16} />} />
-        <StatCard label="Victoires" value={matches.filter((m: any) => m.status === 'completed' && m.team1.score > m.team2.score).length} icon={<TrendingUp size={16} />} trend={12} />
-        <StatCard label="MVP obtenus" value={matches.filter((m: any) => m.mvp).length} icon={<Star size={16} />} />
-        <StatCard label="À venir" value={matches.filter((m: any) => m.status === 'upcoming').length} icon={<Clock size={16} />} />
-      </div>
-
-      <Tabs
-        tabs={[
-          { id: 'all', label: 'Tous' },
-          { id: 'completed', label: 'Terminés' },
-          { id: 'upcoming', label: 'À venir' },
-        ]}
-        active={activeTab}
-        onChange={setActiveTab}
-        className="mb-6"
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        <div className="lg:col-span-2 space-y-4">
-          {filtered.map((m: any, index: number) => (
-            <motion.div
-              key={m.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card
-                className={`cursor-pointer ${selectedMatch === m.id ? 'border-neon-blue/50 shadow-neon' : ''}`}
-                onClick={() => setSelectedMatch(m.id)}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <Badge variant={m.status === 'completed' ? 'green' : 'neon'} size="sm">
-                    {m.status === 'completed' ? '✅ Terminé' : '📅 À venir'}
-                  </Badge>
-                  <span className="text-xs text-gray-400">{formatDate(m.date)} • {m.tournament}</span>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 text-center">
-                    <p className={`font-bold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{m.team1.name}</p>
-                    <p className={`text-3xl font-black ${
-                      m.status === 'completed' && m.team1.score > m.team2.score ? 'text-green-400' :
-                      m.status === 'completed' && m.team1.score < m.team2.score ? 'text-red-400' :
-                      'text-neon-blue'
-                    }`}>
-                      {m.team1.score}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col items-center">
-                    <div className={`px-4 py-2 rounded-xl text-xs font-black ${
-                      theme === 'dark' ? 'bg-gaming-surface text-gray-300' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      VS
-                    </div>
-                    {m.duration && (
-                      <span className="text-xs text-gray-400 mt-1">{m.duration}</span>
-                    )}
-                  </div>
-
-                  <div className="flex-1 text-center">
-                    <p className={`font-bold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{m.team2.name}</p>
-                    <p className={`text-3xl font-black ${
-                      m.status === 'completed' && m.team2.score > m.team1.score ? 'text-green-400' :
-                      m.status === 'completed' && m.team2.score < m.team1.score ? 'text-red-400' :
-                      'text-neon-purple'
-                    }`}>
-                      {m.team2.score}
-                    </p>
-                  </div>
-                </div>
-
-                {m.mvp && (
-                  <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-gaming-border">
-                    <Star size={14} className="text-yellow-400" />
-                    <span className="text-xs text-gray-400">MVP: <span className="text-yellow-400 font-medium">{m.mvp}</span></span>
-                  </div>
-                )}
-
-                <div className="text-center mt-2">
-                  <Badge variant="purple" size="sm">{m.format}</Badge>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
+      <SectionCard className="!p-0">
+        <div className="flex flex-col gap-3 px-3 pt-2 sm:px-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="overflow-x-auto overflow-y-hidden">
+            <Tabs variant="underline" tabs={stageTabs} active={stage} onChange={(id: string) => setStage(id as StageTab)} className="min-w-max whitespace-nowrap border-b-0" />
+          </div>
+          <div className="pb-2">
+            <Tabs
+              size="sm"
+              tabs={[
+                { id: 'calendar', label: t('matches.view.calendar'), icon: CalendarDays },
+                { id: 'results', label: t('matches.view.results'), icon: ListChecks },
+              ]}
+              active={view}
+              onChange={(id: string) => changeView(id as View)}
+            />
+          </div>
         </div>
+      </SectionCard>
 
-        <div>
-          {match ? (
-            <Card>
-              <h3 className={`font-bold text-lg mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                Détails du match
-              </h3>
-
-              {match.games.length > 0 && (
-                <div className="mb-6">
-                  <p className="text-xs text-gray-400 mb-3">Games ({match.format})</p>
-                  <div className="space-y-2">
-                    {match.games.map((game: any) => (
-                      <div key={game.number} className="flex items-center justify-between p-2 rounded-lg bg-gaming-surface/50">
-                        <span className="text-sm text-gray-300">Game {game.number}</span>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={game.winner === match.team1.id ? 'green' : 'red'}
-                            size="sm"
-                          >
-                            {game.winner === match.team1.id ? match.team1.name : match.team2.name}
-                          </Badge>
-                          <span className="text-xs text-gray-400">{game.duration}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="mb-6">
-                <p className="text-xs text-gray-400 mb-2">MVP</p>
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-                  <Star size={20} className="text-yellow-400" />
-                  <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{match.mvp}</span>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs text-gray-400 mb-3">Performance</p>
-                <div className="h-48">
-                  <Line data={performanceChart} options={chartOptions} />
-                </div>
-              </div>
-            </Card>
-          ) : (
-            <Card>
-              <div className="text-center py-8">
-                <BarChart3 className="w-10 h-10 mx-auto mb-3 text-gray-500" />
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Sélectionnez un match pour voir les détails
-                </p>
-              </div>
-            </Card>
-          )}
+      {!ready || (loading && matches.length === 0 && view === 'results') ? (
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2" aria-busy="true">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-lg" />)}
         </div>
-      </div>
+      ) : view === 'calendar' ? (
+        <MatchCalendar
+          matches={calendar}
+          year={year}
+          month={month}
+          onMonthChange={(y, m) => {
+            setYear(y);
+            setMonth(m);
+          }}
+          view={calView}
+          onViewChange={changeCalView}
+          t={t}
+          lang={lang}
+          loading={calLoading}
+        />
+      ) : (
+        <MatchResults matches={matches} filter={filter} onFilterChange={setFilter} t={t} lang={lang} />
+      )}
     </div>
   );
 }

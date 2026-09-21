@@ -1,46 +1,41 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Swords, Users, Shield, Users2 } from 'lucide-react';
+import { playerMenuGroups } from '@/config/menu';
 import { useT } from '@/lib/i18n';
+import { avatarSrc } from '@/lib/api';
+import { useAuthStore } from '@/store/useStore';
+import SeasonSwitcher from '@/components/seasons/SeasonSwitcher';
+import SidebarRail from './sidebar/SidebarRail';
 
-const NAV = [
-  { href: '/dashboard', key: 'header.dashboard', icon: LayoutDashboard },
-  { href: '/heroes', key: 'header.heroes', icon: Swords },
-  { href: '/players', key: 'header.players', icon: Users },
-  { href: '/teams', key: 'header.teams', icon: Shield },
-  { href: '/friends', key: 'header.friends', icon: Users2 },
-];
+interface SidebarProps {
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+}
 
-export default function DashboardSidebar() {
-  const pathname = usePathname();
+/** Player rail: declarative player menu + season pill (phones) + profile card. */
+export default function DashboardSidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
   const t = useT();
-  const nav = NAV;
+  const userProfile = useAuthStore((s: any) => s.userProfile);
+  const name = userProfile?.displayName || userProfile?.username || 'Joueur';
 
   return (
-    <aside className="sticky top-16 h-[calc(100vh-4rem)] w-16 md:w-56 shrink-0 border-r border-gaming-border bg-gaming-card/40 p-2 md:p-3">
-      <nav className="flex flex-col gap-1">
-        {nav.map((item) => {
-          const Icon = item.icon;
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={t(item.key)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                active
-                  ? 'text-neon-blue bg-neon-blue/10'
-                  : 'text-gray-300 hover:text-white hover:bg-gaming-surface'
-              }`}
-            >
-              <Icon size={18} className="shrink-0" />
-              <span className="hidden md:inline">{t(item.key)}</span>
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
+    <SidebarRail
+      groups={playerMenuGroups}
+      homeHref="/dashboard"
+      user={{
+        name,
+        subtitle: userProfile?.gameNickname || (userProfile?.username ? `@${userProfile.username}` : t('header.menu.profile')),
+        avatarUrl: userProfile?.avatar ? avatarSrc(userProfile.avatar) : null,
+        href: '/profile',
+      }}
+      // The header hides the season pill on phones: offer it in the drawer instead.
+      footer={
+        <div className="sm:hidden">
+          <SeasonSwitcher variant="header" className="w-full" />
+        </div>
+      }
+      sidebarOpen={sidebarOpen}
+      setSidebarOpen={setSidebarOpen}
+    />
   );
 }

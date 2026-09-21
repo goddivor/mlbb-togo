@@ -21,6 +21,18 @@ const columns = [
       { key: 'footer.link.tournaments', href: '/tournaments' },
       { key: 'footer.link.events', href: '/events' },
       { key: 'footer.link.matches', href: '/matches' },
+      { key: 'nav.league', href: '/league' },
+      { key: 'sponsors.becomeSponsor', href: '/sponsors' },
+    ],
+  },
+  {
+    titleKey: 'footer.col.legal',
+    links: [
+      { key: 'footer.link.about', href: '/about' },
+      { key: 'footer.link.legalNotice', href: '/legal/mentions-legales' },
+      { key: 'footer.link.security', href: '/legal/securite' },
+      { key: 'footer.link.cookies', href: '/legal/cookies' },
+      { key: 'footer.link.privacy', href: '/legal/donnees-personnelles' },
     ],
   },
 ];
@@ -38,14 +50,14 @@ export default function LandingFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative z-10 border-t border-gaming-border bg-gaming-darker/50">
+    <footer className="relative z-10 border-t border-line-subtle bg-surface-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
 
-          <div className="col-span-2">
+          <div className="col-span-2 md:col-span-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/mlbb-togo-logo.png" alt="MLBB Togo" className="h-9 w-auto mb-4" />
-            <p className="text-sm text-gray-400 max-w-xs">{t('footer.desc')}</p>
+            <p className="text-sm text-ink-2 max-w-xs">{t('footer.desc')}</p>
             <div className="flex items-center gap-3 mt-5">
               {socials.map((s) => {
                 const Icon = s.icon;
@@ -56,7 +68,7 @@ export default function LandingFooter() {
                     aria-label={s.label}
                     target="_blank"
                     rel="noreferrer"
-                    className="w-9 h-9 flex items-center justify-center rounded-lg bg-gaming-surface text-gray-400 hover:text-neon-blue hover:bg-neon-blue/10 transition-colors"
+                    className="w-9 h-9 flex items-center justify-center rounded cut-corners-sm bg-surface-2 text-ink-2 hover:text-primary hover:bg-primary/10 transition-colors"
                   >
                     <Icon size={18} />
                   </a>
@@ -67,11 +79,11 @@ export default function LandingFooter() {
 
           {columns.map((col) => (
             <div key={col.titleKey}>
-              <h3 className="text-white font-semibold mb-4">{t(col.titleKey)}</h3>
+              <h3 className="eyebrow mb-4 !text-ink-1">{t(col.titleKey)}</h3>
               <ul className="space-y-2.5">
                 {col.links.map((l) => (
                   <li key={l.key}>
-                    <Link href={l.href} className="text-sm text-gray-400 hover:text-neon-blue transition-colors">
+                    <Link href={l.href} className="text-sm text-ink-2 hover:text-primary transition-colors">
                       {t(l.key)}
                     </Link>
                   </li>
@@ -81,7 +93,7 @@ export default function LandingFooter() {
           ))}
         </div>
 
-        <div className="mt-10 pt-6 border-t border-gaming-border flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-500">
+        <div className="mt-10 pt-6 border-t border-line-subtle flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-ink-3">
           <p>© {year} MLBB Togo — {t('footer.copyright')}</p>
           <p>{t('footer.moonton')}</p>
         </div>

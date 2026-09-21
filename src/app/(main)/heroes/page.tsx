@@ -1,11 +1,21 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Search } from 'lucide-react';
-import { api, mlbbImg } from '@/lib/api';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Search, Swords } from 'lucide-react';
+import { api } from '@/lib/api';
+import { PageHeader, SectionCard, EmptyState, Skeleton, StatTile, Tabs } from '@/components/ui';
+import { HeroCard } from '@/components/game';
 import HeroDetailModal from '@/components/game/HeroDetailModal';
 import { useT } from '@/lib/i18n';
+import { still, transitionBase } from '@/lib/motion';
+import type { Variants } from 'framer-motion';
+
+// Large grid: cap the entrance delay so the last card never waits.
+const cardIn: Variants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: (i: number) => ({ opacity: 1, y: 0, transition: { ...transitionBase, delay: Math.min(i * 0.012, 0.35) } }),
+};
 
 const ROLES: Array<{ key: string; labelKey: string }> = [
   { key: 'all', labelKey: 'heroes.role.all' },
@@ -19,6 +29,7 @@ const ROLES: Array<{ key: string; labelKey: string }> = [
 
 export default function HeroesPage() {
   const t = useT();
+  const reduce = useReducedMotion();
   const [heroes, setHeroes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState('all');
@@ -42,77 +53,77 @@ export default function HeroesPage() {
     });
   }, [heroes, role, query]);
 
+  const roleTabs = useMemo(
+    () =>
+      ROLES.map((r) => ({
+        id: r.key,
+        label: t(r.labelKey),
+        count: r.key === 'all' ? heroes.length : heroes.filter((h) => (h.roles || []).includes(r.key)).length,
+      })),
+    [heroes, t],
+  );
+
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
-        <div>
-          <h1 className="text-2xl font-bold text-white">{t('heroes.title')}</h1>
-          <p className="text-sm text-gray-400">
-            {loading ? t('heroes.loading') : `${heroes.length} ${t('heroes.count')}`}
-          </p>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow={t('nav.section.catalog')}
+        icon={<Swords size={20} />}
+        title={t('heroes.title')}
+        subtitle={loading ? t('heroes.loading') : `${heroes.length} ${t('heroes.count')}`}
+      />
+
+      {/* Filters: search + roles */}
+      <SectionCard className="!p-0">
+        <div className="flex flex-col gap-3 px-4 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-xs">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t('heroes.search')}
+              className="w-full rounded border border-line-strong bg-surface-1 py-2.5 pl-9 pr-3 text-sm text-ink-1 placeholder:text-ink-3 outline-none transition-[border-color,box-shadow] duration-base focus:border-primary focus:ring-2 focus:ring-primary/25 dark:bg-surface-0/60"
+            />
+          </div>
+          <StatTile label={t('heroes.title')} value={loading ? '—' : filtered.length} accent="cyan" align="right" />
         </div>
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t('heroes.search')}
-            className="pl-9 pr-3 py-2 w-full sm:w-64 text-sm rounded-lg bg-gaming-surface border border-gaming-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-neon-blue"
+        <div className="mt-2 overflow-x-auto overflow-y-hidden px-4">
+          <Tabs
+            variant="underline"
+            size="sm"
+            tabs={roleTabs}
+            active={role}
+            onChange={(id: string) => setRole(id)}
+            className="min-w-max whitespace-nowrap border-b-0"
           />
         </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-6">
-        {ROLES.map((r) => (
-          <button
-            key={r.key}
-            onClick={() => setRole(r.key)}
-            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              role === r.key
-                ? 'bg-neon-blue text-white'
-                : 'bg-gaming-surface text-gray-300 hover:text-white border border-gaming-border'
-            }`}
-          >
-            {t(r.labelKey)}
-          </button>
-        ))}
-      </div>
+      </SectionCard>
 
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="w-10 h-10 rounded-full border-2 border-gaming-border border-t-neon-blue animate-spin" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">{t('heroes.none')}</div>
-      ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
-          {filtered.map((h, i) => (
-            <motion.button
-              key={h.heroId ?? i}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.015, 0.4) }}
-              onClick={() => setSelected(h.heroId)}
-              className="group rounded-xl overflow-hidden border border-gaming-border bg-gaming-surface/40 hover:border-neon-blue transition-colors text-left"
-            >
-              <div className="aspect-square bg-gaming-dark overflow-hidden">
-                {h.image && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={mlbbImg(h.image, 160)}
-                    alt={h.name}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                  />
-                )}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6" aria-busy="true">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="overflow-hidden rounded-lg border border-line-subtle bg-surface-1">
+              <Skeleton className="aspect-[4/5] w-full rounded-none" />
+              <div className="space-y-2 p-3">
+                <Skeleton className="h-3 w-full" />
               </div>
-              <div className="p-2">
-                <p className="text-xs font-semibold text-white truncate">{h.name}</p>
-                <p className="text-[10px] text-gray-400 truncate">{(h.roles || []).join(' · ')}</p>
-              </div>
-            </motion.button>
+            </div>
           ))}
         </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState icon={<Search size={26} />} title={t('heroes.none')} />
+      ) : (
+        <motion.div
+          key={`${role}-${query}`}
+          className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6"
+          initial="hidden"
+          animate="visible"
+        >
+          {filtered.map((h, i) => (
+            <motion.div key={h.heroId ?? i} custom={i} variants={reduce ? still : cardIn}>
+              <HeroCard hero={h} size="sm" onClick={() => setSelected(h.heroId)} />
+            </motion.div>
+          ))}
+        </motion.div>
       )}
 
       <HeroDetailModal heroId={selected} onClose={() => setSelected(null)} />

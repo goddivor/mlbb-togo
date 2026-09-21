@@ -1,86 +1,310 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Trophy, Search, Trash2, Eye, Edit, Calendar, Users as UsersIcon } from 'lucide-react';
-import { useTournamentStore, useAdminStore } from '@/store/useStore';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Plus, Pencil, Trash2, Trophy, Settings2, Users, Calendar } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useT } from '@/lib/i18n';
+import { Card, Button, Badge, PageHeader, EmptyState, LoadingSpinner, Input, Textarea, Select, StatCard } from '@/components/ui';
+import { fadeUp, stagger, still } from '@/lib/motion';
+import CitySelect from '@/components/geo/CitySelect';
+import Modal from '@/components/ui/Modal';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import { TOURNAMENT_STATUS_VARIANT } from '@/components/tournaments/tournament-utils';
 import toast from 'react-hot-toast';
 
-export default function AdminTournaments() {
-  const { tournaments, setTournaments, deleteTournament } = useTournamentStore();
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const { addAdminLog } = useAdminStore();
+const STATUSES = ['upcoming', 'ongoing', 'completed'];
 
-  useEffect(() => {
-    api.tournaments.list().then(setTournaments);
-  }, [setTournaments]);
+type Form = {
+  name: string;
+  description: string;
+  organizer: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  prizePool: string;
+  maxTeams: string;
+  format: string;
+  rules: string;
+  banner: string;
+  streamUrl: string;
+  city: string;
+};
 
-  const filtered = tournaments.filter((t: any) => {
-    const matchSearch = t.name.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'all' || t.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+const emptyForm: Form = {
+  name: '',
+  description: '',
+  organizer: '',
+  status: 'upcoming',
+  startDate: '',
+  endDate: '',
+  prizePool: '',
+  maxTeams: '16',
+  format: '',
+  rules: '',
+  banner: '',
+  streamUrl: '',
+  city: '',
+};
 
-  const handleDelete = (t: any) => {
-    deleteTournament(t.id);
-    api.tournaments.remove(t.id).catch(() => {});
-    addAdminLog({ action: 'tournament_delete', admin: 'TogoKing', target: t.name, details: 'Tournoi supprimé' });
-    toast.success(`${t.name} supprimé`);
+export default function AdminTournamentsPage() {
+  const t = useT();
+  const reduce = useReducedMotion();
+  const [loading, setLoading] = useState(true);
+  const [tournaments, setTournaments] = useState<any[]>([]);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
+  const [form, setForm] = useState<Form>(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<any>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const errMsg = (e: any) => e?.message || t('common.error');
+
+  // Status counts derived from the loaded list (no extra request).
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { upcoming: 0, ongoing: 0, completed: 0 };
+    for (const tn of tournaments) c[tn.status] = (c[tn.status] ?? 0) + 1;
+    return c;
+  }, [tournaments]);
+
+  const load = async () => {
+    try {
+      const list = await api.tournaments.list();
+      setTournaments(Array.isArray(list) ? list : []);
+    } catch (e: any) {
+      toast.error(errMsg(e));
+    }
   };
 
-  const statusColors: Record<string, string> = { upcoming: 'bg-blue-500/20 text-blue-400', ongoing: 'bg-green-500/20 text-green-400', completed: 'bg-gray-500/20 text-gray-400', cancelled: 'bg-red-500/20 text-red-400' };
-  const statusLabels: Record<string, string> = { upcoming: 'À venir', ongoing: 'En cours', completed: 'Terminé', cancelled: 'Annulé' };
+  useEffect(() => {
+    load().finally(() => setLoading(false));
+  }, []);
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm(emptyForm);
+    setFormOpen(true);
+  };
+
+  const openEdit = (tn: any) => {
+    setEditing(tn);
+    setForm({
+      name: tn.name || '',
+      description: tn.description || '',
+      organizer: tn.organizer || '',
+      status: tn.status || 'upcoming',
+      startDate: tn.startDate || '',
+      endDate: tn.endDate || '',
+      prizePool: tn.prizePool || '',
+      maxTeams: String(tn.maxTeams ?? 16),
+      format: tn.format || '',
+      rules: tn.rules || '',
+      banner: tn.banner || '',
+      streamUrl: tn.streamUrl || '',
+      city: tn.city || '',
+    });
+    setFormOpen(true);
+  };
+
+  const set = (k: keyof Form) => (e: any) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || saving) return;
+    setSaving(true);
+    try {
+      const maxTeams = parseInt(form.maxTeams, 10);
+      const payload: any = {
+        name: form.name.trim(),
+        description: form.description.trim() || undefined,
+        organizer: form.organizer.trim() || undefined,
+        status: form.status,
+        startDate: form.startDate || undefined,
+        endDate: form.endDate || undefined,
+        prizePool: form.prizePool.trim() || undefined,
+        maxTeams: Number.isFinite(maxTeams) && maxTeams > 1 ? maxTeams : undefined,
+        format: form.format.trim() || undefined,
+        rules: form.rules.trim() || undefined,
+        banner: form.banner.trim() || undefined,
+        streamUrl: form.streamUrl.trim() || undefined,
+        city: form.city || null,
+      };
+      if (editing) {
+        await api.tournaments.update(editing.id, payload);
+        toast.success(t('admin.tournaments.updated'));
+      } else {
+        await api.tournaments.create(payload);
+        toast.success(t('admin.tournaments.created'));
+      }
+      setFormOpen(false);
+      await load();
+    } catch (err: any) {
+      toast.error(errMsg(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      await api.tournaments.remove(pendingDelete.id);
+      toast.success(t('admin.tournaments.deleted'));
+      await load();
+    } catch (err: any) {
+      toast.error(errMsg(err));
+    } finally {
+      setDeleting(false);
+      setPendingDelete(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3"><Trophy className="text-yellow-400" size={32} /> Gestion des Tournois</h1>
-          <p className="text-gray-400 mt-1">{filtered.length} tournois</p>
-        </div>
-      </motion.div>
+      <PageHeader
+        eyebrow={t('nav.section.esport')}
+        icon={<Trophy size={28} />}
+        title={t('admin.tournaments.title')}
+        subtitle={t('admin.tournaments.subtitle')}
+        action={
+          <Button size="sm" onClick={openCreate}>
+            <Plus size={16} /> {t('admin.tournaments.new')}
+          </Button>
+        }
+      />
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher un tournoi..." className="w-full pl-10 pr-4 py-2.5 bg-gaming-card border border-gaming-border rounded-lg text-white placeholder-gray-500 focus:border-neon-blue focus:outline-none" />
+      {!loading && tournaments.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <StatCard label={t('admin.tournaments.title')} value={tournaments.length} icon={<Trophy size={16} />} />
+          <StatCard label={t('tournament.status.upcoming')} value={counts.upcoming} icon={<Calendar size={16} />} accent="violet" />
+          <StatCard label={t('tournament.status.ongoing')} value={counts.ongoing} icon={<Settings2 size={16} />} accent="green" />
+          <StatCard label={t('tournament.status.completed')} value={counts.completed} icon={<Users size={16} />} accent="gold" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-4 py-2.5 bg-gaming-card border border-gaming-border rounded-lg text-white focus:border-neon-blue focus:outline-none">
-          <option value="all">Tous les statuts</option>
-          <option value="upcoming">À venir</option>
-          <option value="ongoing">En cours</option>
-          <option value="completed">Terminé</option>
-        </select>
-      </div>
+      )}
 
-      <div className="space-y-4">
-        {filtered.map((t: any, i: number) => (
-          <motion.div key={t.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} className="bg-gaming-card border border-gaming-border rounded-xl p-5 hover:border-yellow-400/30 transition-all">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-lg font-semibold text-white">{t.name}</h3>
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[t.status]}`}>{statusLabels[t.status]}</span>
+      {loading ? (
+        <LoadingSpinner size="lg" className="py-24" />
+      ) : tournaments.length === 0 ? (
+        <EmptyState
+          icon={<Trophy size={28} />}
+          title={t('admin.tournaments.empty')}
+          action={
+            <Button size="sm" onClick={openCreate}>
+              <Plus size={16} /> {t('admin.tournaments.new')}
+            </Button>
+          }
+        />
+      ) : (
+        <motion.div
+          variants={reduce ? still : stagger()}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+        >
+          {tournaments.map((tn) => {
+            const regCount = (tn.registeredTeams || []).length;
+            const hasBracket = Array.isArray(tn.brackets) && tn.brackets.length > 0;
+            const accent = tn.status === 'ongoing' ? 'green' : tn.status === 'completed' ? 'gold' : 'cyan';
+            return (
+              <motion.div key={tn.id} variants={reduce ? still : fadeUp} className="h-full">
+              <Card accent={accent} className="flex h-full flex-col gap-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-display text-base font-bold tracking-tight2 text-ink-1">{tn.name}</p>
+                    {tn.description && (
+                      <p className="mt-0.5 line-clamp-2 text-xs text-ink-2">{tn.description}</p>
+                    )}
+                  </div>
+                  <Badge variant={TOURNAMENT_STATUS_VARIANT[tn.status] || 'default'} size="sm" pulse={tn.status === 'ongoing'}>
+                    {t(`tournament.status.${tn.status}`) }
+                  </Badge>
                 </div>
-                <p className="text-gray-400 text-sm mb-3">{t.description}</p>
-                <div className="flex flex-wrap gap-4 text-sm text-gray-400">
-                  <span className="flex items-center gap-1"><Calendar size={14} /> {t.startDate} → {t.endDate}</span>
-                  <span className="flex items-center gap-1"><UsersIcon size={14} /> {t.registeredTeams.length}/{t.maxTeams} équipes</span>
-                  <span className="text-yellow-400 font-medium">{t.prizePool}</span>
-                  <span className="text-gray-500">{t.format}</span>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-ink-2">
+                  <span className="inline-flex items-center gap-1 num">
+                    <Users size={12} /> {t('tournament.teamsCount', { count: regCount, max: tn.maxTeams })}
+                  </span>
+                  {(tn.startDate || tn.endDate) && (
+                    <span className="inline-flex items-center gap-1 num">
+                      <Calendar size={12} /> {tn.startDate}{tn.endDate ? ` → ${tn.endDate}` : ''}
+                    </span>
+                  )}
+                  {tn.format && <Badge variant="purple" size="sm">{tn.format}</Badge>}
+                  {hasBracket && <Badge variant="blue" size="sm">{t('admin.tournaments.bracket')}</Badge>}
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <button className="py-2 px-3 bg-gaming-darker text-gray-300 rounded-lg hover:text-white transition-colors text-sm flex items-center gap-1"><Eye size={14} /> Voir</button>
-                <button className="py-2 px-3 bg-gaming-darker text-gray-300 rounded-lg hover:text-yellow-400 transition-colors text-sm flex items-center gap-1"><Edit size={14} /> Éditer</button>
-                <button onClick={() => handleDelete(t)} className="py-2 px-3 bg-gaming-darker text-gray-300 rounded-lg hover:text-red-400 transition-colors text-sm"><Trash2 size={14} /></button>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+                <div className="mt-auto flex flex-wrap items-center gap-2">
+                  <Link href={`/admin/tournaments/${tn.id}`}>
+                    <Button size="sm">
+                      <Settings2 size={14} /> {t('admin.tournaments.manage')}
+                    </Button>
+                  </Link>
+                  <Button size="sm" variant="secondary" onClick={() => openEdit(tn)}>
+                    <Pencil size={14} /> {t('admin.tournaments.edit')}
+                  </Button>
+                  <Button size="sm" variant="danger" onClick={() => setPendingDelete(tn)}>
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </Card>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+      )}
+
+      <Modal
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        title={editing ? t('admin.tournaments.edit') : t('admin.tournaments.new')}
+        icon={<Trophy size={20} />}
+        size="lg"
+        closeLabel={t('common.close')}
+      >
+        <form onSubmit={submit} className="space-y-4">
+          <Input label={t('admin.tournaments.form.name')} value={form.name} onChange={set('name')} required />
+          <Textarea label={t('admin.tournaments.form.description')} value={form.description} onChange={set('description')} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input label={t('admin.tournaments.form.organizer')} value={form.organizer} onChange={set('organizer')} />
+            <Select
+              label={t('admin.tournaments.form.status')}
+              value={form.status}
+              onChange={set('status')}
+              options={STATUSES.map((s) => ({ value: s, label: t(`tournament.status.${s}`) }))}
+            />
+            <Input type="date" label={t('admin.tournaments.form.startDate')} value={form.startDate} onChange={set('startDate')} />
+            <Input type="date" label={t('admin.tournaments.form.endDate')} value={form.endDate} onChange={set('endDate')} />
+            <Input label={t('admin.tournaments.form.prizePool')} value={form.prizePool} onChange={set('prizePool')} />
+            <Input type="number" min={2} label={t('admin.tournaments.form.maxTeams')} value={form.maxTeams} onChange={set('maxTeams')} />
+            <Input label={t('admin.tournaments.form.format')} value={form.format} onChange={set('format')} />
+            <Input label={t('admin.tournaments.form.banner')} value={form.banner} onChange={set('banner')} />
+            <CitySelect label={t('admin.tournaments.form.city')} value={form.city} onChange={(city) => setForm((f) => ({ ...f, city }))} />
+          </div>
+          <Input label={t('admin.tournaments.form.streamUrl')} value={form.streamUrl} onChange={set('streamUrl')} />
+          <Textarea label={t('admin.tournaments.form.rules')} value={form.rules} onChange={set('rules')} />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setFormOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" loading={saving} disabled={!form.name.trim() || saving}>
+              {t('common.save')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <ConfirmModal
+        open={!!pendingDelete}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={confirmDelete}
+        title={t('admin.tournaments.delete')}
+        message={t('admin.tournaments.deleteConfirm')}
+        confirmLabel={t('admin.tournaments.delete')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        loading={deleting}
+      />
     </div>
   );
 }

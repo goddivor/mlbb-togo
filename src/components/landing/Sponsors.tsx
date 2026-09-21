@@ -1,44 +1,28 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import SponsorTiers, { useSponsors } from '@/components/sponsors/SponsorTiers';
 
-interface Sponsor {
-  id: string;
-  logo: string;
-  name?: string;
-  url?: string;
-}
-
+/** Landing strip: sponsors of the current season (tiered sizes) + sponsoring CTA. */
 export default function Sponsors() {
-  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const t = useT();
+  const data = useSponsors('current');
 
-  useEffect(() => {
-    api.esport.sponsors().then((list: any) => {
-      if (Array.isArray(list)) setSponsors(list);
-    });
-  }, []);
-
-  if (!sponsors.length) return null;
+  if (!data || data.items.length === 0) return null;
 
   return (
-    <div className="text-center">
-      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-500 mb-6">
-        {t('sponsors.title')}
-      </p>
-      <div className="flex flex-wrap items-center justify-center gap-10 sm:gap-16">
-        {sponsors.map((s) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={s.id}
-            src={s.logo}
-            alt={s.name || 'Sponsor'}
-            className="h-24 sm:h-32 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity grayscale hover:grayscale-0"
-          />
-        ))}
-      </div>
+    <div className="border-y border-line-subtle py-12 text-center">
+      <p className="eyebrow mb-2">{t('sponsors.eyebrow')}</p>
+      <h2 className="mb-8 font-display text-2xl font-bold uppercase tracking-tight2 text-ink-1">{t('sponsors.title')}</h2>
+      <SponsorTiers data={data} compact className="[&_img]:grayscale [&_img:hover]:grayscale-0" />
+      <Link
+        href="/sponsors"
+        className="mt-8 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary transition-colors hover:text-ink-1"
+      >
+        {t('sponsors.becomeSponsor')} <ArrowRight size={14} />
+      </Link>
     </div>
   );
 }

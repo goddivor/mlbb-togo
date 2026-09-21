@@ -1,344 +1,395 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import {
-  MessageSquare, Plus, Heart, MessageCircle, Eye, Pin, Search,
-  TrendingUp, Clock,
-} from 'lucide-react';
-import { Card, Badge, Avatar, Button } from '@/components/ui';
-import { useThemeStore, useForumStore, useAuthStore } from '@/store/useStore';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { MessagesSquare, Plus, Clock, TrendingUp, Pin } from 'lucide-react';
+import { Button, PageHeader, EmptyState, Tabs, Card, Skeleton } from '@/components/ui';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import { useAuthStore } from '@/store/useStore';
 import { api } from '@/lib/api';
-import { timeAgo, getRankName } from '@/lib/helpers';
+import { cn } from '@/lib/helpers';
 import { useT } from '@/lib/i18n';
+import { fadeUp, stagger, still } from '@/lib/motion';
+import toast from 'react-hot-toast';
+import PostCard, { type FeedPost } from '@/components/forum/PostCard';
+import PostComposerModal from '@/components/forum/PostComposerModal';
+import PostDetailModal from '@/components/forum/PostDetailModal';
+import SponsorPickerModal from '@/components/forum/SponsorPickerModal';
+import {
+  FEED_CATEGORIES,
+  FEED_SORTS,
+  CATEGORY_META,
+  isStaffRole,
+  normalizeCategory,
+  type FeedSort,
+} from '@/components/forum/constants';
 
-export default function Forum() {
+const PAGE_SIZE = 10;
+const SORT_ICONS: Record<FeedSort, any> = { pinned: Pin, latest: Clock, popular: TrendingUp };
+
+export default function CommunicationFeed() {
   const t = useT();
-  const { theme } = useThemeStore();
-  const { posts, categories, setPosts, addPost, likePost } = useForumStore();
-  const { userProfile } = useAuthStore();
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [activeSort, setActiveSort] = useState('recent');
-  const [search, setSearch] = useState('');
-  const [showCreate, setShowCreate] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<any>(null);
+  const reduce = useReducedMotion();
+  const user = useAuthStore((s: any) => s.user);
+  const isLoggedIn = !!user;
+  const isStaff = isStaffRole(user?.roleUser);
 
-  const [newCategory, setNewCategory] = useState('strategies');
-  const [newTitle, setNewTitle] = useState('');
-  const [newContent, setNewContent] = useState('');
+  const [category, setCategory] = useState<string>('all');
+  const [sort, setSort] = useState<FeedSort>('pinned');
+  const [posts, setPosts] = useState<FeedPost[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const likedIds = useRef<Set<string>>(new Set());
+
+  const [showComposer, setShowComposer] = useState(false);
+  const [selected, setSelected] = useState<FeedPost | null>(null);
+  const [sponsorTarget, setSponsorTarget] = useState<FeedPost | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<FeedPost | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const decorate = useCallback(
+    (list: FeedPost[]) => list.map((p) => ({ ...p, likedByMe: likedIds.current.has(p.id) })),
+    [],
+  );
+
+  const patchPost = (id: string, patch: Partial<FeedPost> | ((p: FeedPost) => Partial<FeedPost>)) => {
+    const apply = (p: FeedPost) => (p.id === id ? { ...p, ...(typeof patch === 'function' ? patch(p) : patch) } : p);
+    setPosts((l) => l.map(apply));
+    setSelected((s) => (s && s.id === id ? apply(s) : s));
+  };
+
+  const refreshCounts = useCallback(() => {
+    api.posts.categories().then((r: any) => setCounts(r?.counts ?? {}));
+  }, []);
+
+  const load = useCallback(
+    async (nextPage: number, append: boolean) => {
+      if (append) setLoadingMore(true);
+      else setLoading(true);
+      try {
+        const res: any = await api.posts.feed({ category, sort, page: nextPage, limit: PAGE_SIZE });
+        const items = decorate(Array.isArray(res?.items) ? res.items : []);
+        setPosts((prev) => (append ? [...prev, ...items] : items));
+        setPage(res?.page ?? nextPage);
+        setHasMore(!!res?.hasMore);
+        setTotal(res?.total ?? items.length);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [category, sort, decorate],
+  );
+
+  // Liked post ids for the current user, then the feed.
+  useEffect(() => {
+    let cancelled = false;
+    const boot = async () => {
+      if (isLoggedIn) {
+        const ids: any = await api.posts.liked().catch(() => []);
+        if (cancelled) return;
+        likedIds.current = new Set(Array.isArray(ids) ? ids : []);
+      } else {
+        likedIds.current = new Set();
+      }
+      setPosts((l) => decorate(l));
+    };
+    boot();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggedIn, decorate]);
 
   useEffect(() => {
-    api.posts.list().then(setPosts);
-  }, [setPosts]);
+    load(1, false);
+    refreshCounts();
+  }, [load, refreshCounts]);
 
-  const filteredPosts = posts
-    .filter((p: any) => {
-      if (activeCategory !== 'all' && p.category !== activeCategory) return false;
-      if (search && !p.title.toLowerCase().includes(search.toLowerCase())) return false;
-      return true;
-    })
-    .sort((a: any, b: any) => {
-      if (activeSort === 'recent') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      if (activeSort === 'popular') return b.likes - a.likes;
-      if (activeSort === 'comments') return b.comments.length - a.comments.length;
-      return 0;
+  const handleLike = async (post: FeedPost) => {
+    if (!isLoggedIn) {
+      toast.error(t('comm.loginToLike'));
+      return;
+    }
+    const wasLiked = !!post.likedByMe;
+    // Optimistic toggle.
+    patchPost(post.id, (p) => ({ likedByMe: !wasLiked, likes: Math.max(0, p.likes + (wasLiked ? -1 : 1)) }));
+    if (wasLiked) likedIds.current.delete(post.id);
+    else likedIds.current.add(post.id);
+    try {
+      const res: any = await api.posts.like(post.id);
+      if (res && typeof res.likes === 'number') {
+        patchPost(post.id, { likedByMe: !!res.liked, likes: res.likes });
+        if (res.liked) likedIds.current.add(post.id);
+        else likedIds.current.delete(post.id);
+      }
+    } catch (e: any) {
+      patchPost(post.id, (p) => ({ likedByMe: wasLiked, likes: Math.max(0, p.likes + (wasLiked ? 1 : -1)) }));
+      if (wasLiked) likedIds.current.add(post.id);
+      else likedIds.current.delete(post.id);
+      toast.error(e?.message || t('common.error'));
+    }
+  };
+
+  const handleShare = async (post: FeedPost) => {
+    const url = `${window.location.origin}/forum?post=${post.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: post.title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success(t('comm.shareCopied'));
+      }
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
+      toast.error(t('comm.shareFailed'));
+      return;
+    }
+    patchPost(post.id, (p) => ({ shares: (p.shares ?? 0) + 1 }));
+    api.posts.share(post.id).then((r: any) => {
+      if (r && typeof r.shares === 'number') patchPost(post.id, { shares: r.shares });
+    }).catch(() => {});
+  };
+
+  const handleTogglePin = async (post: FeedPost) => {
+    try {
+      const updated = await api.posts.update(post.id, { isPinned: !post.isPinned });
+      patchPost(post.id, { isPinned: !!updated?.isPinned });
+      toast.success(t('comm.admin.pinSaved'));
+      if (sort === 'pinned') load(1, false);
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error'));
+    }
+  };
+
+  const handleSponsorSave = async (patch: { isSponsored: boolean; sponsorId: string | null }) => {
+    if (!sponsorTarget) return;
+    setBusy(true);
+    try {
+      const updated = await api.posts.update(sponsorTarget.id, patch);
+      patchPost(sponsorTarget.id, {
+        isSponsored: !!updated?.isSponsored,
+        sponsorId: updated?.sponsorId ?? null,
+        sponsor: updated?.sponsor ?? null,
+      });
+      toast.success(t('comm.admin.sponsorSaved'));
+      setSponsorTarget(null);
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setBusy(true);
+    try {
+      await api.posts.remove(deleteTarget.id);
+      setPosts((l) => l.filter((p) => p.id !== deleteTarget.id));
+      setTotal((n) => Math.max(0, n - 1));
+      if (selected?.id === deleteTarget.id) setSelected(null);
+      setDeleteTarget(null);
+      toast.success(t('comm.admin.deleted'));
+      refreshCounts();
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCreated = (post: FeedPost) => {
+    const cat = normalizeCategory(post.category);
+    if (category === 'all' || category === cat) {
+      setPosts((l) => [{ ...post, likedByMe: false }, ...l]);
+      setTotal((n) => n + 1);
+    } else {
+      setCategory(cat);
+    }
+    refreshCounts();
+  };
+
+  // Deep link: /forum?post=<id> opens the detail modal.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('post');
+    if (!id) return;
+    api.posts.get(id).then((p: any) => {
+      if (p) setSelected({ ...p, likedByMe: likedIds.current.has(p.id) });
     });
+  }, []);
 
-  const handleLike = (id: string) => {
-    likePost(id);
-    api.posts.like(id).catch(() => {});
-  };
-
-  const handleCreate = () => {
-    if (!newTitle.trim()) return;
-    const post = {
-      id: 'post_' + Date.now(),
-      category: newCategory,
-      title: newTitle,
-      content: newContent,
-      authorId: userProfile?.id || 'me',
-      authorName: userProfile?.username || t('forum.you'),
-      authorRank: userProfile?.rank || 'warrior',
-      likes: 0,
-      views: 0,
-      comments: [],
-      isPinned: false,
-      createdAt: new Date().toISOString(),
-    };
-    addPost(post);
-    api.posts.create(post).catch(() => {});
-    setShowCreate(false);
-    setNewTitle('');
-    setNewContent('');
-  };
+  const tabs = ['all', ...FEED_CATEGORIES] as const;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="space-y-6">
+      <PageHeader
+        icon={<MessagesSquare size={22} />}
+        eyebrow={t('comm.eyebrow')}
+        title={t('comm.title')}
+        subtitle={t('comm.subtitle')}
+        variant="danger"
+        action={
+          isLoggedIn ? (
+            <Button onClick={() => setShowComposer(true)}>
+              <Plus size={16} />
+              {t('comm.newPost')}
+            </Button>
+          ) : undefined
+        }
+      />
 
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h1 className={`text-2xl md:text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            <MessageSquare className="inline w-8 h-8 mr-2 text-neon-pink" />
-            {t('forum.title')}
-          </h1>
-          <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            {t('forum.subtitle')}
-          </p>
-        </div>
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus size={16} />
-          {t('forum.newPost')}
-        </Button>
+      {/* Category tabs with counters */}
+      <div className="overflow-x-auto overflow-y-hidden whitespace-nowrap">
+        <Tabs
+          variant="underline"
+          className="min-w-max"
+          tabs={tabs.map((id) => ({
+            id,
+            label: t(`comm.cat.${id}`),
+            icon: CATEGORY_META[id].icon,
+            count: typeof counts[id] === 'number' ? counts[id] : undefined,
+          }))}
+          active={category}
+          onChange={setCategory}
+        />
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-
-        <div className="lg:w-64 flex-shrink-0">
-          <Card hover={false}>
-            <h3 className={`font-bold text-sm mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('forum.categories')}</h3>
-            <div className="space-y-1">
+      {/* Sort control */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="num text-xs text-ink-3">{t('comm.postCount', { count: total })}</span>
+        <div className="ml-auto inline-flex rounded-md border border-line-subtle bg-surface-2/70 p-1">
+          {FEED_SORTS.map((id) => {
+            const Icon = SORT_ICONS[id];
+            return (
               <button
-                onClick={() => setActiveCategory('all')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                  activeCategory === 'all'
-                    ? 'bg-neon-blue/10 text-neon-blue'
-                    : theme === 'dark' ? 'text-gray-400 hover:bg-gaming-surface' : 'text-gray-500 hover:bg-gray-50'
-                }`}
+                key={id}
+                type="button"
+                onClick={() => setSort(id)}
+                aria-pressed={sort === id}
+                className={cn(
+                  'flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-semibold transition-colors duration-fast',
+                  sort === id ? 'bg-surface-1 text-primary shadow-elev-1' : 'text-ink-2 hover:text-ink-1',
+                )}
               >
-                📋 {t('forum.allCategories')}
+                <Icon size={13} />
+                {t(`comm.sort.${id}`)}
               </button>
-              {categories.map((cat: any) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                    activeCategory === cat.id
-                      ? 'bg-neon-blue/10 text-neon-blue'
-                      : theme === 'dark' ? 'text-gray-400 hover:bg-gaming-surface' : 'text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
-                  {cat.icon} {cat.name}
-                </button>
-              ))}
-            </div>
-          </Card>
+            );
+          })}
         </div>
+      </div>
 
-        <div className="flex-1">
-
-          <div className="flex flex-col sm:flex-row gap-3 mb-6">
-            <div className="flex-1 relative">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
-              <input
-                type="text"
-                placeholder={t('forum.searchPlaceholder')}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className={`w-full pl-10 pr-4 py-2.5 rounded-lg text-sm transition-all focus:outline-none ${
-                  theme === 'dark'
-                    ? 'bg-gaming-card border border-gaming-border text-white placeholder-gray-500 focus:border-neon-blue/50'
-                    : 'bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-primary-500'
-                }`}
-              />
-            </div>
-            <div className="flex gap-2">
-              {[
-                { id: 'recent', label: t('forum.sortRecent'), icon: Clock },
-                { id: 'popular', label: t('forum.sortPopular'), icon: TrendingUp },
-                { id: 'comments', label: t('forum.sortDiscussed'), icon: MessageCircle },
-              ].map((sort) => (
-                <button
-                  key={sort.id}
-                  onClick={() => setActiveSort(sort.id)}
-                  className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                    activeSort === sort.id
-                      ? 'bg-neon-blue/10 text-neon-blue'
-                      : theme === 'dark' ? 'text-gray-400 hover:bg-gaming-card' : 'text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
-                  <sort.icon size={14} />
-                  {sort.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {filteredPosts.map((post: any, index: number) => {
-              const category = categories.find((c: any) => c.id === post.category);
-
-              return (
-                <motion.div
-                  key={post.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Card className="cursor-pointer" onClick={() => setSelectedPost(selectedPost === post.id ? null : post.id)}>
-                    <div className="flex gap-4">
-                      <Avatar name={post.authorName} size="md" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          {post.isPinned && <Pin size={14} className="text-yellow-400" />}
-                          <Badge variant="purple" size="sm">{category?.icon} {category?.name}</Badge>
-                          <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                            {timeAgo(post.createdAt)}
-                          </span>
-                        </div>
-                        <h3 className={`font-bold text-base mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                          {post.title}
-                        </h3>
-                        <p className={`text-sm line-clamp-2 mb-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {post.content}
-                        </p>
-
-                        <div className="flex items-center gap-4 text-xs text-gray-400">
-                          <div className="flex items-center gap-1.5">
-                            <Avatar name={post.authorName} size="sm" />
-                            <span className={`font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                              {post.authorName}
-                            </span>
-                            <Badge variant="neon" size="sm">{getRankName(post.authorRank)}</Badge>
-                          </div>
-                          <div className="flex items-center gap-3 ml-auto">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleLike(post.id); }}
-                              className="flex items-center gap-1 hover:text-red-400 transition-colors"
-                            >
-                              <Heart size={14} className="text-red-400" />
-                              {post.likes}
-                            </button>
-                            <span className="flex items-center gap-1">
-                              <MessageCircle size={14} />
-                              {post.comments.length}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Eye size={14} />
-                              {post.views}
-                            </span>
-                          </div>
-                        </div>
-
-                        {selectedPost === post.id && post.comments.length > 0 && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            className={`mt-4 pt-4 border-t ${theme === 'dark' ? 'border-gaming-border' : 'border-gray-100'}`}
-                          >
-                            <p className="text-xs text-gray-400 mb-3">{t('forum.comments')} ({post.comments.length})</p>
-                            {post.comments.map((comment: any) => (
-                              <div key={comment.id} className="flex gap-3 mb-3">
-                                <Avatar name={comment.authorName} size="sm" />
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                                      {comment.authorName}
-                                    </span>
-                                    <span className="text-xs text-gray-500">{timeAgo(comment.createdAt)}</span>
-                                  </div>
-                                  <p className={`text-sm mt-0.5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                                    {comment.content}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
-                            <div className="flex gap-2 mt-3">
-                              <input
-                                type="text"
-                                placeholder={t('forum.addComment')}
-                                onClick={(e) => e.stopPropagation()}
-                                className={`flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none ${
-                                  theme === 'dark'
-                                    ? 'bg-gaming-surface border border-gaming-border text-white placeholder-gray-500 focus:border-neon-blue/50'
-                                    : 'bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-primary-500'
-                                }`}
-                              />
-                              <Button size="sm">{t('forum.send')}</Button>
-                            </div>
-                          </motion.div>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {filteredPosts.length === 0 && (
-            <div className="text-center py-16">
-              <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-500" />
-              <h3 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                {t('forum.noPostsFound')}
-              </h3>
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                {t('forum.beFirstToPost')}
-              </p>
+      {loading ? (
+        <div className="space-y-4" aria-busy="true">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i}>
+              <div className="flex gap-4">
+                <Skeleton circle className="h-10 w-10 shrink-0" />
+                <div className="flex-1 space-y-3">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton lines={2} />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : posts.length === 0 ? (
+        <EmptyState
+          icon={<MessagesSquare size={28} />}
+          title={t('comm.empty')}
+          description={t('comm.emptyHint')}
+          action={
+            isLoggedIn ? (
+              <Button onClick={() => setShowComposer(true)}>
+                <Plus size={16} />
+                {t('comm.newPost')}
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <div className="space-y-4">
+          <motion.div
+            key={`${category}-${sort}`}
+            variants={reduce ? still : stagger(0.04)}
+            initial="hidden"
+            animate="visible"
+            className="space-y-4"
+          >
+            {posts.map((post) => (
+              <motion.div key={post.id} variants={reduce ? still : fadeUp}>
+                <PostCard
+                  post={post}
+                  isStaff={isStaff}
+                  canDelete={isStaff || post.authorId === user?.id}
+                  onOpen={setSelected}
+                  onLike={handleLike}
+                  onShare={handleShare}
+                  onTogglePin={handleTogglePin}
+                  onSponsor={setSponsorTarget}
+                  onDelete={setDeleteTarget}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+          {hasMore && (
+            <div className="flex justify-center pt-2">
+              <Button variant="outline" loading={loadingMore} onClick={() => load(page + 1, true)}>
+                {t('comm.loadMore')}
+              </Button>
             </div>
           )}
         </div>
-      </div>
-
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className={`w-full max-w-lg rounded-2xl border p-6 ${
-              theme === 'dark' ? 'bg-gaming-card border-gaming-border' : 'bg-white border-gray-200'
-            }`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              {t('forum.newPost')}
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('forum.category')}</label>
-                <select
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white focus:outline-none focus:border-neon-blue/50 ${
-                    theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                  }`}
-                >
-                  {categories.map((cat: any) => (
-                    <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('forum.postTitle')}</label>
-                <input
-                  type="text"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder={t('forum.postTitlePlaceholder')}
-                  className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 ${
-                    theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                  }`}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('forum.content')}</label>
-                <textarea
-                  value={newContent}
-                  onChange={(e) => setNewContent(e.target.value)}
-                  placeholder={t('forum.contentPlaceholder')}
-                  rows={5}
-                  className={`w-full px-4 py-3 rounded-lg border bg-gaming-surface text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 resize-none ${
-                    theme === 'dark' ? 'border-gaming-border' : 'border-gray-200'
-                  }`}
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button variant="ghost" onClick={() => setShowCreate(false)} className="flex-1">{t('forum.cancel')}</Button>
-                <Button onClick={handleCreate} className="flex-1">{t('forum.publish')}</Button>
-              </div>
-            </div>
-          </motion.div>
-        </div>
       )}
+
+      <PostComposerModal
+        open={showComposer}
+        onClose={() => setShowComposer(false)}
+        onCreated={handleCreated}
+        isStaff={isStaff}
+        defaultCategory={category}
+      />
+
+      <PostDetailModal
+        post={selected}
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        isLoggedIn={isLoggedIn}
+        onLike={handleLike}
+        onShare={handleShare}
+        onUpdated={(full) =>
+          patchPost(full.id, {
+            views: full.views,
+            comments: full.comments,
+            commentCount: full.commentCount ?? full.comments?.length ?? 0,
+          })
+        }
+      />
+
+      <SponsorPickerModal
+        post={sponsorTarget}
+        open={!!sponsorTarget}
+        onClose={() => setSponsorTarget(null)}
+        onSave={handleSponsorSave}
+        saving={busy}
+      />
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        variant="danger"
+        loading={busy}
+        title={t('comm.admin.deleteTitle')}
+        message={t('comm.admin.deleteMessage')}
+        confirmLabel={t('comm.admin.delete')}
+        cancelLabel={t('comm.composer.cancel')}
+      />
     </div>
   );
 }
