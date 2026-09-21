@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import Providers from '@/components/common/Providers';
+import FrameDefs from '@/components/game/frames/FrameDefs';
 
 export const metadata: Metadata = {
   title: 'Mobile Legends: TOGO',
@@ -36,6 +37,8 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-gaming-dark text-gray-200 antialiased">
+        {/* Shared SVG definitions of the avatar frames, rendered once. */}
+        <FrameDefs />
         <Providers>{children}</Providers>
       </body>
     </html>
