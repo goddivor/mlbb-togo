@@ -76,6 +76,7 @@ export default function LeagueStream({ seasonId, t }: { seasonId: string | null;
             src={embed(featuredId)}
             title={title || 'MLBB Togo'}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            referrerPolicy="strict-origin-when-cross-origin"
             allowFullScreen
             className="h-full w-full"
           />
