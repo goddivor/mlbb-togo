@@ -3218,8 +3218,10 @@ export const translations: Record<string, Dict> = {
     'communityBuilds.error.report_reason': 'Motif de signalement inconnu.',
     'communityBuilds.error.already_reported': 'Vous avez déjà signalé ce build.',
     'communityBuilds.error.quota_builds': 'Vous avez atteint le nombre maximal de builds (60). Supprimez-en un pour continuer.',
-    'communityBuilds.error.quota_publish': 'Limite atteinte : 5 publications par 24 heures.',
-    'communityBuilds.error.quota_reports': 'Limite atteinte : 20 signalements par 24 heures.',
+    'communityBuilds.error.quota_publish': 'Limite atteinte : 5 publications par jour (republications comprises).',
+    'communityBuilds.error.quota_reports': 'Limite atteinte : 20 signalements par jour.',
+    'admin.catalog.syncTalents': '{count} talents d’emblème synchronisés (builds de la communauté).',
+    'admin.catalog.syncTalentsUnavailable': 'Talents d’emblème indisponibles chez Moonton : le reste du catalogue est à jour.',
   },
 
   en: {
@@ -6435,8 +6437,10 @@ export const translations: Record<string, Dict> = {
     'communityBuilds.error.report_reason': 'Unknown report reason.',
     'communityBuilds.error.already_reported': 'You already reported this build.',
     'communityBuilds.error.quota_builds': 'You reached the maximum number of builds (60). Delete one to continue.',
-    'communityBuilds.error.quota_publish': 'Limit reached: 5 publications per 24 hours.',
-    'communityBuilds.error.quota_reports': 'Limit reached: 20 reports per 24 hours.',
+    'communityBuilds.error.quota_publish': 'Limit reached: 5 publications per day (republications included).',
+    'communityBuilds.error.quota_reports': 'Limit reached: 20 reports per day.',
+    'admin.catalog.syncTalents': '{count} emblem talents synced (community builds).',
+    'admin.catalog.syncTalentsUnavailable': 'Emblem talents unavailable from Moonton: the rest of the catalog is up to date.',
   },
 };
 

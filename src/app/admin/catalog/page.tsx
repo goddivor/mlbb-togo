@@ -162,7 +162,7 @@ export default function AdminCatalogPage() {
     setSyncing(true);
     try {
       const res = await api.game.syncCatalog();
-      const all = [res.items, res.emblems, res.battleSpells];
+      const all = [res.items, res.emblems, res.battleSpells, res.talents];
       const sum = (k: 'created' | 'updated' | 'failed') => all.reduce((n, c) => n + (c?.[k] ?? 0), 0);
       toast.success(
         t('admin.catalog.syncDone', {
@@ -173,6 +173,8 @@ export default function AdminCatalogPage() {
           updated: sum('updated'),
         }),
       );
+      if (res.talents) toast.success(t('admin.catalog.syncTalents', { count: res.talents.total }));
+      else toast.error(t('admin.catalog.syncTalentsUnavailable'));
       if (sum('failed') > 0) toast.error(t('admin.catalog.syncPartial', { count: sum('failed') }));
       await load();
     } catch (err: any) {

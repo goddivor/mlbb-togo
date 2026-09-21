@@ -31,6 +31,8 @@ export interface CatalogSyncResult {
   items: CatalogSyncCounts;
   emblems: CatalogSyncCounts;
   battleSpells: CatalogSyncCounts;
+  /** Emblem talents (community builds); null when Moonton could not serve them. */
+  talents?: CatalogSyncCounts | null;
   syncedAt: string;
 }
 

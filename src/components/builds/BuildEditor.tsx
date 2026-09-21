@@ -196,7 +196,10 @@ export default function BuildEditor({
     const tierOf = (id: string) => catalog?.talents.find((x) => x.id === id)?.tier;
     setForm((f) => {
       const kept = f.talentIds.filter((id) => id !== talent.id && tierOf(id) !== talent.tier);
-      return { ...f, talentIds: f.talentIds.includes(talent.id) ? kept : [...kept, talent.id] };
+      return {
+        ...f,
+        talentIds: f.talentIds.includes(talent.id) ? kept : [...kept, talent.id],
+      };
     });
   };
 
@@ -223,7 +226,11 @@ export default function BuildEditor({
         saved = await api.communityBuilds.update(build.id, payload);
         if (mode === 'publish' && saved.status === 'draft') saved = await api.communityBuilds.publish(build.id);
       } else {
-        saved = await api.communityBuilds.create({ ...payload, heroId: form.heroId, publish: mode === 'publish' });
+        saved = await api.communityBuilds.create({
+          ...payload,
+          heroId: form.heroId,
+          publish: mode === 'publish',
+        });
       }
       toast.success(
         saved.status === 'published' && mode === 'publish'
@@ -277,7 +284,10 @@ export default function BuildEditor({
             ) : (
               <div>
                 <div className="relative mb-2 w-full sm:max-w-xs">
-                  <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
+                  <Search
+                    size={16}
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3"
+                  />
                   <input
                     value={heroQuery}
                     onChange={(e) => setHeroQuery(e.target.value)}
@@ -292,7 +302,10 @@ export default function BuildEditor({
                       key={h.id}
                       type="button"
                       onClick={() => {
-                        set({ heroId: heroKey(h), lane: form.lane || h.laneKeys?.[0] || '' });
+                        set({
+                          heroId: heroKey(h),
+                          lane: form.lane || h.laneKeys?.[0] || '',
+                        });
                         setPickHero(false);
                       }}
                       className={chip(heroKey(h) === form.heroId)}
@@ -322,7 +335,10 @@ export default function BuildEditor({
                   size="sm"
                   tabs={[
                     { id: '', label: t('communityBuilds.editor.anyLane') },
-                    ...BUILD_LANES.map((l) => ({ id: l, label: t(`heroMeta.lane.${l}`) })),
+                    ...BUILD_LANES.map((l) => ({
+                      id: l,
+                      label: t(`heroMeta.lane.${l}`),
+                    })),
                   ]}
                   active={form.lane}
                   onChange={(id: string) => set({ lane: id })}
@@ -347,7 +363,9 @@ export default function BuildEditor({
                       aria-label={`${t('admin.catalog.slot')} ${i + 1}${item ? ` : ${item.name}` : ''}`}
                       className={cn(
                         'flex aspect-square w-full items-center justify-center rounded border transition-colors',
-                        slot === i ? 'border-primary ring-2 ring-primary/30' : 'border-dashed border-line-strong hover:border-primary/60',
+                        slot === i
+                          ? 'border-primary ring-2 ring-primary/30'
+                          : 'border-dashed border-line-strong hover:border-primary/60',
                         item?.enabled === false && 'opacity-50',
                       )}
                       title={item?.name}
@@ -362,7 +380,9 @@ export default function BuildEditor({
                       <button
                         type="button"
                         onClick={() => clearSlot(i)}
-                        aria-label={t('communityBuilds.editor.removeItem', { name: item.name })}
+                        aria-label={t('communityBuilds.editor.removeItem', {
+                          name: item.name,
+                        })}
                         className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-surface-3 text-ink-2 ring-1 ring-line-strong hover:bg-accent-red hover:text-white"
                       >
                         <X size={12} />
@@ -390,7 +410,10 @@ export default function BuildEditor({
                   </label>
                 </div>
                 <div className="relative mt-2">
-                  <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
+                  <Search
+                    size={16}
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3"
+                  />
                   <input
                     value={itemQuery}
                     onChange={(e) => setItemQuery(e.target.value)}
@@ -405,7 +428,10 @@ export default function BuildEditor({
                     size="sm"
                     tabs={[
                       { id: 'all', label: t('catalog.items.allCategories') },
-                      ...catalog.categories.map((c) => ({ id: c.toLowerCase(), label: c })),
+                      ...catalog.categories.map((c) => ({
+                        id: c.toLowerCase(),
+                        label: c,
+                      })),
                     ]}
                     active={category}
                     onChange={setCategory}
@@ -428,7 +454,9 @@ export default function BuildEditor({
                     );
                   })}
                   {items.length === 0 && (
-                    <p className="col-span-full py-6 text-center text-sm text-ink-3">{t('communityBuilds.editor.noItem')}</p>
+                    <p className="col-span-full py-6 text-center text-sm text-ink-3">
+                      {t('communityBuilds.editor.noItem')}
+                    </p>
                   )}
                 </div>
               </div>
@@ -454,13 +482,40 @@ export default function BuildEditor({
                   </button>
                 ))}
               </div>
-              <p className={cn(sectionTitle, 'mt-4')}>{t('communityBuilds.editor.talents')}</p>
-              <div className="space-y-2">
-                {[1, 2, 3].map((tier) => (
-                  <div key={tier} className="flex flex-wrap items-center gap-1.5">
-                    <span className="w-16 shrink-0 text-[11px] font-semibold text-ink-3">
-                      {tier === 3 ? t('communityBuilds.editor.coreTier') : t('communityBuilds.editor.tier', { n: tier })}
-                    </span>
+            </div>
+            <div>
+              <p className={sectionTitle}>{t('heroes.builds.battleSpell')}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {catalog.spells.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() =>
+                      set({
+                        battleSpellId: form.battleSpellId === s.id ? null : s.id,
+                      })
+                    }
+                    aria-pressed={form.battleSpellId === s.id}
+                    title={s.description || s.name}
+                    className={cn(chip(form.battleSpellId === s.id), 'w-[72px]')}
+                  >
+                    <CatalogIcon src={s.icon} alt="" size={32} round />
+                    <span className="line-clamp-1 w-full text-[10px] text-ink-2">{s.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <p className={sectionTitle}>{t('communityBuilds.editor.talents')}</p>
+            <div className="space-y-2">
+              {[1, 2, 3].map((tier) => (
+                <div key={tier} className="flex items-start gap-1.5">
+                  <span className="w-16 shrink-0 pt-2.5 text-[11px] font-semibold text-ink-3">
+                    {tier === 3 ? t('communityBuilds.editor.coreTier') : t('communityBuilds.editor.tier', { n: tier })}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
                     {catalog.talents
                       .filter((x) => x.tier === tier)
                       .map((talent) => {
@@ -483,32 +538,17 @@ export default function BuildEditor({
                         );
                       })}
                   </div>
-                ))}
-              </div>
-              {form.talentIds.length > 0 && (
-                <p className="mt-2 text-xs text-ink-2">
-                  {form.talentIds.map((id) => byId.get(id)?.name).filter(Boolean).join(' · ')}
-                </p>
-              )}
+                </div>
+              ))}
             </div>
-            <div>
-              <p className={sectionTitle}>{t('heroes.builds.battleSpell')}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {catalog.spells.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => set({ battleSpellId: form.battleSpellId === s.id ? null : s.id })}
-                    aria-pressed={form.battleSpellId === s.id}
-                    title={s.description || s.name}
-                    className={cn(chip(form.battleSpellId === s.id), 'w-[72px]')}
-                  >
-                    <CatalogIcon src={s.icon} alt="" size={32} round />
-                    <span className="line-clamp-1 w-full text-[10px] text-ink-2">{s.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            {form.talentIds.length > 0 && (
+              <p className="mt-2 text-xs text-ink-2">
+                {form.talentIds
+                  .map((id) => byId.get(id)?.name)
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+            )}
           </section>
 
           <section>
