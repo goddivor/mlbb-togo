@@ -8,7 +8,7 @@ import {
   P, n2, R, pt, rep, circ, bevel, glint, polyRing, spike, shard, blade, leaf, flame, star4, star5, gem, orb,
   rivets, crown, wings, laurel, plate, RUNES, runes, dots, arc, fx, box, rr, sqBevel, sqGlint, corners, mir,
   edges, fxSq, kite, hud, cup,
-  type FxSpec, type Pt,
+  type FxSpec,
 } from './geometry';
 
 export interface RawFrame {

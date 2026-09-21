@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState, type CSSProperties } from 'react';
-import { AvatarFrame, FRAMES, FRAME_TIER_COLORS, framesByTier, type FrameInfo, type FrameShape } from '@/components/game';
+import AvatarFrame from '@/components/game/AvatarFrame';
+import { FRAMES, FRAME_TIER_COLORS, framesByTier, type FrameInfo, type FrameShape } from '@/components/game/frames';
 import { cn } from '@/lib/helpers';
 import { useT } from '@/lib/i18n';
 import { useLangStore } from '@/store/useStore';

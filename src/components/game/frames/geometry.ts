@@ -8,7 +8,7 @@
  * is safe here. Keeping the reference's string form guarantees pixel fidelity
  * with the 64 validated renderers.
  *
- * Paint references use bare ids (`url(#g-gold)`); `renderLayer()` prefixes
+ * Paint references use bare ids (`url(#g-gold)`); `renderFrameLayers()` (./render) prefixes
  * them with `mlf-` to match <FrameDefs />.
  */
 
@@ -234,7 +234,7 @@ export function rrPath(i: number, rx: number): string {
  * Local ids (clip paths of the square glint) must be unique per frame
  * instance and identical between the server and the client render. The
  * renderer sets a per-instance prefix (from React `useId`) and resets the
- * counter before each synchronous render; see `renderLayer()`.
+ * counter before each synchronous render; see `renderFrameLayers()` (./render).
  */
 let idPrefix = 'mlf';
 let idCounter = 0;

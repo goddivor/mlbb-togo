@@ -5,7 +5,9 @@
  *   `resolveFrame(ref)`, `seasonOfVariant('S2')`, `framesByTier(list?)`
  * - `<FrameArt frame variant size label>` draws a frame around its children
  * - `<FrameDefs />` shared SVG definitions, mounted once in the root layout
- * Most screens should use `AvatarFrame` from `@/components/game` instead.
+ * Most screens should use `AvatarFrame` (`@/components/game/AvatarFrame`) instead.
+ * Neither is re-exported by the `@/components/game` barrel: importing them
+ * directly keeps the frames catalogue out of pages that do not render frames.
  */
 export {
   FRAMES,
