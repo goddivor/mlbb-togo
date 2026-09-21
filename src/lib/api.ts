@@ -16,6 +16,18 @@ export const avatarSrc = (url?: string | null, width = 96): string => {
   return url.includes('youngjoygame.com') ? mlbbImg(url, width) : url;
 };
 
+/** Rank tier (all, epic, legend, mythic, honor, glory) and window in days. */
+export type MetaParams = { rank?: string; days?: number; lang?: string };
+
+const metaQs = (params: Record<string, unknown>): string => {
+  const qs = new URLSearchParams(
+    Object.entries(params)
+      .filter(([, v]) => v != null && v !== '')
+      .map(([k, v]) => [k, String(v)]),
+  ).toString();
+  return qs ? `?${qs}` : '';
+};
+
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem(TOKEN_KEY);
@@ -384,6 +396,20 @@ export const api = {
     // Admin: resync heroes from MLBB, returns { updated }.
     refresh: (): Promise<{ updated: number }> =>
       request('/heroes/refresh', { method: 'POST' }),
+
+    // Live Moonton meta (cached server side). `heroId` is the Moonton id; rates in %.
+    metaRanking: (params: MetaParams & { role?: string; lane?: string; sort?: string; order?: string } = {}) =>
+      request(`/heroes/meta/ranking${metaQs(params)}`, { fallback: null, auth: false }),
+    metaStats: (heroId: number | string, params: MetaParams = {}) =>
+      request(`/heroes/${heroId}/meta/stats${metaQs(params)}`, { fallback: null, auth: false }),
+    metaTrends: (heroId: number | string, params: MetaParams = {}) =>
+      request(`/heroes/${heroId}/meta/trends${metaQs(params)}`, { fallback: null, auth: false }),
+    metaTimeline: (heroId: number | string, params: MetaParams & { lane?: string } = {}) =>
+      request(`/heroes/${heroId}/meta/timeline${metaQs(params)}`, { fallback: null, auth: false }),
+    metaMatchups: (heroId: number | string, params: MetaParams = {}) =>
+      request(`/heroes/${heroId}/meta/matchups${metaQs(params)}`, { fallback: null, auth: false }),
+    metaBuilds: (heroId: number | string, params: MetaParams & { lane?: string } = {}) =>
+      request(`/heroes/${heroId}/meta/builds${metaQs(params)}`, { fallback: null, auth: false }),
   },
 
   lanes: {
