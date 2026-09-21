@@ -11,8 +11,6 @@ import { cn } from '@/lib/helpers';
 import { avatarSrc } from '@/lib/api';
 import { notifContent, useT } from '@/lib/i18n';
 import { useLangStore } from '@/store/useStore';
-import GameSyncNotice from '@/components/profile/GameSyncNotice';
-import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 
 /* ------------------------------------------------------------------ */
 /* Shared helpers                                                      */
@@ -152,22 +150,16 @@ const RESULT_STYLE: Record<string, { badge: string; bar: string }> = {
 /* Quick stats                                                         */
 /* ------------------------------------------------------------------ */
 
+/** E-sport stats only: matches played on the platform. */
 export function QuickStatsWidget({
   stats,
-  game,
   className,
 }: {
   stats: any;
-  /** Cached game account summary (GET /users/:id/game), when linked. */
-  game?: any;
   className?: string;
 }) {
   const t = useT();
   const s = stats || {};
-  const linked = !!game?.linked && game?.visible !== false;
-  // Moonton only serves the base profile since MLBB Academy closed: the game
-  // block is limited to rank, peak rank and level; e-sport stats lead.
-  const profile = linked ? game?.profile : null;
   const streak: number = s.currentStreak ?? 0;
   const abs = Math.abs(streak);
   const streakLabel =
@@ -252,37 +244,6 @@ export function QuickStatsWidget({
           </div>
         </div>
       )}
-      {profile && (profile.rank || profile.peakRank || profile.level != null) && (
-        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded border border-line-subtle bg-surface-2/40 px-3 py-2.5">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">
-            <Gamepad2 size={13} /> {t('gameAccount.title')}
-          </span>
-          {profile.rank && (
-            <span className="inline-flex items-center gap-2">
-              {hasRankBadge(profile.rank) && <RankBadge rank={profile.rank} size={24} />}
-              <span className="text-xs leading-tight">
-                <span className="block text-ink-3">{t('dashboard.currentRank')}</span>
-                <span className="font-semibold text-ink-1">{profile.rank}</span>
-              </span>
-            </span>
-          )}
-          {profile.peakRank && (
-            <span className="inline-flex items-center gap-2">
-              {hasRankBadge(profile.peakRank) && <RankBadge rank={profile.peakRank} size={24} />}
-              <span className="text-xs leading-tight">
-                <span className="block text-ink-3">{t('dashboard.peakRank')}</span>
-                <span className="font-semibold text-accent-gold">{profile.peakRank}</span>
-              </span>
-            </span>
-          )}
-          {profile.level != null && (
-            <Badge variant="neon" size="sm">
-              {t('dashboard.level')} {profile.level}
-            </Badge>
-          )}
-        </div>
-      )}
-      {linked && <GameSyncNotice sync={game?.sync} isOwner className="mt-3" />}
     </Widget>
   );
 }
