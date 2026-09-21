@@ -5,7 +5,8 @@ import { Check, Lock, Search, UserMinus, UserPlus, KeyRound, Users } from 'lucid
 import toast from 'react-hot-toast';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { useLangStore } from '@/store/useStore';
+import { useAuthStore, useLangStore } from '@/store/useStore';
+import { permissionsOf } from '@/lib/permissions';
 import { cn } from '@/lib/helpers';
 import { Avatar, Badge, Button, Input, Tabs, Textarea } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
@@ -42,6 +43,10 @@ export default function RoleEditorModal({ open, role, catalogue, onClose, onChan
   const [busyMember, setBusyMember] = useState<string | null>(null);
 
   const locked = !!current && !current.editable;
+  // Only permissions the signed-in user holds can be granted (the API refuses
+  // the others), so the rest are read-only here.
+  const me = useAuthStore((s: any) => s.user);
+  const held = useMemo(() => new Set(permissionsOf(me)), [me]);
 
   useEffect(() => {
     if (!open) return;
@@ -86,7 +91,7 @@ export default function RoleEditorModal({ open, role, catalogue, onClose, onChan
   const toggleGroup = (keys: string[], on: boolean) =>
     setPerms((prev) => {
       const next = new Set(prev);
-      keys.forEach((k) => (on ? next.add(k) : next.delete(k)));
+      keys.filter((k) => held.has(k)).forEach((k) => (on ? next.add(k) : next.delete(k)));
       return next;
     });
 
@@ -241,13 +246,13 @@ export default function RoleEditorModal({ open, role, catalogue, onClose, onChan
         {tab === 'permissions' && (
           <div className="grid gap-4 lg:grid-cols-2">
             {groups.map((g) => {
-              const keys = g.items.map((p) => p.key);
-              const all = keys.every((k) => perms.has(k));
+              const keys = g.items.map((p) => p.key).filter((k) => held.has(k));
+              const all = keys.length > 0 && keys.every((k) => perms.has(k));
               return (
                 <div key={g.key} className="rounded-lg border border-line-subtle bg-surface-2/40 p-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <p className="eyebrow">{pick(g.label, lang)}</p>
-                    {!locked && (
+                    {!locked && keys.length > 0 && (
                       <button
                         type="button"
                         onClick={() => toggleGroup(keys, !all)}
@@ -272,7 +277,8 @@ export default function RoleEditorModal({ open, role, catalogue, onClose, onChan
                               type="checkbox"
                               className="mt-0.5 h-4 w-4 shrink-0 accent-[rgb(var(--primary))]"
                               checked={checked}
-                              disabled={locked}
+                              disabled={locked || !held.has(p.key)}
+                              title={!locked && !held.has(p.key) ? t('admin.roles.notDelegable') : undefined}
                               onChange={() => toggle(p.key)}
                             />
                             <span className="min-w-0">

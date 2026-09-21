@@ -23,6 +23,7 @@ import { cn } from '@/lib/helpers';
 import { Badge, Button, Card, SectionTitle, StatCard, Table, Td, Th, Textarea, Input, ProgressBar, type Accent } from '@/components/ui';
 import { FormPills, TeamAvatar } from '@/components/standings/bits';
 import MarkdownContent from '@/components/forum/MarkdownContent';
+import { useCan } from '@/lib/permissions';
 import type { LeagueOverview, RecomputeResult } from './types';
 
 /** Widget header: icon + display title on the left, optional action on the right. */
@@ -87,6 +88,7 @@ export function ChecklistWidget({
   onClose: () => void;
 }) {
   const t = useT();
+  const { can, canOpen } = useCan();
   const { checklist, awards } = overview;
   const done = checklist.items.filter((i) => i.done).length;
   return (
@@ -133,7 +135,7 @@ export function ChecklistWidget({
                 </div>
               )}
             </div>
-            {!item.done && (
+            {!item.done && canOpen(item.href) && (
               <Link href={item.href} className={cn(linkCls, 'shrink-0')}>
                 {t('admin.league.checklist.go')} <ArrowRight size={12} />
               </Link>
@@ -141,7 +143,7 @@ export function ChecklistWidget({
           </li>
         ))}
       </ul>
-      {checklist.closable && (
+      {checklist.closable && can('admin.seasons') && (
         <div className="mt-4 flex flex-col gap-2 border-t border-line-subtle pt-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-ink-2">
             {checklist.ready ? t('admin.league.checklist.readyHint') : t('admin.league.checklist.notReadyHint')}
@@ -322,6 +324,7 @@ export function RecomputeWidget({
   onDone: () => void;
 }) {
   const t = useT();
+  const { can } = useCan();
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<RecomputeResult | null>(null);
   const last = result ?? overview.lastRecompute;
@@ -345,9 +348,11 @@ export function RecomputeWidget({
       <WidgetTitle icon={<RefreshCw size={16} />} title={t('admin.league.recompute.title')} />
       <p className="text-xs text-ink-2">{t('admin.league.recompute.hint')}</p>
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <Button size="sm" variant="outline" onClick={run} disabled={running} loading={running}>
-          <RefreshCw size={14} /> {t('admin.league.recompute.action')}
-        </Button>
+        {can('league.recompute') && (
+          <Button size="sm" variant="outline" onClick={run} disabled={running} loading={running}>
+            <RefreshCw size={14} /> {t('admin.league.recompute.action')}
+          </Button>
+        )}
         <span className="text-[11px] text-ink-3 num">
           {last
             ? t('admin.league.recompute.last', {
@@ -364,19 +369,23 @@ export function RecomputeWidget({
 
 export function SponsorsWidget({ overview }: { overview: LeagueOverview }) {
   const t = useT();
+  const { canOpen } = useCan();
   const { sponsors } = overview;
+  const manage = canOpen('/admin/sponsors');
   return (
     <Card className="!p-5">
       <WidgetTitle
         icon={<Handshake size={16} />}
         title={t('admin.league.sponsors.title')}
         action={
-          <Link href="/admin/sponsors" className={linkCls}>
-            {t('admin.league.manage')} <ArrowRight size={12} />
-          </Link>
+          manage ? (
+            <Link href="/admin/sponsors" className={linkCls}>
+              {t('admin.league.manage')} <ArrowRight size={12} />
+            </Link>
+          ) : undefined
         }
       />
-      {sponsors.requestsNew > 0 && (
+      {manage && sponsors.requestsNew > 0 && (
         <Link
           href="/admin/sponsors?tab=requests"
           className="mb-3 flex items-center justify-between rounded border border-accent-gold/40 bg-accent-gold/10 px-3 py-2 text-xs font-medium text-accent-gold hover:bg-accent-gold/15"
@@ -421,6 +430,7 @@ export function SponsorsWidget({ overview }: { overview: LeagueOverview }) {
 
 export function StreamWidget({ overview }: { overview: LeagueOverview }) {
   const t = useT();
+  const { canOpen } = useCan();
   const { stream } = overview;
   const state = stream.live ? 'live' : stream.connected ? 'connected' : stream.configured ? 'configured' : 'missing';
   const variant = { live: 'live', connected: 'green', configured: 'blue', missing: 'outline' }[state];
@@ -430,9 +440,11 @@ export function StreamWidget({ overview }: { overview: LeagueOverview }) {
         icon={<Radio size={16} />}
         title={t('admin.league.stream.title')}
         action={
-          <Link href="/admin/stream" className={linkCls}>
-            {t('admin.league.manage')} <ArrowRight size={12} />
-          </Link>
+          canOpen('/admin/stream') ? (
+            <Link href="/admin/stream" className={linkCls}>
+              {t('admin.league.manage')} <ArrowRight size={12} />
+            </Link>
+          ) : undefined
         }
       />
       <div className="flex items-center gap-3">
@@ -450,6 +462,7 @@ export function StreamWidget({ overview }: { overview: LeagueOverview }) {
 
 export function AwardsWidget({ overview }: { overview: LeagueOverview }) {
   const t = useT();
+  const { canOpen } = useCan();
   const { awards, podiums, season } = overview;
   const pct = awards.total ? Math.round((awards.filled / awards.total) * 100) : 0;
   return (
@@ -458,9 +471,11 @@ export function AwardsWidget({ overview }: { overview: LeagueOverview }) {
         icon={<Award size={16} />}
         title={t('admin.league.awards.title')}
         action={
-          <Link href={`/admin/awards?season=${encodeURIComponent(season.id)}`} className={linkCls}>
-            {t('admin.league.manage')} <ArrowRight size={12} />
-          </Link>
+          canOpen('/admin/awards') ? (
+            <Link href={`/admin/awards?season=${encodeURIComponent(season.id)}`} className={linkCls}>
+              {t('admin.league.manage')} <ArrowRight size={12} />
+            </Link>
+          ) : undefined
         }
       />
       <div className="flex items-center justify-between text-sm">

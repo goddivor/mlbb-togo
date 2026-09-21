@@ -8,6 +8,8 @@ import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/helpers';
 import { Button } from '@/components/ui';
 import Modal from '@/components/ui/Modal';
+import { useAuthStore } from '@/store/useStore';
+import { canDelegateRole } from '@/lib/permissions';
 import type { Role } from './types';
 
 interface Props {
@@ -22,6 +24,7 @@ export default function UserRolesModal({ user, roles, onClose, onSaved }: Props)
   const t = useT();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
+  const me = useAuthStore((s: any) => s.user);
 
   useEffect(() => {
     if (user) setSelected(new Set(user.roleIds ?? []));
@@ -63,18 +66,23 @@ export default function UserRolesModal({ user, roles, onClose, onSaved }: Props)
         <ul className="space-y-2">
           {roles.map((role) => {
             const checked = selected.has(role.id);
+            // Roles beyond the signed-in user's own rights are read-only.
+            const delegable = canDelegateRole(me, role, roles);
             return (
               <li key={role.id}>
                 <label
                   className={cn(
                     'flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 transition-colors duration-fast',
                     checked ? 'border-primary/50 bg-primary/5' : 'border-line-subtle hover:bg-surface-2',
+                    !delegable && 'cursor-not-allowed opacity-60',
                   )}
+                  title={delegable ? undefined : t('admin.roles.notDelegable')}
                 >
                   <input
                     type="checkbox"
                     className="h-4 w-4 shrink-0 accent-[rgb(var(--primary))]"
                     checked={checked}
+                    disabled={!delegable}
                     onChange={() => toggle(role.id)}
                   />
                   <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: role.color }} />

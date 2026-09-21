@@ -1,3 +1,5 @@
+import { useAuthStore } from '@/store/useStore';
+
 /**
  * Client-side RBAC helpers. The source of truth is the backend
  * (`GET /auth/me` returns `permissions: string[]`, every admin endpoint is
@@ -59,6 +61,45 @@ export function permissionForAdminPath(pathname: string | null | undefined): str
   if (!pathname) return null;
   const area = ADMIN_AREAS.find((a) => pathname === a.href || pathname.startsWith(`${a.href}/`));
   return area ? area.permission : null;
+}
+
+/**
+ * Anti privilege escalation (mirrors the API): a user may only put in a role,
+ * or hand out, permissions he holds himself. Only holders of the
+ * Administrateur role may grant or remove Administrateur.
+ */
+export function canDelegatePermissions(user: Subject, permissions: readonly string[]): boolean {
+  const held = new Set(permissionsOf(user));
+  return permissions.every((p) => held.has(p));
+}
+
+export function canDelegateRole(
+  user: (Subject & { roleIds?: string[] | null }) | null | undefined,
+  role: { id: string; systemKey?: string | null; permissions: string[] },
+  roles: { id: string; systemKey?: string | null }[],
+): boolean {
+  const mine = new Set(user?.roleIds ?? []);
+  if (roles.some((r) => r.systemKey === 'admin' && mine.has(r.id))) return true;
+  if (role.systemKey === 'admin') return false;
+  return canDelegatePermissions(user, role.permissions);
+}
+
+/** True when the user may open an admin link (non-admin links always pass). */
+export function canOpenHref(user: Subject, href: string): boolean {
+  const required = permissionForAdminPath(href.split('?')[0]);
+  return !required || can(user, required);
+}
+
+/**
+ * Permission checks bound to the signed-in user, to hide the actions and
+ * deep links the user cannot use (the API refuses them anyway).
+ */
+export function useCan() {
+  const user = useAuthStore((s: any) => s.user);
+  return {
+    can: (permission: string) => can(user, permission),
+    canOpen: (href: string) => canOpenHref(user, href),
+  };
 }
 
 /** First admin page the user may open (`null` when none). */
