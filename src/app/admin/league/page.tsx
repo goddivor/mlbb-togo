@@ -16,6 +16,7 @@ import { useSeasonLifecycle } from '@/components/admin/seasons/useSeasonLifecycl
 import SeasonLifecycleButtons from '@/components/admin/seasons/SeasonLifecycleButtons';
 import SeasonLifecycleModals from '@/components/admin/seasons/SeasonLifecycleModals';
 import type { LeagueOverview } from '@/components/admin/league/types';
+import { useCan } from '@/lib/permissions';
 import {
   AnnounceWidget,
   AwardsWidget,
@@ -34,6 +35,10 @@ import {
  */
 export default function AdminLeaguePage() {
   const t = useT();
+  const { can, canOpen } = useCan();
+  const canSeasons = can('admin.seasons');
+  // Deep links only for the admin areas the user may open.
+  const linkIf = (href: string) => (canOpen(href) ? href : undefined);
   const lang = useLangStore((s: any) => s.lang);
   const reduce = useReducedMotion();
   const { selection, ready } = useSelectedSeason();
@@ -112,11 +117,13 @@ export default function AdminLeaguePage() {
           title={t('admin.league.noSeason')}
           description={error ?? undefined}
           action={
-            <Link href="/admin/seasons">
-              <Button size="sm">
-                <CalendarDays size={14} /> {t('admin.league.goSeasons')}
-              </Button>
-            </Link>
+            canSeasons ? (
+              <Link href="/admin/seasons">
+                <Button size="sm">
+                  <CalendarDays size={14} /> {t('admin.league.goSeasons')}
+                </Button>
+              </Link>
+            ) : undefined
           }
         />
       ) : (
@@ -170,12 +177,16 @@ export default function AdminLeaguePage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <SeasonLifecycleButtons season={season} lifecycle={lifecycle} />
-                  <Link href="/admin/seasons">
-                    <Button size="sm" variant="ghost" title={t('admin.league.goSeasons')}>
-                      <Settings2 size={14} /> {t('admin.league.goSeasons')}
-                    </Button>
-                  </Link>
+                  {canSeasons && (
+                    <>
+                      <SeasonLifecycleButtons season={season} lifecycle={lifecycle} />
+                      <Link href="/admin/seasons">
+                        <Button size="sm" variant="ghost" title={t('admin.league.goSeasons')}>
+                          <Settings2 size={14} /> {t('admin.league.goSeasons')}
+                        </Button>
+                      </Link>
+                    </>
+                  )}
                   {season.slug && (
                     <Link
                       href={`/seasons/${season.slug}`}
@@ -193,7 +204,7 @@ export default function AdminLeaguePage() {
 
           {/* KPIs */}
           <motion.div variants={reduce ? still : fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-            <Kpi label={t('admin.league.kpi.teams')} value={overview.teams} href="/admin/esport" />
+            <Kpi label={t('admin.league.kpi.teams')} value={overview.teams} href={linkIf('/admin/esport')} />
             <Kpi
               label={t('admin.league.kpi.matches')}
               value={`${overview.matches.byStatus.completed}/${overview.matches.total}`}
@@ -202,31 +213,31 @@ export default function AdminLeaguePage() {
                 playoff: overview.matches.byStage.playoff,
                 scrim: overview.matches.byStage.scrim,
               })}
-              href={`/admin/matches?season=${encodeURIComponent(season.id)}`}
+              href={linkIf(`/admin/matches?season=${encodeURIComponent(season.id)}`)}
             />
             <Kpi
               label={t('admin.league.kpi.thisWeek')}
               value={overview.matches.completedThisWeek}
               tone="success"
-              href={`/admin/matches?season=${encodeURIComponent(season.id)}&status=completed`}
+              href={linkIf(`/admin/matches?season=${encodeURIComponent(season.id)}&status=completed`)}
             />
             <Kpi
               label={t('admin.league.kpi.pendingResults')}
               value={overview.matches.pendingResults}
               tone={overview.matches.pendingResults ? 'warning' : 'default'}
-              href={`/admin/matches?season=${encodeURIComponent(season.id)}&status=pending`}
+              href={linkIf(`/admin/matches?season=${encodeURIComponent(season.id)}&status=pending`)}
             />
             <Kpi
               label={t('admin.league.kpi.unscheduled')}
               value={overview.matches.unscheduled}
               tone={overview.matches.unscheduled ? 'warning' : 'default'}
-              href={`/admin/matches?season=${encodeURIComponent(season.id)}&status=scheduled`}
+              href={linkIf(`/admin/matches?season=${encodeURIComponent(season.id)}&status=scheduled`)}
             />
             <Kpi
               label={t('admin.league.kpi.overdue')}
               value={overview.matches.overdue}
               tone={overview.matches.overdue ? 'danger' : 'default'}
-              href={`/admin/matches?season=${encodeURIComponent(season.id)}&status=scheduled`}
+              href={linkIf(`/admin/matches?season=${encodeURIComponent(season.id)}&status=scheduled`)}
             />
           </motion.div>
 

@@ -19,10 +19,10 @@ import {
   FEED_CATEGORIES,
   FEED_SORTS,
   CATEGORY_META,
-  isStaffRole,
   normalizeCategory,
   type FeedSort,
 } from '@/components/forum/constants';
+import { can } from '@/lib/permissions';
 
 const PAGE_SIZE = 10;
 const SORT_ICONS: Record<FeedSort, any> = { pinned: Pin, latest: Clock, popular: TrendingUp };
@@ -32,7 +32,11 @@ export default function CommunicationFeed() {
   const reduce = useReducedMotion();
   const user = useAuthStore((s: any) => s.user);
   const isLoggedIn = !!user;
-  const isStaff = isStaffRole(user?.roleUser);
+  // RBAC: announce / moderate / sponsor are separate permissions.
+  const canAnnounce = can(user, 'forum.announce');
+  const canModerate = can(user, 'forum.moderate');
+  const canSponsorPosts = can(user, 'posts.sponsor');
+  const isStaff = canModerate || canSponsorPosts || canAnnounce;
 
   const [category, setCategory] = useState<string>('all');
   const [sort, setSort] = useState<FeedSort>('pinned');
@@ -326,7 +330,9 @@ export default function CommunicationFeed() {
                 <PostCard
                   post={post}
                   isStaff={isStaff}
-                  canDelete={isStaff || post.authorId === user?.id}
+                  canPin={canModerate}
+                  canSponsor={canSponsorPosts}
+                  canDelete={canModerate || post.authorId === user?.id}
                   onOpen={setSelected}
                   onLike={handleLike}
                   onShare={handleShare}
@@ -352,6 +358,8 @@ export default function CommunicationFeed() {
         onClose={() => setShowComposer(false)}
         onCreated={handleCreated}
         isStaff={isStaff}
+        canAnnounce={canAnnounce}
+        canSponsor={canSponsorPosts}
         defaultCategory={category}
       />
 

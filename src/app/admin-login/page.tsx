@@ -29,7 +29,8 @@ export default function AdminLoginPage() {
       setToken(res.token);
       setUser(res.user);
       setUserProfile(res.user);
-      router.replace('/admin/esport');
+      // The admin layout sends the user to the first section he may open.
+      router.replace('/admin');
     } catch (err: any) {
       setError(err?.message || t('adminLogin.error'));
       setBusy(false);

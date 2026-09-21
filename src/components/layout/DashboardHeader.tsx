@@ -7,7 +7,9 @@ import { setToken, avatarSrc } from '@/lib/api';
 import SeasonSwitcher from '@/components/seasons/SeasonSwitcher';
 import { disconnectSocket } from '@/lib/realtime';
 import { useT } from '@/lib/i18n';
+import { hasAdminAccess } from '@/lib/permissions';
 import AppHeader from './AppHeader';
+import type { ProfileMenuLink } from './ProfileDropdown';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -59,6 +61,10 @@ export default function DashboardHeader({ sidebarOpen, setSidebarOpen }: HeaderP
         links: [
           { href: '/profile', label: t('header.menu.profile'), icon: 'profile' },
           { href: '/settings', label: t('header.menu.settings'), icon: 'settings' },
+          // Staff shortcut: any admin area permission opens the admin interface.
+          ...(hasAdminAccess(userProfile)
+            ? [{ href: '/admin', label: t('admin.rbac.menuEntry'), icon: 'admin' } as ProfileMenuLink]
+            : []),
         ],
       }}
     />

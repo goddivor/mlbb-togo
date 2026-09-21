@@ -52,6 +52,8 @@ export function SponsorBadge({ sponsor, t }: { sponsor?: FeedPost['sponsor']; t:
 export default function PostCard({
   post,
   isStaff,
+  canPin = isStaff,
+  canSponsor = isStaff,
   canDelete,
   onOpen,
   onLike,
@@ -62,6 +64,10 @@ export default function PostCard({
 }: {
   post: FeedPost;
   isStaff: boolean;
+  /** RBAC `forum.moderate` (defaults to `isStaff`). */
+  canPin?: boolean;
+  /** RBAC `posts.sponsor` (defaults to `isStaff`). */
+  canSponsor?: boolean;
   canDelete: boolean;
   onOpen: (post: FeedPost) => void;
   onLike: (post: FeedPost) => void;
@@ -155,39 +161,41 @@ export default function PostCard({
                 {post.views}
               </span>
 
-              {(isStaff || canDelete) && (
+              {(canPin || canSponsor || canDelete) && (
                 <span className="ml-1 flex items-center gap-0.5 border-l border-line-subtle pl-1">
-                  {isStaff && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={(e) => { stop(e); onTogglePin(post); }}
-                        title={post.isPinned ? t('comm.admin.unpin') : t('comm.admin.pin')}
-                        className="rounded p-1.5 transition-colors duration-fast hover:bg-surface-2 hover:text-accent-gold"
-                      >
-                        {post.isPinned ? <PinOff size={14} /> : <Pin size={14} />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => { stop(e); onSponsor(post); }}
-                        title={post.isSponsored ? t('comm.admin.unsponsor') : t('comm.admin.sponsor')}
-                        className={cn(
-                          'rounded p-1.5 transition-colors duration-fast hover:bg-surface-2',
-                          post.isSponsored ? 'text-accent-gold' : 'hover:text-accent-gold',
-                        )}
-                      >
-                        <Handshake size={14} />
-                      </button>
-                    </>
+                  {canPin && (
+                    <button
+                      type="button"
+                      onClick={(e) => { stop(e); onTogglePin(post); }}
+                      title={post.isPinned ? t('comm.admin.unpin') : t('comm.admin.pin')}
+                      className="rounded p-1.5 transition-colors duration-fast hover:bg-surface-2 hover:text-accent-gold"
+                    >
+                      {post.isPinned ? <PinOff size={14} /> : <Pin size={14} />}
+                    </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={(e) => { stop(e); onDelete(post); }}
-                    title={t('comm.admin.delete')}
-                    className="rounded p-1.5 transition-colors duration-fast hover:bg-accent-red/10 hover:text-accent-red"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  {canSponsor && (
+                    <button
+                      type="button"
+                      onClick={(e) => { stop(e); onSponsor(post); }}
+                      title={post.isSponsored ? t('comm.admin.unsponsor') : t('comm.admin.sponsor')}
+                      className={cn(
+                        'rounded p-1.5 transition-colors duration-fast hover:bg-surface-2',
+                        post.isSponsored ? 'text-accent-gold' : 'hover:text-accent-gold',
+                      )}
+                    >
+                      <Handshake size={14} />
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={(e) => { stop(e); onDelete(post); }}
+                      title={t('comm.admin.delete')}
+                      className="rounded p-1.5 transition-colors duration-fast hover:bg-accent-red/10 hover:text-accent-red"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </span>
               )}
             </div>

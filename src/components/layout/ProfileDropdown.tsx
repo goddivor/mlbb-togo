@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { ShieldCheck } from 'lucide-react';
 
 /** Icon keys mapped to the exact TailAdmin profile-menu SVGs. */
-export type ProfileMenuIcon = 'profile' | 'settings' | 'external';
+export type ProfileMenuIcon = 'profile' | 'settings' | 'external' | 'admin';
 
 /** A single link entry rendered inside the profile dropdown menu. */
 export interface ProfileMenuLink {
@@ -91,10 +92,16 @@ function ExternalIcon() {
   );
 }
 
+/** Shield glyph for the "Administration" entry (staff only). */
+function AdminIcon() {
+  return <ShieldCheck width={22} height={22} strokeWidth={1.8} aria-hidden="true" />;
+}
+
 const ICONS: Record<ProfileMenuIcon, () => JSX.Element> = {
   profile: ProfileIcon,
   settings: SettingsIcon,
   external: ExternalIcon,
+  admin: AdminIcon,
 };
 
 /**

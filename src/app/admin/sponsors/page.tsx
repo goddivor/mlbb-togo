@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { useCan } from '@/lib/permissions';
 import { fadeUp, stagger, still } from '@/lib/motion';
 import {
   Card,
@@ -73,6 +74,9 @@ const labelCls = 'mb-1 block text-xs font-medium text-ink-2';
 export default function AdminSponsorsPage() {
   const t = useT();
   const reduce = useReducedMotion();
+  // Viewing needs `admin.sponsors`; creating, editing and deleting sponsors,
+  // offers and requests needs `sponsors.manage`.
+  const canManage = useCan().can('sponsors.manage');
   const [tab, setTab] = useState<Tab>('sponsors');
   const [loading, setLoading] = useState(true);
   const [sponsors, setSponsors] = useState<any[]>([]);
@@ -336,7 +340,7 @@ export default function AdminSponsorsPage() {
         subtitle={t('admin.sponsors.subtitle')}
         variant="gold"
         action={
-          tab === 'sponsors' ? (
+          !canManage ? null : tab === 'sponsors' ? (
             <Button size="sm" onClick={() => openSponsor()}>
               <Plus size={16} /> {t('admin.esport.newSponsor')}
             </Button>
@@ -431,14 +435,16 @@ export default function AdminSponsorsPage() {
                     </a>
                   )}
                 </div>
-                <div className="flex flex-col gap-1 shrink-0">
-                  <Button size="sm" variant="ghost" onClick={() => openSponsor(s)}>
-                    <Pencil size={14} />
-                  </Button>
-                  <Button size="sm" variant="danger" onClick={() => setPending({ kind: 'sponsor', id: s.id })}>
-                    <Trash2 size={14} />
-                  </Button>
-                </div>
+                {canManage && (
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <Button size="sm" variant="ghost" onClick={() => openSponsor(s)}>
+                      <Pencil size={14} />
+                    </Button>
+                    <Button size="sm" variant="danger" onClick={() => setPending({ kind: 'sponsor', id: s.id })}>
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
+                )}
               </Card>
               </motion.div>
             ))}
@@ -469,14 +475,16 @@ export default function AdminSponsorsPage() {
                     </p>
                     <p className="text-xs font-medium text-primary num">{o.priceLabel || t('sponsors.offer.onQuote')}</p>
                   </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button size="sm" variant="ghost" onClick={() => openOffer(o)}>
-                      <Pencil size={14} />
-                    </Button>
-                    <Button size="sm" variant="danger" onClick={() => setPending({ kind: 'offer', id: o.id })}>
-                      <Trash2 size={14} />
-                    </Button>
-                  </div>
+                  {canManage && (
+                    <div className="flex gap-1 shrink-0">
+                      <Button size="sm" variant="ghost" onClick={() => openOffer(o)}>
+                        <Pencil size={14} />
+                      </Button>
+                      <Button size="sm" variant="danger" onClick={() => setPending({ kind: 'offer', id: o.id })}>
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {o.tier && (
@@ -553,9 +561,11 @@ export default function AdminSponsorsPage() {
                     <Button size="sm" variant="ghost" onClick={() => openRequest(r)}>
                       <Pencil size={14} />
                     </Button>
-                    <Button size="sm" variant="danger" onClick={() => setPending({ kind: 'request', id: r.id })}>
-                      <Trash2 size={14} />
-                    </Button>
+                    {canManage && (
+                      <Button size="sm" variant="danger" onClick={() => setPending({ kind: 'request', id: r.id })}>
+                        <Trash2 size={14} />
+                      </Button>
+                    )}
                   </div>
                 </Card>
                 </motion.div>
