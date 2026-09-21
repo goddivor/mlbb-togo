@@ -23,6 +23,8 @@ import {
   Award,
   Crown,
   MapPin,
+  KeyRound,
+  ScrollText,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -75,35 +77,56 @@ export const adminMenuGroups: MenuGroupConfig[] = [
     id: 'catalog',
     titleKey: 'nav.section.catalog',
     items: [
-      { href: '/admin/catalog', labelKey: 'admin.catalog.title', icon: LayoutGrid },
+      { href: '/admin/catalog', labelKey: 'admin.catalog.title', icon: LayoutGrid, permission: 'admin.catalog' },
     ],
   },
   {
     id: 'esport',
     titleKey: 'nav.section.esport',
     items: [
-      { href: '/admin/league', labelKey: 'admin.league.title', icon: Flag },
-      { href: '/admin/esport', labelKey: 'admin.esport.title', icon: Trophy },
-      { href: '/admin/tournaments', labelKey: 'admin.tournaments.title', icon: Medal },
-      { href: '/admin/seasons', labelKey: 'admin.seasons.title', icon: CalendarDays },
-      { href: '/admin/matches', labelKey: 'admin.matches.title', icon: Swords },
-      { href: '/admin/awards', labelKey: 'admin.awards.title', icon: Award },
-      { href: '/admin/draft', labelKey: 'admin.draft.title', icon: Gamepad2 },
-      { href: '/admin/stream', labelKey: 'admin.stream.title', icon: Radio },
+      { href: '/admin/league', labelKey: 'admin.league.title', icon: Flag, permission: 'admin.league' },
+      { href: '/admin/esport', labelKey: 'admin.esport.title', icon: Trophy, permission: 'admin.esport' },
+      { href: '/admin/tournaments', labelKey: 'admin.tournaments.title', icon: Medal, permission: 'admin.tournaments' },
+      { href: '/admin/seasons', labelKey: 'admin.seasons.title', icon: CalendarDays, permission: 'admin.seasons' },
+      { href: '/admin/matches', labelKey: 'admin.matches.title', icon: Swords, permission: 'admin.matches' },
+      { href: '/admin/awards', labelKey: 'admin.awards.title', icon: Award, permission: 'admin.awards' },
+      { href: '/admin/draft', labelKey: 'admin.draft.title', icon: Gamepad2, permission: 'admin.draft' },
+      { href: '/admin/stream', labelKey: 'admin.stream.title', icon: Radio, permission: 'admin.stream' },
     ],
   },
   {
     id: 'community',
     titleKey: 'nav.section.community',
     items: [
-      { href: '/admin/users', labelKey: 'admin.users.title', icon: Users },
-      { href: '/admin/requests', labelKey: 'requests.title', icon: Inbox },
-      { href: '/admin/messages', labelKey: 'header.messages', icon: MessageSquare },
+      { href: '/admin/users', labelKey: 'admin.users.title', icon: Users, permission: 'admin.users' },
+      { href: '/admin/requests', labelKey: 'requests.title', icon: Inbox, permission: 'admin.requests' },
+      { href: '/admin/messages', labelKey: 'header.messages', icon: MessageSquare, permission: 'admin.messages' },
     ],
   },
   {
     id: 'partners',
     titleKey: 'nav.section.partners',
-    items: [{ href: '/admin/sponsors', labelKey: 'admin.sponsors.title', icon: Handshake }],
+    items: [{ href: '/admin/sponsors', labelKey: 'admin.sponsors.title', icon: Handshake, permission: 'admin.sponsors' }],
+  },
+  {
+    id: 'system',
+    titleKey: 'nav.section.system',
+    items: [
+      { href: '/admin/roles', labelKey: 'admin.roles.title', icon: KeyRound, permission: 'admin.roles' },
+      { href: '/admin/logs', labelKey: 'admin.logs.title', icon: ScrollText, permission: 'admin.logs' },
+    ],
   },
 ];
+
+/** Admin menu restricted to the entries the user's permissions allow. */
+export function filterMenuByPermission(
+  groups: MenuGroupConfig[],
+  permissions: string[],
+): MenuGroupConfig[] {
+  return groups
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((i) => !i.permission || permissions.includes(i.permission)),
+    }))
+    .filter((g) => g.items.length > 0);
+}

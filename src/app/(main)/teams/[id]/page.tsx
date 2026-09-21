@@ -28,6 +28,7 @@ import TeamStaff from '@/components/teams/TeamStaff';
 import TeamHistory from '@/components/teams/TeamHistory';
 import TeamHonours from '@/components/teams/TeamHonours';
 import TeamSchedule from '@/components/teams/TeamSchedule';
+import { can } from '@/lib/permissions';
 
 const LANES = ['roam', 'jungle', 'mid', 'exp', 'gold'];
 // Application life cycle, mirrored from the API (GET /recruitment/meta).
@@ -164,7 +165,8 @@ export default function TeamDetailPage() {
   const [team, setTeam] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const myId = useAuthStore((s: any) => s.user?.id);
-  const isAdmin = useAuthStore((s: any) => ['admin', 'moderator'].includes(s.user?.roleUser));
+  // Staff override (same rule as the API): `admin.esport` permission.
+  const isAdmin = useAuthStore((s: any) => can(s.user, 'admin.esport'));
   const [tab, setTab] = useState<'overview' | 'roster' | 'staff' | 'schedule' | 'history' | 'honours' | 'recruitment' | 'matches'>('overview');
   const [teamStats, setTeamStats] = useState<any>(null);
   const [schedule, setSchedule] = useState<any[]>([]);

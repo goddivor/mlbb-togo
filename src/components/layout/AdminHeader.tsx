@@ -11,15 +11,19 @@ import {
   MessageSquare,
   Handshake,
   LayoutGrid,
+  KeyRound,
+  Flag,
 } from 'lucide-react';
 import { disconnectSocket } from '@/lib/realtime';
 import { useT } from '@/lib/i18n';
 import { setToken, avatarSrc } from '@/lib/api';
 import { useAuthStore } from '@/store/useStore';
+import { can, firstAllowedAdminHref, permissionForAdminPath } from '@/lib/permissions';
 import AppHeader from './AppHeader';
 import { type QuickLink } from './HeaderSearch';
 
 const ADMIN_LINKS: QuickLink[] = [
+  { href: '/admin/league', key: 'admin.league.title', icon: Flag },
   { href: '/admin/catalog', key: 'admin.catalog.title', icon: LayoutGrid },
   { href: '/admin/esport', key: 'admin.esport.title', icon: Shield },
   { href: '/admin/seasons', key: 'admin.seasons.title', icon: CalendarDays },
@@ -29,6 +33,7 @@ const ADMIN_LINKS: QuickLink[] = [
   { href: '/admin/requests', key: 'requests.title', icon: Inbox },
   { href: '/admin/messages', key: 'header.messages', icon: MessageSquare },
   { href: '/admin/sponsors', key: 'admin.sponsors.title', icon: Handshake },
+  { href: '/admin/roles', key: 'admin.roles.title', icon: KeyRound },
 ];
 
 interface HeaderProps {
@@ -54,13 +59,18 @@ export default function AdminHeader({ sidebarOpen, setSidebarOpen }: HeaderProps
 
   const name = user?.username || user?.displayName || 'Admin';
   const avatarUrl = user?.avatar ? avatarSrc(user.avatar) : null;
+  // Quick links limited to the admin areas the user may open.
+  const links = ADMIN_LINKS.filter((l) => {
+    const perm = permissionForAdminPath(l.href);
+    return !perm || can(user, perm);
+  });
 
   return (
     <AppHeader
       sidebarOpen={sidebarOpen}
       setSidebarOpen={setSidebarOpen}
-      homeHref="/admin/league"
-      searchLinks={ADMIN_LINKS}
+      homeHref={firstAllowedAdminHref(user) ?? '/admin'}
+      searchLinks={links}
       messagesHref="/admin/messages"
       profile={{
         name,
@@ -68,7 +78,10 @@ export default function AdminHeader({ sidebarOpen, setSidebarOpen }: HeaderProps
         avatarUrl,
         logoutLabel: t('header.logout'),
         onLogout: signOut,
-        links: [{ href: '/', label: t('admin.backToSite'), icon: 'external' }],
+        links: [
+          { href: '/dashboard', label: t('admin.rbac.playerArea'), icon: 'profile' },
+          { href: '/', label: t('admin.backToSite'), icon: 'external' },
+        ],
       }}
     />
   );

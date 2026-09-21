@@ -1,13 +1,16 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Users, Search, Shield, ShieldCheck, Ban, CheckCircle2, Trash2 } from 'lucide-react';
+import { Users, Search, Ban, CheckCircle2, Trash2, KeyRound, ServerCog } from 'lucide-react';
 import { api, avatarSrc } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { useAuthStore } from '@/store/useStore';
 import { Card, Badge, Avatar, Button, PageHeader, EmptyState, LoadingSpinner, Tabs, DataTable, StatTile, type DataColumn } from '@/components/ui';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import toast from 'react-hot-toast';
+import { can } from '@/lib/permissions';
+import UserRolesModal from '@/components/admin/roles/UserRolesModal';
+import type { Role } from '@/components/admin/roles/types';
 
 const ROLE_BADGE: Record<string, { label: string; variant: any }> = {
   admin: { label: 'admin.users.role.admin', variant: 'red' },
@@ -15,16 +18,12 @@ const ROLE_BADGE: Record<string, { label: string; variant: any }> = {
   user: { label: 'admin.users.role.user', variant: 'neon' },
 };
 
-const ROLE_CYCLE: Record<string, string> = {
-  user: 'moderator',
-  moderator: 'admin',
-  admin: 'user',
-};
-
 export default function AdminUsers() {
   const t = useT();
   const me = useAuthStore((s: any) => s.userProfile);
-  const isAdmin = me?.roleUser === 'admin';
+  // RBAC: role assignment and deletion are separate permissions.
+  const canRoles = can(me, 'admin.roles');
+  const canDelete = can(me, 'users.delete');
 
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +31,8 @@ export default function AdminUsers() {
   const [roleTab, setRoleTab] = useState('all');
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<any>(null);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [rolesFor, setRolesFor] = useState<any>(null);
 
   const load = () =>
     api.users
@@ -42,7 +43,10 @@ export default function AdminUsers() {
   useEffect(() => {
     setLoading(true);
     load().finally(() => setLoading(false));
+    api.roles.list().then((l: any) => setRoles(Array.isArray(l) ? l : []));
   }, []);
+
+  const roleById = useMemo(() => new Map(roles.map((r) => [r.id, r])), [roles]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -73,8 +77,12 @@ export default function AdminUsers() {
   const toggleBan = (u: any) =>
     act(u.id + 'b', () => api.users.setBan(u.id, !u.isBanned), u.isBanned ? t('admin.users.unbanned') : t('admin.users.banned'));
 
-  const cycleRole = (u: any) =>
-    act(u.id + 'r', () => api.users.setRole(u.id, ROLE_CYCLE[u.roleUser] || 'user'), t('admin.users.roleChanged'));
+  const toggleSystem = (u: any) =>
+    act(
+      u.id + 's',
+      () => api.users.setSystemAccount(u.id, !u.isSystemAccount),
+      u.isSystemAccount ? t('admin.users.systemAccountOff') : t('admin.users.systemAccountOn'),
+    );
 
   const runDelete = async () => {
     if (!confirmDelete) return;
@@ -124,22 +132,43 @@ export default function AdminUsers() {
     },
     {
       key: 'role',
-      header: t('admin.users.colRole'),
+      header: t('admin.users.colRoles'),
       render: (u) => {
-        const rb = ROLE_BADGE[u.roleUser] || ROLE_BADGE.user;
-        return <Badge variant={rb.variant} size="sm">{t(rb.label)}</Badge>;
+        const held = (u.roleIds || []).map((id: string) => roleById.get(id)).filter(Boolean) as Role[];
+        if (!held.length) {
+          const rb = ROLE_BADGE[u.roleUser] || ROLE_BADGE.user;
+          return <Badge variant={rb.variant} size="sm">{t(rb.label)}</Badge>;
+        }
+        return (
+          <div className="flex max-w-[16rem] flex-wrap gap-1">
+            {held.map((r) => (
+              <span
+                key={r.id}
+                className="inline-flex items-center gap-1.5 rounded px-2 py-1 text-[11px] font-semibold leading-none text-ink-1 ring-1 ring-inset"
+                style={{ backgroundColor: `${r.color}1f`, ['--tw-ring-color' as any]: `${r.color}55` }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: r.color }} />
+                {r.name}
+              </span>
+            ))}
+          </div>
+        );
       },
     },
     {
       key: 'status',
       header: t('admin.users.colStatus'),
       hideBelow: 'sm',
-      render: (u) =>
-        u.isBanned ? (
-          <Badge variant="red" size="sm">{t('admin.users.bannedTag')}</Badge>
-        ) : (
-          <Badge variant="green" size="sm">{t('admin.users.active')}</Badge>
-        ),
+      render: (u) => (
+        <div className="flex flex-wrap gap-1">
+          {u.isBanned ? (
+            <Badge variant="red" size="sm">{t('admin.users.bannedTag')}</Badge>
+          ) : (
+            <Badge variant="green" size="sm">{t('admin.users.active')}</Badge>
+          )}
+          {u.isSystemAccount && <Badge variant="outline" size="sm">{t('admin.users.systemAccount')}</Badge>}
+        </div>
+      ),
     },
     {
       key: 'joined',
@@ -167,28 +196,43 @@ export default function AdminUsers() {
               {u.isBanned ? <CheckCircle2 size={15} className="text-accent-green" /> : <Ban size={15} className="text-accent-red" />}
             </Button>
 
-            {/* Change role + delete: admin only */}
-            {isAdmin && (
-              <>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={self || busy === u.id + 'r'}
-                  onClick={() => cycleRole(u)}
-                  title={t('admin.users.changeRole')}
-                >
-                  {u.roleUser === 'admin' ? <ShieldCheck size={15} className="text-accent-red" /> : <Shield size={15} />}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={self || busy === u.id + 'd'}
-                  onClick={() => setConfirmDelete(u)}
-                  title={t('admin.users.delete')}
-                >
-                  <Trash2 size={15} className="text-accent-red" />
-                </Button>
-              </>
+            {/* System account (hidden from player-facing features) */}
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy === u.id + 's'}
+              onClick={() => toggleSystem(u)}
+              title={t('admin.users.toggleSystem')}
+              aria-label={t('admin.users.toggleSystem')}
+              aria-pressed={!!u.isSystemAccount}
+            >
+              <ServerCog size={15} className={u.isSystemAccount ? 'text-primary' : undefined} />
+            </Button>
+
+            {/* Roles: `admin.roles` (self-demotion is refused by the API) */}
+            {canRoles && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setRolesFor(u)}
+                title={t('admin.users.manageRoles')}
+                aria-label={t('admin.users.manageRoles')}
+              >
+                <KeyRound size={15} className={(u.roleIds || []).length ? 'text-accent-violet' : undefined} />
+              </Button>
+            )}
+
+            {/* Delete: `users.delete` */}
+            {canDelete && (
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={self || busy === u.id + 'd'}
+                onClick={() => setConfirmDelete(u)}
+                title={t('admin.users.delete')}
+              >
+                <Trash2 size={15} className="text-accent-red" />
+              </Button>
             )}
           </div>
         );
@@ -258,6 +302,8 @@ export default function AdminUsers() {
           />
         )}
       </div>
+
+      <UserRolesModal user={rolesFor} roles={roles} onClose={() => setRolesFor(null)} onSaved={() => void load()} />
 
       <ConfirmModal
         open={!!confirmDelete}

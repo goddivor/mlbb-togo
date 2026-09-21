@@ -12,6 +12,7 @@ import { useAppStore, useThemeStore, useAuthStore } from '@/store/useStore';
 import { setToken } from '@/lib/api';
 import { timeAgo } from '@/lib/helpers';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
+import { hasAdminAccess } from '@/lib/permissions';
 
 export default function Navbar() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function Navbar() {
   const [showProfile, setShowProfile] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const isAdmin = userProfile?.roleUser === 'admin' || userProfile?.roleUser === 'moderator';
+  const isAdmin = hasAdminAccess(userProfile);
   const notifs = notifications;
   const unreadCount = notifs.filter((n: any) => !n.read).length;
 

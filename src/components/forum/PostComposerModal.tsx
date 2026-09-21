@@ -22,12 +22,18 @@ export default function PostComposerModal({
   onClose,
   onCreated,
   isStaff,
+  canAnnounce = isStaff,
+  canSponsor = isStaff,
   defaultCategory,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated: (post: any) => void;
   isStaff: boolean;
+  /** RBAC `forum.announce`: staff-only categories (defaults to `isStaff`). */
+  canAnnounce?: boolean;
+  /** RBAC `posts.sponsor`: sponsored flag / sponsor (defaults to `isStaff`). */
+  canSponsor?: boolean;
   defaultCategory?: string;
 }) {
   const t = useT();
@@ -43,8 +49,8 @@ export default function PostComposerModal({
   const [saving, setSaving] = useState(false);
 
   const allowedCategories = useMemo(
-    () => FEED_CATEGORIES.filter((c) => isStaff || !STAFF_ONLY_CATEGORIES.includes(c)),
-    [isStaff],
+    () => FEED_CATEGORIES.filter((c) => canAnnounce || !STAFF_ONLY_CATEGORIES.includes(c)),
+    [canAnnounce],
   );
 
   useEffect(() => {
@@ -52,10 +58,10 @@ export default function PostComposerModal({
     const wanted = (defaultCategory ?? 'community') as FeedCategory;
     setCategory(allowedCategories.includes(wanted) ? wanted : 'community');
     setMode('write');
-    if (isStaff) {
+    if (canSponsor) {
       api.esport.sponsors().then((l: any) => setSponsors(Array.isArray(l) ? l : []));
     }
-  }, [open, defaultCategory, allowedCategories, isStaff]);
+  }, [open, defaultCategory, allowedCategories, canSponsor]);
 
   const reset = () => {
     setTitle('');
@@ -93,7 +99,7 @@ export default function PostComposerModal({
         contentFormat: 'markdown',
         images,
       };
-      if (isStaff && (isSponsored || sponsorId)) {
+      if (canSponsor && (isSponsored || sponsorId)) {
         payload.isSponsored = true;
         if (sponsorId) payload.sponsorId = sponsorId;
       }
@@ -134,7 +140,7 @@ export default function PostComposerModal({
             <option key={c} value={c}>{t(`comm.cat.${c}`)}</option>
           ))}
         </Select>
-        {!isStaff && (
+        {!canAnnounce && (
           <p className="-mt-2 flex items-center gap-1 text-xs text-ink-3">
             <Lock size={12} />
             {t('comm.cat.announcement')} / {t('comm.cat.stream')} : {t('comm.staffOnly')}
@@ -223,7 +229,7 @@ export default function PostComposerModal({
           )}
         </div>
 
-        {isStaff && (
+        {canSponsor && (
           <div className="rounded-lg border border-dashed border-accent-gold/40 bg-accent-gold/5 p-3">
             <label className="mb-2 flex cursor-pointer items-center gap-2 text-sm text-ink-1">
               <input

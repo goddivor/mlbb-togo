@@ -16,6 +16,18 @@ export const avatarSrc = (url?: string | null, width = 96): string => {
   return url.includes('youngjoygame.com') ? mlbbImg(url, width) : url;
 };
 
+/** Rank tier (all, epic, legend, mythic, honor, glory) and window in days. */
+export type MetaParams = { rank?: string; days?: number; lang?: string };
+
+const metaQs = (params: Record<string, unknown>): string => {
+  const qs = new URLSearchParams(
+    Object.entries(params)
+      .filter(([, v]) => v != null && v !== '')
+      .map(([k, v]) => [k, String(v)]),
+  ).toString();
+  return qs ? `?${qs}` : '';
+};
+
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem(TOKEN_KEY);
@@ -34,6 +46,8 @@ interface RequestOptions {
   fallback?: any;
 
   auth?: boolean;
+  /** GET only: skip the short read cache (e.g. re-checking permissions). */
+  fresh?: boolean;
 }
 
 // Lightweight in-memory cache + GET request de-duplication. Avoids repeated or
@@ -49,7 +63,7 @@ export function clearApiCache() {
 }
 
 async function request<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, fallback, auth = true } = options;
+  const { method = 'GET', body, fallback, auth = true, fresh = false } = options;
   const isGet = method === 'GET';
   const token = getToken();
 
@@ -60,7 +74,7 @@ async function request<T = any>(path: string, options: RequestOptions = {}): Pro
 
   if (isGet) {
     const cached = getCache.get(key);
-    if (cached && Date.now() - cached.at < GET_TTL) return cached.data as T;
+    if (cached && !fresh && Date.now() - cached.at < GET_TTL) return cached.data as T;
     const pending = inFlight.get(key);
     if (pending) return pending as Promise<T>;
   }
@@ -186,7 +200,7 @@ export type NotificationPage = {
 export const api = {
 
   auth: {
-    me: () => request('/auth/me'),
+    me: (fresh = false) => request('/auth/me', { fresh }),
 
     adminLogin: (data: { username: string; password: string }) =>
       request('/auth/admin/login', { method: 'POST', body: data, auth: false }),
@@ -245,6 +259,25 @@ export const api = {
         fallback: { items: [], total: 0, page, limit, hasMore: false },
         auth: false,
       }),
+    // Cached game account data (public, privacy-aware; the owner's session is
+    // sent when present so a private profile stays visible to its owner).
+    game: (id: string) => request(`/users/${id}/game`, { fallback: null }),
+    gameMatches: (
+      id: string,
+      params: { season?: number | null; hero?: number | null; page?: number; limit?: number } = {},
+    ) => {
+      const qs = new URLSearchParams(
+        Object.entries(params)
+          .filter(([, v]) => v !== undefined && v !== null)
+          .map(([k, v]) => [k, String(v)]),
+      ).toString();
+      const page = params.page ?? 1;
+      const limit = params.limit ?? 10;
+      return request(`/users/${id}/game/matches${qs ? `?${qs}` : ''}`, {
+        fallback: { items: [], total: 0, page, limit, hasMore: false },
+      });
+    },
+    gameMatch: (id: string, bid: string) => request(`/users/${id}/game/matches/${encodeURIComponent(bid)}`),
     update: (id: string, data: any) => request(`/users/${id}`, { method: 'PATCH', body: data }),
     remove: (id: string) => request(`/users/${id}`, { method: 'DELETE' }),
     deleteSelf: () => request('/users/me', { method: 'DELETE' }),
@@ -252,6 +285,25 @@ export const api = {
       request(`/users/${id}/ban`, { method: 'PATCH', body: { isBanned } }),
     setRole: (id: string, roleUser: string) =>
       request(`/users/${id}/role`, { method: 'PATCH', body: { roleUser } }),
+    /** RBAC: replace the roles of a user (requires `admin.roles`). */
+    setRoles: (id: string, roleIds: string[]) =>
+      request(`/users/${id}/roles`, { method: 'PATCH', body: { roleIds } }),
+    setSystemAccount: (id: string, isSystemAccount: boolean) =>
+      request(`/users/${id}/system-account`, { method: 'PATCH', body: { isSystemAccount } }),
+  },
+
+  /** RBAC roles & permission catalogue (admin). */
+  roles: {
+    catalogue: () => request('/roles/permissions', { fallback: { groups: [], permissions: [] } }),
+    list: () => request('/roles', { fallback: [] }),
+    get: (id: string) => request(`/roles/${id}`),
+    create: (data: any) => request('/roles', { method: 'POST', body: data }),
+    update: (id: string, data: any) => request(`/roles/${id}`, { method: 'PATCH', body: data }),
+    remove: (id: string) => request(`/roles/${id}`, { method: 'DELETE' }),
+    addMember: (id: string, userId: string) =>
+      request(`/roles/${id}/members`, { method: 'POST', body: { userId } }),
+    removeMember: (id: string, userId: string) =>
+      request(`/roles/${id}/members/${userId}`, { method: 'DELETE' }),
   },
 
   teams: {
@@ -365,6 +417,20 @@ export const api = {
     // Admin: resync heroes from MLBB, returns { updated }.
     refresh: (): Promise<{ updated: number }> =>
       request('/heroes/refresh', { method: 'POST' }),
+
+    // Live Moonton meta (cached server side). `heroId` is the Moonton id; rates in %.
+    metaRanking: (params: MetaParams & { role?: string; lane?: string; sort?: string; order?: string } = {}) =>
+      request(`/heroes/meta/ranking${metaQs(params)}`, { fallback: null, auth: false }),
+    metaStats: (heroId: number | string, params: MetaParams = {}) =>
+      request(`/heroes/${heroId}/meta/stats${metaQs(params)}`, { fallback: null, auth: false }),
+    metaTrends: (heroId: number | string, params: MetaParams = {}) =>
+      request(`/heroes/${heroId}/meta/trends${metaQs(params)}`, { fallback: null, auth: false }),
+    metaTimeline: (heroId: number | string, params: MetaParams & { lane?: string } = {}) =>
+      request(`/heroes/${heroId}/meta/timeline${metaQs(params)}`, { fallback: null, auth: false }),
+    metaMatchups: (heroId: number | string, params: MetaParams = {}) =>
+      request(`/heroes/${heroId}/meta/matchups${metaQs(params)}`, { fallback: null, auth: false }),
+    metaBuilds: (heroId: number | string, params: MetaParams & { lane?: string } = {}) =>
+      request(`/heroes/${heroId}/meta/builds${metaQs(params)}`, { fallback: null, auth: false }),
   },
 
   lanes: {

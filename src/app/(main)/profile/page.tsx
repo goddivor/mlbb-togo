@@ -1,14 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
 import {
   Gamepad2, Check, Link2, Unlink, RefreshCw, ShieldCheck, User, Trophy, Star, Flame, Swords,
 } from 'lucide-react';
 import { Card, Badge, Button, PageHeader, StatCard, StatRing, SectionTitle, Skeleton } from '@/components/ui';
 import RankFrame from '@/components/game/RankFrame';
 import { cn } from '@/lib/helpers';
-import { fadeUp, stagger, still } from '@/lib/motion';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useAuthStore } from '@/store/useStore';
 import { api, avatarSrc, mlbbImg } from '@/lib/api';
@@ -16,6 +14,8 @@ import LinkGameModal from '@/components/profile/LinkGameModal';
 import LevelBadge from '@/components/gamification/LevelBadge';
 import toast from 'react-hot-toast';
 import { useT } from '@/lib/i18n';
+import { notifyGameSync } from '@/components/profile/gameSyncToast';
+import GameAccountSection from '@/components/profile/GameAccountSection';
 
 export default function ProfilePage() {
   const userProfile = useAuthStore((s: any) => s.userProfile);
@@ -26,13 +26,17 @@ export default function ProfilePage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [level, setLevel] = useState<number | null>(null);
   const t = useT();
-  const reduce = useReducedMotion();
 
   useEffect(() => {
     api.gamification
       .me()
       .then((g: any) => setLevel(g?.level ?? null))
       .catch(() => setLevel(null));
+  }, []);
+
+  // Reconnect CTA elsewhere (dashboard, notices) lands here with ?relink=1.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('relink') === '1') setLinkGameOpen(true);
   }, []);
 
   useEffect(() => {
@@ -113,7 +117,7 @@ export default function ProfilePage() {
     try {
       const updated: any = await api.auth.syncGame();
       apply(updated);
-      toast.success(t('profile.syncSuccess'));
+      notifyGameSync(t, updated?.gameSyncStatus);
     } catch (e: any) {
       toast.error(e?.message || t('profile.syncError'));
     } finally {
@@ -279,7 +283,7 @@ export default function ProfilePage() {
             t('profile.gameAccount'),
             userProfile.hasGame
               ? `${t('dashboard.gameId')} ${userProfile.mlbbRoleId} · ${t('dashboard.gameServer')} ${userProfile.mlbbZoneId}`
-              : t('profile.gameDescUnlinked'),
+              : t('gameAccount.link.unlinkedDesc'),
             userProfile.hasGame ? (
               <>
                 <Badge variant="green" size="sm" className="gap-1"><ShieldCheck size={12} /> {t('profile.gameLinked')}</Badge>
@@ -303,67 +307,26 @@ export default function ProfilePage() {
         </div>
       </Card>
 
-      {userProfile.hasGame && (
-        <Card>
-          <SectionTitle
-            title={
-              <span className="inline-flex items-center gap-2">
-                {t('profile.gameData')}
-                <Badge variant="neon" size="sm">{t('dashboard.stats.allModes')}</Badge>
-              </span>
-            }
-            description={userProfile.gamePeakRank ? `${t('profile.peakRank')} : ${userProfile.gamePeakRank}` : undefined}
-            action={
-              <Button variant="outline" size="sm" onClick={sync} disabled={busy === 'sync'}>
-                <RefreshCw size={14} className={busy === 'sync' ? 'animate-spin' : ''} />
-                {busy === 'sync' ? t('profile.syncing') : t('profile.sync')}
-              </Button>
-            }
-            className="mb-4"
-          />
-
-          {heroes.length > 0 && (
-            <>
-              <p className="eyebrow mb-3">{t('profile.favoriteHeroes')}</p>
-              <motion.div
-                variants={reduce ? still : stagger(0.04)}
-                initial="hidden"
-                animate="visible"
-                className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
-              >
-                {heroes.slice(0, 8).map((h, i) => (
-                  <motion.div
-                    key={h.heroId ?? i}
-                    variants={reduce ? still : fadeUp}
-                    className="flex items-center gap-3 overflow-hidden rounded border border-line-subtle bg-surface-2/60"
-                    title={`${h.name} — ${h.winRate}% / ${h.matches}`}
-                  >
-                    {h.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={mlbbImg(h.image, 96)}
-                        alt={h.name}
-                        referrerPolicy="no-referrer"
-                        className="h-14 w-14 shrink-0 object-cover"
-                      />
-                    ) : (
-                      <div className="h-14 w-14 shrink-0 bg-surface-3" />
-                    )}
-                    <div className="min-w-0 flex-1 pr-3">
-                      <p className="truncate text-sm font-semibold text-ink-1">{h.name}</p>
-                      <p className="text-xs text-ink-2 num">
-                        <span className={h.winRate >= 50 ? 'text-accent-green' : 'text-accent-red'}>{h.winRate}%</span> · {h.matches}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </>
-          )}
-        </Card>
+      {userProfile.hasGame && userProfile.id && (
+        <GameAccountSection
+          userId={userProfile.id}
+          refreshKey={userProfile.gameSyncAttemptAt ?? userProfile.gameSyncedAt}
+          onReconnect={() => setLinkGameOpen(true)}
+          action={
+            <Button variant="outline" size="sm" onClick={sync} disabled={busy === 'sync'}>
+              <RefreshCw size={14} className={busy === 'sync' ? 'animate-spin' : ''} />
+              {busy === 'sync' ? t('profile.syncing') : t('profile.sync')}
+            </Button>
+          }
+        />
       )}
 
-      <LinkGameModal open={linkGameOpen} onClose={() => setLinkGameOpen(false)} />
+      <LinkGameModal
+        open={linkGameOpen}
+        onClose={() => setLinkGameOpen(false)}
+        initialGameId={userProfile.mlbbRoleId}
+        initialServerId={userProfile.mlbbZoneId}
+      />
 
       {/* Game account unlink confirmation */}
       <ConfirmModal
