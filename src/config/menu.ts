@@ -29,7 +29,6 @@ import {
   Plug,
   Package,
   Zap,
-  Gem,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
