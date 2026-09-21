@@ -66,7 +66,7 @@ export default function MatchScoreline({
   const done = status === 'completed';
   const winA = done && (match.winnerTeamId ? match.winnerTeamId === match.teamA.id : match.scoreA > match.scoreB);
   const winB = done && (match.winnerTeamId ? match.winnerTeamId === match.teamB.id : match.scoreB > match.scoreA);
-  const link = href === undefined && match.id ? `/matches/${match.id}` : href;
+  const link = href === undefined && match.id ? `/dashboard/matches/${match.id}` : href;
   const when = match.scheduledAt
     ? new Date(match.scheduledAt).toLocaleString(undefined, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
     : '';

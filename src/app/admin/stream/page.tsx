@@ -274,7 +274,7 @@ function AdminStreamInner() {
             ) : (
               connected && <Badge variant="green" dot>{t('admin.stream.connectedLabel')}</Badge>
             )}
-            <a href="/stream" target="_blank" rel="noreferrer">
+            <a href="/dashboard/stream" target="_blank" rel="noreferrer">
               <Button variant="ghost" size="sm">
                 <ExternalLink size={16} /> {t('admin.stream.preview')}
               </Button>

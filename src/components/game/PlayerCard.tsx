@@ -59,7 +59,7 @@ export default function PlayerCard({
   const name = player.displayName || player.username || '?';
   const roles = (player.gameRoles || []).map((r) => (typeof r === 'string' ? r : r.role)).slice(0, 3);
   const winRate = Number(stats?.winRate ?? 0);
-  const link = href === undefined ? `/players/${player.id}` : href;
+  const link = href === undefined ? `/dashboard/players/${player.id}` : href;
 
   const body = (
     <div

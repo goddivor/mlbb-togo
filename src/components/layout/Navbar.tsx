@@ -146,7 +146,7 @@ export default function Navbar() {
                     ))}
                   </div>
                   <Link
-                    href="/settings"
+                    href="/dashboard/settings"
                     className={`block p-3 text-center text-sm font-medium ${
                       theme === 'dark' ? 'text-neon-blue hover:bg-gaming-surface' : 'text-primary-600 hover:bg-gray-50'
                     }`}
@@ -204,7 +204,7 @@ export default function Navbar() {
                   </div>
                   <div className="py-1">
                     <Link
-                      href="/profile"
+                      href="/dashboard/profile"
                       onClick={() => setShowProfile(false)}
                       className={`flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
                         theme === 'dark' ? 'text-gray-300 hover:bg-gaming-surface' : 'text-gray-700 hover:bg-gray-50'
@@ -226,7 +226,7 @@ export default function Navbar() {
                       </Link>
                     )}
                     <Link
-                      href="/settings"
+                      href="/dashboard/settings"
                       onClick={() => setShowProfile(false)}
                       className={`flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
                         theme === 'dark' ? 'text-gray-300 hover:bg-gaming-surface' : 'text-gray-700 hover:bg-gray-50'

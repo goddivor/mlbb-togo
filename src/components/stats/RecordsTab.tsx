@@ -110,7 +110,7 @@ export default function RecordsTab({ scope, ready }: { scope: string; ready: boo
     return (
       <div className="flex items-center gap-3">
         <div className="relative shrink-0">
-          <Link href={`/players/${r.user.id}`}>
+          <Link href={`/dashboard/players/${r.user.id}`}>
             <PlayerAvatar user={r.user} size={48} />
           </Link>
           {r.heroCard && (
@@ -121,7 +121,7 @@ export default function RecordsTab({ scope, ready }: { scope: string; ready: boo
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-display text-3xl font-bold leading-none tracking-tight2 num text-ink-1">{valueOf(key, r)}</p>
-          <Link href={`/players/${r.user.id}`} className="mt-1 block truncate text-sm font-semibold text-ink-1 hover:text-primary">
+          <Link href={`/dashboard/players/${r.user.id}`} className="mt-1 block truncate text-sm font-semibold text-ink-1 hover:text-primary">
             {name}
           </Link>
           <p className="flex flex-wrap items-center gap-x-1 text-[11px] num text-ink-3">

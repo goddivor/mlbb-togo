@@ -166,7 +166,7 @@ export function StandingsWidget({ overview }: { overview: LeagueOverview }) {
         icon={<ListOrdered size={16} />}
         title={t('admin.league.standings.title')}
         action={
-          <Link href="/standings" target="_blank" className={linkCls}>
+          <Link href="/dashboard/standings" target="_blank" className={linkCls}>
             {t('admin.league.standings.full')} <ExternalLink size={12} />
           </Link>
         }
@@ -259,7 +259,7 @@ export function AnnounceWidget({ onPublished }: { onPublished: () => void }) {
         icon={<Megaphone size={16} />}
         title={t('admin.league.announce.title')}
         action={
-          <Link href="/forum" target="_blank" className={linkCls}>
+          <Link href="/dashboard/forum" target="_blank" className={linkCls}>
             {t('admin.league.announce.feed')} <ExternalLink size={12} />
           </Link>
         }

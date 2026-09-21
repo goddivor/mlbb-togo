@@ -27,7 +27,7 @@ export default function SeasonSwitcher({
   const t = useT();
   const isAdmin = variant === 'admin';
   const offerAll = isAdmin ? false : allowAll ?? true;
-  const browseHref = isAdmin ? '/admin/seasons' : '/seasons';
+  const browseHref = isAdmin ? '/admin/seasons' : '/dashboard/seasons';
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const selected = useSelectedSeason();
