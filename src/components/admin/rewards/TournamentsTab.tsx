@@ -43,7 +43,8 @@ export default function TournamentsTab() {
   const [loadingResults, setLoadingResults] = useState(true);
 
   useEffect(() => {
-    Promise.all([api.tournaments.list(), api.draft.admin.list()]).then(([classic, drafts]: any[]) => {
+    // Player draft list: `/draft/admin` needs `admin.draft`, not granted by `admin.rewards`.
+    Promise.all([api.tournaments.list(), api.draft.list()]).then(([classic, drafts]: any[]) => {
       setTournaments([
         ...(Array.isArray(classic) ? classic : []).map((x: any) => ({ id: x.id, name: x.name, draft: false })),
         ...(Array.isArray(drafts) ? drafts : []).map((x: any) => ({ id: x.id, name: x.name, draft: true })),
