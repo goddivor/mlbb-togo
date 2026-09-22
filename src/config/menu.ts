@@ -30,6 +30,9 @@ import {
   Images,
   Package,
   Zap,
+  Hammer,
+  Wrench,
+  ShieldAlert,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -44,6 +47,8 @@ export const playerMenuGroups: MenuGroupConfig[] = [
       { href: '/dashboard/items', labelKey: 'catalog.items.title', icon: Package },
       { href: '/dashboard/spells', labelKey: 'catalog.spells.title', icon: Zap },
       { href: '/dashboard/emblems', labelKey: 'catalog.emblems.title', icon: Gem },
+      { href: '/dashboard/builds', labelKey: 'communityBuilds.menu', icon: Hammer },
+      { href: '/dashboard/my-builds', labelKey: 'communityBuilds.mine.menu', icon: Wrench },
       { href: '/dashboard/players', labelKey: 'header.players', icon: Users },
       { href: '/dashboard/leaderboard', labelKey: 'header.leaderboard', icon: Trophy },
       { href: '/dashboard/progress', labelKey: 'header.progress', icon: Sparkles },
@@ -110,6 +115,7 @@ export const adminMenuGroups: MenuGroupConfig[] = [
       { href: '/admin/requests', labelKey: 'requests.title', icon: Inbox, permission: 'admin.requests' },
       { href: '/admin/messages', labelKey: 'header.messages', icon: MessageSquare, permission: 'admin.messages' },
       { href: '/admin/rewards', labelKey: 'admin.rewards.title', icon: Gem, permission: 'admin.rewards' },
+      { href: '/admin/builds', labelKey: 'communityBuilds.moderation.menu', icon: ShieldAlert, permission: 'builds.moderate' },
     ],
   },
   {

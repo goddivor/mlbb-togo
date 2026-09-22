@@ -13,6 +13,7 @@ import HeroTrendsPanel from './hero-meta/HeroTrendsPanel';
 import HeroTimelinePanel from './hero-meta/HeroTimelinePanel';
 import HeroMatchupsPanel from './hero-meta/HeroMatchupsPanel';
 import HeroMetaBuildsPanel from './hero-meta/HeroMetaBuildsPanel';
+import HeroCommunityBuilds from '@/components/builds/HeroCommunityBuilds';
 
 type TabId = 'skills' | 'stats' | 'trends' | 'timeline' | 'matchups' | 'builds';
 const TABS: Array<{ id: TabId; label: string }> = [
@@ -402,7 +403,7 @@ export default function HeroDetailModal({
                         <HeroMetaBuildsPanel heroId={heroId} />
                       </section>
                       <section>
-                        <h3 className="mb-4 font-display text-lg font-bold tracking-tight2 text-ink-1">{t('heroMeta.builds.communityTitle')}</h3>
+                        <h3 className="mb-4 font-display text-lg font-bold tracking-tight2 text-ink-1">{t('heroMeta.builds.recommendedTitle')}</h3>
                       {builds?.length > 0 ? (
                         <div className="space-y-6">
                           {builds.map((build, i) => (
@@ -501,6 +502,11 @@ export default function HeroDetailModal({
                           {t('heroes.builds.empty')}
                         </p>
                       )}
+                      </section>
+                      <section>
+                        <h3 className="mb-1 font-display text-lg font-bold tracking-tight2 text-ink-1">{t('heroMeta.builds.communityTitle')}</h3>
+                        <p className="mb-4 text-sm text-ink-3">{t('communityBuilds.heroSubtitle')}</p>
+                        <HeroCommunityBuilds heroId={heroId} onNavigate={onClose} />
                       </section>
                     </div>
                   )}
