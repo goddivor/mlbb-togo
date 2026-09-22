@@ -5,6 +5,7 @@ import { Clock, ImagePlus, Link2, Lock, RefreshCw, Trash2, UploadCloud } from 'l
 import toast from 'react-hot-toast';
 import {
   api,
+  ApiError,
   avatarSrc,
   type MediaAsset,
   type MediaConfig,
@@ -39,13 +40,66 @@ export interface ImageUploadProps {
   className?: string;
 }
 
-// One config request per page load (the API client also caches GETs briefly).
+const DISABLED: MediaConfig = { enabled: false, maxBytes: 0, formats: [] };
+
+// Upload config shared by every ImageUpload of the page. It is not kept while
+// uploads are disabled (an admin may configure Cloudinary meanwhile), and it
+// is reloaded after a failed upload or when the integrations page saves.
 let configPromise: Promise<MediaConfig> | null = null;
-function loadConfig(): Promise<MediaConfig> {
-  if (!configPromise) {
-    configPromise = api.media.config().catch(() => ({ enabled: false, maxBytes: 0, formats: [] }));
+const configListeners = new Set<(config: MediaConfig) => void>();
+
+function loadConfig(force = false): Promise<MediaConfig> {
+  if (!configPromise || force) {
+    const p = api.media.config(force).catch(() => DISABLED);
+    configPromise = p;
+    p.then((config) => {
+      if (!config.enabled && configPromise === p) configPromise = null;
+      configListeners.forEach((listener) => listener(config));
+    });
   }
   return configPromise;
+}
+
+/** Drops the cached upload config (e.g. Cloudinary settings saved) and refreshes mounted fields. */
+export function invalidateMediaConfig() {
+  configPromise = null;
+  if (configListeners.size) loadConfig(true);
+}
+
+/** Error returned by Cloudinary itself (raw English message, never shown as is). */
+class CloudinaryUploadError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = 'CloudinaryUploadError';
+  }
+}
+
+type Translate = ReturnType<typeof useT>;
+
+/** User-facing message of a failed upload: known Cloudinary errors translated, anything else generic. */
+function uploadErrorMessage(e: unknown, t: Translate, maxMb: number): string {
+  if (e instanceof CloudinaryUploadError) {
+    const raw = e.message;
+    if (e.status === 0) return t('upload.errNetwork');
+    if (/file size too large|too large/i.test(raw)) return t('upload.tooLarge', { max: maxMb });
+    if (/invalid image|image file format|not allowed|unsupported|allowed format/i.test(raw)) return t('upload.badType');
+    if (/stale request|expired|already exists/i.test(raw)) return t('upload.errExpired');
+    if (/signature|api[_ ]?key|cloud[_ ]?name|disabled|account|unauthori[sz]ed|forbidden/i.test(raw)) {
+      return t('upload.errUnavailable');
+    }
+    return t('upload.failed');
+  }
+  if (e instanceof ApiError) {
+    // Our own validation / permission messages are meant for users; server-side
+    // failures may carry Cloudinary details.
+    if (e.status === 429) return e.message;
+    if (e.status >= 500) return t('upload.errUnavailable');
+    return e.message || t('upload.failed');
+  }
+  return t('upload.failed');
 }
 
 /** Posts the file straight to Cloudinary with the signed fields, reporting progress. */
@@ -72,9 +126,9 @@ function uploadToCloudinary(
         //
       }
       if (xhr.status >= 200 && xhr.status < 300 && data?.public_id) resolve(data);
-      else reject(new Error(data?.error?.message || `HTTP ${xhr.status}`));
+      else reject(new CloudinaryUploadError(String(data?.error?.message || `HTTP ${xhr.status}`), xhr.status || -1));
     };
-    xhr.onerror = () => reject(new Error('network'));
+    xhr.onerror = () => reject(new CloudinaryUploadError('network', 0));
     xhr.send(form);
   });
 }
@@ -120,9 +174,12 @@ export default function ImageUpload({
 
   useEffect(() => {
     let alive = true;
-    loadConfig().then((c) => alive && setConfig(c));
+    const listener = (c: MediaConfig) => alive && setConfig(c);
+    configListeners.add(listener);
+    loadConfig().then(listener);
     return () => {
       alive = false;
+      configListeners.delete(listener);
     };
   }, []);
 
@@ -170,8 +227,10 @@ export default function ImageUpload({
           onChange(result.url);
           toast.success(t('upload.done'));
         }
-      } catch (e: any) {
-        toast.error(e?.message && e.message !== 'network' ? e.message : t('upload.failed'));
+      } catch (e) {
+        toast.error(uploadErrorMessage(e, t, maxMb));
+        // Cloudinary may have been removed or reconfigured meanwhile.
+        loadConfig(true);
       } finally {
         setProgress(null);
         if (inputRef.current) inputRef.current.value = '';

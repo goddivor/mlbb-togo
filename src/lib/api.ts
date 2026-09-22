@@ -733,7 +733,8 @@ export const api = {
 
   // Signed direct uploads to Cloudinary (#131): sign -> upload -> confirm.
   media: {
-    config: () => request<MediaConfig>('/media/config', { fallback: { enabled: false, maxBytes: 0, formats: [] } }),
+    config: (fresh = false) =>
+      request<MediaConfig>('/media/config', { fresh, fallback: { enabled: false, maxBytes: 0, formats: [] } }),
     sign: (purpose: MediaPurpose, targetId?: string | null) =>
       request<MediaUploadTicket>('/media/sign', { method: 'POST', body: { purpose, targetId: targetId || undefined } }),
     confirm: (purpose: MediaPurpose, targetId: string | null | undefined, publicId: string) =>
