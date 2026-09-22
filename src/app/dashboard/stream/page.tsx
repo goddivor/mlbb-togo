@@ -19,6 +19,7 @@ import { fade, still } from '@/lib/motion';
 import { api } from '@/lib/api';
 import { useSelectedSeason } from '@/store/useSeasonStore';
 import { useT } from '@/lib/i18n';
+import { useAuthStore } from '@/store/useStore';
 
 type StreamVideo = {
   id: string;
@@ -114,6 +115,32 @@ export default function StreamPage() {
       cancelled = true;
     };
   }, [config]);
+
+  // "Watching the live" ping for the spectator achievement: at most once a
+  // day per browser (the server also counts one day at most per member).
+  const userId = useAuthStore((s: any) => s.user?.id);
+  useEffect(() => {
+    if (!live?.live || !userId) return;
+    const key = `mlbb:spectator:${userId}`;
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      if (localStorage.getItem(key) === today) return;
+    } catch {
+      /* storage unavailable: the server dedupes anyway */
+    }
+    api.gamification
+      .spectator()
+      .then((res: any) => {
+        // Not live on the server side: allow a later retry today.
+        if (!res || res.live === false) return;
+        try {
+          localStorage.setItem(key, today);
+        } catch {
+          /* ignore */
+        }
+      })
+      .catch(() => undefined);
+  }, [live?.live, userId]);
 
   // Default to the globally selected season when it has videos (once).
   const { seasonId: selectedSeasonId, ready: seasonsReady } = useSelectedSeason();

@@ -12,7 +12,9 @@ import {
   CheckCheck,
   ChevronLeft,
   ChevronRight,
+  Gem,
   Handshake,
+  Hourglass,
   Inbox,
   MessageSquare,
   RefreshCw,
@@ -68,6 +70,9 @@ const TYPE_STYLE: Record<string, { icon: any; variant: string }> = {
   tournament_team: { icon: Shield, variant: 'blue' },
   sponsorship_request: { icon: Handshake, variant: 'gold' },
   achievement_unlock: { icon: Award, variant: 'purple' },
+  frame_unlock: { icon: Gem, variant: 'gold' },
+  frame_expiring: { icon: Hourglass, variant: 'gold' },
+  frame_expired: { icon: Hourglass, variant: 'default' },
 };
 
 const styleOf = (type: string) =>
