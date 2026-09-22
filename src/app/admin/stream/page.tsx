@@ -128,6 +128,7 @@ function AdminStreamInner() {
   useEffect(() => {
     const c = params.get('connected');
     if (c === '1') toast.success(t('admin.stream.connected'));
+    else if (c === '0' && params.get('reason') === 'encryption_key') toast.error(t('admin.stream.encryptionKeyMissing'));
     else if (c === '0') toast.error(t('admin.stream.connectError'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);

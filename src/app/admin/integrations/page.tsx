@@ -15,6 +15,7 @@ import { useLangStore } from '@/store/useStore';
 import { fadeUp, stagger, still } from '@/lib/motion';
 import { Badge, Button, Card, Input, LoadingSpinner, PageHeader } from '@/components/ui';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import { invalidateMediaConfig } from '@/components/ui/ImageUpload';
 
 type Meta = IntegrationsStatus['anthropic'] | IntegrationsStatus['cloudinary'];
 type Form = Record<string, string>;
@@ -81,6 +82,7 @@ export default function AdminIntegrationsPage() {
     setBusy({ name, action: 'save' });
     try {
       apply(await api.admin.integrations.update(name, body));
+      if (name === 'cloudinary') invalidateMediaConfig();
       toast.success(t('admin.integrations.saved'));
     } catch (e: any) {
       toast.error(e?.message || t('common.error'));
@@ -114,6 +116,7 @@ export default function AdminIntegrationsPage() {
     setBusy({ name, action: 'remove' });
     try {
       apply(await api.admin.integrations.remove(name));
+      if (name === 'cloudinary') invalidateMediaConfig();
       toast.success(t('admin.integrations.removed'));
       setToRemove(null);
     } catch (e: any) {

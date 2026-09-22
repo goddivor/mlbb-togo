@@ -3,7 +3,16 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   Award,
+  Calendar,
+  Cloud,
   Crown,
+  Eye,
+  Flag,
+  Gift,
+  Heart,
+  Lock,
+  Map as MapIcon,
+  Moon,
   Flame,
   Footprints,
   Medal,
@@ -32,6 +41,15 @@ const ICONS: Record<string, LucideIcon> = {
   crown: Crown,
   target: Target,
   flame: Flame,
+  calendar: Calendar,
+  map: MapIcon,
+  heart: Heart,
+  eye: Eye,
+  moon: Moon,
+  flag: Flag,
+  cloud: Cloud,
+  gift: Gift,
+  lock: Lock,
 };
 
 /** Maps the icon key sent by the backend to a lucide icon. */

@@ -35,6 +35,7 @@ export default function AvatarFrame({
   size: boxSize = 64,
   avatarSize,
   bleed = false,
+  slot = false,
   rank,
   tier,
   showBadge = true,
@@ -48,6 +49,11 @@ export default function AvatarFrame({
   avatarSize?: number;
   /** With `avatarSize`: let the frame overflow vertically instead of growing the row. */
   bleed?: boolean;
+  /**
+   * With `avatarSize`: always reserve the width of a framed avatar so rows
+   * with and without a reward frame keep their names aligned (dense lists).
+   */
+  slot?: boolean;
   rank?: string | null;
   /** Forced rank-frame tier when no reward frame is equipped (e.g. podium). */
   tier?: RankTier;
@@ -55,6 +61,23 @@ export default function AvatarFrame({
   className?: string;
 }) {
   const resolved = resolveFrame(frame);
+  if (slot && avatarSize) {
+    return (
+      <span className="inline-flex shrink-0 items-center justify-center align-middle" style={{ width: framedBoxSize(avatarSize) }}>
+        <AvatarFrame
+          frame={frame}
+          src={src}
+          name={name}
+          avatarSize={avatarSize}
+          bleed={bleed}
+          rank={rank}
+          tier={tier}
+          showBadge={showBadge}
+          className={className}
+        />
+      </span>
+    );
+  }
   if (!resolved) {
     return (
       <RankFrame

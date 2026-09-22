@@ -117,6 +117,7 @@ export default function LeaderboardPage() {
             rank={e.gameRank}
             avatarSize={32}
             bleed
+            slot
             showBadge={false}
           />
           <span className="truncate font-semibold text-ink-1">{e.displayName || e.username}</span>
