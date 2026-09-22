@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Facebook, Instagram, Youtube, Twitch, Send } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import { useAuthStore } from '@/store/useStore';
 
 const columns = [
   {
@@ -49,6 +50,15 @@ const socials = [
 
 export default function LandingFooter() {
   const t = useT();
+  // Member pages (/dashboard/*) are only listed for signed-in members: a
+  // visitor would just be sent back to the home page.
+  const isMember = useAuthStore((s: any) => !!s.userProfile);
+  const visibleColumns = columns
+    .map((col) => ({
+      ...col,
+      links: col.links.filter((l) => isMember || !l.href.startsWith('/dashboard')),
+    }))
+    .filter((col) => col.links.length > 0);
   const year = new Date().getFullYear();
 
   return (
@@ -81,7 +91,7 @@ export default function LandingFooter() {
             )}
           </div>
 
-          {columns.map((col) => (
+          {visibleColumns.map((col) => (
             <div key={col.titleKey}>
               <h3 className="eyebrow mb-4 !text-ink-1">{t(col.titleKey)}</h3>
               <ul className="space-y-2.5">
