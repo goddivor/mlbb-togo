@@ -8,6 +8,8 @@ import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/helpers';
 import { springIndicator } from '@/lib/motion';
 
+const AREA_ROOTS = new Set(['/dashboard', '/admin']);
+
 /** Shared layoutId so the glow bar slides between items of the same rail. */
 const ACTIVE_BAR_ID = 'sidebar-active-bar';
 
@@ -23,7 +25,11 @@ export default function SidebarItem({
   const t = useT();
   const reduce = useReducedMotion();
   const Icon = item.icon;
-  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+  // Area roots (the dashboard home) only match themselves: every member page
+  // lives under /dashboard/*, so a prefix match would keep them highlighted.
+  const isAreaRoot = AREA_ROOTS.has(item.href);
+  const active =
+    pathname === item.href || (!isAreaRoot && pathname.startsWith(`${item.href}/`));
   const label = t(item.labelKey);
 
   return (

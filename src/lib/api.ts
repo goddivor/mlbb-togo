@@ -31,6 +31,8 @@ export interface CatalogSyncResult {
   items: CatalogSyncCounts;
   emblems: CatalogSyncCounts;
   battleSpells: CatalogSyncCounts;
+  /** Emblem talents (community builds); null when Moonton could not serve them. */
+  talents?: CatalogSyncCounts | null;
   syncedAt: string;
 }
 
@@ -113,13 +115,15 @@ async function request<T = any>(path: string, options: RequestOptions = {}): Pro
       });
       if (!res.ok) {
         let message = `Erreur ${res.status}`;
+        let code: string | undefined;
         try {
           const data = await res.json();
           message = data.message || message;
+          code = typeof data.code === 'string' ? data.code : undefined;
         } catch {
           //
         }
-        throw new ApiError(message, res.status);
+        throw new ApiError(message, res.status, code);
       }
       const data = res.status === 204 ? (undefined as T) : ((await res.json()) as T);
       if (isGet) getCache.set(key, { at: Date.now(), data });
@@ -142,12 +146,88 @@ async function request<T = any>(path: string, options: RequestOptions = {}): Pro
   return p;
 }
 
+/** Catalog entry as embedded in a community build. */
+export interface BuildCatalogEntry {
+  id: string;
+  name: string;
+  icon?: string | null;
+  description?: string | null;
+  enabled?: boolean | null;
+  gameId?: number | null;
+}
+
+export interface EmblemTalent extends BuildCatalogEntry {
+  tier: number;
+}
+
+export interface CommunityBuildReportRow {
+  id: string;
+  reason: string;
+  details?: string | null;
+  createdAt: string;
+  reporter?: { id: string; username?: string | null; displayName?: string | null; avatar?: string | null } | null;
+}
+
+export interface CommunityBuild {
+  id: string;
+  title: string;
+  notes?: string | null;
+  lane?: string | null;
+  status: 'draft' | 'published' | 'hidden';
+  likesCount: number;
+  publishedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  hero: { id: string; heroId?: number | null; name: string; image?: string | null; roles?: string[] };
+  author: { id: string; username?: string | null; displayName?: string | null; avatar?: string | null };
+  items: BuildCatalogEntry[];
+  emblem?: BuildCatalogEntry | null;
+  talents: EmblemTalent[];
+  battleSpell?: BuildCatalogEntry | null;
+  isMine: boolean;
+  likedByMe: boolean;
+  reportedByMe: boolean;
+  hiddenAt?: string | null;
+  hiddenReason?: string | null;
+  reportsCount?: number;
+  reports?: CommunityBuildReportRow[];
+}
+
+export interface CommunityBuildPage {
+  items: CommunityBuild[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+export type CommunityBuildListParams = {
+  hero?: string | number;
+  lane?: string;
+  sort?: 'likes' | 'recent';
+  page?: number;
+  limit?: number;
+};
+
+export interface CommunityBuildInput {
+  title: string;
+  notes?: string | null;
+  lane?: string | null;
+  itemIds: string[];
+  emblemId?: string | null;
+  talentIds: string[];
+  battleSpellId?: string | null;
+}
+
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  /** Machine-readable error code when the API sends one (e.g. community builds). */
+  code?: string;
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -761,6 +841,42 @@ export const api = {
       request(`/catalog/spells${metaQs(params)}`, { fallback: null, auth: false }),
     emblems: (params: CatalogStatsParams = {}) =>
       request(`/catalog/emblems${metaQs(params)}`, { fallback: null, auth: false }),
+  },
+
+  // Community builds (#129): player-made builds, likes, reports, moderation.
+  communityBuilds: {
+    list: (params: CommunityBuildListParams = {}): Promise<CommunityBuildPage> =>
+      request(`/community-builds${metaQs(params)}`, {
+        fallback: { items: [], total: 0, page: 1, limit: 20, hasMore: false },
+      }),
+    mine: (): Promise<CommunityBuild[]> => request('/community-builds/mine', { fresh: true }),
+    get: (id: string): Promise<CommunityBuild> => request(`/community-builds/${id}`),
+    talents: (): Promise<EmblemTalent[]> =>
+      request('/community-builds/talents', { fallback: [], auth: false }),
+    create: (data: CommunityBuildInput & { heroId: string; publish?: boolean }): Promise<CommunityBuild> =>
+      request('/community-builds', { method: 'POST', body: data }),
+    update: (id: string, data: Partial<CommunityBuildInput>): Promise<CommunityBuild> =>
+      request(`/community-builds/${id}`, { method: 'PATCH', body: data }),
+    remove: (id: string) => request(`/community-builds/${id}`, { method: 'DELETE' }),
+    publish: (id: string): Promise<CommunityBuild> =>
+      request(`/community-builds/${id}/publish`, { method: 'POST' }),
+    unpublish: (id: string): Promise<CommunityBuild> =>
+      request(`/community-builds/${id}/unpublish`, { method: 'POST' }),
+    like: (id: string): Promise<{ liked: boolean; likesCount: number }> =>
+      request(`/community-builds/${id}/like`, { method: 'PUT' }),
+    unlike: (id: string): Promise<{ liked: boolean; likesCount: number }> =>
+      request(`/community-builds/${id}/like`, { method: 'DELETE' }),
+    report: (id: string, data: { reason: string; details?: string }) =>
+      request(`/community-builds/${id}/report`, { method: 'POST', body: data }),
+    // Moderation (`builds.moderate`). filter: reported | hidden | all.
+    moderation: (params: { filter?: string; page?: number; limit?: number } = {}): Promise<CommunityBuildPage> =>
+      request(`/moderation/community-builds${metaQs(params)}`, { fresh: true }),
+    hide: (id: string, reason?: string) =>
+      request(`/moderation/community-builds/${id}/hide`, { method: 'POST', body: { reason } }),
+    unhide: (id: string) => request(`/moderation/community-builds/${id}/unhide`, { method: 'POST' }),
+    dismissReports: (id: string) =>
+      request(`/moderation/community-builds/${id}/dismiss-reports`, { method: 'POST' }),
+    moderatorDelete: (id: string) => request(`/moderation/community-builds/${id}`, { method: 'DELETE' }),
   },
 
   builds: {

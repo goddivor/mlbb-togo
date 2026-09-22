@@ -2,8 +2,8 @@
 // Member pages live under /dashboard. Their former top-level URLs (bookmarks,
 // links stored in notifications by the API) redirect there.
 const MEMBER_ROUTES = [
-  'ai', 'design', 'draft', 'emblems', 'events', 'forum', 'friends', 'heroes',
-  'items', 'leaderboard', 'map', 'matches', 'messages', 'my-requests',
+  'ai', 'builds', 'design', 'draft', 'emblems', 'events', 'forum', 'friends', 'heroes',
+  'items', 'leaderboard', 'map', 'matches', 'messages', 'my-builds', 'my-requests',
   'notifications', 'pick-ban', 'players', 'profile', 'progress', 'recruitment',
   'settings', 'spells', 'standings', 'stats', 'stream', 'teams', 'tournaments',
 ];
