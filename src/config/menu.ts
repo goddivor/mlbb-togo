@@ -33,6 +33,7 @@ import {
   Hammer,
   Wrench,
   ShieldAlert,
+  UserRoundSearch,
 } from 'lucide-react';
 import type { MenuGroupConfig } from './theme';
 
@@ -112,6 +113,7 @@ export const adminMenuGroups: MenuGroupConfig[] = [
     titleKey: 'nav.section.community',
     items: [
       { href: '/admin/users', labelKey: 'admin.users.title', icon: Users, permission: 'admin.users' },
+      { href: '/admin/imported', labelKey: 'admin.imported.title', icon: UserRoundSearch, permission: 'admin.imported' },
       { href: '/admin/requests', labelKey: 'requests.title', icon: Inbox, permission: 'admin.requests' },
       { href: '/admin/messages', labelKey: 'header.messages', icon: MessageSquare, permission: 'admin.messages' },
       { href: '/admin/rewards', labelKey: 'admin.rewards.title', icon: Gem, permission: 'admin.rewards' },
