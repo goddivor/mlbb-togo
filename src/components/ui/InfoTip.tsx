@@ -19,6 +19,8 @@ type Align = 'start' | 'center' | 'end';
 /** Distance between the trigger and the panel, and from the viewport edges. */
 const GAP = 8;
 const MARGIN = 8;
+/** Grace period before a hover-opened panel closes (WCAG 1.4.13). */
+const HIDE_DELAY = 200;
 
 /**
  * Small "i" affordance that holds an explanation instead of printing it on the
@@ -26,10 +28,14 @@ const MARGIN = 8;
  * read by nobody.
  *
  * It opens on hover (pointer devices), on focus (keyboard) and on click or tap
- * (touch devices have no hover), and closes on Escape, on a click outside and
- * when the focus leaves. The trigger is a real `<button>` carrying an
- * `aria-label`, and the panel is referenced with `aria-describedby`, so a
- * screen reader announces the text with the control it explains.
+ * (touch devices have no hover; a tap pins it until the next tap). It closes on
+ * Escape, on a pointer-down outside the trigger and the panel, when the focus
+ * moves outside that pair, and when the trigger scrolls out of view. A
+ * hover-opened panel closes after a short grace delay and is itself hoverable,
+ * so the text can be read, selected and copied (WCAG 1.4.13). The trigger is a
+ * real `<button>` carrying an `aria-label`, and the panel is referenced with
+ * `aria-describedby`, so a screen reader announces the text with the control it
+ * explains.
  *
 * The panel is rendered in a portal and positioned `fixed` against the
  * trigger, then clamped inside the viewport: it is therefore never clipped by
@@ -79,6 +85,41 @@ export default function InfoTip({
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const wrap = useRef<HTMLSpanElement>(null);
   const panel = useRef<HTMLDivElement>(null);
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+  // Read inside the delayed close, which would otherwise capture a stale value.
+  const pinnedRef = useRef(false);
+  pinnedRef.current = pinned;
+
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  /** True when the node belongs to the trigger or to the panel. */
+  const owns = useCallback(
+    (node: Node | null) => !!node && (!!wrap.current?.contains(node) || !!panel.current?.contains(node)),
+    [],
+  );
+
+  const close = useCallback(() => {
+    clearTimeout(timer.current);
+    setOpen(false);
+    setPinned(false);
+  }, []);
+
+  const show = useCallback(() => {
+    clearTimeout(timer.current);
+    setOpen(true);
+  }, []);
+
+  /**
+   * Leaving the trigger or the panel closes it, but only after a short grace
+   * delay: WCAG 1.4.13 requires the content to stay reachable, and the pointer
+   * has to cross the gap between the two.
+   */
+  const hide = useCallback(() => {
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      if (!pinnedRef.current) setOpen(false);
+    }, HIDE_DELAY);
+  }, []);
 
   const place = useCallback(() => {
     const trigger = wrap.current?.getBoundingClientRect();
@@ -127,34 +168,39 @@ export default function InfoTip({
 
   useEffect(() => {
     if (!open) return;
-    const close = () => {
-      setOpen(false);
-      setPinned(false);
-    };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') close();
     };
     const onPointer = (e: Event) => {
-      const t = e.target as Node;
-      if (!wrap.current?.contains(t) && !panel.current?.contains(t)) close();
+      if (!owns(e.target as Node)) close();
     };
-    const onMove = () => place();
+    // Focus leaving the trigger/panel pair closes a pinned panel: tabbing away
+    // must not leave it hanging over the page.
+    const onFocusIn = (e: FocusEvent) => {
+      if (!owns(e.target as Node)) close();
+    };
+    const onMove = () => {
+      // The trigger scrolled out of view: the panel has nothing to point at.
+      const r = wrap.current?.getBoundingClientRect();
+      if (r && (r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth)) {
+        close();
+        return;
+      }
+      place();
+    };
     document.addEventListener('keydown', onKey);
     document.addEventListener('pointerdown', onPointer);
+    document.addEventListener('focusin', onFocusIn);
     window.addEventListener('resize', onMove);
     window.addEventListener('scroll', onMove, true);
     return () => {
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('pointerdown', onPointer);
+      document.removeEventListener('focusin', onFocusIn);
       window.removeEventListener('resize', onMove);
       window.removeEventListener('scroll', onMove, true);
     };
-  }, [open, place]);
-
-  const show = () => setOpen(true);
-  const hide = () => {
-    if (!pinned) setOpen(false);
-  };
+  }, [open, place, close, owns]);
 
   return (
     <span
@@ -169,6 +215,7 @@ export default function InfoTip({
         aria-expanded={open}
         aria-describedby={open ? id : undefined}
         onClick={() => {
+          clearTimeout(timer.current);
           const next = !pinned;
           setPinned(next);
           setOpen(next);
@@ -190,6 +237,8 @@ export default function InfoTip({
             ref={panel}
             role="tooltip"
             id={id}
+            onMouseEnter={show}
+            onMouseLeave={hide}
             style={{
               top: pos?.top ?? -9999,
               left: pos?.left ?? -9999,

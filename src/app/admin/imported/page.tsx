@@ -511,9 +511,20 @@ export default function AdminImportedProfiles() {
       <Modal
         open={!!linkFor}
         onClose={() => setLinkFor(null)}
-        title={t('admin.imported.linkTitle', {
-          name: linkFor?.gameNickname || linkFor?.username || '',
-        })}
+        title={
+          <>
+            <span className="hidden sm:inline">
+              {t('admin.imported.linkTitle', {
+                name: linkFor?.gameNickname || linkFor?.username || '',
+              })}
+            </span>
+            <span className="sm:hidden">
+              {t('admin.imported.linkShort', {
+                name: linkFor?.gameNickname || linkFor?.username || '',
+              })}
+            </span>
+          </>
+        }
         icon={<Link2 size={18} />}
         size="lg"
       >
