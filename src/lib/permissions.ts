@@ -23,6 +23,7 @@ export const ADMIN_AREAS: AdminArea[] = [
   { permission: 'admin.stream', href: '/admin/stream' },
   { permission: 'admin.catalog', href: '/admin/catalog' },
   { permission: 'admin.users', href: '/admin/users' },
+  { permission: 'admin.imported', href: '/admin/imported' },
   { permission: 'admin.requests', href: '/admin/requests' },
   { permission: 'admin.messages', href: '/admin/messages' },
   { permission: 'admin.rewards', href: '/admin/rewards' },

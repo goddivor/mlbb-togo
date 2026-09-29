@@ -411,6 +411,91 @@ export type MediaLibraryPage = {
   counts: Record<MediaStatus, number>;
 };
 
+// ---------------------------------------------------------------------------
+// Imported profiles (#154): placeholder accounts created by the legacy import,
+// merged by an admin into the real member account of the same person.
+// ---------------------------------------------------------------------------
+
+/** Account summary shared by both sides of a merge. */
+export type MergeAccount = {
+  id: string;
+  username: string;
+  email: string;
+  avatar: string | null;
+  provider: string;
+  gameNickname: string | null;
+  hasGoogle: boolean;
+  hasGameAccount: boolean;
+  /** False while the mailbox is still the one the import made up. */
+  emailSet: boolean;
+  bio: string | null;
+  lane: string | null;
+  wins: number;
+  losses: number;
+  mvpCount: number;
+  createdAt: string | null;
+};
+
+export type ImportedProfile = MergeAccount & {
+  teams: { id: string; name: string }[];
+  seasons: { id: string; name: string }[];
+  matchesPlayed: number;
+  awards: number;
+};
+
+/** Similarity of a real account with the imported pseudo (0 to 1). */
+export type MergeCandidate = MergeAccount & { score: number; matchedOn: string | null };
+
+/**
+ * Why a merge is refused. The API returns codes, never sentences: the admin
+ * interface is bilingual and a backend string would leak French into the
+ * English UI. Translated through `admin.imported.reason.<code>`.
+ */
+export type MergeReason =
+  | { code: 'match_conflict'; count: number }
+  | { code: 'game_duplicate'; count: number }
+  | { code: 'blocking'; model: string; count: number };
+
+export type MergeMoves = {
+  teamMemberships: { id: string; teamId: string; teamName: string; isCaptain: boolean }[];
+  droppedTeamMemberships: { id: string; teamId: string; teamName: string }[];
+  matchPlayers: number;
+  awards: { id: string; category: string; title: string | null; seasonName: string }[];
+  staff: { id: string; role: string; teamName: string }[];
+  gamePicks: number;
+  matchMvp: number;
+  tournamentMvp: number;
+  rewardElections: number;
+  registryEntries: string[];
+  /** Registry mappings removed because their row was deleted. */
+  registryPruned: number;
+  /** Season archives (`summary.legacy.rosters`) repointed. */
+  seasonArchives: number;
+};
+
+export type MergePreview = {
+  source: MergeAccount;
+  target: MergeAccount;
+  canMerge: boolean;
+  reasons: MergeReason[];
+  moves: MergeMoves;
+  /** Rows deleted with the placeholder instead of being moved. */
+  drops: { model: string; count: number }[];
+  /** Collections that stop the merge (authored content on the placeholder). */
+  blocking: { model: string; count: number }[];
+  conflicts: { matchId: string; seasonName: string | null }[];
+};
+
+export type MergeResult = {
+  success: boolean;
+  /** True when the placeholder was already gone: only the counters were redone. */
+  alreadyMerged: boolean;
+  source: MergeAccount | null;
+  target: MergeAccount;
+  moved: MergeMoves | null;
+  dropped: { model: string; count: number }[];
+};
+
 export const api = {
 
   auth: {
@@ -1430,6 +1515,22 @@ export const api = {
     counterPicks: (heroIds: string[], lang: string) =>
       request(`/ai/counter?lang=${lang}`, { method: 'POST', body: { heroIds } }),
     analyze: (lang: string) => request(`/ai/analyze?lang=${lang}`, { method: 'POST' }),
+  },
+
+  /** Admin: profiles imported from the legacy site (#154, permission `admin.imported`). */
+  imported: {
+    list: (): Promise<ImportedProfile[]> => request('/imported', { fallback: [] }),
+    candidates: (id: string, q = '', limit = 20): Promise<MergeCandidate[]> =>
+      request(
+        `/imported/${id}/candidates?q=${encodeURIComponent(q)}&limit=${limit}`,
+        { fallback: [] },
+      ),
+    preview: (id: string, targetId: string): Promise<MergePreview> =>
+      request(`/imported/${id}/preview?targetId=${encodeURIComponent(targetId)}`),
+    merge: (id: string, targetId: string): Promise<MergeResult> =>
+      request(`/imported/${id}/merge`, { method: 'POST', body: { targetId } }),
+    setEmail: (id: string, email: string | null) =>
+      request(`/imported/${id}/email`, { method: 'PATCH', body: { email } }),
   },
 };
 
