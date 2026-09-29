@@ -731,9 +731,41 @@ function MatchFormModal({
 /* Result modal                                                        */
 /* ------------------------------------------------------------------ */
 
-type GameRow = { winnerTeamId: string; duration: string; mvpUserId: string; screenshot: string };
+/**
+ * A game of the series. `picks` is the draft recorded for that game (hero per
+ * player). The form does not edit it, but it must travel back untouched on
+ * save: the API can only guess a missing draft when the series keeps the exact
+ * same shape, so deleting or inserting a row would otherwise lose it.
+ */
+type GamePick = { userId: string; teamId: string; heroId: string | null; hero: string | null; isSub: boolean };
 
-const emptyGame = (): GameRow => ({ winnerTeamId: '', duration: '', mvpUserId: '', screenshot: '' });
+type GameRow = {
+  winnerTeamId: string;
+  duration: string;
+  mvpUserId: string;
+  screenshot: string;
+  picks: GamePick[];
+};
+
+const emptyGame = (): GameRow => ({
+  winnerTeamId: '',
+  duration: '',
+  mvpUserId: '',
+  screenshot: '',
+  picks: [],
+});
+
+/** Keep only the fields the API accepts in a pick. */
+const readPicks = (raw: any): GamePick[] =>
+  (Array.isArray(raw) ? raw : [])
+    .filter((p: any) => p && typeof p.userId === 'string' && typeof p.teamId === 'string')
+    .map((p: any) => ({
+      userId: p.userId,
+      teamId: p.teamId,
+      heroId: typeof p.heroId === 'string' ? p.heroId : null,
+      hero: typeof p.hero === 'string' ? p.hero : null,
+      isSub: p.isSub === true,
+    }));
 
 type RosterEntry = { userId: string; teamId: string; name: string };
 
@@ -775,6 +807,7 @@ function ResultModal({
         duration: g.duration != null ? formatDuration(g.duration) || '' : '',
         mvpUserId: g.mvpUserId || '',
         screenshot: g.screenshot || '',
+        picks: readPicks(g.picks),
       })),
     );
     setScreenshots(Array.isArray(match.screenshots) ? match.screenshots : []);
@@ -876,6 +909,9 @@ function ResultModal({
           duration: parseDuration(g.duration),
           mvpUserId: g.mvpUserId || null,
           screenshot: g.screenshot.trim() || null,
+          // Sent back as received: the form never edits the draft, but leaving
+          // it out would clear it as soon as a game is added or removed.
+          picks: g.picks,
         })),
         screenshots,
         vodUrl: vodUrl.trim() || null,
