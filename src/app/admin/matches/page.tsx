@@ -734,8 +734,8 @@ function MatchFormModal({
 /**
  * A game of the series. `picks` is the draft recorded for that game (hero per
  * player). The form does not edit it, but it must travel back untouched on
- * save: the API can only guess a missing draft when the series keeps the exact
- * same shape, so deleting or inserting a row would otherwise lose it.
+ * save: the API never guesses a missing draft, so a game sent without its
+ * `picks` simply loses it.
  */
 type GamePick = { userId: string; teamId: string; heroId: string | null; hero: string | null; isSub: boolean };
 
@@ -910,7 +910,7 @@ function ResultModal({
           mvpUserId: g.mvpUserId || null,
           screenshot: g.screenshot.trim() || null,
           // Sent back as received: the form never edits the draft, but leaving
-          // it out would clear it as soon as a game is added or removed.
+          // it out would clear it (the API never guesses a missing draft).
           picks: g.picks,
         })),
         screenshots,
