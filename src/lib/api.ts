@@ -446,6 +446,16 @@ export type ImportedProfile = MergeAccount & {
 /** Similarity of a real account with the imported pseudo (0 to 1). */
 export type MergeCandidate = MergeAccount & { score: number; matchedOn: string | null };
 
+/**
+ * Why a merge is refused. The API returns codes, never sentences: the admin
+ * interface is bilingual and a backend string would leak French into the
+ * English UI. Translated through `admin.imported.reason.<code>`.
+ */
+export type MergeReason =
+  | { code: 'match_conflict'; count: number }
+  | { code: 'game_duplicate'; count: number }
+  | { code: 'blocking'; model: string; count: number };
+
 export type MergeMoves = {
   teamMemberships: { id: string; teamId: string; teamName: string; isCaptain: boolean }[];
   droppedTeamMemberships: { id: string; teamId: string; teamName: string }[];
@@ -457,26 +467,32 @@ export type MergeMoves = {
   tournamentMvp: number;
   rewardElections: number;
   registryEntries: string[];
+  /** Registry mappings removed because their row was deleted. */
+  registryPruned: number;
+  /** Season archives (`summary.legacy.rosters`) repointed. */
+  seasonArchives: number;
 };
 
 export type MergePreview = {
   source: MergeAccount;
   target: MergeAccount;
   canMerge: boolean;
-  reasons: string[];
+  reasons: MergeReason[];
   moves: MergeMoves;
   /** Rows deleted with the placeholder instead of being moved. */
   drops: { model: string; count: number }[];
   /** Collections that stop the merge (authored content on the placeholder). */
-  blocking: { model: string; label: string; count: number }[];
+  blocking: { model: string; count: number }[];
   conflicts: { matchId: string; seasonName: string | null }[];
 };
 
 export type MergeResult = {
   success: boolean;
-  source: MergeAccount;
+  /** True when the placeholder was already gone: only the counters were redone. */
+  alreadyMerged: boolean;
+  source: MergeAccount | null;
   target: MergeAccount;
-  moved: MergeMoves;
+  moved: MergeMoves | null;
   dropped: { model: string; count: number }[];
 };
 

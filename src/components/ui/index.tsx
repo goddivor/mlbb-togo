@@ -840,6 +840,13 @@ export function Skeleton({
 /* Tooltip (CSS only)                                                  */
 /* ------------------------------------------------------------------ */
 
+/**
+ * `InfoTip`: an "i" button holding a paragraph of explanation (hover, focus
+ * and tap), so a long note never has to be printed on the page. Re-exported
+ * here so `@/components/ui` stays the single import of the kit.
+ */
+export { default as InfoTip } from './InfoTip';
+
 export function Tooltip({
   content,
   children,
