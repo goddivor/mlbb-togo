@@ -83,7 +83,9 @@ export default function AdminEsportPage() {
 
   const load = async () => {
     try {
-      const data = await api.esport.teams();
+      // The administration acts on the live roster only: an archived season row
+      // has no endpoint to update or remove it (#162).
+      const data = await api.esport.teams(undefined, undefined, 'live');
       setTeams(Array.isArray(data) ? data : []);
     } catch (e: any) {
       toast.error(errMsg(e));

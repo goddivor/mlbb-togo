@@ -965,25 +965,26 @@ export const api = {
     moderatorDelete: (id: string) => request(`/moderation/community-builds/${id}`, { method: 'DELETE' }),
   },
 
-  builds: {
-    // Recommended builds per hero
-    byHero: (heroId: string) =>
-      request(`/heroes/${heroId}/builds`, { fallback: [], auth: false }),
-    get: (heroId: string, buildId: string) =>
-      request(`/heroes/${heroId}/builds/${buildId}`, { fallback: null, auth: false }),
-    create: (heroId: string, data: any) =>
-      request(`/heroes/${heroId}/builds`, { method: 'POST', body: data }),
-    update: (heroId: string, buildId: string, data: any) =>
-      request(`/heroes/${heroId}/builds/${buildId}`, { method: 'PATCH', body: data }),
-    delete: (heroId: string, buildId: string) =>
-      request(`/heroes/${heroId}/builds/${buildId}`, { method: 'DELETE' }),
-  },
-
   esport: {
     org: () => request('/esport', { fallback: null, auth: false }),
-    teams: (type?: string) =>
-      request(`/esport/teams${type ? `?type=${type}` : ''}`, { fallback: [], auth: false }),
-    team: (id: string) => request(`/esport/teams/${id}`, { fallback: null, auth: false }),
+    // `roster: 'live'` forces the roster of today (administration): never a
+    // season archive, whatever season the team last played.
+    teams: (type?: string, seasonId?: string, roster?: 'live') => {
+      const qs = new URLSearchParams(
+        Object.entries({ type, seasonId, roster }).filter(([, v]) => !!v) as [string, string][],
+      ).toString();
+      return request(`/esport/teams${qs ? `?${qs}` : ''}`, { fallback: [], auth: false });
+    },
+    // `seasonId` picks the roster of that season; the API defaults to the
+    // current one (or the last one the team played).
+    team: (id: string, seasonId?: string) =>
+      request(
+        `/esport/teams/${id}${seasonId ? `?seasonId=${encodeURIComponent(seasonId)}` : ''}`,
+        { fallback: null, auth: false },
+      ),
+    /** Teams a player played for, with the seasons of each stint. */
+    playerTeams: (userId: string) =>
+      request(`/esport/players/${userId}/teams`, { fallback: null, auth: false }),
     sponsors: () => request('/esport/sponsors', { fallback: [], auth: false }),
     mtl: () => request('/esport/mtl', { fallback: null, auth: false }),
     // Public target figures shown on the About page.

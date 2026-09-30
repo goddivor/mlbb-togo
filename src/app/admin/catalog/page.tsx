@@ -22,7 +22,6 @@ import {
 import Modal from '@/components/ui/Modal';
 import RoleIcon from '@/components/game/RoleIcon';
 import CatalogEntitySection, { type CatalogEntity } from './CatalogEntitySection';
-import BuildsSection from './BuildsSection';
 import toast from 'react-hot-toast';
 
 // Shape of a lane as returned by GraphQL / REST.
@@ -311,7 +310,7 @@ export default function AdminCatalogPage() {
           </motion.div>
 
 
-          {/* Build blocks: items, emblems and battle spells feed the hero builds tab */}
+          {/* Game catalog blocks: items, emblems and battle spells (used by community builds) */}
           <CatalogEntitySection
             title={t('admin.catalog.items')}
             icon={<Sword size={20} />}
@@ -342,7 +341,6 @@ export default function AdminCatalogPage() {
             onDelete={api.game.deleteBattleSpell}
             onChanged={load}
           />
-          <BuildsSection items={items} emblems={emblems} battleSpells={battleSpells} />
         </motion.div>
       )}
 

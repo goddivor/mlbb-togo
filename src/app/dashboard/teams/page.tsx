@@ -19,6 +19,8 @@ import {
   Tabs,
 } from '@/components/ui';
 import { TeamCard } from '@/components/game';
+import { useSelectedSeason } from '@/store/useSeasonStore';
+import { seasonShortLabel } from '@/components/seasons/shared';
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 
@@ -55,6 +57,20 @@ export default function TeamsPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  // A team abandoned after a season shows its last roster: say which season it
+  // is, so the count is not read as today's squad (#162).
+  const { seasons: allSeasons } = useSelectedSeason();
+  const rosterHint = (tm: any) => {
+    const seasonId = tm?.rosterSeasonId;
+    if (!seasonId || seasonId === tm?.currentSeasonId) return {};
+    const season = allSeasons.find((sn: any) => sn.id === seasonId);
+    if (!season) return {};
+    return {
+      rosterSeasonLabel: seasonShortLabel(season),
+      rosterSeasonTitle: t('teams.card.archivedRoster', { season: season.name }),
+    };
+  };
 
   const esportTeams = org?.teams ?? [];
   const accent = org?.color || '#E9B84B';
@@ -189,7 +205,7 @@ export default function TeamsPage() {
         >
           {activeList.map((tm) => (
             <motion.div key={tm.id} variants={reduce ? still : fadeUp}>
-              <TeamCard team={{ ...tm, color: activeAccent }} />
+              <TeamCard team={{ ...tm, color: activeAccent, ...rosterHint(tm) }} />
             </motion.div>
           ))}
         </motion.div>

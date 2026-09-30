@@ -1,0 +1,29 @@
+name: CI
+
+# Replaces the Vercel preview build, which only compiled the branch: a clean
+# install, then lint and a full production build on every pull request.
+on:
+  pull_request:
+  push:
+    branches: [dev, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: lint · build
+    runs-on: ubuntu-latest
+    env:
+      # Build-time value only: the browser reads the deployed one at runtime.
+      NEXT_PUBLIC_API_URL: https://mlbb-togo-api.vercel.app/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
