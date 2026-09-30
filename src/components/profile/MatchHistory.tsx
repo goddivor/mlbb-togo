@@ -120,7 +120,7 @@ export default function MatchHistory({ userId }: { userId: string }) {
       ) : (
         <ul className="divide-y divide-line-subtle">
           {items.map((m) => (
-            <li key={m.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center">
+            <li key={m.id} className="flex flex-col gap-3 py-3 sm:min-h-[4.25rem] sm:flex-row sm:items-center">
               {/* Result + date */}
               <div className="flex shrink-0 items-center gap-2.5 sm:w-44">
                 <span className={cn('h-7 w-1 shrink-0 -skew-x-12 rounded-sm', RESULT_EDGE[m.result] || RESULT_EDGE.draw)} />
@@ -142,21 +142,22 @@ export default function MatchHistory({ userId }: { userId: string }) {
               </div>
 
               {/* Hero, role, KDA */}
-              <div className="flex shrink-0 items-center gap-3">
-                <div className="flex min-w-0 items-center gap-2">
+              <div className="flex items-center gap-3 sm:shrink-0">
+                {/* Fixed-width cell so every portrait lands on the same column */}
+                <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:w-44 sm:flex-none sm:shrink-0">
                   {m.heroImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={mlbbImg(m.heroImage, 64)}
                       alt={m.hero || ''}
                       referrerPolicy="no-referrer"
-                      className="h-8 w-8 rounded cut-corners-sm bg-surface-3 object-cover"
+                      className="h-10 w-10 shrink-0 rounded cut-corners-sm bg-surface-3 object-cover"
                     />
                   ) : (
-                    <div className="h-8 w-8 rounded cut-corners-sm bg-surface-3" />
+                    <div className="h-10 w-10 shrink-0 rounded cut-corners-sm bg-surface-3" />
                   )}
-                  <div className="leading-tight">
-                    <p className="max-w-[110px] truncate text-xs font-semibold text-ink-1">
+                  <div className="min-w-0 leading-tight">
+                    <p className="truncate text-xs font-semibold text-ink-1">
                       {m.hero || t('stats.noHero')}
                     </p>
                     <p className="inline-flex items-center gap-1 text-[11px] text-ink-2">
@@ -165,7 +166,7 @@ export default function MatchHistory({ userId }: { userId: string }) {
                     </p>
                   </div>
                 </div>
-                <div className="w-24 text-right leading-tight">
+                <div className="w-24 shrink-0 whitespace-nowrap text-right leading-tight">
                   <p className="font-display text-sm font-bold num text-ink-1">
                     <span className="text-accent-green">{m.kills}</span>
                     <span className="text-ink-3"> / </span>
@@ -175,18 +176,22 @@ export default function MatchHistory({ userId }: { userId: string }) {
                   </p>
                   <p className="text-[11px] num text-ink-2">KDA {m.kda}</p>
                 </div>
-                {m.isMvp && (
-                  <Badge variant="gold" size="sm" className="gap-1">
-                    <Star size={12} /> MVP
-                  </Badge>
-                )}
+                <div className="flex shrink-0 justify-end sm:w-16">
+                  {m.isMvp && (
+                    <Badge variant="gold" size="sm" className="gap-1">
+                      <Star size={12} /> MVP
+                    </Badge>
+                  )}
+                </div>
               </div>
 
-              {m.seasonName && (
-                <span className="hidden shrink-0 items-center gap-1 text-xs text-ink-2 xl:inline-flex">
-                  <Trophy size={12} /> {m.seasonName}
-                </span>
-              )}
+              <span className="hidden w-40 shrink-0 items-center gap-1 text-xs text-ink-2 xl:inline-flex" title={m.seasonName || undefined}>
+                {m.seasonName && (
+                  <>
+                    <Trophy size={12} className="shrink-0" /> <span className="truncate">{m.seasonName}</span>
+                  </>
+                )}
+              </span>
             </li>
           ))}
         </ul>
