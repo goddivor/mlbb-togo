@@ -2,9 +2,8 @@
 
 import { useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Info } from 'lucide-react';
 import { avatarSrc, mlbbImg } from '@/lib/api';
-import { Table, Td, Th } from '@/components/ui';
+import { InfoTip as KitInfoTip, Table, Td, Th } from '@/components/ui';
 import { cn } from '@/lib/helpers';
 import { useSelectedSeason } from '@/store/useSeasonStore';
 import RoleIcon from '@/components/game/RoleIcon';
@@ -192,25 +191,20 @@ export function WinRateBar({ value }: { value: number }) {
   );
 }
 
-/** Small info icon with a hover / focus tooltip (used for data sources). */
+/**
+ * Small info icon for the stats tables. It delegates to the UI-kit `InfoTip`,
+ * so every info icon of the app opens the same way: on hover, on focus AND on
+ * click / tap (#169). The click is stopped here because the tip often sits in
+ * a sortable header, which would otherwise re-sort the table.
+ */
 export function InfoTip({ children, label }: { children: ReactNode; label?: string }) {
   return (
-    <span className="relative inline-flex group">
-      {/* A span (not a button): the tip may sit inside a sortable header button. */}
-      <span
-        tabIndex={0}
-        role="img"
-        aria-label={label ?? 'info'}
-        className="inline-flex cursor-help items-center justify-center rounded-full text-ink-3 hover:text-primary focus:text-primary focus:outline-none"
-      >
-        <Info size={14} />
-      </span>
-      <span
-        role="tooltip"
-        className="pointer-events-none absolute left-1/2 top-full z-30 mt-1.5 w-64 -translate-x-1/2 rounded border border-line-strong bg-surface-1 p-2.5 text-left text-xs font-normal normal-case tracking-normal text-ink-2 shadow-elev-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-      >
-        {children}
-      </span>
+    <span
+      className="inline-flex align-middle"
+      onClick={(e) => e.stopPropagation()}
+      role="presentation"
+    >
+      <KitInfoTip content={children} label={label ?? 'info'} align="center" maxWidth={288} />
     </span>
   );
 }

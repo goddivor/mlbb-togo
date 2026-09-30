@@ -412,7 +412,8 @@ export default function TeamDetailPage() {
     <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md cut-corners bg-surface-2 ring-1 ring-inset ring-line-subtle sm:h-20 sm:w-20">
       {team.image ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={team.image} alt={team.name} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+        // `contain`: a crest is rarely square, and cropping it cuts the logo.
+        <img src={team.image} alt={team.name} referrerPolicy="no-referrer" className="h-full w-full object-contain" />
       ) : (
         <span className="font-display text-xl font-bold text-ink-1">{teamTag(team)}</span>
       )}
