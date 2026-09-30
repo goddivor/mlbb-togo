@@ -967,9 +967,22 @@ export const api = {
 
   esport: {
     org: () => request('/esport', { fallback: null, auth: false }),
-    teams: (type?: string) =>
-      request(`/esport/teams${type ? `?type=${type}` : ''}`, { fallback: [], auth: false }),
-    team: (id: string) => request(`/esport/teams/${id}`, { fallback: null, auth: false }),
+    teams: (type?: string, seasonId?: string) => {
+      const qs = new URLSearchParams(
+        Object.entries({ type, seasonId }).filter(([, v]) => !!v) as [string, string][],
+      ).toString();
+      return request(`/esport/teams${qs ? `?${qs}` : ''}`, { fallback: [], auth: false });
+    },
+    // `seasonId` picks the roster of that season; the API defaults to the
+    // current one (or the last one the team played).
+    team: (id: string, seasonId?: string) =>
+      request(
+        `/esport/teams/${id}${seasonId ? `?seasonId=${encodeURIComponent(seasonId)}` : ''}`,
+        { fallback: null, auth: false },
+      ),
+    /** Teams a player played for, with the seasons of each stint. */
+    playerTeams: (userId: string) =>
+      request(`/esport/players/${userId}/teams`, { fallback: null, auth: false }),
     sponsors: () => request('/esport/sponsors', { fallback: [], auth: false }),
     mtl: () => request('/esport/mtl', { fallback: null, auth: false }),
     // Public target figures shown on the About page.

@@ -22,6 +22,7 @@ import RankBadge, { hasRankBadge } from '@/components/game/RankBadge';
 import RoleIcon from '@/components/game/RoleIcon';
 import RoleSelect from '@/components/game/RoleSelect';
 import { useAuthStore } from '@/store/useStore';
+import { useSelectedSeason } from '@/store/useSeasonStore';
 import { useT } from '@/lib/i18n';
 import toast from 'react-hot-toast';
 import TeamOverview from '@/components/teams/TeamOverview';
@@ -173,22 +174,31 @@ export default function TeamDetailPage() {
   const [teamStats, setTeamStats] = useState<any>(null);
   const [schedule, setSchedule] = useState<any[]>([]);
 
+  // Season whose roster is shown. `null` lets the API decide: the current
+  // season, or the last one played by a team abandoned since (#162).
+  const [rosterSeason, setRosterSeason] = useState<string | null>(null);
+  const { seasons: allSeasons } = useSelectedSeason();
+
   const loadExtras = () => {
     api.esport.teamStats(id).then(setTeamStats).catch(() => setTeamStats(null));
     api.esport.teamSchedule(id).then((r: any) => setSchedule(Array.isArray(r) ? r : [])).catch(() => setSchedule([]));
   };
   const refresh = () => {
     loadExtras();
-    return api.esport.team(id).then(setTeam).catch(() => setTeam(null));
+    return api.esport.team(id, rosterSeason ?? undefined).then(setTeam).catch(() => setTeam(null));
   };
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
-    api.esport.team(id).then(setTeam).catch(() => setTeam(null)).finally(() => setLoading(false));
+    api.esport
+      .team(id, rosterSeason ?? undefined)
+      .then(setTeam)
+      .catch(() => setTeam(null))
+      .finally(() => setLoading(false));
     api.esport.teamStats(id).then(setTeamStats).catch(() => setTeamStats(null));
     api.esport.teamSchedule(id).then((r: any) => setSchedule(Array.isArray(r) ? r : [])).catch(() => setSchedule([]));
-  }, [id]);
+  }, [id, rosterSeason]);
 
   const members: any[] = Array.isArray(team?.members) ? team.members : [];
   const isMember = !!myId && members.some((m) => m.userId === myId);
@@ -358,6 +368,20 @@ export default function TeamDetailPage() {
   const others = members.filter((m) => m.userId !== captainId && !m.isCaptain);
   const starters = others.filter((m) => !m.isSubstitute);
   const substitutes = others.filter((m) => m.isSubstitute);
+
+  // --- Season rosters (#162) ---
+  const currentSeasonId: string | null = team?.currentSeasonId ?? null;
+  const shownSeasonId: string | null = team?.rosterSeasonId ?? null;
+  // The seasons this team has a roster for, plus the current one, in the site
+  // order (newest first); a team abandoned after season 1 only lists that one.
+  const rosterSeasonIds: string[] = Array.isArray(team?.rosterSeasonIds) ? team.rosterSeasonIds : [];
+  const seasonOptions = allSeasons
+    .filter((sn: any) => rosterSeasonIds.includes(sn.id) || sn.id === currentSeasonId)
+    .map((sn: any) => ({ id: sn.id, name: sn.name }));
+  const shownSeasonName = seasonOptions.find((sn) => sn.id === shownSeasonId)?.name ?? '';
+  // Past rosters are history: only the live one can be edited (the API only
+  // manages that one too).
+  const isLiveRoster = !shownSeasonId || shownSeasonId === currentSeasonId;
   const pendingCandidates = campaigns.reduce((n, c) => n + (c.applicationCount || 0), 0);
 
   const backLink = (
@@ -499,8 +523,33 @@ export default function TeamDetailPage() {
 
       {/* Roster tab */}
       {tab === 'roster' && (
-        <div>
-          {amCaptain ? (
+        <div className="space-y-4">
+          {seasonOptions.length > 1 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="eyebrow">{t('teams.roster.seasonLabel')}</span>
+              <div className="w-full max-w-[16rem]">
+                <Select
+                  value={shownSeasonId ?? ''}
+                  onChange={(e: any) => setRosterSeason(e.target.value || null)}
+                  aria-label={t('teams.roster.seasonLabel')}
+                >
+                  {seasonOptions.map((sn) => (
+                    <option key={sn.id} value={sn.id}>
+                      {sn.name}
+                      {sn.id === currentSeasonId ? ` (${t('teams.roster.currentRoster')})` : ''}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </div>
+          )}
+          {!isLiveRoster && shownSeasonName && (
+            <p className="text-sm text-ink-2">
+              {t('teams.roster.archivedNotice', { season: shownSeasonName })}
+              {amCaptain ? ` ${t('teams.roster.readOnly')}` : ''}
+            </p>
+          )}
+          {amCaptain && isLiveRoster ? (
             members.length === 0 ? <EmptyState icon={<Users size={28} />} title={t('teams.detail.noMembers')} /> : (
               <div className="space-y-2">
                 {members.map((m) => {
@@ -525,7 +574,12 @@ export default function TeamDetailPage() {
                 })}
               </div>
             )
-          ) : !captainMember && members.length === 0 ? <EmptyState icon={<Users size={28} />} title={t('teams.detail.noMembers')} /> : (
+          ) : !captainMember && members.length === 0 ? (
+            <EmptyState
+              icon={<Users size={28} />}
+              title={isLiveRoster ? t('teams.detail.noMembers') : t('teams.roster.emptySeason')}
+            />
+          ) : (
             <div className="space-y-5">
               {captainMember && (
                 <div>
