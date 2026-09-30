@@ -545,7 +545,13 @@ export default function TeamDetailPage() {
           )}
           {!isLiveRoster && shownSeasonName && (
             <p className="text-sm text-ink-2">
-              {t('teams.roster.archivedNotice', { season: shownSeasonName })}
+              {/* Abandoned team vs simply browsing a past season. */}
+              {t(
+                team.currentMemberCount === 0
+                  ? 'teams.roster.archivedNotice'
+                  : 'teams.roster.pastNotice',
+                { season: shownSeasonName },
+              )}
               {amCaptain ? ` ${t('teams.roster.readOnly')}` : ''}
             </p>
           )}

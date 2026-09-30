@@ -13,6 +13,12 @@ export type TeamCardTeam = {
   tag?: string | null;
   memberCount?: number | null;
   color?: string | null;
+  /**
+   * Season the shown `memberCount` belongs to, when it is NOT today's squad
+   * (a team abandoned after a season keeps its last roster, #162).
+   */
+  rosterSeasonLabel?: string | null;
+  rosterSeasonTitle?: string | null;
 };
 
 export type TeamCardRecord = { wins: number; losses: number; draws?: number; points?: number };
@@ -84,6 +90,14 @@ export default function TeamCard({
             {team.memberCount != null && (
               <span className="inline-flex items-center gap-1">
                 <Users size={12} /> {team.memberCount} {t('teams.members')}
+              </span>
+            )}
+            {team.rosterSeasonLabel && (
+              <span
+                className="rounded bg-surface-3 px-1.5 py-0.5 font-semibold text-ink-3"
+                title={team.rosterSeasonTitle ?? undefined}
+              >
+                {team.rosterSeasonLabel}
               </span>
             )}
           </div>
