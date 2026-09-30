@@ -11,8 +11,10 @@ const PER_LIST = 8;
 
 type Ref = { heroId: number; name: string | null; image: string | null; increaseWinRate: number };
 
-function MatchupList({ title, hint, color, list, onPick }: { title: string; hint: string; color: string; list: Ref[]; onPick?: (id: number) => void }) {
+function MatchupList({ title, hint, color, list: rawList, onPick }: { title: string; hint: string; color: string; list: Ref[]; onPick?: (id: number) => void }) {
   const t = useT();
+  // Unreleased heroes come without a name: never show a bare id.
+  const list = rawList.filter((r) => !!r.name);
   if (!list.length) return null;
   const max = Math.max(...list.map((r) => Math.abs(r.increaseWinRate)), 0.01);
   return (
@@ -36,7 +38,7 @@ function MatchupList({ title, hint, color, list, onPick }: { title: string; hint
                 <HeroPortrait src={h.image} name={h.name} size={34} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-sm font-medium text-ink-1">{h.name ?? `#${h.heroId}`}</span>
+                    <span className="truncate text-sm font-medium text-ink-1">{h.name}</span>
                     <span className={cn('shrink-0 text-xs font-semibold num', positive ? 'text-accent-green' : 'text-accent-red')}>
                       {positive ? '+' : ''}
                       {h.increaseWinRate.toFixed(2)} {t('heroMeta.points')}

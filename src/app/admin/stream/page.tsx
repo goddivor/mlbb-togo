@@ -21,6 +21,7 @@ import {
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { Card, Button, PageHeader, LoadingSpinner, Badge, Input, Select, SectionTitle, EmptyState, Skeleton } from '@/components/ui';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import toast from 'react-hot-toast';
 
 type ChannelVideo = {
@@ -79,8 +80,17 @@ function AdminStreamInner() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [meta, setMeta] = useState<Record<string, VideoMeta>>({});
   const [savingSel, setSavingSel] = useState(false);
+  const [videosError, setVideosError] = useState('');
+  const [videosLoaded, setVideosLoaded] = useState(false);
+
+  // Configured channel handle (used when no OAuth account is connected).
+  const [channelInput, setChannelInput] = useState('');
+  const [savingChannel, setSavingChannel] = useState(false);
+  const [confirm, setConfirm] = useState<'disconnect' | 'channel' | null>(null);
 
   const connected = !!status?.connected;
+  // Where the picker gets its videos: the OAuth connection or the API key.
+  const hasSource = !!status?.source;
 
   const loadAll = useCallback(async () => {
     const [st, panel, seasonList] = await Promise.all([
@@ -89,6 +99,7 @@ function AdminStreamInner() {
       api.esport.seasons().catch(() => []),
     ]);
     setStatus(st);
+    setChannelInput((prev) => prev || st?.configuredChannel || '');
     setLivePanel(panel);
     setSeasons(Array.isArray(seasonList) ? seasonList : []);
   }, []);
@@ -142,11 +153,37 @@ function AdminStreamInner() {
     }
   };
 
+  // Forget the loaded videos and the selection (channel disconnected/changed).
+  const resetPicker = () => {
+    setVideos([]);
+    setNextPageToken(null);
+    setSelected(new Set());
+    setMeta({});
+    setVideosLoaded(false);
+    setVideosError('');
+  };
+
+  const saveChannel = async () => {
+    setSavingChannel(true);
+    try {
+      await api.stream.updateConfig({ youtubeChannel: channelInput.trim() });
+      toast.success(t('admin.stream.channelSaved'));
+      resetPicker();
+      setSeasonId('');
+      await loadAll();
+    } catch (e: any) {
+      toast.error(e?.message || t('admin.stream.error'));
+    } finally {
+      setSavingChannel(false);
+    }
+  };
+
   const disconnect = async () => {
     try {
       await api.stream.youtube.disconnect();
       toast.success(t('admin.stream.disconnected'));
-      setVideos([]);
+      resetPicker();
+      setChannelInput('');
       await loadAll();
     } catch (e: any) {
       toast.error(e?.message || t('admin.stream.error'));
@@ -155,10 +192,12 @@ function AdminStreamInner() {
 
   const loadVideos = async (append = false) => {
     setLoadingVideos(true);
+    setVideosError('');
     try {
       const data = await api.stream.youtube.videos(append ? nextPageToken || undefined : undefined);
       const list: ChannelVideo[] = data.videos || [];
       setVideos((prev) => (append ? [...prev, ...list] : list));
+      setVideosLoaded(true);
       setNextPageToken(data.nextPageToken || null);
       setMeta((prev) => {
         const next = { ...prev };
@@ -173,7 +212,9 @@ function AdminStreamInner() {
         return next;
       });
     } catch (e: any) {
-      toast.error(e?.message || t('admin.stream.error'));
+      const message = e?.message || t('admin.stream.error');
+      setVideosError(message);
+      toast.error(`${t('admin.stream.loadFailed')} : ${message}`);
     } finally {
       setLoadingVideos(false);
     }
@@ -320,7 +361,7 @@ function AdminStreamInner() {
               <span className="inline-flex items-center gap-1.5 text-sm text-accent-green">
                 <Check size={16} /> {t('admin.stream.connectedLabel')}
               </span>
-              <Button variant="ghost" size="sm" onClick={disconnect} className="text-accent-red hover:bg-accent-red/10">
+              <Button variant="ghost" size="sm" onClick={() => setConfirm('disconnect')} className="text-accent-red hover:bg-accent-red/10">
                 <Unlink size={16} /> {t('admin.stream.disconnect')}
               </Button>
             </div>
@@ -338,10 +379,32 @@ function AdminStreamInner() {
             }
           />
         )}
+
+        {!connected && (
+          <div className="mt-4 grid grid-cols-1 gap-3 border-t border-line-subtle pt-4 sm:grid-cols-[1fr_auto] sm:items-end">
+            <Input
+              label={t('admin.stream.channelLabel')}
+              value={channelInput}
+              onChange={(e: any) => setChannelInput(e.target.value)}
+              placeholder="@handle"
+            />
+            <Button
+              variant="secondary"
+              onClick={() => {
+                const changed = channelInput.trim().replace(/^@/, '') !== (status?.configuredChannel || '');
+                if (changed && status?.configuredChannel) setConfirm('channel');
+                else saveChannel();
+              }}
+              disabled={savingChannel || channelInput.trim().replace(/^@/, '') === (status?.configuredChannel || '')}
+            >
+              <Check size={16} /> {t('admin.stream.channelSave')}
+            </Button>
+          </div>
+        )}
       </Card>
 
       {connected && (
-        <>
+          <>
           {/* 2. Go live */}
           <Card accent={livePanel.active ? 'red' : undefined}>
             <SectionTitle
@@ -417,8 +480,10 @@ function AdminStreamInner() {
               </div>
             )}
           </Card>
+          </>
+      )}
 
-          {/* 3. Per-season video selection */}
+      {/* 3. Per-season video selection */}
           <Card>
             <SectionTitle
               className="mb-4"
@@ -429,7 +494,14 @@ function AdminStreamInner() {
               }
             />
 
-            {seasons.length === 0 ? (
+            {!hasSource ? (
+              <EmptyState
+                className="!min-h-0 py-8"
+                icon={<Youtube size={28} />}
+                title={t('admin.stream.noSource')}
+                description={t('admin.stream.noSourceDesc')}
+              />
+            ) : seasons.length === 0 ? (
               <EmptyState
                 className="!min-h-0 py-8"
                 icon={<CalendarDays size={28} />}
@@ -444,6 +516,11 @@ function AdminStreamInner() {
               />
             ) : (
               <>
+                <p className="mb-3 text-xs text-ink-3">
+                  {status.source === 'oauth'
+                    ? t('admin.stream.sourceOauth')
+                    : t('admin.stream.sourceApiKey', { channel: status.configuredChannel })}
+                </p>
                 <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
                   <Select
                     label={t('admin.stream.seasonLabel')}
@@ -479,8 +556,13 @@ function AdminStreamInner() {
 
                 {!seasonId ? (
                   <EmptyState className="!min-h-0 py-8" title={t('admin.stream.pickSeason')} />
+                ) : videosError ? (
+                  <EmptyState className="!min-h-0 py-8" title={t('admin.stream.loadFailed')} description={videosError} />
                 ) : videos.length === 0 ? (
-                  <EmptyState className="!min-h-0 py-8" title={t('admin.stream.loadHint')} />
+                  <EmptyState
+                    className="!min-h-0 py-8"
+                    title={videosLoaded ? t('admin.stream.noVideosFound') : t('admin.stream.loadHint')}
+                  />
                 ) : (
               <>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -532,8 +614,22 @@ function AdminStreamInner() {
               </>
             )}
           </Card>
-        </>
-      )}
+
+      <ConfirmModal
+        open={confirm !== null}
+        onClose={() => setConfirm(null)}
+        onConfirm={async () => {
+          const kind = confirm;
+          setConfirm(null);
+          if (kind === 'disconnect') await disconnect();
+          else if (kind === 'channel') await saveChannel();
+        }}
+        title={t('admin.stream.disconnect')}
+        message={confirm === 'disconnect' ? t('admin.stream.disconnectConfirm') : t('admin.stream.channelChangeConfirm')}
+        confirmLabel={confirm === 'disconnect' ? t('admin.stream.disconnect') : t('admin.stream.channelSave')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+      />
     </div>
   );
 }

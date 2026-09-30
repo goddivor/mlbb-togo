@@ -1340,7 +1340,7 @@ export const api = {
     config: () =>
       request('/stream/config', {
         fallback: {
-          youtubeChannel: 'eternumesports',
+          youtubeChannel: '',
           channelId: '',
           channelTitle: '',
           channelAvatar: '',
@@ -1380,7 +1380,8 @@ export const api = {
       videos: (pageToken?: string) =>
         request(
           `/stream/youtube/videos${pageToken ? `?pageToken=${encodeURIComponent(pageToken)}` : ''}`,
-          { fallback: { videos: [], nextPageToken: null, total: 0 } },
+          // No fallback: a failure must reach the admin, not look like an empty channel.
+          { fresh: true },
         ),
     },
     livePanel: () =>
