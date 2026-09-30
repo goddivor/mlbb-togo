@@ -965,20 +965,6 @@ export const api = {
     moderatorDelete: (id: string) => request(`/moderation/community-builds/${id}`, { method: 'DELETE' }),
   },
 
-  builds: {
-    // Recommended builds per hero
-    byHero: (heroId: string) =>
-      request(`/heroes/${heroId}/builds`, { fallback: [], auth: false }),
-    get: (heroId: string, buildId: string) =>
-      request(`/heroes/${heroId}/builds/${buildId}`, { fallback: null, auth: false }),
-    create: (heroId: string, data: any) =>
-      request(`/heroes/${heroId}/builds`, { method: 'POST', body: data }),
-    update: (heroId: string, buildId: string, data: any) =>
-      request(`/heroes/${heroId}/builds/${buildId}`, { method: 'PATCH', body: data }),
-    delete: (heroId: string, buildId: string) =>
-      request(`/heroes/${heroId}/builds/${buildId}`, { method: 'DELETE' }),
-  },
-
   esport: {
     org: () => request('/esport', { fallback: null, auth: false }),
     teams: (type?: string) =>
