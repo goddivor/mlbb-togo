@@ -13,6 +13,7 @@ import RoleIcon, { roleLabel } from '@/components/game/RoleIcon';
 import PlayerStatsSection from '@/components/profile/PlayerStatsSection';
 import MatchHistory from '@/components/profile/MatchHistory';
 import GameAccountSection from '@/components/profile/GameAccountSection';
+import PlayerTeamsSection from '@/components/profile/PlayerTeamsSection';
 import LevelBadge from '@/components/gamification/LevelBadge';
 import { useAuthStore } from '@/store/useStore';
 import { useT } from '@/lib/i18n';
@@ -238,6 +239,9 @@ export default function PublicProfilePage() {
       ) : (
         <GameAccountSection userId={id} />
       )}
+
+      {/* Teams he played for, season by season (#162) */}
+      <PlayerTeamsSection userId={id} />
 
       {/* Esport stats computed from the platform's matches */}
       <PlayerStatsSection userId={id} />
