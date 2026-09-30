@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { X, ChevronsRight, Sparkles } from 'lucide-react';
-import { api, catalogIconSrc, mlbbImg } from '@/lib/api';
+import { api, mlbbImg } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import Portal from '@/components/ui/Portal';
 import { Tabs } from '@/components/ui';
@@ -68,7 +68,6 @@ export default function HeroDetailModal({
   const t = useT();
   const [hero, setHero] = useState<any>(null);
   const [meta, setMeta] = useState<any>(null);
-  const [builds, setBuilds] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<TabId>('skills');
 
@@ -77,11 +76,9 @@ export default function HeroDetailModal({
     setLoading(true);
     setHero(null);
     setMeta(null);
-    setBuilds([]);
     setTab('skills');
     api.mlbb.hero(heroId).then(setHero).catch(() => setHero(null)).finally(() => setLoading(false));
     api.mlbb.heroMeta(heroId).then(setMeta).catch(() => setMeta(null));
-    api.builds.byHero(String(heroId)).then(setBuilds).catch(() => setBuilds([]));
   }, [heroId]);
 
   // Lock body scroll while the modal is open.
@@ -401,107 +398,6 @@ export default function HeroDetailModal({
                         <h3 className="mb-1 font-display text-lg font-bold tracking-tight2 text-ink-1">{t('heroMeta.builds.metaTitle')}</h3>
                         <p className="mb-4 text-sm text-ink-3">{t('heroMeta.builds.metaSubtitle')}</p>
                         <HeroMetaBuildsPanel heroId={heroId} />
-                      </section>
-                      <section>
-                        <h3 className="mb-4 font-display text-lg font-bold tracking-tight2 text-ink-1">{t('heroMeta.builds.recommendedTitle')}</h3>
-                      {builds?.length > 0 ? (
-                        <div className="space-y-6">
-                          {builds.map((build, i) => (
-                            <div key={build.id || i} className="rounded-lg border border-line-subtle bg-surface-2/40 p-4">
-                              <div className="mb-4">
-                                <h4 className="font-display text-base font-bold text-ink-1">
-                                  {build.name || t('heroes.builds.unnamed')}
-                                </h4>
-                                {build.description && (
-                                  <p className="mt-1 text-sm text-ink-2">{build.description}</p>
-                                )}
-                              </div>
-
-                              <div className="space-y-3">
-                                {build.items?.length > 0 && (
-                                  <div>
-                                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('heroes.builds.items')}</p>
-                                    <div className="flex flex-wrap gap-2">
-                                      {build.items.map((item: any, j: number) => (
-                                        <div
-                                          key={item.id || j}
-                                          title={item.description || undefined}
-                                          className={`flex items-center gap-1.5 rounded border border-line-subtle bg-surface-1 p-2 ${
-                                            item.enabled === false ? 'opacity-50' : ''
-                                          }`}
-                                        >
-                                          {item.icon && (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img
-                                              src={catalogIconSrc(item.icon, 80)}
-                                              alt={item.name}
-                                              referrerPolicy="no-referrer"
-                                              className="h-8 w-8 rounded object-cover"
-                                            />
-                                          )}
-                                          <span className="text-xs font-medium text-ink-1">{item.name}</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-
-                                <div className="grid grid-cols-2 gap-3">
-                                  {build.emblem && (
-                                    <div>
-                                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('heroes.builds.emblem')}</p>
-                                      <div
-                                        title={build.emblem.description || undefined}
-                                        className={`flex items-center gap-2 rounded border border-line-subtle bg-surface-1 p-2 ${
-                                          build.emblem.enabled === false ? 'opacity-50' : ''
-                                        }`}
-                                      >
-                                        {build.emblem.icon && (
-                                          // eslint-disable-next-line @next/next/no-img-element
-                                          <img
-                                            src={catalogIconSrc(build.emblem.icon, 80)}
-                                            alt={build.emblem.name}
-                                            referrerPolicy="no-referrer"
-                                            className="h-8 w-8 rounded object-cover"
-                                          />
-                                        )}
-                                        <span className="text-xs font-medium text-ink-1">{build.emblem.name}</span>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {build.battleSpell && (
-                                    <div>
-                                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-eyebrow text-ink-3">{t('heroes.builds.battleSpell')}</p>
-                                      <div
-                                        title={build.battleSpell.description || undefined}
-                                        className={`flex items-center gap-2 rounded border border-line-subtle bg-surface-1 p-2 ${
-                                          build.battleSpell.enabled === false ? 'opacity-50' : ''
-                                        }`}
-                                      >
-                                        {build.battleSpell.icon && (
-                                          // eslint-disable-next-line @next/next/no-img-element
-                                          <img
-                                            src={catalogIconSrc(build.battleSpell.icon, 80)}
-                                            alt={build.battleSpell.name}
-                                            referrerPolicy="no-referrer"
-                                            className="h-8 w-8 rounded object-cover"
-                                          />
-                                        )}
-                                        <span className="text-xs font-medium text-ink-1">{build.battleSpell.name}</span>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="py-10 text-center text-sm text-ink-3">
-                          {t('heroes.builds.empty')}
-                        </p>
-                      )}
                       </section>
                       <section>
                         <h3 className="mb-1 font-display text-lg font-bold tracking-tight2 text-ink-1">{t('heroMeta.builds.communityTitle')}</h3>
