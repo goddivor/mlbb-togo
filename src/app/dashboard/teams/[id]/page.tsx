@@ -201,10 +201,15 @@ export default function TeamDetailPage() {
   }, [id, rosterSeason]);
 
   const members: any[] = Array.isArray(team?.members) ? team.members : [];
-  const isMember = !!myId && members.some((m) => m.userId === myId);
-  const captainId = team?.captain?.userId ?? team?.captain?.id;
-  const amCaptain = !!myId && captainId === myId;
+  // Rights come from the roster of TODAY, never from the rows on display:
+  // browsing an archived season (which has no captain) must not take the
+  // captain's buttons away (#162).
+  const currentMemberIds: string[] = Array.isArray(team?.currentMemberIds) ? team.currentMemberIds : [];
+  const isMember = !!myId && currentMemberIds.includes(myId);
+  const amCaptain = !!myId && team?.currentCaptainId === myId;
   const canManage = amCaptain || isAdmin;
+  // Captain of the roster being displayed: used for the layout only.
+  const captainId = team?.captain?.userId ?? team?.captain?.id;
 
   const err = (e: any) => toast.error(e?.message || t('common.error'));
 

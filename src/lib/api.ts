@@ -967,9 +967,11 @@ export const api = {
 
   esport: {
     org: () => request('/esport', { fallback: null, auth: false }),
-    teams: (type?: string, seasonId?: string) => {
+    // `roster: 'live'` forces the roster of today (administration): never a
+    // season archive, whatever season the team last played.
+    teams: (type?: string, seasonId?: string, roster?: 'live') => {
       const qs = new URLSearchParams(
-        Object.entries({ type, seasonId }).filter(([, v]) => !!v) as [string, string][],
+        Object.entries({ type, seasonId, roster }).filter(([, v]) => !!v) as [string, string][],
       ).toString();
       return request(`/esport/teams${qs ? `?${qs}` : ''}`, { fallback: [], auth: false });
     },
