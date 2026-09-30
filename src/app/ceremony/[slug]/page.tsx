@@ -514,7 +514,13 @@ function AwardReveal({ award, t }: { award: AwardItem; t: TFn }) {
       >
         <div className={cn('absolute inset-0 rounded-full opacity-40 blur-3xl', isMvp ? 'bg-accent-gold' : 'bg-ink-2/40')} />
         <PlayerAvatar user={award.user} size="xl" className={cn('relative ring-4', isMvp ? 'ring-accent-gold' : 'ring-line-strong')} />
-        <TrophyVisual category={award.category} imageUrl={award.imageUrl} size="md" className="absolute -bottom-3 -right-3" />
+        {/* Centred under the avatar, not hung off its corner (#164). */}
+        <TrophyVisual
+          category={award.category}
+          imageUrl={award.imageUrl}
+          size="md"
+          className="absolute -bottom-5 left-1/2 -translate-x-1/2"
+        />
       </motion.div>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }} className="space-y-2 max-w-2xl w-full">
         <p className="break-words font-display text-3xl font-bold uppercase leading-none tracking-tight2 text-ink-1 sm:text-5xl md:text-6xl">{name}</p>

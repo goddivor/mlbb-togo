@@ -64,8 +64,8 @@ export default function HeroMetaBuildsPanel({ heroId }: { heroId: number }) {
                   <div className="flex flex-wrap gap-2">
                     {b.items.map((it: any, j: number) => (
                       <div key={`${it.id}-${j}`} className="flex w-16 flex-col items-center gap-1 text-center">
-                        <Icon src={it.icon} alt={it.name ?? `#${it.id}`} size={40} />
-                        <span className="line-clamp-2 text-[10px] leading-tight text-ink-2">{it.name ?? `#${it.id}`}</span>
+                        <Icon src={it.icon} alt={it.name ?? ''} size={40} />
+                        <span className="line-clamp-2 text-[10px] leading-tight text-ink-2">{it.name ?? '—'}</span>
                       </div>
                     ))}
                   </div>
@@ -77,7 +77,7 @@ export default function HeroMetaBuildsPanel({ heroId }: { heroId: number }) {
                       <Icon src={b.emblem.icon} alt={b.emblem.name ?? ''} size={36} round />
                       <span className="text-xs font-medium text-ink-1">{b.emblem.name}</span>
                       {b.talents.map((tal: any) => (
-                        <Icon key={tal.id} src={tal.icon} alt={tal.name ?? `#${tal.id}`} size={30} round />
+                        <Icon key={tal.id} src={tal.icon} alt={tal.name ?? ''} size={30} round />
                       ))}
                     </div>
                     {b.talents.some((x: any) => x.name) && (

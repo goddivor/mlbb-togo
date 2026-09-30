@@ -295,17 +295,21 @@ export default function AdminImportedProfiles() {
       </Badge>
     );
 
+  // Widths are percentages because the table is laid out `fixed`: the actions
+  // must stay on the page at 1440 px instead of hiding behind a sideways
+  // scroll, so the profile column truncates rather than growing (#168).
   const columns: DataColumn<ImportedProfile>[] = [
     {
       key: 'profile',
       header: t('admin.imported.colProfile'),
+      width: 'w-[28%]',
       render: (p) => <AccountLine account={p} />,
     },
     {
       key: 'seasons',
       header: t('admin.imported.colSeasons'),
       hideBelow: 'md',
-      width: '13rem',
+      width: 'w-[18%]',
       render: (p) => (
         <div className="flex flex-wrap items-center gap-1">
           {p.seasons.map((s) => (
@@ -320,7 +324,7 @@ export default function AdminImportedProfiles() {
       key: 'teams',
       header: t('admin.imported.colTeams'),
       hideBelow: 'lg',
-      width: '13rem',
+      width: 'w-[16%]',
       render: (p) => (
         <div className="flex flex-wrap items-center gap-1">
           {p.teams.map((tm) => (
@@ -335,6 +339,7 @@ export default function AdminImportedProfiles() {
       key: 'matches',
       header: t('admin.imported.colMatches'),
       align: 'right',
+      width: 'w-[5.5rem]',
       className: 'num text-sm text-ink-1',
       render: (p) => p.matchesPlayed,
     },
@@ -342,12 +347,14 @@ export default function AdminImportedProfiles() {
       key: 'email',
       header: t('admin.imported.colEmail'),
       hideBelow: 'sm',
+      width: 'w-[9.5rem]',
       render: emailBadge,
     },
     {
       key: 'actions',
       header: t('admin.imported.colActions'),
       align: 'right',
+      width: 'w-[13rem]',
       render: (p) => <div className="flex justify-end">{rowActions(p)}</div>,
     },
   ];
@@ -391,7 +398,6 @@ export default function AdminImportedProfiles() {
           </span>
         }
         breadcrumb={t('admin.imported.title')}
-        subtitle={t('admin.imported.subtitle')}
         variant="blue"
       />
 
@@ -466,6 +472,7 @@ export default function AdminImportedProfiles() {
                 columns={columns}
                 rows={filtered}
                 rowKey={(p) => p.id}
+                layout="fixed"
                 emptyMessage={t('admin.imported.none')}
               />
             </div>
@@ -483,8 +490,8 @@ export default function AdminImportedProfiles() {
         size="sm"
       >
         <div className="space-y-4">
-          <p className="flex items-center gap-2 text-sm text-ink-2">
-            {t('admin.imported.editEmailShort')}
+          <p className="flex items-center gap-2 text-sm font-medium text-ink-1">
+            {t('admin.imported.colEmail')}
             <InfoTip
               label={t('admin.imported.emailInfoLabel')}
               content={t('admin.imported.editEmailHelp')}

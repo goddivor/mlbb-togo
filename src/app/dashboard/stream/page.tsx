@@ -43,7 +43,7 @@ type StreamConfig = {
 };
 
 function channelUrl(channel: string) {
-  return `https://www.youtube.com/@${channel}/videos`;
+  return channel ? `https://www.youtube.com/@${channel}/videos` : 'https://www.youtube.com';
 }
 
 function videoEmbedUrl(id: string) {
@@ -178,7 +178,9 @@ export default function StreamPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
-  const channel = config?.youtubeChannel || 'eternumesports';
+  const channel = config?.youtubeChannel || '';
+  // Nothing is connected or configured: no channel header, no invented links.
+  const noChannel = !channel && !config?.channelId;
   const banner = config?.channelBanner || '';
   const avatar = config?.channelAvatar || '';
   const isLive = !!live?.live;
@@ -236,7 +238,7 @@ export default function StreamPage() {
       <PageHeader
         eyebrow={
           <span className="inline-flex items-center gap-2">
-            <Youtube size={12} /> {config?.channelTitle || `@${channel}`}
+            <Youtube size={12} /> {config?.channelTitle || (channel ? `@${channel}` : t('stream.noChannel'))}
           </span>
         }
         icon={<Radio size={22} />}
@@ -254,14 +256,16 @@ export default function StreamPage() {
         variant="danger"
         banner={banner || undefined}
         action={
-          <div className="flex items-center gap-3">
-            {channelAvatar}
-            <a href={channelUrl(channel)} target="_blank" rel="noreferrer">
-              <Button variant="primary" size="sm">
-                <ExternalLink size={14} /> {t('stream.openChannel')}
-              </Button>
-            </a>
-          </div>
+          noChannel ? undefined : (
+            <div className="flex items-center gap-3">
+              {channelAvatar}
+              <a href={channelUrl(channel)} target="_blank" rel="noreferrer">
+                <Button variant="primary" size="sm">
+                  <ExternalLink size={14} /> {t('stream.openChannel')}
+                </Button>
+              </a>
+            </div>
+          )
         }
       >
         <StatCard
@@ -272,9 +276,21 @@ export default function StreamPage() {
         />
         <StatCard label={t('stream.kpi.seasons')} value={seasons.length} icon={<Flame size={18} />} accent="gold" />
         <StatCard label={t('stream.kpi.videos')} value={totalVideos} icon={<Play size={18} />} accent="violet" />
-        <StatCard label={t('stream.channel')} value={<span className="text-xl">@{channel}</span>} icon={<Youtube size={18} />} accent="red" />
+        <StatCard label={t('stream.channel')} value={<span className="text-xl">{channel ? `@${channel}` : '—'}</span>} icon={<Youtube size={18} />} accent="red" />
       </PageHeader>
 
+      {noChannel && seasons.length === 0 ? (
+        <Card>
+          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded cut-corners bg-surface-2 text-ink-3 ring-1 ring-inset ring-line-subtle">
+              <WifiOff size={28} />
+            </div>
+            <p className="font-display text-lg font-bold tracking-tight2 text-ink-1">{t('stream.noChannel')}</p>
+            <p className="mt-1.5 max-w-md text-sm text-ink-2">{t('stream.noChannelDesc')}</p>
+          </div>
+        </Card>
+      ) : (
+      <>
       <div className="overflow-x-auto whitespace-nowrap">
         <Tabs variant="underline" tabs={tabs} active={activeTab} onChange={(id: string) => setActiveTab(id)} />
       </div>
@@ -467,6 +483,8 @@ export default function StreamPage() {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

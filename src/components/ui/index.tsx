@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
+import { Children, useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { ArrowDownRight, ArrowUpRight, ChevronDown, ChevronUp, ChevronsUpDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/helpers';
@@ -677,6 +677,25 @@ export function StatTile({
 /* PageHeader                                                          */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Column classes of a KPI row, derived from the number of cards: a row of
+ * three must fill the width instead of leaving a fourth slot empty (#166).
+ * The literals are spelled out so Tailwind keeps them in the bundle.
+ */
+const KPI_COLS: Record<number, string> = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-1 sm:grid-cols-2',
+  3: 'grid-cols-1 sm:grid-cols-3',
+  4: 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4',
+  5: 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-5',
+  6: 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-6',
+};
+
+/** `KPI_COLS` with a sane fallback for longer rows. */
+export function kpiGridCols(count: number): string {
+  return KPI_COLS[count] ?? 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-4';
+}
+
 export function PageHeader({
   icon,
   title,
@@ -705,6 +724,12 @@ export function PageHeader({
 }) {
   const t = useT();
   const accent = BANNER_ACCENT[variant] ?? 'cyan';
+  // Ratio of the banner art, read from the image itself: a wide illustration is
+  // cropped to the band as before, while a crest or a poster (anything not
+  // clearly landscape) would lose its subject that way, so it is shown whole
+  // over a blurred copy of itself (#165).
+  const [bannerRatio, setBannerRatio] = useState<number | null>(null);
+  const wideBanner = bannerRatio === null || bannerRatio >= 2;
 
   const crumbs = (
     <nav aria-label="Breadcrumb">
@@ -752,7 +777,19 @@ export function PageHeader({
       {banner ? (
         <div className="relative mb-6 overflow-hidden rounded-lg cut-banner border border-line-subtle bg-[#0a0e19] min-h-[176px] md:min-h-[208px]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={banner} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />
+          <img
+            src={banner}
+            alt=""
+            aria-hidden="true"
+            onLoad={(e) => {
+              const img = e.currentTarget;
+              if (img.naturalWidth && img.naturalHeight) setBannerRatio(img.naturalWidth / img.naturalHeight);
+            }}
+            className={cn(
+              'absolute inset-0 h-full w-full object-cover',
+              !wideBanner && 'scale-110 opacity-50 blur-xl',
+            )}
+          />
           <div
             className="absolute inset-0"
             style={{
@@ -761,6 +798,18 @@ export function PageHeader({
             }}
           />
           <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#0a0e19]/85 to-transparent" />
+          {!wideBanner && (
+            // The art itself, uncropped, above the overlays so it stays readable.
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={banner}
+              alt=""
+              aria-hidden="true"
+              // Anchored to the top so the breadcrumb, which sits bottom right,
+              // keeps a clear background.
+              className="absolute right-5 top-4 hidden h-[58%] max-w-[26%] object-contain drop-shadow-xl sm:block"
+            />
+          )}
           <div className="relative flex h-full min-h-[176px] flex-col justify-end gap-4 p-6 md:min-h-[208px] md:flex-row md:items-end md:justify-between">
             {heading(true)}
             <div className="flex shrink-0 items-center gap-4">
@@ -779,7 +828,9 @@ export function PageHeader({
         </div>
       )}
       {children && (
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">{children}</div>
+        <div className={cn('mb-6 grid gap-4', kpiGridCols(Children.toArray(children).length))}>
+          {children}
+        </div>
       )}
     </div>
   );
@@ -1128,6 +1179,7 @@ export function DataTable<T>({
   rowClassName,
   className,
   maxHeight,
+  layout = 'auto',
 }: {
   columns: DataColumn<T>[];
   rows: T[];
@@ -1145,6 +1197,12 @@ export function DataTable<T>({
   className?: string;
   /** Scroll container height (enables sticky header). */
   maxHeight?: string;
+  /**
+   * `fixed` makes the columns honour their `width` instead of growing with
+   * their content, so a long cell truncates rather than pushing the actions
+   * off the page (#168).
+   */
+  layout?: 'auto' | 'fixed';
 }) {
   const cell = (row: T, col: DataColumn<T>, i: number) =>
     col.render ? col.render(row, i) : ((row as any)[col.key] as ReactNode);
@@ -1154,7 +1212,7 @@ export function DataTable<T>({
       className={cn('overflow-auto rounded-lg border border-line-subtle bg-surface-1', className)}
       style={maxHeight ? { maxHeight } : undefined}
     >
-      <Table>
+      <Table className={layout === 'fixed' ? 'table-fixed' : undefined}>
         <thead className={cn('bg-surface-2', stickyHeader && 'sticky top-0 z-10')}>
           <tr className="border-b border-line-subtle">
             {columns.map((c) => (
