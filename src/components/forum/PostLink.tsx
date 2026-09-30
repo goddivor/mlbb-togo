@@ -18,13 +18,14 @@ export function linkKind(url: string): LinkKind {
   } catch {
     return 'other';
   }
-  if (host === 'discord.gg' || host.endsWith('discord.com')) return 'discord';
-  if (host === 'chat.whatsapp.com' || host.endsWith('whatsapp.com') || host === 'wa.me') return 'whatsapp';
-  if (host.endsWith('tiktok.com')) return 'tiktok';
-  if (host === 'youtu.be' || (host.endsWith('youtube.com') && (path.startsWith('/watch') || path.startsWith('/live') || path.startsWith('/embed')))) {
+  const isHost = (h: string) => host === h || host.endsWith(`.${h}`);
+  if (host === 'discord.gg' || isHost('discord.com')) return 'discord';
+  if (isHost('whatsapp.com') || host === 'wa.me') return 'whatsapp';
+  if (isHost('tiktok.com')) return 'tiktok';
+  if (host === 'youtu.be' || (isHost('youtube.com') && (path.startsWith('/watch') || path.startsWith('/live') || path.startsWith('/embed')))) {
     return 'video';
   }
-  if (host.endsWith('youtube.com')) return 'youtube';
+  if (isHost('youtube.com')) return 'youtube';
   return 'other';
 }
 

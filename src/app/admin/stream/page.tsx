@@ -391,11 +391,11 @@ function AdminStreamInner() {
             <Button
               variant="secondary"
               onClick={() => {
-                const changed = channelInput.trim().replace(/^@/, '') !== (status?.configuredChannel || '');
+                const changed = channelInput.trim().replace(/^@/, '').toLowerCase() !== (status?.configuredChannel || '').toLowerCase();
                 if (changed && status?.configuredChannel) setConfirm('channel');
                 else saveChannel();
               }}
-              disabled={savingChannel || channelInput.trim().replace(/^@/, '') === (status?.configuredChannel || '')}
+              disabled={savingChannel || channelInput.trim().replace(/^@/, '').toLowerCase() === (status?.configuredChannel || '').toLowerCase()}
             >
               <Check size={16} /> {t('admin.stream.channelSave')}
             </Button>
@@ -404,7 +404,7 @@ function AdminStreamInner() {
       </Card>
 
       {connected && (
-          <>
+        <>
           {/* 2. Go live */}
           <Card accent={livePanel.active ? 'red' : undefined}>
             <SectionTitle
@@ -480,140 +480,140 @@ function AdminStreamInner() {
               </div>
             )}
           </Card>
-          </>
+        </>
       )}
 
       {/* 3. Per-season video selection */}
-          <Card>
-            <SectionTitle
-              className="mb-4"
-              title={
-                <span className="inline-flex items-center gap-2">
-                  <Play size={20} className="text-primary" /> {t('admin.stream.videosSection')}
-                </span>
-              }
-            />
+      <Card>
+        <SectionTitle
+          className="mb-4"
+          title={
+            <span className="inline-flex items-center gap-2">
+              <Play size={20} className="text-primary" /> {t('admin.stream.videosSection')}
+            </span>
+          }
+        />
 
-            {!hasSource ? (
+        {!hasSource ? (
+          <EmptyState
+            className="!min-h-0 py-8"
+            icon={<Youtube size={28} />}
+            title={t('admin.stream.noSource')}
+            description={t('admin.stream.noSourceDesc')}
+          />
+        ) : seasons.length === 0 ? (
+          <EmptyState
+            className="!min-h-0 py-8"
+            icon={<CalendarDays size={28} />}
+            title={t('admin.stream.noSeasons')}
+            action={
+              <a href="/admin/seasons" className="inline-block">
+                <Button variant="secondary" size="sm">
+                  <CalendarDays size={16} /> {t('admin.stream.goSeasons')}
+                </Button>
+              </a>
+            }
+          />
+        ) : (
+          <>
+            <p className="mb-3 text-xs text-ink-3">
+              {status.source === 'oauth'
+                ? t('admin.stream.sourceOauth')
+                : t('admin.stream.sourceApiKey', { channel: status.configuredChannel })}
+            </p>
+            <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+              <Select
+                label={t('admin.stream.seasonLabel')}
+                value={seasonId}
+                onChange={(e: any) => {
+                  setSeasonId(e.target.value);
+                  setVideos([]);
+                  setNextPageToken(null);
+                }}
+              >
+                <option value="">{t('admin.stream.seasonPlaceholder')}</option>
+                {seasons.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </Select>
+              {seasonId && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="whitespace-nowrap text-sm text-ink-3 num">
+                    {t('admin.stream.selectedCount', { count: selectedCount })}
+                  </span>
+                  <Button variant="secondary" size="sm" onClick={() => loadVideos(false)} disabled={loadingVideos}>
+                    <RefreshCw size={16} className={loadingVideos ? 'animate-spin' : ''} />
+                    {t('admin.stream.loadVideos')}
+                  </Button>
+                  <Button size="sm" onClick={saveSelection} disabled={savingSel}>
+                    <Check size={16} /> {t('admin.stream.saveSelection')}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {!seasonId ? (
+              <EmptyState className="!min-h-0 py-8" title={t('admin.stream.pickSeason')} />
+            ) : videosError ? (
+              <EmptyState className="!min-h-0 py-8" title={t('admin.stream.loadFailed')} description={videosError} />
+            ) : videos.length === 0 ? (
               <EmptyState
                 className="!min-h-0 py-8"
-                icon={<Youtube size={28} />}
-                title={t('admin.stream.noSource')}
-                description={t('admin.stream.noSourceDesc')}
-              />
-            ) : seasons.length === 0 ? (
-              <EmptyState
-                className="!min-h-0 py-8"
-                icon={<CalendarDays size={28} />}
-                title={t('admin.stream.noSeasons')}
-                action={
-                  <a href="/admin/seasons" className="inline-block">
-                    <Button variant="secondary" size="sm">
-                      <CalendarDays size={16} /> {t('admin.stream.goSeasons')}
-                    </Button>
-                  </a>
-                }
+                title={videosLoaded ? t('admin.stream.noVideosFound') : t('admin.stream.loadHint')}
               />
             ) : (
-              <>
-                <p className="mb-3 text-xs text-ink-3">
-                  {status.source === 'oauth'
-                    ? t('admin.stream.sourceOauth')
-                    : t('admin.stream.sourceApiKey', { channel: status.configuredChannel })}
-                </p>
-                <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-                  <Select
-                    label={t('admin.stream.seasonLabel')}
-                    value={seasonId}
-                    onChange={(e: any) => {
-                      setSeasonId(e.target.value);
-                      setVideos([]);
-                      setNextPageToken(null);
-                    }}
+          <>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {videos.map((v) => {
+                const isSel = selected.has(v.videoId);
+                return (
+                  <button
+                    key={v.videoId}
+                    type="button"
+                    onClick={() => toggle(v.videoId)}
+                    aria-pressed={isSel}
+                    className={`flex items-center gap-3 rounded-lg border p-2 text-left transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                      isSel
+                        ? 'border-primary bg-primary/5'
+                        : 'border-line-subtle hover:border-primary/50'
+                    }`}
                   >
-                    <option value="">{t('admin.stream.seasonPlaceholder')}</option>
-                    {seasons.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </Select>
-                  {seasonId && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="whitespace-nowrap text-sm text-ink-3 num">
-                        {t('admin.stream.selectedCount', { count: selectedCount })}
-                      </span>
-                      <Button variant="secondary" size="sm" onClick={() => loadVideos(false)} disabled={loadingVideos}>
-                        <RefreshCw size={16} className={loadingVideos ? 'animate-spin' : ''} />
-                        {t('admin.stream.loadVideos')}
-                      </Button>
-                      <Button size="sm" onClick={saveSelection} disabled={savingSel}>
-                        <Check size={16} /> {t('admin.stream.saveSelection')}
-                      </Button>
+                    <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded bg-surface-2">
+                      {v.thumbnail && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={v.thumbnail} alt="" className="h-full w-full object-cover" />
+                      )}
+                      {isSel && (
+                        <span className="absolute inset-0 flex items-center justify-center bg-primary/60">
+                          <Check size={18} className="text-on-primary" />
+                        </span>
+                      )}
                     </div>
-                  )}
-                </div>
-
-                {!seasonId ? (
-                  <EmptyState className="!min-h-0 py-8" title={t('admin.stream.pickSeason')} />
-                ) : videosError ? (
-                  <EmptyState className="!min-h-0 py-8" title={t('admin.stream.loadFailed')} description={videosError} />
-                ) : videos.length === 0 ? (
-                  <EmptyState
-                    className="!min-h-0 py-8"
-                    title={videosLoaded ? t('admin.stream.noVideosFound') : t('admin.stream.loadHint')}
-                  />
-                ) : (
-              <>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                  {videos.map((v) => {
-                    const isSel = selected.has(v.videoId);
-                    return (
-                      <button
-                        key={v.videoId}
-                        type="button"
-                        onClick={() => toggle(v.videoId)}
-                        aria-pressed={isSel}
-                        className={`flex items-center gap-3 rounded-lg border p-2 text-left transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                          isSel
-                            ? 'border-primary bg-primary/5'
-                            : 'border-line-subtle hover:border-primary/50'
-                        }`}
-                      >
-                        <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded bg-surface-2">
-                          {v.thumbnail && (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={v.thumbnail} alt="" className="h-full w-full object-cover" />
-                          )}
-                          {isSel && (
-                            <span className="absolute inset-0 flex items-center justify-center bg-primary/60">
-                              <Check size={18} className="text-on-primary" />
-                            </span>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-ink-1">{v.title}</p>
-                          <p className="text-xs text-ink-3 num">
-                            {iso8601ToClock(v.duration)}
-                            {v.viewCount != null ? ` • ${v.viewCount} vues` : ''}
-                          </p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-                {nextPageToken && (
-                  <div className="mt-4 text-center">
-                    <Button variant="ghost" size="sm" onClick={() => loadVideos(true)} disabled={loadingVideos}>
-                      {t('admin.stream.loadMore')}
-                    </Button>
-                  </div>
-                )}
-              </>
-                )}
-              </>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-ink-1">{v.title}</p>
+                      <p className="text-xs text-ink-3 num">
+                        {iso8601ToClock(v.duration)}
+                        {v.viewCount != null ? ` • ${v.viewCount} vues` : ''}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {nextPageToken && (
+              <div className="mt-4 text-center">
+                <Button variant="ghost" size="sm" onClick={() => loadVideos(true)} disabled={loadingVideos}>
+                  {t('admin.stream.loadMore')}
+                </Button>
+              </div>
             )}
-          </Card>
+          </>
+            )}
+          </>
+        )}
+      </Card>
 
       <ConfirmModal
         open={confirm !== null}
@@ -624,7 +624,7 @@ function AdminStreamInner() {
           if (kind === 'disconnect') await disconnect();
           else if (kind === 'channel') await saveChannel();
         }}
-        title={t('admin.stream.disconnect')}
+        title={confirm === 'disconnect' ? t('admin.stream.disconnect') : t('admin.stream.channelSave')}
         message={confirm === 'disconnect' ? t('admin.stream.disconnectConfirm') : t('admin.stream.channelChangeConfirm')}
         confirmLabel={confirm === 'disconnect' ? t('admin.stream.disconnect') : t('admin.stream.channelSave')}
         cancelLabel={t('common.cancel')}

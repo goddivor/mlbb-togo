@@ -92,7 +92,7 @@ function PlayerRow({ p }: { p: any }) {
       {/* Items */}
       <div className="col-span-2 flex flex-wrap gap-1 md:col-span-1">
         {(p.items || []).map((it: any, i: number) => (
-          <span key={`${it.id}-${i}`} title={it.name || `#${it.id}`}>
+          <span key={`${it.id}-${i}`} title={it.name || undefined}>
             {it.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
