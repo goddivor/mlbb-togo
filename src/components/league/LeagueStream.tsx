@@ -42,7 +42,9 @@ export default function LeagueStream({ seasonId, t }: { seasonId: string | null;
 
   const featuredId = live?.live && live.videoId ? live.videoId : latest?.id || config?.s1MainVideoId || null;
   const title = live?.live ? config?.liveTitle || live.title || t('stream.liveTitle') : latest?.title || config?.liveTitle || '';
-  const channel = config?.youtubeChannel || 'eternumesports';
+  const channel = config?.youtubeChannel || '';
+
+  const watchHref = featuredId ? watch(featuredId) : channel ? `https://www.youtube.com/@${channel}` : null;
 
   return (
     <Card className="overflow-hidden !p-0">
@@ -59,16 +61,13 @@ export default function LeagueStream({ seasonId, t }: { seasonId: string | null;
           )}
           <span className="truncate text-sm font-semibold text-ink-1">{title}</span>
         </div>
-        <a
-          href={featuredId ? watch(featuredId) : `https://www.youtube.com/@${channel}`}
-          target="_blank"
-          rel="noreferrer"
-          className="shrink-0"
-        >
-          <Button variant="primary" size="sm">
-            <Youtube size={14} /> <span className="hidden sm:inline">{t('stream.watchOnYoutube')}</span>
-          </Button>
-        </a>
+        {watchHref && (
+          <a href={watchHref} target="_blank" rel="noreferrer" className="shrink-0">
+            <Button variant="primary" size="sm">
+              <Youtube size={14} /> <span className="hidden sm:inline">{t('stream.watchOnYoutube')}</span>
+            </Button>
+          </a>
+        )}
       </div>
       {featuredId ? (
         <div className="relative aspect-video w-full bg-black">

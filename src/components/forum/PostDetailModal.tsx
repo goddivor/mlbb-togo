@@ -10,6 +10,7 @@ import { timeAgo, getRankName, cn } from '@/lib/helpers';
 import toast from 'react-hot-toast';
 import MarkdownContent from './MarkdownContent';
 import PostImages from './PostImages';
+import PostLink from './PostLink';
 import { SponsorBadge, type FeedPost } from './PostCard';
 import { CATEGORY_META, normalizeCategory } from './constants';
 
@@ -131,6 +132,7 @@ export default function PostDetailModal({
 
         <MarkdownContent content={merged.content} format={merged.contentFormat} />
         {merged.images && merged.images.length > 0 && <PostImages images={merged.images} />}
+        <PostLink post={merged} />
 
         <div className="flex flex-wrap items-center gap-2 border-y border-line-subtle py-3 text-sm text-ink-2">
           <button

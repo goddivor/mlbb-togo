@@ -7,6 +7,7 @@ import { useT } from '@/lib/i18n';
 import { markdownToText } from '@/lib/markdown';
 import { CATEGORY_META, normalizeCategory } from './constants';
 import PostImages from './PostImages';
+import PostLink from './PostLink';
 
 export type FeedPost = {
   id: string;
@@ -18,6 +19,9 @@ export type FeedPost = {
   content: string;
   contentFormat?: string;
   images?: string[];
+  linkUrl?: string | null;
+  linkPlatform?: string | null;
+  embedUrl?: string | null;
   likes: number;
   views: number;
   shares?: number;
@@ -119,6 +123,7 @@ export default function PostCard({
           {post.images && post.images.length > 0 && (
             <PostImages images={post.images} compact className="mb-3" />
           )}
+          <PostLink post={post} compact className="mb-3" />
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-ink-2">
             <div className="flex min-w-0 items-center gap-1.5">

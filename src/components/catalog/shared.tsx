@@ -121,6 +121,8 @@ export function HeroUsageList({
   compact?: boolean;
 }) {
   const t = useT();
+  // Unreleased heroes come without a name: never show a bare id.
+  heroes = heroes.filter((h) => !!h.name);
   const max = Math.max(...heroes.map((h) => h.usage), 1);
   return (
     <ul className="space-y-1.5">
@@ -135,7 +137,7 @@ export function HeroUsageList({
             <HeroPortrait src={h.image} name={h.name} size={compact ? 28 : 34} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="truncate text-sm font-semibold text-ink-1 group-hover:text-primary">{h.name ?? `#${h.heroId}`}</span>
+                <span className="truncate text-sm font-semibold text-ink-1 group-hover:text-primary">{h.name}</span>
                 <span className="shrink-0 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] font-semibold text-ink-2">
                   {t(`heroMeta.lane.${h.lane}`)}
                 </span>

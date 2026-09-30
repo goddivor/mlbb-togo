@@ -63,15 +63,15 @@ export default function HeroStatsPanel({ heroId }: { heroId: number }) {
             <p className="text-xs text-ink-3">{t('heroMeta.deltaHint', { from: data.deltas.from, to: data.deltas.to })}</p>
           )}
 
-          {data.teammates?.length > 0 && (
+          {data.teammates?.some((h: any) => h.name) && (
             <div>
               <h4 className="mb-3 text-sm font-semibold text-accent-cyan">{t('heroes.bestTeammates')}</h4>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {data.teammates.map((h: any) => (
+                {data.teammates.filter((h: any) => h.name).map((h: any) => (
                   <div key={h.heroId} className="flex items-center gap-2.5 rounded border border-line-subtle bg-surface-2/60 p-1.5 pr-3">
                     <HeroPortrait src={h.image} name={h.name} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-ink-1">{h.name ?? `#${h.heroId}`}</p>
+                      <p className="truncate text-sm font-medium text-ink-1">{h.name}</p>
                       <Delta value={h.increaseWinRate} />
                     </div>
                   </div>
