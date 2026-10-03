@@ -9,6 +9,7 @@ import ThemeSwitcher from './ThemeSwitcher';
 import HeaderSearch, { type QuickLink } from './HeaderSearch';
 import NotificationDropdown from './NotificationDropdown';
 import MessageDropdown from './MessageDropdown';
+import StoreLink from './StoreLink';
 import ProfileDropdown, { type ProfileMenuLink } from './ProfileDropdown';
 
 interface AppHeaderProps {
@@ -93,6 +94,9 @@ export default function AppHeader({
             </li>
             <li>
               <MessageDropdown href={messagesHref} />
+            </li>
+            <li>
+              <StoreLink />
             </li>
             {extra}
             {/* Language hidden on phones to keep the bar from overflowing */}
